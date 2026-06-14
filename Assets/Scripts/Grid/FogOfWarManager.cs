@@ -21,11 +21,17 @@ namespace TacticalRPG.Grid
         // Awake'de çalışır: HexGridManager(-100) bittikten, PlayerController(0) başlamadan önce
         private void Awake()
         {
+            if (_gridManager == null)
+            {
+                Debug.LogError("[FogOfWarManager] _gridManager NULL! Inspector'da bağlantı eksik. Faz 1.1'i yeniden çalıştır.");
+                return;
+            }
             InitializeFog();
         }
 
         private void InitializeFog()
         {
+            if (_gridManager.Cells == null) return;
             foreach (var cell in _gridManager.Cells.Values)
             {
                 cell.FogState = FogState.Hidden;

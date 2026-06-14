@@ -34,7 +34,12 @@ namespace TacticalRPG.Core
         // Faz 1.4 AP/Zaman motoru bu event'i dinleyecek
         public event Action<HexCoordinate> OnMoved;
 
-        private void Start() => Initialize(_startCoord);
+        private void Start()
+        {
+            if (_gridManager == null) { Debug.LogError("[PlayerController] _gridManager NULL! Faz 1.3'ü yeniden çalıştır."); return; }
+            if (_fogManager  == null) { Debug.LogError("[PlayerController] _fogManager NULL! Faz 1.3'ü yeniden çalıştır."); return; }
+            Initialize(_startCoord);
+        }
 
         public void Initialize(HexCoordinate startCoord)
         {
@@ -42,6 +47,8 @@ namespace TacticalRPG.Core
 
             if (_gridManager.TryGetCell(startCoord, out HexCell cell))
                 transform.position = cell.WorldPosition + Vector3.up * _heightOffset;
+            else
+                Debug.LogWarning($"[PlayerController] Başlangıç koordinatı {startCoord} grid'de bulunamadı!");
 
             _fogManager.RevealArea(CurrentCoord, _visionRange);
         }

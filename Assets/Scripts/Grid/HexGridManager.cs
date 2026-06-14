@@ -51,6 +51,9 @@ namespace TacticalRPG.Grid
             ClearVisuals();
             _cells = new Dictionary<HexCoordinate, HexCell>(_width * _height);
 
+            if (_hexCellPrefab == null)
+                Debug.LogWarning("[HexGridManager] _hexCellPrefab NULL — fallback primitive kullanılıyor. Faz 1.1'i yeniden çalıştır.");
+
             for (int r = 0; r < _height; r++)
             {
                 int rOffset = r >> 1;
@@ -64,9 +67,7 @@ namespace TacticalRPG.Grid
                         cell.CellType = CellType.Watchtower;
 
                     _cells[coord] = cell;
-
-                    if (_hexCellPrefab != null)
-                        SpawnVisual(cell);
+                    SpawnVisual(cell);
                 }
             }
         }
@@ -83,10 +84,25 @@ namespace TacticalRPG.Grid
         private void SpawnVisual(HexCell cell)
         {
             Transform  parent = _gridParent != null ? _gridParent : transform;
-            GameObject go     = Instantiate(_hexCellPrefab, cell.WorldPosition, Quaternion.identity, parent);
-            go.name            = $"Hex_{cell.Coordinate}";
-            cell.Visual        = go;
-            cell.MeshRenderer  = go.GetComponent<MeshRenderer>();
+            GameObject go;
+
+            if (_hexCellPrefab != null)
+            {
+                go = Instantiate(_hexCellPrefab, cell.WorldPosition, Quaternion.identity, parent);
+            }
+            else
+            {
+                // Fallback: düz silindir (görülebilir placeholder)
+                go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                go.transform.SetParent(parent);
+                go.transform.position   = cell.WorldPosition;
+                go.transform.localScale = new Vector3(0.9f, 0.05f, 0.9f);
+                // Collider kalır — raycast çalışır
+            }
+
+            go.name           = $"Hex_{cell.Coordinate}";
+            cell.Visual       = go;
+            cell.MeshRenderer = go.GetComponent<MeshRenderer>();
         }
 
         // ── Sorgulama API'si ──────────────────────────────────────────────
