@@ -30,6 +30,75 @@ namespace TacticalRPG.Editor
         // MENÜ: 0 — Tüm sahneyi temizle
         // ─────────────────────────────────────────────────────────────────────
 
+        // ─────────────────────────────────────────────────────────────────────
+        // MENÜ: TANI — Sahne durumunu logla
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/TANI - Sahne Kontrolu (Console a Bak)")]
+        public static void DiagnoseScene()
+        {
+            Debug.Log("========== TacticalRPG TANI BAŞLIYOR ==========");
+
+            // 1. Kök objeler
+            GameObject sceneRoot   = GameObject.Find(SceneRootName);
+            GameObject systemsRoot = GameObject.Find(SystemsRootName);
+            Debug.Log($"[TANI] SceneRoot: {(sceneRoot != null ? "VAR" : "YOK")}");
+            Debug.Log($"[TANI] SystemsRoot: {(systemsRoot != null ? "VAR" : "YOK")}");
+
+            // 2. Kamera
+            Camera cam = Camera.main;
+            Debug.Log($"[TANI] Camera.main: {(cam != null ? $"VAR — orthoSize={cam.orthographicSize}, pos={cam.transform.position}" : "YOK")}");
+
+            if (systemsRoot == null) { Debug.LogError("[TANI] SystemsRoot YOK — Faz 1.1 çalıştırılmadı!"); return; }
+
+            // 3. HexGridManager
+            HexGridManager grid = systemsRoot.GetComponentInChildren<HexGridManager>();
+            Debug.Log($"[TANI] HexGridManager: {(grid != null ? "VAR" : "YOK")}");
+            if (grid != null)
+            {
+                var cellCount = grid.Cells?.Count ?? -1;
+                Debug.Log($"[TANI] Hücre sayısı: {cellCount}  (beklenen: 100)");
+                if (grid.Cells != null && grid.Cells.Count > 0)
+                {
+                    int nullMR = 0, hidden = 0, explored = 0, visible = 0;
+                    foreach (var c in grid.Cells.Values)
+                    {
+                        if (c.MeshRenderer == null) nullMR++;
+                        switch (c.FogState)
+                        {
+                            case FogState.Hidden:   hidden++;   break;
+                            case FogState.Explored: explored++; break;
+                            case FogState.Visible:  visible++;  break;
+                        }
+                    }
+                    Debug.Log($"[TANI] MeshRenderer null: {nullMR} / {cellCount}");
+                    Debug.Log($"[TANI] FogState → Hidden:{hidden}  Explored:{explored}  Visible:{visible}");
+                    if (visible == 0)
+                        Debug.LogWarning("[TANI] SORUN: Visible karo yok! RevealArea çalışmadı veya PlayerController init edilmedi.");
+                }
+            }
+
+            // 4. FogOfWarManager
+            FogOfWarManager fog = systemsRoot.GetComponentInChildren<FogOfWarManager>();
+            Debug.Log($"[TANI] FogOfWarManager: {(fog != null ? "VAR" : "YOK")}");
+
+            // 5. PlayerController
+            PlayerController player = systemsRoot.GetComponentInChildren<PlayerController>();
+            Debug.Log($"[TANI] PlayerController: {(player != null ? $"VAR — konum:{player.CurrentCoord}" : "YOK")}");
+
+            // 6. MapInputHandler
+            MapInputHandler input = FindComponentAnywhere<MapInputHandler>();
+            Debug.Log($"[TANI] MapInputHandler: {(input != null ? "VAR" : "YOK")}");
+
+            // 7. HexCell prefab alt obje sayısı
+            Transform gridParent = grid != null ? grid.transform.Find("HexGrid_Visuals") : null;
+            int childCount = gridParent != null ? gridParent.childCount : -1;
+            Debug.Log($"[TANI] HexGrid_Visuals alt obje: {childCount}  (beklenen: 0 — Play modunda dinamik üretilir, Edit modunda 100)");
+
+            Debug.Log("========== TANI BİTTİ ==========");
+            EditorUtility.DisplayDialog("Tanı tamamlandı", "Console sekmesine bak — sarı/kırmızı mesajlar sorunu gösterir.", "Tamam");
+        }
+
         [MenuItem("TacticalRPG/0 — Sahneyi Tamamen Temizle")]
         public static void CleanupAll()
         {
@@ -597,17 +666,22 @@ namespace TacticalRPG.Editor
         {
             string path = $"{MaterialsPath}/{assetName}.mat";
             Material mat = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (mat != null)
+
+            if (mat == null)
             {
-                mat.color = color;
-                EditorUtility.SetDirty(mat);
-                return mat;
+                // URP Unlit önce dene, yoksa legacy Unlit/Color
+                Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
+                             ?? Shader.Find("Unlit/Color")
+                             ?? Shader.Find("Hidden/InternalErrorShader");
+                mat = new Material(shader);
+                AssetDatabase.CreateAsset(mat, path);
             }
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
-                         ?? Shader.Find("Unlit/Color");
-            mat = new Material(shader) { color = color };
-            AssetDatabase.CreateAsset(mat, path);
+            // URP _BaseColor, legacy _Color — ikisini de set et
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
+            if (mat.HasProperty("_Color"))     mat.SetColor("_Color",     color);
+            mat.color = color; // fallback
+            EditorUtility.SetDirty(mat);
             return mat;
         }
 
