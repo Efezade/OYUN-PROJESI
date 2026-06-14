@@ -99,13 +99,17 @@ namespace TacticalRPG.Grid
         {
             if (cell.MeshRenderer == null) return;
 
-            cell.MeshRenderer.sharedMaterial = cell.FogState switch
+            Material mat = cell.FogState switch
             {
                 FogState.Hidden   => _hiddenMaterial,
                 FogState.Explored => _exploredMaterial,
                 FogState.Visible  => _visibleMaterial,
                 _                 => _hiddenMaterial
             };
+
+            // Materyal null ise mevcut görünümü koru — inspector bağlantısı yoksa en azından görünür kalır
+            if (mat != null)
+                cell.MeshRenderer.sharedMaterial = mat;
         }
     }
 }
