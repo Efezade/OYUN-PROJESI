@@ -35,6 +35,46 @@ namespace TacticalRPG.Editor
         // MENÜ: TANI — Sahne durumunu logla
         // ─────────────────────────────────────────────────────────────────────
 
+        [MenuItem("TacticalRPG/FIX - Kamerayı URP ile Düzelt")]
+        public static void FixCameraURP()
+        {
+            Camera cam = Camera.main;
+            if (cam == null)
+            {
+                // Tag'e göre bul
+                GameObject camGO = GameObject.FindGameObjectWithTag("MainCamera");
+                if (camGO != null) cam = camGO.GetComponent<Camera>();
+            }
+
+            if (cam == null)
+            {
+                EditorUtility.DisplayDialog("Hata", "Main Camera bulunamadı! Faz 0'ı çalıştır.", "Tamam");
+                return;
+            }
+
+            // Zaten varsa ekleme
+            if (cam.gameObject.GetComponent<UniversalAdditionalCameraData>() != null)
+            {
+                EditorUtility.DisplayDialog("Zaten Var", "UniversalAdditionalCameraData zaten mevcut.", "Tamam");
+                return;
+            }
+
+            var urpData = cam.gameObject.AddComponent<UniversalAdditionalCameraData>();
+            urpData.renderShadows        = false;
+            urpData.requiresColorTexture = false;
+            urpData.requiresDepthTexture = false;
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+
+            Debug.Log("[TacticalRPG] Kamera URP düzeltmesi uygulandı.");
+            EditorUtility.DisplayDialog(
+                "Kamera Düzeltildi!",
+                "UniversalAdditionalCameraData eklendi.\n\n" +
+                "Ctrl+S ile kaydet, sonra Play'e bas.\n" +
+                "Artık hex karolar render edilecek.",
+                "Tamam");
+        }
+
         [MenuItem("TacticalRPG/TEST - Tum Karolari Beyaz Yap (Play modunda)")]
         public static void ForceAllVisible()
         {
