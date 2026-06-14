@@ -1,43 +1,95 @@
 Taktiksel RPG Projesi - Geliştirme Yol Haritası (28 Günlük Vertical Slice)
-Bu doküman, "For The King" ve "XCOM" tarzı, hex-grid tabanlı taktiksel RPG projesinin geliştirme adımlarını içerir.
-Geliştirme Felsefesi (Whiteboxing): Kodlamalar sırasında (Claude tarafından) kesinlikle nihai UI veya karmaşık shader/tasarım kullanılmayacaktır. Tüm görsel objeler Unity'nin varsayılan 3D nesneleri (küp, silindir) olacak ve her referans [SerializeField] ile Inspector'a bırakılacaktır. Tasarım entegrasyonu manuel yapılacaktır.
+Bu doküman, hex-grid tabanlı taktiksel RPG projesinin geliştirme adımlarını içerir.
+İş Dağılımı: Claude (Backend/Lojik) ve Efe (UI/Görsel Entegrasyon) şeklinde paralel ilerleyecektir.
 
-HAFTA 1: Makro Harita ve Keşif Altyapısı
-Amaç: Ekranda çalışan bir harita, hareket eden bir karakter ve işleyen bir zaman motoru görmek.
+HAFTA 1: Makro Harita, Keşif ve Zaman UI Entegrasyonu
+Amaç: Ekranda çalışan bir harita, hareket eden bir karakter ve UI üzerinde dönen bir zaman çarkı görmek.
 
-Gün 1-2 (Faz 1.1 & 1.2): Hex Grid matematik algoritmasının kurulması ve Savaş Sisi (Fog of War) sisteminin entegre edilmesi.
+Gün 1-2 (Faz 1.1 & 1.2):
 
-Gün 3-4 (Faz 1.3): Tıklanan karoya A* (Pathfinding) ile yürüme mekaniği. Haritadaki Kule (Watchtower) yapısına girildiğinde bölgenin sisinin kalıcı olarak kaldırılması.
+Backend: Hex Grid algoritması ve Savaş Sisi (Fog of War) veri yapısı.
 
-Gün 5-6 (Faz 1.4): AP (Aksiyon Puanı) ve Zaman Motoru. Her hareket = 1 AP. Her 3 AP = 1 Zaman Dilimi. 6 Dilim = 1 Gün. (Zaman sayacının kodlanması).
+UI: Geçici hex'lerin yerine 3D harita modellerinin konması ve karanlık/aydınlık materyallerin ayarlanması.
 
-Gün 7 (Faz 1.5): Harita Çöküşü (Kıyamet Sayacı). 3. günün sonuna gelindiğinde (4. güne geçiş) haritadaki rastgele karoların silinmesi ve ilerlemenin ölümcül hale gelmesi.
+Gün 3-4 (Faz 1.3):
 
-HAFTA 2: Veri Mimarisi, Ekonomi ve Evrim Sistemi
-Amaç: Savaş ve meta-gelişim için gerekli olan "Öz" (Essence) ve Karakter statlarının veritabanını inşa etmek.
+Backend: Tıklanan karoya A* ile yürüme ve Kule (Watchtower) sis kaldırma mekaniği.
 
-Gün 8-9 (Faz 2.1): Envanter sistemi. Toplanan kaynakları (Ateş, Su, Mavi Öz, Pot vb.) tutan veri yapısı.
+UI: Kule 3D modellerinin haritaya yerleştirilmesi ve karakter yürüme animasyonlarının bağlanması.
 
-Gün 10-11 (Faz 2.2): Birlik ScriptableObject şablonlarının oluşturulması. Askerlerin (Rogue, Mage vb.) statlarını ve öz harcanarak açılan 1., 2. ve 3. seviye evrim/pasif özelliklerini tutan sistem.
+Gün 5-6 (Faz 1.4):
 
-Gün 12-14 (Faz 2.3): Kam (Ana Karakter) Skill Tree ve Mana Sistemi. Ana karakterin 10'luk savaş mana havuzu ve özlerle kilitleri açılan büyülerin (Alev Topu vb.) veri altyapısı.
+Backend: AP (Aksiyon Puanı) ve Zaman Motoru (Her 3 AP = 1 Dilim, 6 Dilim = 1 Gün).
 
-HAFTA 3: Taktiksel Savaş ve Kurulum (Deployment)
-Amaç: Makro haritadan izole edilmiş mikro grid savaş alanına geçiş ve sıra tabanlı çarpışma.
+UI: Zaman Çarkı UI Entegrasyonu: Sol üstteki gün/saat çarkı tasarımının canvas'a eklenmesi ve koddaki zaman değişkenine göre bu çarkın UI üzerinde dönmesinin/güncellenmesinin sağlanması.
 
-Gün 15-16 (Faz 3.1): Savaş Alanı (Battlefield) grid sisteminin ve engellerinin (Obstacles) kurulması. Oyuncunun öz harcayarak seçtiği askerleri başlangıç karolarına yerleştirmesi (Spawn mekaniği).
+Gün 7 (Faz 1.5):
 
-Gün 17-18 (Faz 4.1): İnisiyatif Kuyruğu (Turn Manager). Sahadaki karakterlerin hızlarına göre sıraya girmesi.
+Backend: Harita Çöküşü (Kıyamet Sayacı) - 4. güne geçişte karoların silinmesi.
 
-Gün 19-21 (Faz 4.2): Savaş mekanikleri. Karakter hareketi, menzil kontrolü, Kam'ın mana harcayarak yetenek kullanması, hasar hesaplama ve HP'si biten karakterin sahadan silinmesi.
+UI: Silinen karoların düşme animasyonları ve ekranın kızarması (Post-processing) gibi gerilim efektlerinin eklenmesi.
 
-HAFTA 4: Ganimet, Döngü ve Meta-İlerleme
-Amaç: Savaş sonu ödüllerinin alınması, makro haritaya dönüş ve genel "Game Loop" yapısının tamamlanması.
+HAFTA 2: Veri Mimarisi, Envanter ve Menü UI Tasarımları
+Amaç: Savaş veritabanını kurmak ve kitap şeklindeki envanter/karakter menülerini fonksiyonel hale getirmek.
 
-Gün 22-23 (Faz 5.1): Savaş Sonu Drafting Sistemi. Kazanılan savaşın ardından rastgele 3 ödülün (Öz, Pot, Eşya) oyuncuya seçtirilmesi.
+Gün 8-9 (Faz 2.1):
 
-Gün 24-25 (Faz 5.2): Durum Kaydı (State Saving). Savaştan makro haritaya dönüldüğünde zamanın, AP'nin, sisin ve karakterin koordinatının sıfırlanmadan kaldığı yerden devam etmesi.
+Backend: Toplanan özlerin tutulduğu Envanter sistemi.
 
-Gün 26-27 (Faz 5.3): Ana Menü Meta-İlerleme. Ölen/kaybeden oyuncunun kazandığı kalıcı (Meta) özlerin ana menüye taşınması ve bu özlerle yeni karakter sınıflarının kilitlerinin kalıcı olarak açılması (PlayerPrefs/JSON kaydı).
+UI: Kitap Envanter Menüsü: M harfine veya butona basıldığında animasyonlu şekilde açılan Parşömen/Kitap menü UI'ının yapılması, öz miktarlarının ekrana yazdırılması.
 
-Gün 28: Dikey Kesit (Vertical Slice) Testi, hata ayıklama (Bug fixing) ve oyun hissini (Game Feel) cilalama.
+Gün 10-11 (Faz 2.2):
+
+Backend: Birlik (ScriptableObject) statları ve 1., 2., 3. seviye evrim/pasif özellikleri.
+
+UI: Karakter Kartları UI: Kitap menüsündeki savaşçı kartlarının tasarımlarının UI'a eklenmesi ve seviye (1,2,3) ikonlarının kilit açılma durumlarının gösterilmesi.
+
+Gün 12-14 (Faz 2.3):
+
+Backend: Kam (Ana Karakter) savaş manası ve büyü açma/harcama altyapısı.
+
+UI: Yetenek Ağacı UI: Kitabın skill tree sayfasının UI üzerinde oluşturulması, kilitli/açık yetenek butonlarının tasarımları ve tıklanabilirliklerinin koda bağlanması.
+
+HAFTA 3: Taktiksel Savaş ve Çarpışma Arayüzleri
+Amaç: Savaş alanına geçiş ve sıra tabanlı çarpışmanın arayüzlerini tamamlamak.
+
+Gün 15-16 (Faz 3.1):
+
+Backend: Savaş Alanı grid sistemi ve başlangıç karolarına asker (Spawn) çıkarma.
+
+UI: Taktiksel savaş alanı modelleri, yerleştirme aşamasında beliren "Mavi/Kırmızı" onaylama grid görselleri ve "Savaşı Başlat" UI butonu.
+
+Gün 17-18 (Faz 4.1):
+
+Backend: İnisiyatif Kuyruğu (Turn Manager) ve hız hesaplaması.
+
+UI: Sıra Kuyruğu UI: Ekranın üst kısmında savaşacak karakterlerin yüz portrelerinin sırayla dizilmesi ve sırası geçenin sağa kayması (Timeline UI).
+
+Gün 19-21 (Faz 4.2):
+
+Backend: Hareket, büyü kullanımı, mana düşüşü ve hasar hesaplama.
+
+UI: Düşman can barları (HP Bar), Kam'ın Mana Barı, yetenek ikonları UI paneli ve hasar yiyen karakterin üzerinde beliren kırmızı sayı (Floating Text) efektleri.
+
+HAFTA 4: Ganimet Ekranı ve Ana Menü Döngüsü
+Amaç: Draft seçim arayüzü ve kalıcı ana menü UI'ının tamamlanması.
+
+Gün 22-23 (Faz 5.1):
+
+Backend: Savaş Sonu Draft (Ödül Seçimi) algoritması.
+
+UI: Ganimet Seçim Ekranı: Savaş bitince ekrana gelen "3 Karttan Birini Seç" (Draft) UI tasarımının yapılması ve buton hover/click animasyonları.
+
+Gün 24-25 (Faz 5.2):
+
+Backend: Durum Kaydı (State Saving) ve haritaya geri dönüş.
+
+UI: Savaş sahnesinden harita sahnesine geçerken kullanılan Yükleme Ekranı (Loading Screen) veya Fade In/Out siyah ekran geçiş animasyonları.
+
+Gün 26-27 (Faz 5.3):
+
+Backend: Kalıcı Meta-Öz verileri ve yeni karakter kilidi açma.
+
+UI: Ana Menü UI: Oyunun ilk açıldığı Ana Menü tasarımı, kalıcı özlerin gösterildiği "Öz Deposu" paneli ve kilitli sınıfların (Mage, Rogue vb.) zincirli görsellerinin koda bağlanması.
+
+Gün 28: Testler, arayüz cilalamaları, buton ses efektlerinin (UI Audio) eklenmesi ve Vertical Slice tamamlanması.
