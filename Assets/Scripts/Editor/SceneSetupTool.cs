@@ -357,6 +357,94 @@ namespace TacticalRPG.Editor
         }
 
         // ─────────────────────────────────────────────────────────────────────
+        // MENÜ: Faz 1.5 — Map Collapse / Kıyamet Sayacı
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/Faz 1.5 - Kiyamet Sayaci (Map Collapse)")]
+        public static void SetupPhase15()
+        {
+            GameObject systemsRoot = GameObject.Find(SystemsRootName);
+            if (systemsRoot == null)
+            {
+                EditorUtility.DisplayDialog("Hata", "Once Faz 1.1, 1.3 ve 1.4 calistirin!", "Tamam");
+                return;
+            }
+
+            HexGridManager     gridManager = systemsRoot.GetComponentInChildren<HexGridManager>();
+            PlayerController   player      = systemsRoot.GetComponentInChildren<PlayerController>();
+            ActionPointManager apManager   = FindComponentAnywhere<ActionPointManager>();
+
+            if (gridManager == null || player == null || apManager == null)
+            {
+                EditorUtility.DisplayDialog("Hata", "HexGridManager, PlayerController veya ActionPointManager bulunamadi!", "Tamam");
+                return;
+            }
+
+            // ── CollapseConfig ScriptableObject ───────────────────────────
+            EnsureFolder("Assets/Data");
+            EnsureFolder("Assets/Data/Config");
+            const string configPath = "Assets/Data/Config/CollapseConfig.asset";
+            CollapseConfig config = AssetDatabase.LoadAssetAtPath<CollapseConfig>(configPath);
+            if (config == null)
+            {
+                config = ScriptableObject.CreateInstance<CollapseConfig>();
+                AssetDatabase.CreateAsset(config, configPath);
+            }
+
+            // ── Collapse materyali ────────────────────────────────────────
+            Material collapsedMat = GetOrCreateUnlitMaterial("TileCollapsed", new Color(0.15f, 0.05f, 0.05f));
+
+            // ── MapCollapseManager — GameManager'a ekle ───────────────────
+            GameObject sceneRoot    = GameObject.Find(SceneRootName);
+            GameObject gameManagerGO = sceneRoot != null
+                ? sceneRoot.transform.Find("GameManager")?.gameObject
+                : systemsRoot.transform.Find("GameManager")?.gameObject;
+
+            if (gameManagerGO == null)
+            {
+                gameManagerGO = new GameObject("GameManager");
+                gameManagerGO.transform.SetParent(systemsRoot.transform);
+            }
+
+            var existing = gameManagerGO.GetComponent<MapCollapseManager>();
+            if (existing != null) Object.DestroyImmediate(existing);
+
+            MapCollapseManager collapseManager = gameManagerGO.AddComponent<MapCollapseManager>();
+            var collapseSO = new SerializedObject(collapseManager);
+            collapseSO.FindProperty("_gridManager").objectReferenceValue      = gridManager;
+            collapseSO.FindProperty("_apManager").objectReferenceValue        = apManager;
+            collapseSO.FindProperty("_player").objectReferenceValue           = player;
+            collapseSO.FindProperty("_config").objectReferenceValue           = config;
+            collapseSO.FindProperty("_collapsedMaterial").objectReferenceValue = collapsedMat;
+            collapseSO.ApplyModifiedProperties();
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            Debug.Log("[TacticalRPG] Faz 1.5 tamamlandi.");
+            EditorUtility.DisplayDialog(
+                "Faz 1.5 Tamamlandi! — Kiyamet Sayaci",
+                "Map Collapse aktif:\n\n" +
+                "  • MapCollapseManager — GameManager'a eklendi\n" +
+                "  • CollapseConfig SO — Assets/Data/Config/\n" +
+                "  • Gün 4'ten itibaren her gün sonu karo silinir\n" +
+                "  • Hız: 2 karo/gün, +1 ivme (max 10)\n" +
+                "  • Oyuncu konumu ve Watchtower'lar korunur\n\n" +
+                "Hafta 1 TAMAMLANDI! Hafta 2'ye gecmek icin hazir.",
+                "Tamam");
+        }
+
+        private static T FindComponentAnywhere<T>() where T : UnityEngine.Component
+        {
+#if UNITY_2023_1_OR_NEWER
+            return Object.FindFirstObjectByType<T>();
+#else
+            return Object.FindObjectOfType<T>();
+#endif
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // Yardımcı metodlar
         // ─────────────────────────────────────────────────────────────────────
 
