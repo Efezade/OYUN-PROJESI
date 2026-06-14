@@ -58,19 +58,21 @@ namespace TacticalRPG.Editor
             GameObject root = new GameObject(SceneRootName);
 
             // ── Ana Kamera (top-down, ortografik) ────────────────────────────
+            // Grid: 10x10, hexSize=1 → yaklaşık x:[0,16.5] z:[0,13.5]
+            // Merkez: (7.8f, 0, 6.75f) → kamera tam ortaya bakar
             GameObject cameraGO = new GameObject("Main Camera");
             cameraGO.tag = "MainCamera";
             cameraGO.transform.SetParent(root.transform);
-            cameraGO.transform.position = new Vector3(0f, 100f, 0f);
+            cameraGO.transform.position = new Vector3(7.8f, 50f, 6.75f);
             cameraGO.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
 
             Camera cam = cameraGO.AddComponent<Camera>();
             cam.orthographic     = true;
-            cam.orthographicSize = 8f;       // ~16 hex karo dikey görüş
+            cam.orthographicSize = 10f;      // 10x10 grid tamamen sığar
             cam.nearClipPlane    = 0.1f;
-            cam.farClipPlane     = 200f;
+            cam.farClipPlane     = 150f;
             cam.clearFlags       = CameraClearFlags.SolidColor;
-            cam.backgroundColor  = new Color(0.1f, 0.1f, 0.1f);
+            cam.backgroundColor  = new Color(0.08f, 0.08f, 0.08f);
 
             cameraGO.AddComponent<AudioListener>();
 
@@ -143,6 +145,10 @@ namespace TacticalRPG.Editor
             gridSO.FindProperty("_height").intValue                    = 10;
             gridSO.FindProperty("_hexSize").floatValue                 = 1f;
             gridSO.ApplyModifiedProperties();
+
+            // Edit modunda hücreleri hemen üret — Play beklemeye gerek yok
+            gridManager.GenerateGrid();
+            EditorUtility.SetDirty(gridVisualsGO);
 
             // ── FogOfWarManager ───────────────────────────────────────────────
             GameObject fogGO = new GameObject("FogOfWarManager");

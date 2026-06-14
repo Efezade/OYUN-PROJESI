@@ -6,6 +6,7 @@ namespace TacticalRPG.Grid
     /// <summary>
     /// Offset-r (odd-r) düzeninde dikdörtgen hex haritası oluşturur ve yönetir.
     /// Axial koordinat (q,r) birincil anahtar olarak kullanılır.
+    /// GenerateGrid() public'tir; Editor araçları Edit modunda doğrudan çağırabilir.
     /// </summary>
     public class HexGridManager : MonoBehaviour
     {
@@ -27,16 +28,31 @@ namespace TacticalRPG.Grid
         public int Width => _width;
         public int Height => _height;
 
+        // Grid merkezi — kamera konumlandırması için kullanılır
+        public Vector3 GridCenter
+        {
+            get
+            {
+                float x = _hexSize * (Mathf.Sqrt(3f) * (_width - 1) * 0.5f
+                                    + Mathf.Sqrt(3f) * 0.5f * (_height - 1) * 0.5f);
+                float z = _hexSize * 1.5f * (_height - 1) * 0.5f;
+                return new Vector3(x, 0f, z);
+            }
+        }
+
         private void Awake()
         {
+            // Play modunda: Editor'da yaratılmış görsel objeleri temizle, yeniden üret
+            ClearVisuals();
             GenerateGrid();
         }
 
-        private void GenerateGrid()
+        // ── Grid üretimi (Editor araçlarından da çağrılabilir) ────────────
+
+        public void GenerateGrid()
         {
             _cells = new Dictionary<HexCoordinate, HexCell>(_width * _height);
 
-            // Odd-r offset → axial dönüşümü ile dikdörtgen grid
             for (int r = 0; r < _height; r++)
             {
                 int rOffset = r >> 1;
@@ -51,6 +67,17 @@ namespace TacticalRPG.Grid
                         SpawnVisual(cell);
                 }
             }
+        }
+
+        public void ClearVisuals()
+        {
+            Transform parent = _gridParent != null ? _gridParent : transform;
+            // Mevcut tüm child görsel objelerini sil
+            for (int i = parent.childCount - 1; i >= 0; i--)
+                DestroyImmediate(parent.GetChild(i).gameObject);
+
+            if (_cells != null)
+                _cells.Clear();
         }
 
         private void SpawnVisual(HexCell cell)
@@ -81,10 +108,6 @@ namespace TacticalRPG.Grid
             return neighbors;
         }
 
-        /// <summary>
-        /// Dünya koordinatından en yakın hex koordinatını döner.
-        /// Fare tıklaması veya Raycast sonucu için kullanılır.
-        /// </summary>
         public HexCoordinate WorldToHex(Vector3 worldPos)
         {
             float q = (Mathf.Sqrt(3f) / 3f * worldPos.x - 1f / 3f * worldPos.z) / _hexSize;
@@ -92,7 +115,6 @@ namespace TacticalRPG.Grid
             return RoundHex(q, r);
         }
 
-        // Kayan noktalı axial koordinatı en yakın tam sayıya yuvarlar (cube rounding)
         private static HexCoordinate RoundHex(float q, float r)
         {
             float s = -q - r;
@@ -104,10 +126,8 @@ namespace TacticalRPG.Grid
             float dr = Mathf.Abs(rr - r);
             float ds = Mathf.Abs(rs - s);
 
-            if (dq > dr && dq > ds)
-                rq = -rr - rs;
-            else if (dr > ds)
-                rr = -rq - rs;
+            if (dq > dr && dq > ds) rq = -rr - rs;
+            else if (dr > ds) rr = -rq - rs;
 
             return new HexCoordinate(rq, rr);
         }
