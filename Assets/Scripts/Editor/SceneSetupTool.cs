@@ -72,11 +72,11 @@ namespace TacticalRPG.Editor
 
             Camera cam = cameraGO.AddComponent<Camera>();
             cam.orthographic     = true;
-            cam.orthographicSize = 10f;      // 10x10 grid tamamen sığar
+            cam.orthographicSize = 8f;       // grid (~13.5 birim yüksek) ekranın %84'ünü doldurur
             cam.nearClipPlane    = 0.1f;
             cam.farClipPlane     = 150f;
             cam.clearFlags       = CameraClearFlags.SolidColor;
-            cam.backgroundColor  = new Color(0.08f, 0.08f, 0.08f);
+            cam.backgroundColor  = new Color(0.04f, 0.03f, 0.07f); // koyu mor — hidden tilelerden belirgin farklı
 
             cameraGO.AddComponent<AudioListener>();
 
@@ -126,7 +126,7 @@ namespace TacticalRPG.Editor
             EnsureFolder(PrefabsGridPath);
 
             // Asset'ler
-            Material hiddenMat   = GetOrCreateUnlitMaterial("FogHidden",   new Color(0.12f, 0.12f, 0.15f)); // Koyu gri-mavi: grid şekli seçilebilir
+            Material hiddenMat   = GetOrCreateUnlitMaterial("FogHidden",   new Color(0.22f, 0.18f, 0.28f)); // Orta koyu mor: arka plandan belirgin
             Material exploredMat = GetOrCreateUnlitMaterial("FogExplored", new Color(0.25f, 0.25f, 0.25f));
             Material visibleMat  = GetOrCreateUnlitMaterial("FogVisible",  Color.white);
             GameObject hexCellPrefab = GetOrCreateHexCellPrefab(visibleMat);
@@ -242,7 +242,7 @@ namespace TacticalRPG.Editor
             playerSO.FindProperty("_fogManager").objectReferenceValue   = fogManager;
             playerSO.FindProperty("_moveSpeed").floatValue              = 8f;
             playerSO.FindProperty("_heightOffset").floatValue           = 0.15f;
-            playerSO.FindProperty("_visionRange").intValue              = 3;
+            playerSO.FindProperty("_visionRange").intValue              = 4;
             playerSO.FindProperty("_watchtowerRevealRange").intValue    = 5;
             // Başlangıç: grid merkezi ~ (3,4) → world(8.66, 0, 6.0) — kamera (7.8,50,6.75) ile hizalı
             playerSO.FindProperty("_startCoord").FindPropertyRelative("Q").intValue = 3;
