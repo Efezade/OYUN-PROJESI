@@ -15,6 +15,23 @@ namespace TacticalRPG.Editor
         private const string PrefabsGridPath = "Assets/Prefabs/Grid";
         private const string RootName        = "[TacticalRPG_Systems]";
 
+        [MenuItem("TacticalRPG/0 — Sahneyi Temizle (Once Calistir)")]
+        public static void CleanupScene()
+        {
+            GameObject existing = GameObject.Find(RootName);
+            if (existing != null)
+            {
+                Object.DestroyImmediate(existing);
+                EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                Debug.Log($"[TacticalRPG] '{RootName}' sahneden silindi.");
+                EditorUtility.DisplayDialog("Temizlik Tamamlandi", $"'{RootName}' ve tum alt objeleri sahneden kaldirildi.\n\nSimdi Faz 1.1 kurulumunu calistiabilirsin.", "Tamam");
+            }
+            else
+            {
+                EditorUtility.DisplayDialog("Temizlenecek Sey Yok", $"Sahnede '{RootName}' bulunamadi.\nDogrudan Faz 1.1 kurulumunu calistirabilirsin.", "Tamam");
+            }
+        }
+
         [MenuItem("TacticalRPG/Faz 1.1 — Sahne Kurulumunu Yap")]
         public static void SetupPhase1Scene()
         {
