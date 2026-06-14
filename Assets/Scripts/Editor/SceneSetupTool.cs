@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using TacticalRPG.Grid;
+using TacticalRPG.Core;
 
 namespace TacticalRPG.Editor
 {
@@ -180,6 +181,112 @@ namespace TacticalRPG.Editor
         }
 
         // ─────────────────────────────────────────────────────────────────────
+        // MENÜ: Faz 1.3 — Pathfinding + Oyuncu + Kuleler
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/Faz 1.3 - Pathfinding ve Oyuncu")]
+        public static void SetupPhase13()
+        {
+            // Gerekli sistemleri sahnede bul
+            GameObject systemsRoot = GameObject.Find(SystemsRootName);
+            if (systemsRoot == null)
+            {
+                EditorUtility.DisplayDialog("Hata", "Once 'Faz 1.1 - Hex Haritayi Kur' calistirin!", "Tamam");
+                return;
+            }
+
+            GameObject sceneRoot = GameObject.Find(SceneRootName);
+            HexGridManager  gridManager = systemsRoot.GetComponentInChildren<HexGridManager>();
+            FogOfWarManager fogManager  = systemsRoot.GetComponentInChildren<FogOfWarManager>();
+
+            if (gridManager == null || fogManager == null)
+            {
+                EditorUtility.DisplayDialog("Hata", "HexGridManager veya FogOfWarManager bulunamadi!", "Tamam");
+                return;
+            }
+
+            // ── 1. Prefab'a MeshCollider ekle, grid'i yeniden üret ────────────
+            GetOrCreateHexCellPrefab(AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsPath}/FogVisible.mat"));
+            var gridSO = new SerializedObject(gridManager);
+
+            // Kule (Watchtower) konumları — 10x10 grid içinde 3 nokta
+            var watchtowerProp = gridSO.FindProperty("_watchtowerPositions");
+            watchtowerProp.ClearArray();
+            var wtCoords = new[] { (3, 5), (1, 2), (4, 8) };
+            for (int i = 0; i < wtCoords.Length; i++)
+            {
+                watchtowerProp.arraySize++;
+                var elem = watchtowerProp.GetArrayElementAtIndex(i);
+                elem.FindPropertyRelative("Q").intValue = wtCoords[i].Item1;
+                elem.FindPropertyRelative("R").intValue = wtCoords[i].Item2;
+            }
+            gridSO.ApplyModifiedProperties();
+            gridManager.GenerateGrid(); // MeshCollider'lı yeni prefab ile yeniden üret
+
+            // ── 2. Oyuncu (Player) — basit küp, [TacticalRPG_Systems] altında ─
+            Transform existingPlayer = systemsRoot.transform.Find("Player");
+            if (existingPlayer != null) Object.DestroyImmediate(existingPlayer.gameObject);
+
+            GameObject playerGO = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            playerGO.name = "Player";
+            playerGO.transform.SetParent(systemsRoot.transform);
+            playerGO.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+            Object.DestroyImmediate(playerGO.GetComponent<BoxCollider>()); // grid collider ile çakışmasın
+
+            PlayerController playerCtrl = playerGO.AddComponent<PlayerController>();
+            var playerSO = new SerializedObject(playerCtrl);
+            playerSO.FindProperty("_gridManager").objectReferenceValue  = gridManager;
+            playerSO.FindProperty("_fogManager").objectReferenceValue   = fogManager;
+            playerSO.FindProperty("_moveSpeed").floatValue              = 8f;
+            playerSO.FindProperty("_heightOffset").floatValue           = 0.15f;
+            playerSO.FindProperty("_visionRange").intValue              = 3;
+            playerSO.FindProperty("_watchtowerRevealRange").intValue    = 5;
+            // Başlangıç: grid sol alt köşesi (0, 0) axial
+            playerSO.FindProperty("_startCoord").FindPropertyRelative("Q").intValue = 0;
+            playerSO.FindProperty("_startCoord").FindPropertyRelative("R").intValue = 0;
+            playerSO.ApplyModifiedProperties();
+
+            // ── 3. MapInputHandler — GameManager objesine ekle ────────────────
+            GameObject gameManagerGO = sceneRoot != null
+                ? sceneRoot.transform.Find("GameManager")?.gameObject
+                : null;
+
+            if (gameManagerGO == null)
+            {
+                gameManagerGO = new GameObject("GameManager");
+                gameManagerGO.transform.SetParent(systemsRoot.transform);
+            }
+
+            // Varsa eski MapInputHandler temizle
+            var existingHandler = gameManagerGO.GetComponent<MapInputHandler>();
+            if (existingHandler != null) Object.DestroyImmediate(existingHandler);
+
+            MapInputHandler inputHandler = gameManagerGO.AddComponent<MapInputHandler>();
+            var inputSO = new SerializedObject(inputHandler);
+            inputSO.FindProperty("_gridManager").objectReferenceValue = gridManager;
+            inputSO.FindProperty("_player").objectReferenceValue      = playerCtrl;
+            inputSO.FindProperty("_rayDistance").floatValue           = 300f;
+            inputSO.ApplyModifiedProperties();
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            Debug.Log("[TacticalRPG] Faz 1.3 tamamlandi.");
+            EditorUtility.DisplayDialog(
+                "Faz 1.3 Tamamlandi!",
+                "Eklenenler:\n\n" +
+                "  • HexPathfinder (A* algoritması)\n" +
+                "  • Player (küp) — (0,0) konumunda\n" +
+                "  • MapInputHandler — sol tık ile hareket\n" +
+                "  • 3 Watchtower konumu: (3,5) (1,2) (4,8)\n" +
+                "  • MeshCollider — tüm hex karolarda\n\n" +
+                "Play'e bas, haritaya sol tıkla — karakter A* ile yürür!\n" +
+                "Watchtower karosuna gidince geniş alan açılır.",
+                "Tamam");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // Yardımcı metodlar
         // ─────────────────────────────────────────────────────────────────────
 
@@ -234,6 +341,9 @@ namespace TacticalRPG.Editor
             mf.sharedMesh = hexMesh;
             MeshRenderer mr = go.AddComponent<MeshRenderer>();
             mr.sharedMaterial = defaultMat;
+            // MeshCollider — Raycast tıklama algılaması için gerekli
+            MeshCollider mc = go.AddComponent<MeshCollider>();
+            mc.sharedMesh = hexMesh;
 
             // PrefabUtility.SaveAsPrefabAsset varsa üzerine yazar
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);

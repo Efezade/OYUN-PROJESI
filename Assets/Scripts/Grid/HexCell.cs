@@ -2,17 +2,19 @@ using UnityEngine;
 
 namespace TacticalRPG.Grid
 {
-    public enum FogState { Hidden, Explored, Visible }
+    public enum FogState  { Hidden, Explored, Visible }
+    public enum CellType  { Normal, Watchtower, Obstacle }
 
     /// <summary>
     /// Hex haritasındaki tek bir karonun veri modeli.
-    /// FogState doğrudan burada tutulur; FogOfWarManager ayrı Dictionary kullanmaz.
+    /// FogState ve CellType doğrudan burada tutulur.
     /// </summary>
     public class HexCell
     {
         public HexCoordinate Coordinate    { get; }
         public Vector3       WorldPosition { get; }
         public bool          IsWalkable    { get; set; } = true;
+        public CellType      CellType      { get; set; } = CellType.Normal;
 
         // Fog durumu — başlangıç değeri Hidden
         public FogState FogState { get; set; } = FogState.Hidden;

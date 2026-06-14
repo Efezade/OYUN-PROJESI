@@ -5,13 +5,12 @@ namespace TacticalRPG.Grid
 {
     /// <summary>
     /// Offset-r (odd-r) düzeninde dikdörtgen hex haritası oluşturur ve yönetir.
-    /// Axial koordinat (q,r) birincil anahtar olarak kullanılır.
-    /// GenerateGrid() public'tir; Editor araçları Edit modunda doğrudan çağırabilir.
+    /// Axial koordinat (q,r) birincil anahtar. GenerateGrid() Edit modunda da çalışır.
     /// </summary>
     public class HexGridManager : MonoBehaviour
     {
         [Header("Grid Boyutu")]
-        [SerializeField] private int _width = 10;
+        [SerializeField] private int _width  = 10;
         [SerializeField] private int _height = 10;
 
         [Header("Hex Geometrisi")]
@@ -19,38 +18,36 @@ namespace TacticalRPG.Grid
 
         [Header("Görsel (Placeholder)")]
         [SerializeField] private GameObject _hexCellPrefab;
-        [SerializeField] private Transform _gridParent;
+        [SerializeField] private Transform  _gridParent;
+
+        [Header("Harita Özellikleri")]
+        [SerializeField] private List<HexCoordinate> _watchtowerPositions = new();
 
         private Dictionary<HexCoordinate, HexCell> _cells;
 
-        public IReadOnlyDictionary<HexCoordinate, HexCell> Cells => _cells;
+        public IReadOnlyDictionary<HexCoordinate, HexCell> Cells    => _cells;
         public float HexSize => _hexSize;
-        public int Width => _width;
-        public int Height => _height;
+        public int   Width   => _width;
+        public int   Height  => _height;
 
-        // Grid merkezi — kamera konumlandırması için kullanılır
         public Vector3 GridCenter
         {
             get
             {
-                float x = _hexSize * (Mathf.Sqrt(3f) * (_width - 1) * 0.5f
+                float x = _hexSize * (Mathf.Sqrt(3f) * (_width  - 1) * 0.5f
                                     + Mathf.Sqrt(3f) * 0.5f * (_height - 1) * 0.5f);
                 float z = _hexSize * 1.5f * (_height - 1) * 0.5f;
                 return new Vector3(x, 0f, z);
             }
         }
 
-        private void Awake()
-        {
-            // Play modunda: Editor'da yaratılmış görsel objeleri temizle, yeniden üret
-            ClearVisuals();
-            GenerateGrid();
-        }
+        private void Awake() => GenerateGrid();
 
-        // ── Grid üretimi (Editor araçlarından da çağrılabilir) ────────────
+        // ── Grid üretimi ──────────────────────────────────────────────────
 
         public void GenerateGrid()
         {
+            ClearVisuals();
             _cells = new Dictionary<HexCoordinate, HexCell>(_width * _height);
 
             for (int r = 0; r < _height; r++)
@@ -58,9 +55,13 @@ namespace TacticalRPG.Grid
                 int rOffset = r >> 1;
                 for (int col = 0; col < _width; col++)
                 {
-                    int q = col - rOffset;
+                    int q     = col - rOffset;
                     var coord = new HexCoordinate(q, r);
-                    var cell = new HexCell(coord, _hexSize);
+                    var cell  = new HexCell(coord, _hexSize);
+
+                    if (_watchtowerPositions.Contains(coord))
+                        cell.CellType = CellType.Watchtower;
+
                     _cells[coord] = cell;
 
                     if (_hexCellPrefab != null)
@@ -72,21 +73,19 @@ namespace TacticalRPG.Grid
         public void ClearVisuals()
         {
             Transform parent = _gridParent != null ? _gridParent : transform;
-            // Mevcut tüm child görsel objelerini sil
             for (int i = parent.childCount - 1; i >= 0; i--)
                 DestroyImmediate(parent.GetChild(i).gameObject);
 
-            if (_cells != null)
-                _cells.Clear();
+            _cells?.Clear();
         }
 
         private void SpawnVisual(HexCell cell)
         {
-            Transform parent = _gridParent != null ? _gridParent : transform;
-            GameObject go = Instantiate(_hexCellPrefab, cell.WorldPosition, Quaternion.identity, parent);
-            go.name = $"Hex_{cell.Coordinate}";
-            cell.Visual       = go;
-            cell.MeshRenderer = go.GetComponent<MeshRenderer>();
+            Transform  parent = _gridParent != null ? _gridParent : transform;
+            GameObject go     = Instantiate(_hexCellPrefab, cell.WorldPosition, Quaternion.identity, parent);
+            go.name            = $"Hex_{cell.Coordinate}";
+            cell.Visual        = go;
+            cell.MeshRenderer  = go.GetComponent<MeshRenderer>();
         }
 
         // ── Sorgulama API'si ──────────────────────────────────────────────
@@ -102,8 +101,8 @@ namespace TacticalRPG.Grid
             var neighbors = new List<HexCell>(6);
             for (int i = 0; i < 6; i++)
             {
-                HexCoordinate neighborCoord = coord.GetNeighbor(i);
-                if (_cells.TryGetValue(neighborCoord, out HexCell neighbor))
+                HexCoordinate n = coord.GetNeighbor(i);
+                if (_cells.TryGetValue(n, out HexCell neighbor))
                     neighbors.Add(neighbor);
             }
             return neighbors;
@@ -118,17 +117,17 @@ namespace TacticalRPG.Grid
 
         private static HexCoordinate RoundHex(float q, float r)
         {
-            float s = -q - r;
-            int rq = Mathf.RoundToInt(q);
-            int rr = Mathf.RoundToInt(r);
-            int rs = Mathf.RoundToInt(s);
+            float s  = -q - r;
+            int   rq = Mathf.RoundToInt(q);
+            int   rr = Mathf.RoundToInt(r);
+            int   rs = Mathf.RoundToInt(s);
 
             float dq = Mathf.Abs(rq - q);
             float dr = Mathf.Abs(rr - r);
             float ds = Mathf.Abs(rs - s);
 
             if (dq > dr && dq > ds) rq = -rr - rs;
-            else if (dr > ds) rr = -rq - rs;
+            else if (dr > ds)       rr = -rq - rs;
 
             return new HexCoordinate(rq, rr);
         }
