@@ -85,7 +85,8 @@ namespace TacticalRPG.Grid
             Transform parent = _gridParent != null ? _gridParent : transform;
             GameObject go = Instantiate(_hexCellPrefab, cell.WorldPosition, Quaternion.identity, parent);
             go.name = $"Hex_{cell.Coordinate}";
-            cell.Visual = go;
+            cell.Visual       = go;
+            cell.MeshRenderer = go.GetComponent<MeshRenderer>();
         }
 
         // ── Sorgulama API'si ──────────────────────────────────────────────

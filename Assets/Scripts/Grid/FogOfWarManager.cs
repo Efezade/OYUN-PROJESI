@@ -3,11 +3,9 @@ using UnityEngine;
 
 namespace TacticalRPG.Grid
 {
-    public enum FogState { Hidden, Explored, Visible }
-
     /// <summary>
-    /// Her hex karosunun görünürlük durumunu tutar ve görsel materyali günceller.
-    /// Başlangıçta tüm harita Hidden durumundadır.
+    /// Hex karolarının görünürlük durumunu yönetir.
+    /// FogState artık HexCell'de tutulur; bu sınıf sadece mantığı uygular.
     /// </summary>
     public class FogOfWarManager : MonoBehaviour
     {
@@ -19,8 +17,6 @@ namespace TacticalRPG.Grid
         [SerializeField] private Material _exploredMaterial;
         [SerializeField] private Material _visibleMaterial;
 
-        private Dictionary<HexCoordinate, FogState> _fogStates;
-
         private void Start()
         {
             InitializeFog();
@@ -28,45 +24,42 @@ namespace TacticalRPG.Grid
 
         private void InitializeFog()
         {
-            _fogStates = new Dictionary<HexCoordinate, FogState>(_gridManager.Cells.Count);
-
-            foreach (var kvp in _gridManager.Cells)
+            foreach (var cell in _gridManager.Cells.Values)
             {
-                _fogStates[kvp.Key] = FogState.Hidden;
-                ApplyFogVisual(kvp.Value, FogState.Hidden);
+                cell.FogState = FogState.Hidden;
+                ApplyFogVisual(cell);
             }
         }
 
         // ── Genel API ────────────────────────────────────────────────────
 
         /// <summary>
-        /// Belirtilen koordinat etrafında visionRange yarıçaplı alanı açar.
-        /// Önceki Visible karolar Explored'a düşer (kalıcı hafıza).
+        /// Belirtilen merkez etrafında visionRange adımlık alanı Visible yapar.
+        /// Önceden Visible olan karolar Explored'a (kalıcı keşif) düşer.
         /// </summary>
         public void RevealArea(HexCoordinate origin, int visionRange)
         {
-            // Önceki Visible → Explored
-            foreach (HexCoordinate coord in new List<HexCoordinate>(_fogStates.Keys))
+            foreach (var cell in _gridManager.Cells.Values)
             {
-                if (_fogStates[coord] == FogState.Visible)
+                if (cell.FogState == FogState.Visible)
                 {
-                    _fogStates[coord] = FogState.Explored;
-                    if (_gridManager.TryGetCell(coord, out HexCell cell))
-                        ApplyFogVisual(cell, FogState.Explored);
+                    cell.FogState = FogState.Explored;
+                    ApplyFogVisual(cell);
                 }
             }
 
-            // origin etrafındaki karoları Visible yap
-            foreach (HexCoordinate coord in GetCoordsInRange(origin, visionRange))
+            foreach (var coord in GetCoordsInRange(origin, visionRange))
             {
-                _fogStates[coord] = FogState.Visible;
                 if (_gridManager.TryGetCell(coord, out HexCell cell))
-                    ApplyFogVisual(cell, FogState.Visible);
+                {
+                    cell.FogState = FogState.Visible;
+                    ApplyFogVisual(cell);
+                }
             }
         }
 
         public FogState GetFogState(HexCoordinate coord) =>
-            _fogStates.TryGetValue(coord, out FogState state) ? state : FogState.Hidden;
+            _gridManager.TryGetCell(coord, out HexCell c) ? c.FogState : FogState.Hidden;
 
         public bool IsVisible(HexCoordinate coord) =>
             GetFogState(coord) == FogState.Visible;
@@ -76,7 +69,6 @@ namespace TacticalRPG.Grid
 
         // ── Yardımcı metodlar ─────────────────────────────────────────────
 
-        // Axial range ile merkez dahil tüm koordinatları döner
         private List<HexCoordinate> GetCoordsInRange(HexCoordinate origin, int range)
         {
             var result = new List<HexCoordinate>();
@@ -94,14 +86,12 @@ namespace TacticalRPG.Grid
             return result;
         }
 
-        private void ApplyFogVisual(HexCell cell, FogState state)
+        // HexCell'deki MeshRenderer referansını doğrudan kullanır — GetComponent çağrısı yok
+        private void ApplyFogVisual(HexCell cell)
         {
-            if (cell.Visual == null) return;
+            if (cell.MeshRenderer == null) return;
 
-            Renderer rend = cell.Visual.GetComponent<Renderer>();
-            if (rend == null) return;
-
-            rend.material = state switch
+            cell.MeshRenderer.sharedMaterial = cell.FogState switch
             {
                 FogState.Hidden   => _hiddenMaterial,
                 FogState.Explored => _exploredMaterial,

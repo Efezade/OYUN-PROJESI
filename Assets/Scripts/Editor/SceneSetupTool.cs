@@ -109,7 +109,7 @@ namespace TacticalRPG.Editor
         // MENÜ: Faz 1.1 — HexGrid + FogOfWar
         // ─────────────────────────────────────────────────────────────────────
 
-        [MenuItem("TacticalRPG/Faz 1.1 — HexGrid ve FogOfWar")]
+        [MenuItem("TacticalRPG/Faz 1.1 - Hex Haritayi Kur")]
         public static void SetupPhase1()
         {
             // Yalnızca sistem kökünü temizle; Faz 0 kamerasına dokunma
@@ -210,20 +210,34 @@ namespace TacticalRPG.Editor
             return mat;
         }
 
+        private static Mesh GetOrCreateHexMesh()
+        {
+            string meshPath = "Assets/Art/Meshes/HexMesh.asset";
+            EnsureFolder("Assets/Art/Meshes");
+
+            // Her seferinde yeniden üret — HexMetrics değişirse güncel kalsın
+            AssetDatabase.DeleteAsset(meshPath);
+            Mesh mesh = HexMetrics.CreateHexMesh(0.95f);
+            AssetDatabase.CreateAsset(mesh, meshPath);
+            return mesh;
+        }
+
         private static GameObject GetOrCreateHexCellPrefab(Material defaultMat)
         {
             string path = $"{PrefabsGridPath}/HexCell.prefab";
-            GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (existing != null) return existing;
 
-            GameObject cylinder = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            cylinder.name = "HexCell";
-            cylinder.transform.localScale = new Vector3(1.5f, 0.05f, 1.5f);
-            cylinder.GetComponent<Renderer>().sharedMaterial = defaultMat;
-            Object.DestroyImmediate(cylinder.GetComponent<CapsuleCollider>());
+            Mesh hexMesh = GetOrCreateHexMesh();
 
-            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(cylinder, path);
-            Object.DestroyImmediate(cylinder);
+            // Her seferinde prosedürel hex mesh ile yeniden oluştur
+            GameObject go = new GameObject("HexCell");
+            MeshFilter mf = go.AddComponent<MeshFilter>();
+            mf.sharedMesh = hexMesh;
+            MeshRenderer mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = defaultMat;
+
+            // PrefabUtility.SaveAsPrefabAsset varsa üzerine yazar
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
+            Object.DestroyImmediate(go);
             return prefab;
         }
 

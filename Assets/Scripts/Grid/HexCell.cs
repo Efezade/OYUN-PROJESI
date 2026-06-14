@@ -2,22 +2,28 @@ using UnityEngine;
 
 namespace TacticalRPG.Grid
 {
+    public enum FogState { Hidden, Explored, Visible }
+
     /// <summary>
     /// Hex haritasındaki tek bir karonun veri modeli.
-    /// MonoBehaviour değil; HexGridManager tarafından yönetilir.
+    /// FogState doğrudan burada tutulur; FogOfWarManager ayrı Dictionary kullanmaz.
     /// </summary>
     public class HexCell
     {
-        public HexCoordinate Coordinate { get; }
-        public Vector3 WorldPosition { get; }
-        public bool IsWalkable { get; set; } = true;
+        public HexCoordinate Coordinate    { get; }
+        public Vector3       WorldPosition { get; }
+        public bool          IsWalkable    { get; set; } = true;
 
-        // Inspector'dan [SerializeField] ile atanan prefab'ın runtime kopyası
-        public GameObject Visual { get; set; }
+        // Fog durumu — başlangıç değeri Hidden
+        public FogState FogState { get; set; } = FogState.Hidden;
+
+        // Görsel bileşen referansları — SpawnVisual tarafından doldurulur
+        public GameObject   Visual       { get; set; }
+        public MeshRenderer MeshRenderer { get; set; }
 
         public HexCell(HexCoordinate coordinate, float hexSize)
         {
-            Coordinate = coordinate;
+            Coordinate    = coordinate;
             WorldPosition = coordinate.ToWorldPosition(hexSize);
         }
     }
