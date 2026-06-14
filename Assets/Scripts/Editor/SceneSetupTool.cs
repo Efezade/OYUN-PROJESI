@@ -11,43 +11,50 @@ namespace TacticalRPG.Editor
     /// </summary>
     public static class SceneSetupTool
     {
-        private const string MaterialsPath = "Assets/Art/Materials";
+        private const string MaterialsPath   = "Assets/Art/Materials";
         private const string PrefabsGridPath = "Assets/Prefabs/Grid";
+        private const string RootName        = "[TacticalRPG_Systems]";
 
         [MenuItem("TacticalRPG/Faz 1.1 — Sahne Kurulumunu Yap")]
         public static void SetupPhase1Scene()
         {
-            // Klasör yapısını hazırla
+            // ── 1. Temizlik: önceki kurulumu sıfırla ─────────────────────
+            CleanupExistingSetup();
+
+            // ── 2. Klasör yapısını hazırla ────────────────────────────────
             EnsureFolder("Assets/Art");
             EnsureFolder(MaterialsPath);
             EnsureFolder("Assets/Prefabs");
             EnsureFolder(PrefabsGridPath);
 
-            // Fog of War materyalleri (URP Unlit — düz renk placeholder)
+            // ── 3. Asset'leri oluştur ─────────────────────────────────────
             Material hiddenMat   = GetOrCreateUnlitMaterial("FogHidden",   Color.black);
             Material exploredMat = GetOrCreateUnlitMaterial("FogExplored", new Color(0.25f, 0.25f, 0.25f));
             Material visibleMat  = GetOrCreateUnlitMaterial("FogVisible",  Color.white);
-
-            // Hex hücre prefab'ı (Cylinder — ince disk)
             GameObject hexCellPrefab = GetOrCreateHexCellPrefab(visibleMat);
 
-            // ── HexGridManager GameObject ──────────────────────────────────
+            // ── 4. Ana parent ─────────────────────────────────────────────
+            GameObject rootGO = new GameObject(RootName);
+
+            // ── 5. HexGridManager ─────────────────────────────────────────
             GameObject gridGO = new GameObject("HexGridManager");
+            gridGO.transform.SetParent(rootGO.transform);
             HexGridManager gridManager = gridGO.AddComponent<HexGridManager>();
 
             GameObject gridParentGO = new GameObject("HexGrid_Visuals");
             gridParentGO.transform.SetParent(gridGO.transform);
 
             var gridSO = new SerializedObject(gridManager);
-            gridSO.FindProperty("_hexCellPrefab").objectReferenceValue  = hexCellPrefab;
-            gridSO.FindProperty("_gridParent").objectReferenceValue      = gridParentGO.transform;
-            gridSO.FindProperty("_width").intValue                       = 10;
-            gridSO.FindProperty("_height").intValue                      = 10;
-            gridSO.FindProperty("_hexSize").floatValue                   = 1f;
+            gridSO.FindProperty("_hexCellPrefab").objectReferenceValue = hexCellPrefab;
+            gridSO.FindProperty("_gridParent").objectReferenceValue    = gridParentGO.transform;
+            gridSO.FindProperty("_width").intValue                     = 10;
+            gridSO.FindProperty("_height").intValue                    = 10;
+            gridSO.FindProperty("_hexSize").floatValue                 = 1f;
             gridSO.ApplyModifiedProperties();
 
-            // ── FogOfWarManager GameObject ────────────────────────────────
+            // ── 6. FogOfWarManager ────────────────────────────────────────
             GameObject fogGO = new GameObject("FogOfWarManager");
+            fogGO.transform.SetParent(rootGO.transform);
             FogOfWarManager fogManager = fogGO.AddComponent<FogOfWarManager>();
 
             var fogSO = new SerializedObject(fogManager);
@@ -57,23 +64,33 @@ namespace TacticalRPG.Editor
             fogSO.FindProperty("_visibleMaterial").objectReferenceValue  = visibleMat;
             fogSO.ApplyModifiedProperties();
 
-            // Sahneyi kaydet
+            // ── 7. Kaydet ─────────────────────────────────────────────────
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log("[TacticalRPG] Faz 1.1 kurulumu tamamlandi. Play'e basarak test edebilirsin.");
+            Debug.Log($"[TacticalRPG] Faz 1.1 kurulumu tamamlandi. '{RootName}' altinda hazir.");
             EditorUtility.DisplayDialog(
                 "Kurulum Tamamlandi!",
-                "Sahnede olusturuldu:\n" +
+                $"'{RootName}' altinda olusturuldu:\n" +
                 "  • HexGridManager (10x10 grid, hexSize=1)\n" +
                 "  • FogOfWarManager (Hidden/Explored/Visible)\n" +
                 "  • Prefabs/Grid/HexCell.prefab\n" +
                 "  • Art/Materials/ (3 fog materyali)\n\n" +
                 "Play'e bas — tum karolar siyah baslar.\n" +
-                "Kod ile RevealArea() cagirarak test et.",
+                "Araci tekrar calistirirsan onceki kurulum otomatik silinir.",
                 "Tamam"
             );
+        }
+
+        private static void CleanupExistingSetup()
+        {
+            GameObject existing = GameObject.Find(RootName);
+            if (existing != null)
+            {
+                Object.DestroyImmediate(existing);
+                Debug.Log($"[TacticalRPG] Eski '{RootName}' temizlendi.");
+            }
         }
 
         // ── Yardımcı Metodlar ─────────────────────────────────────────────
