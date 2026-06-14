@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Rendering.Universal;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using TMPro;
@@ -141,11 +142,17 @@ namespace TacticalRPG.Editor
 
             Camera cam = cameraGO.AddComponent<Camera>();
             cam.orthographic     = true;
-            cam.orthographicSize = 8f;       // grid (~13.5 birim yüksek) ekranın %84'ünü doldurur
+            cam.orthographicSize = 8f;
             cam.nearClipPlane    = 0.1f;
             cam.farClipPlane     = 150f;
             cam.clearFlags       = CameraClearFlags.SolidColor;
-            cam.backgroundColor  = new Color(0.04f, 0.03f, 0.07f); // koyu mor — hidden tilelerden belirgin farklı
+            cam.backgroundColor  = new Color(0.04f, 0.03f, 0.07f);
+
+            // URP için zorunlu — bu olmadan URP materyalleri render edilmez
+            var urpData = cameraGO.AddComponent<UniversalAdditionalCameraData>();
+            urpData.renderShadows        = false;
+            urpData.requiresColorTexture = false;
+            urpData.requiresDepthTexture = false;
 
             cameraGO.AddComponent<AudioListener>();
 
