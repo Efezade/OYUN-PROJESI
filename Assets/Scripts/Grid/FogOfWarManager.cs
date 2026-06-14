@@ -7,6 +7,7 @@ namespace TacticalRPG.Grid
     /// Hex karolarının görünürlük durumunu yönetir.
     /// FogState artık HexCell'de tutulur; bu sınıf sadece mantığı uygular.
     /// </summary>
+    [DefaultExecutionOrder(-50)] // HexGridManager'dan sonra, PlayerController'dan önce
     public class FogOfWarManager : MonoBehaviour
     {
         [Header("Bağımlılık")]
@@ -17,7 +18,8 @@ namespace TacticalRPG.Grid
         [SerializeField] private Material _exploredMaterial;
         [SerializeField] private Material _visibleMaterial;
 
-        private void Start()
+        // Awake'de çalışır: HexGridManager(-100) bittikten, PlayerController(0) başlamadan önce
+        private void Awake()
         {
             InitializeFog();
         }

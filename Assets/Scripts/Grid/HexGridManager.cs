@@ -7,6 +7,7 @@ namespace TacticalRPG.Grid
     /// Offset-r (odd-r) düzeninde dikdörtgen hex haritası oluşturur ve yönetir.
     /// Axial koordinat (q,r) birincil anahtar. GenerateGrid() Edit modunda da çalışır.
     /// </summary>
+    [DefaultExecutionOrder(-100)] // FogOfWarManager ve PlayerController'dan önce çalışır
     public class HexGridManager : MonoBehaviour
     {
         [Header("Grid Boyutu")]

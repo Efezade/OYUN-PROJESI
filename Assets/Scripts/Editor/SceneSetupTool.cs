@@ -123,7 +123,7 @@ namespace TacticalRPG.Editor
             EnsureFolder(PrefabsGridPath);
 
             // Asset'ler
-            Material hiddenMat   = GetOrCreateUnlitMaterial("FogHidden",   Color.black);
+            Material hiddenMat   = GetOrCreateUnlitMaterial("FogHidden",   new Color(0.12f, 0.12f, 0.15f)); // Koyu gri-mavi: grid şekli seçilebilir
             Material exploredMat = GetOrCreateUnlitMaterial("FogExplored", new Color(0.25f, 0.25f, 0.25f));
             Material visibleMat  = GetOrCreateUnlitMaterial("FogVisible",  Color.white);
             GameObject hexCellPrefab = GetOrCreateHexCellPrefab(visibleMat);
@@ -241,9 +241,9 @@ namespace TacticalRPG.Editor
             playerSO.FindProperty("_heightOffset").floatValue           = 0.15f;
             playerSO.FindProperty("_visionRange").intValue              = 3;
             playerSO.FindProperty("_watchtowerRevealRange").intValue    = 5;
-            // Başlangıç: grid sol alt köşesi (0, 0) axial
-            playerSO.FindProperty("_startCoord").FindPropertyRelative("Q").intValue = 0;
-            playerSO.FindProperty("_startCoord").FindPropertyRelative("R").intValue = 0;
+            // Başlangıç: grid merkezi ~ (3,4) → world(8.66, 0, 6.0) — kamera (7.8,50,6.75) ile hizalı
+            playerSO.FindProperty("_startCoord").FindPropertyRelative("Q").intValue = 3;
+            playerSO.FindProperty("_startCoord").FindPropertyRelative("R").intValue = 4;
             playerSO.ApplyModifiedProperties();
 
             // ── 3. MapInputHandler — GameManager objesine ekle ────────────────
