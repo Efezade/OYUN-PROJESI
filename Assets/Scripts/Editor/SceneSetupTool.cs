@@ -35,6 +35,30 @@ namespace TacticalRPG.Editor
         // MENÜ: TANI — Sahne durumunu logla
         // ─────────────────────────────────────────────────────────────────────
 
+        [MenuItem("TacticalRPG/TEST - Tum Karolari Beyaz Yap (Play modunda)")]
+        public static void ForceAllVisible()
+        {
+            // Play modunda çalıştır — tüm karoları beyaz yapar, fog devre dışı
+            HexGridManager grid = FindComponentAnywhere<HexGridManager>();
+            if (grid == null || grid.Cells == null)
+            {
+                Debug.LogError("[TEST] HexGridManager bulunamadı veya grid boş! Önce Play'e bas.");
+                return;
+            }
+
+            int count = 0;
+            foreach (var cell in grid.Cells.Values)
+            {
+                if (cell.MeshRenderer != null)
+                {
+                    // Beyaz inline materyal — shader sorununu da bypass eder
+                    cell.MeshRenderer.material.color = Color.white;
+                    count++;
+                }
+            }
+            Debug.Log($"[TEST] {count} karonun rengi beyaza çevrildi. Ekranda görüntü var mı?");
+        }
+
         [MenuItem("TacticalRPG/TANI - Sahne Kontrolu (Console a Bak)")]
         public static void DiagnoseScene()
         {
