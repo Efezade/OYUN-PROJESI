@@ -1,8 +1,11 @@
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using TMPro;
 using TacticalRPG.Grid;
 using TacticalRPG.Core;
+using TacticalRPG.UI;
 
 namespace TacticalRPG.Editor
 {
@@ -433,6 +436,139 @@ namespace TacticalRPG.Editor
                 "  • Oyuncu konumu ve Watchtower'lar korunur\n\n" +
                 "Hafta 1 TAMAMLANDI! Hafta 2'ye gecmek icin hazir.",
                 "Tamam");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // MENÜ: Debug HUD — Gün / AP / Kıyamet etiketi
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/Debug HUD - Ekle")]
+        public static void SetupDebugHUD()
+        {
+            ActionPointManager  apManager      = FindComponentAnywhere<ActionPointManager>();
+            MapCollapseManager  collapseManager = FindComponentAnywhere<MapCollapseManager>();
+
+            if (apManager == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "ActionPointManager bulunamadı!\nÖnce Faz 1.4'ü çalıştırın.", "Tamam");
+                return;
+            }
+
+            // Varsa eski HUD canvas'ını temizle
+            GameObject oldCanvas = GameObject.Find("DebugHUD_Canvas");
+            if (oldCanvas != null) Object.DestroyImmediate(oldCanvas);
+
+            // ── Canvas ────────────────────────────────────────────────────────
+            GameObject canvasGO = new GameObject("DebugHUD_Canvas", typeof(RectTransform));
+            GameObject sceneRoot = GameObject.Find(SceneRootName);
+            if (sceneRoot != null) canvasGO.transform.SetParent(sceneRoot.transform);
+
+            Canvas canvas = canvasGO.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 10;
+
+            CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+            scaler.matchWidthOrHeight  = 0.5f;
+
+            canvasGO.AddComponent<GraphicRaycaster>();
+
+            // ── Etiketler ─────────────────────────────────────────────────────
+            // Gün / Zaman dilimi — sol üst
+            TextMeshProUGUI timeLabel = CreateTMPLabel(
+                parent       : canvasGO.transform,
+                name         : "Label_Time",
+                text         : "Gün 1  ·  Sabah",
+                anchorMin    : new Vector2(0f, 1f),
+                anchorMax    : new Vector2(0f, 1f),
+                pivot        : new Vector2(0f, 1f),
+                anchoredPos  : new Vector2(20f, -20f),
+                sizeDelta    : new Vector2(400f, 50f),
+                color        : Color.white,
+                fontSize     : 28f
+            );
+
+            // AP çubuğu — zaman etiketinin altında
+            TextMeshProUGUI apLabel = CreateTMPLabel(
+                parent       : canvasGO.transform,
+                name         : "Label_AP",
+                text         : "AP  ■■■  3/3",
+                anchorMin    : new Vector2(0f, 1f),
+                anchorMax    : new Vector2(0f, 1f),
+                pivot        : new Vector2(0f, 1f),
+                anchoredPos  : new Vector2(20f, -78f),
+                sizeDelta    : new Vector2(400f, 44f),
+                color        : new Color(1f, 0.85f, 0.2f), // Altın sarısı
+                fontSize     : 24f
+            );
+
+            // Kıyamet uyarısı — AP'nin altında, kırmızı, başta gizli
+            TextMeshProUGUI collapseLabel = CreateTMPLabel(
+                parent       : canvasGO.transform,
+                name         : "Label_Collapse",
+                text         : "HARITA ÇÖKÜYOR",
+                anchorMin    : new Vector2(0f, 1f),
+                anchorMax    : new Vector2(0f, 1f),
+                pivot        : new Vector2(0f, 1f),
+                anchoredPos  : new Vector2(20f, -130f),
+                sizeDelta    : new Vector2(500f, 44f),
+                color        : new Color(1f, 0.25f, 0.15f), // Kırmızı
+                fontSize     : 22f
+            );
+            collapseLabel.gameObject.SetActive(false);
+
+            // ── DebugHUD bileşeni ─────────────────────────────────────────────
+            DebugHUD hud = canvasGO.AddComponent<DebugHUD>();
+            var hudSO = new SerializedObject(hud);
+            hudSO.FindProperty("_apManager").objectReferenceValue      = apManager;
+            hudSO.FindProperty("_collapseManager").objectReferenceValue = collapseManager;
+            hudSO.FindProperty("_timeLabel").objectReferenceValue       = timeLabel;
+            hudSO.FindProperty("_apLabel").objectReferenceValue         = apLabel;
+            hudSO.FindProperty("_collapseLabel").objectReferenceValue   = collapseLabel;
+            hudSO.ApplyModifiedProperties();
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            AssetDatabase.SaveAssets();
+
+            Debug.Log("[TacticalRPG] Debug HUD kuruldu.");
+            EditorUtility.DisplayDialog(
+                "Debug HUD Hazır!",
+                "Sol üstte şunlar görünecek:\n\n" +
+                "  Gün 1  ·  Sabah          (beyaz)\n" +
+                "  AP  ■■■  3/3             (altın sarısı)\n" +
+                "  HARITA ÇÖKÜYOR           (kırmızı, Gün 4'te açılır)\n\n" +
+                "Play'e bas — her adımda AP değişir,\n" +
+                "3 adımda zaman dilimi geçer.",
+                "Tamam");
+        }
+
+        private static TextMeshProUGUI CreateTMPLabel(
+            Transform parent, string name, string text,
+            Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot,
+            Vector2 anchoredPos, Vector2 sizeDelta,
+            Color color, float fontSize)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin        = anchorMin;
+            rt.anchorMax        = anchorMax;
+            rt.pivot            = pivot;
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta        = sizeDelta;
+
+            var tmp = go.AddComponent<TextMeshProUGUI>();
+            tmp.text               = text;
+            tmp.fontSize           = fontSize;
+            tmp.color              = color;
+            tmp.fontStyle          = FontStyles.Bold;
+            tmp.enableWordWrapping = false;
+            tmp.overflowMode       = TextOverflowModes.Overflow;
+
+            return tmp;
         }
 
         private static T FindComponentAnywhere<T>() where T : UnityEngine.Component
