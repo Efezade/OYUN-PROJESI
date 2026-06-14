@@ -6,72 +6,147 @@ using TacticalRPG.Grid;
 namespace TacticalRPG.Editor
 {
     /// <summary>
-    /// Faz 1.1 sahne kurulumunu tek tıklamayla otomatikleştirir.
-    /// Menü: TacticalRPG > Faz 1.1 — Sahne Kurulumunu Yap
+    /// TacticalRPG sahne kurulum araçları.
+    ///
+    /// Önerilen çalıştırma sırası:
+    ///   1. "0 — Sahneyi Tamamen Temizle"
+    ///   2. "Faz 0 — Temel Sahne Ogeleri"
+    ///   3. "Faz 1.1 — HexGrid ve FogOfWar"
     /// </summary>
     public static class SceneSetupTool
     {
+        // Her fazın sahiplendiği kök obje adı
+        private const string SceneRootName   = "[TacticalRPG_Scene]";
+        private const string SystemsRootName = "[TacticalRPG_Systems]";
+
         private const string MaterialsPath   = "Assets/Art/Materials";
         private const string PrefabsGridPath = "Assets/Prefabs/Grid";
-        private const string RootName        = "[TacticalRPG_Systems]";
 
-        [MenuItem("TacticalRPG/0 — Sahneyi Temizle (Once Calistir)")]
-        public static void CleanupScene()
+        // ─────────────────────────────────────────────────────────────────────
+        // MENÜ: 0 — Tüm sahneyi temizle
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/0 — Sahneyi Tamamen Temizle")]
+        public static void CleanupAll()
         {
-            GameObject existing = GameObject.Find(RootName);
-            if (existing != null)
-            {
-                Object.DestroyImmediate(existing);
-                EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-                Debug.Log($"[TacticalRPG] '{RootName}' sahneden silindi.");
-                EditorUtility.DisplayDialog("Temizlik Tamamlandi", $"'{RootName}' ve tum alt objeleri sahneden kaldirildi.\n\nSimdi Faz 1.1 kurulumunu calistiabilirsin.", "Tamam");
-            }
+            bool foundAny = false;
+            foundAny |= DestroyRoot(SceneRootName);
+            foundAny |= DestroyRoot(SystemsRootName);
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+
+            if (foundAny)
+                EditorUtility.DisplayDialog("Temizlik Tamam",
+                    "Tum TacticalRPG objeleri sahneden silindi.\n\nArtik Faz 0'dan baslayabilirsin.",
+                    "Tamam");
             else
-            {
-                EditorUtility.DisplayDialog("Temizlenecek Sey Yok", $"Sahnede '{RootName}' bulunamadi.\nDogrudan Faz 1.1 kurulumunu calistirabilirsin.", "Tamam");
-            }
+                EditorUtility.DisplayDialog("Temizlenecek Sey Yok",
+                    "Sahnede TacticalRPG objesi bulunamadi.",
+                    "Tamam");
         }
 
-        [MenuItem("TacticalRPG/Faz 1.1 — Sahne Kurulumunu Yap")]
-        public static void SetupPhase1Scene()
-        {
-            // ── 1. Temizlik: önceki kurulumu sıfırla ─────────────────────
-            CleanupExistingSetup();
+        // ─────────────────────────────────────────────────────────────────────
+        // MENÜ: Faz 0 — Temel sahne ögeleri
+        // ─────────────────────────────────────────────────────────────────────
 
-            // ── 2. Klasör yapısını hazırla ────────────────────────────────
+        [MenuItem("TacticalRPG/Faz 0 — Temel Sahne Ogeleri (Kamera, Isik, GameManager)")]
+        public static void SetupPhase0()
+        {
+            // Önceki Faz 0 kurulumunu temizle (Faz 1 dokunulmaz)
+            DestroyRoot(SceneRootName);
+
+            GameObject root = new GameObject(SceneRootName);
+
+            // ── Ana Kamera (top-down, ortografik) ────────────────────────────
+            GameObject cameraGO = new GameObject("Main Camera");
+            cameraGO.tag = "MainCamera";
+            cameraGO.transform.SetParent(root.transform);
+            cameraGO.transform.position = new Vector3(0f, 100f, 0f);
+            cameraGO.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+
+            Camera cam = cameraGO.AddComponent<Camera>();
+            cam.orthographic     = true;
+            cam.orthographicSize = 8f;       // ~16 hex karo dikey görüş
+            cam.nearClipPlane    = 0.1f;
+            cam.farClipPlane     = 200f;
+            cam.clearFlags       = CameraClearFlags.SolidColor;
+            cam.backgroundColor  = new Color(0.1f, 0.1f, 0.1f);
+
+            cameraGO.AddComponent<AudioListener>();
+
+            // ── Directional Light ─────────────────────────────────────────────
+            GameObject lightGO = new GameObject("Directional Light");
+            lightGO.transform.SetParent(root.transform);
+            lightGO.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
+
+            Light light = lightGO.AddComponent<Light>();
+            light.type      = LightType.Directional;
+            light.intensity = 2f;
+            light.color     = Color.white;
+
+            // ── GameManager ───────────────────────────────────────────────────
+            GameObject gmGO = new GameObject("GameManager");
+            gmGO.transform.SetParent(root.transform);
+            gmGO.transform.position = Vector3.zero;
+
+            // ── Kaydet ────────────────────────────────────────────────────────
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+
+            Debug.Log($"[TacticalRPG] Faz 0 tamamlandi. '{SceneRootName}' olusturuldu.");
+            EditorUtility.DisplayDialog(
+                "Faz 0 Tamamlandi!",
+                $"'{SceneRootName}' altinda olusturuldu:\n\n" +
+                "  • Main Camera  — ortografik, Y=100, X rot=90°\n" +
+                "  • Directional Light  — intensity=2\n" +
+                "  • GameManager  — bos, hazir\n\n" +
+                "Simdi Faz 1.1'i calistirabilirsin.",
+                "Tamam");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // MENÜ: Faz 1.1 — HexGrid + FogOfWar
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/Faz 1.1 — HexGrid ve FogOfWar")]
+        public static void SetupPhase1()
+        {
+            // Yalnızca sistem kökünü temizle; Faz 0 kamerasına dokunma
+            DestroyRoot(SystemsRootName);
+
+            // Klasörler
             EnsureFolder("Assets/Art");
             EnsureFolder(MaterialsPath);
             EnsureFolder("Assets/Prefabs");
             EnsureFolder(PrefabsGridPath);
 
-            // ── 3. Asset'leri oluştur ─────────────────────────────────────
+            // Asset'ler
             Material hiddenMat   = GetOrCreateUnlitMaterial("FogHidden",   Color.black);
             Material exploredMat = GetOrCreateUnlitMaterial("FogExplored", new Color(0.25f, 0.25f, 0.25f));
             Material visibleMat  = GetOrCreateUnlitMaterial("FogVisible",  Color.white);
             GameObject hexCellPrefab = GetOrCreateHexCellPrefab(visibleMat);
 
-            // ── 4. Ana parent ─────────────────────────────────────────────
-            GameObject rootGO = new GameObject(RootName);
+            // Kök
+            GameObject root = new GameObject(SystemsRootName);
 
-            // ── 5. HexGridManager ─────────────────────────────────────────
+            // ── HexGridManager ────────────────────────────────────────────────
             GameObject gridGO = new GameObject("HexGridManager");
-            gridGO.transform.SetParent(rootGO.transform);
+            gridGO.transform.SetParent(root.transform);
             HexGridManager gridManager = gridGO.AddComponent<HexGridManager>();
 
-            GameObject gridParentGO = new GameObject("HexGrid_Visuals");
-            gridParentGO.transform.SetParent(gridGO.transform);
+            GameObject gridVisualsGO = new GameObject("HexGrid_Visuals");
+            gridVisualsGO.transform.SetParent(gridGO.transform);
 
             var gridSO = new SerializedObject(gridManager);
             gridSO.FindProperty("_hexCellPrefab").objectReferenceValue = hexCellPrefab;
-            gridSO.FindProperty("_gridParent").objectReferenceValue    = gridParentGO.transform;
+            gridSO.FindProperty("_gridParent").objectReferenceValue    = gridVisualsGO.transform;
             gridSO.FindProperty("_width").intValue                     = 10;
             gridSO.FindProperty("_height").intValue                    = 10;
             gridSO.FindProperty("_hexSize").floatValue                 = 1f;
             gridSO.ApplyModifiedProperties();
 
-            // ── 6. FogOfWarManager ────────────────────────────────────────
+            // ── FogOfWarManager ───────────────────────────────────────────────
             GameObject fogGO = new GameObject("FogOfWarManager");
-            fogGO.transform.SetParent(rootGO.transform);
+            fogGO.transform.SetParent(root.transform);
             FogOfWarManager fogManager = fogGO.AddComponent<FogOfWarManager>();
 
             var fogSO = new SerializedObject(fogManager);
@@ -81,41 +156,39 @@ namespace TacticalRPG.Editor
             fogSO.FindProperty("_visibleMaterial").objectReferenceValue  = visibleMat;
             fogSO.ApplyModifiedProperties();
 
-            // ── 7. Kaydet ─────────────────────────────────────────────────
+            // Kaydet
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log($"[TacticalRPG] Faz 1.1 kurulumu tamamlandi. '{RootName}' altinda hazir.");
+            Debug.Log($"[TacticalRPG] Faz 1.1 tamamlandi. '{SystemsRootName}' hazir.");
             EditorUtility.DisplayDialog(
-                "Kurulum Tamamlandi!",
-                $"'{RootName}' altinda olusturuldu:\n" +
-                "  • HexGridManager (10x10 grid, hexSize=1)\n" +
-                "  • FogOfWarManager (Hidden/Explored/Visible)\n" +
+                "Faz 1.1 Tamamlandi!",
+                $"'{SystemsRootName}' altinda olusturuldu:\n\n" +
+                "  • HexGridManager  — 10x10, hexSize=1\n" +
+                "  • FogOfWarManager  — Hidden / Explored / Visible\n" +
                 "  • Prefabs/Grid/HexCell.prefab\n" +
-                "  • Art/Materials/ (3 fog materyali)\n\n" +
-                "Play'e bas — tum karolar siyah baslar.\n" +
-                "Araci tekrar calistirirsan onceki kurulum otomatik silinir.",
-                "Tamam"
-            );
+                "  • Art/Materials/ (3 materyal)\n\n" +
+                "Play'e bas — tum karolar siyah baslar.",
+                "Tamam");
         }
 
-        private static void CleanupExistingSetup()
+        // ─────────────────────────────────────────────────────────────────────
+        // Yardımcı metodlar
+        // ─────────────────────────────────────────────────────────────────────
+
+        private static bool DestroyRoot(string rootName)
         {
-            GameObject existing = GameObject.Find(RootName);
-            if (existing != null)
-            {
-                Object.DestroyImmediate(existing);
-                Debug.Log($"[TacticalRPG] Eski '{RootName}' temizlendi.");
-            }
+            GameObject go = GameObject.Find(rootName);
+            if (go == null) return false;
+            Object.DestroyImmediate(go);
+            Debug.Log($"[TacticalRPG] '{rootName}' sahneden silindi.");
+            return true;
         }
-
-        // ── Yardımcı Metodlar ─────────────────────────────────────────────
 
         private static Material GetOrCreateUnlitMaterial(string assetName, Color color)
         {
             string path = $"{MaterialsPath}/{assetName}.mat";
-
             Material mat = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (mat != null)
             {
@@ -124,11 +197,8 @@ namespace TacticalRPG.Editor
                 return mat;
             }
 
-            // URP projelerde Unlit/Color yoktur; Universal Render Pipeline/Unlit kullan
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null)
-                shader = Shader.Find("Unlit/Color");
-
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
+                         ?? Shader.Find("Unlit/Color");
             mat = new Material(shader) { color = color };
             AssetDatabase.CreateAsset(mat, path);
             return mat;
@@ -137,20 +207,13 @@ namespace TacticalRPG.Editor
         private static GameObject GetOrCreateHexCellPrefab(Material defaultMat)
         {
             string path = $"{PrefabsGridPath}/HexCell.prefab";
-
             GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (existing != null) return existing;
 
-            // Cylinder: ince disk — hexSize=1 için komşu merkez mesafesi sqrt(3)≈1.73
-            // Çap 1.5 → her yanda ~0.12 birim boşluk bırakır
             GameObject cylinder = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             cylinder.name = "HexCell";
             cylinder.transform.localScale = new Vector3(1.5f, 0.05f, 1.5f);
-
-            // Placeholder materyal ata
             cylinder.GetComponent<Renderer>().sharedMaterial = defaultMat;
-
-            // Capsule Collider kaldır (grid tıklama için ayrı raycast katmanı kullanılacak)
             Object.DestroyImmediate(cylinder.GetComponent<CapsuleCollider>());
 
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(cylinder, path);
@@ -161,7 +224,6 @@ namespace TacticalRPG.Editor
         private static void EnsureFolder(string path)
         {
             if (AssetDatabase.IsValidFolder(path)) return;
-
             string parent = System.IO.Path.GetDirectoryName(path)?.Replace('\\', '/');
             string folderName = System.IO.Path.GetFileName(path);
             if (parent != null)
