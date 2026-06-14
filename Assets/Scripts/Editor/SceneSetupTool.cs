@@ -287,6 +287,76 @@ namespace TacticalRPG.Editor
         }
 
         // ─────────────────────────────────────────────────────────────────────
+        // MENÜ: Faz 1.4 — AP + Zaman Motoru
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/Faz 1.4 - AP ve Zaman Motoru")]
+        public static void SetupPhase14()
+        {
+            GameObject systemsRoot = GameObject.Find(SystemsRootName);
+            if (systemsRoot == null)
+            {
+                EditorUtility.DisplayDialog("Hata", "Once 'Faz 1.1' ve 'Faz 1.3' calistirin!", "Tamam");
+                return;
+            }
+
+            PlayerController player = systemsRoot.GetComponentInChildren<PlayerController>();
+            if (player == null)
+            {
+                EditorUtility.DisplayDialog("Hata", "PlayerController bulunamadi! Once Faz 1.3 calistirin.", "Tamam");
+                return;
+            }
+
+            // ── TimeSlotConfig ScriptableObject asset ──────────────────────
+            EnsureFolder("Assets/Data");
+            EnsureFolder("Assets/Data/Config");
+            const string configPath = "Assets/Data/Config/TimeSlotConfig.asset";
+            TimeSlotConfig config = AssetDatabase.LoadAssetAtPath<TimeSlotConfig>(configPath);
+            if (config == null)
+            {
+                config = ScriptableObject.CreateInstance<TimeSlotConfig>();
+                AssetDatabase.CreateAsset(config, configPath);
+            }
+
+            // ── ActionPointManager — GameManager objesine ekle ─────────────
+            GameObject sceneRoot    = GameObject.Find(SceneRootName);
+            GameObject gameManagerGO = sceneRoot != null
+                ? sceneRoot.transform.Find("GameManager")?.gameObject
+                : systemsRoot.transform.Find("GameManager")?.gameObject;
+
+            if (gameManagerGO == null)
+            {
+                gameManagerGO = new GameObject("GameManager");
+                gameManagerGO.transform.SetParent(systemsRoot.transform);
+            }
+
+            var existingAP = gameManagerGO.GetComponent<ActionPointManager>();
+            if (existingAP != null) Object.DestroyImmediate(existingAP);
+
+            ActionPointManager apManager = gameManagerGO.AddComponent<ActionPointManager>();
+            var apSO = new SerializedObject(apManager);
+            apSO.FindProperty("_player").objectReferenceValue  = player;
+            apSO.FindProperty("_config").objectReferenceValue  = config;
+            apSO.ApplyModifiedProperties();
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            Debug.Log("[TacticalRPG] Faz 1.4 tamamlandi.");
+            EditorUtility.DisplayDialog(
+                "Faz 1.4 Tamamlandi!",
+                "AP + Zaman Motoru aktif:\n\n" +
+                "  • ActionPointManager — GameManager'a eklendi\n" +
+                "  • TimeSlotConfig SO — Assets/Data/Config/\n" +
+                "  • 3 AP = 1 zaman dilimi\n" +
+                "  • 6 dilim = 1 gün\n\n" +
+                "Console'da 'Gün X | Dilim' loglarını izle.\n" +
+                "Faz 1.5 ile Kıyamet Sayacı eklenecek.",
+                "Tamam");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // Yardımcı metodlar
         // ─────────────────────────────────────────────────────────────────────
 
