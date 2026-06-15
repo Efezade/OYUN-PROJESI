@@ -6,6 +6,7 @@ using UnityEditor.SceneManagement;
 using TMPro;
 using TacticalRPG.Grid;
 using TacticalRPG.Core;
+using TacticalRPG.Data;
 using TacticalRPG.UI;
 
 namespace TacticalRPG.Editor
@@ -34,6 +35,195 @@ namespace TacticalRPG.Editor
         // ─────────────────────────────────────────────────────────────────────
         // MENÜ: TANI — Sahne durumunu logla
         // ─────────────────────────────────────────────────────────────────────
+
+        // ─────────────────────────────────────────────────────────────────────
+        // MENÜ: Faz 2.1 — Karakter Sistemi + Öz Ekonomisi + Kam Mana
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/Faz 2.1 - Karakter Sistemi ve Oz Ekonomisi")]
+        public static void SetupPhase21()
+        {
+            GameObject systemsRoot = GameObject.Find(SystemsRootName);
+            GameObject sceneRoot   = GameObject.Find(SceneRootName);
+            if (systemsRoot == null)
+            {
+                EditorUtility.DisplayDialog("Hata", "Önce Faz 1.1–1.5'i çalıştırın!", "Tamam");
+                return;
+            }
+
+            ActionPointManager apManager = FindComponentAnywhere<ActionPointManager>();
+            if (apManager == null)
+            {
+                EditorUtility.DisplayDialog("Hata", "ActionPointManager bulunamadı! Faz 1.4'ü çalıştırın.", "Tamam");
+                return;
+            }
+
+            // ── SO Klasörleri ─────────────────────────────────────────────────
+            EnsureFolder("Assets/Data");
+            EnsureFolder("Assets/Data/Characters");
+
+            // ── 3 Karakter SO oluştur ─────────────────────────────────────────
+            CharacterClassData kamData = GetOrCreateCharacterSO(
+                path      : "Assets/Data/Characters/Kam.asset",
+                className : "Kam",
+                lore      : "Kadim büyü bilgeliği ile donanmış gizemli şaman. Öz ve mana arasındaki köprü.",
+                maxHP     : 8,
+                attack    : 4,
+                defense   : 1,
+                moveRange : 3,
+                essenceCosts    : new[] { 0, 5, 12 },
+                hpMult          : new[] { 1f, 1.25f, 1.6f },
+                atkMult         : new[] { 1f, 1.3f,  1.7f },
+                defMult         : new[] { 1f, 1.1f,  1.3f },
+                hasMana         : true,
+                maxMana         : 10);
+
+            CharacterClassData warriorData = GetOrCreateCharacterSO(
+                path      : "Assets/Data/Characters/Savascı.asset",
+                className : "Savaşçı",
+                lore      : "Kılıç ustası. Ön saflarda durur, darbeleri göğüsler.",
+                maxHP     : 14,
+                attack    : 5,
+                defense   : 3,
+                moveRange : 3,
+                essenceCosts    : new[] { 0, 6, 14 },
+                hpMult          : new[] { 1f, 1.35f, 1.75f },
+                atkMult         : new[] { 1f, 1.2f,  1.5f  },
+                defMult         : new[] { 1f, 1.25f, 1.6f  },
+                hasMana         : false,
+                maxMana         : 0);
+
+            CharacterClassData rangerData = GetOrCreateCharacterSO(
+                path      : "Assets/Data/Characters/Ranger.asset",
+                className : "Ranger",
+                lore      : "Uzak mesafe uzmanı. Görünmez olur, ince stratejiler kurar.",
+                maxHP     : 10,
+                attack    : 6,
+                defense   : 1,
+                moveRange : 4,
+                essenceCosts    : new[] { 0, 5, 11 },
+                hpMult          : new[] { 1f, 1.2f,  1.55f },
+                atkMult         : new[] { 1f, 1.25f, 1.6f  },
+                defMult         : new[] { 1f, 1.1f,  1.25f },
+                hasMana         : false,
+                maxMana         : 0);
+
+            // ── GameManager objesi ────────────────────────────────────────────
+            GameObject gameManagerGO = sceneRoot != null
+                ? sceneRoot.transform.Find("GameManager")?.gameObject
+                : systemsRoot.transform.Find("GameManager")?.gameObject;
+
+            if (gameManagerGO == null)
+            {
+                gameManagerGO = new GameObject("GameManager");
+                gameManagerGO.transform.SetParent(systemsRoot.transform);
+            }
+
+            // ── EssenceManager ────────────────────────────────────────────────
+            var existingEM = gameManagerGO.GetComponent<EssenceManager>();
+            if (existingEM != null) Object.DestroyImmediate(existingEM);
+
+            EssenceManager essManager = gameManagerGO.AddComponent<EssenceManager>();
+            var emSO = new SerializedObject(essManager);
+            emSO.FindProperty("_startingEssence").intValue = 0;
+            emSO.FindProperty("_maxEssence").intValue      = 99;
+            emSO.ApplyModifiedProperties();
+
+            // ── PartyManager ──────────────────────────────────────────────────
+            var existingPM = gameManagerGO.GetComponent<PartyManager>();
+            if (existingPM != null) Object.DestroyImmediate(existingPM);
+
+            PartyManager partyManager = gameManagerGO.AddComponent<PartyManager>();
+            var pmSO = new SerializedObject(partyManager);
+            pmSO.FindProperty("_essenceManager").objectReferenceValue = essManager;
+            var classList = pmSO.FindProperty("_startingClasses");
+            classList.ClearArray();
+            classList.arraySize = 3;
+            classList.GetArrayElementAtIndex(0).objectReferenceValue = kamData;
+            classList.GetArrayElementAtIndex(1).objectReferenceValue = warriorData;
+            classList.GetArrayElementAtIndex(2).objectReferenceValue = rangerData;
+            pmSO.ApplyModifiedProperties();
+
+            // ── KamManaManager ────────────────────────────────────────────────
+            var existingKam = gameManagerGO.GetComponent<KamManaManager>();
+            if (existingKam != null) Object.DestroyImmediate(existingKam);
+
+            KamManaManager kamMana = gameManagerGO.AddComponent<KamManaManager>();
+            var kamSO = new SerializedObject(kamMana);
+            kamSO.FindProperty("_apManager").objectReferenceValue = apManager;
+            kamSO.FindProperty("_maxMana").intValue               = 10;
+            kamSO.FindProperty("_manaRegenPerSlot").intValue      = 2;
+            kamSO.ApplyModifiedProperties();
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            Debug.Log("[TacticalRPG] Faz 2.1 tamamlandı.");
+            EditorUtility.DisplayDialog(
+                "Faz 2.1 Tamamlandı! — Karakter Sistemi",
+                "Oluşturulanlar:\n\n" +
+                "  • Kam (8 HP, 10 mana, büyücü)\n" +
+                "  • Savaşçı (14 HP, 3 zırh, tank)\n" +
+                "  • Ranger (10 HP, 6 atak, hız4)\n" +
+                "  • EssenceManager — öz ekonomisi\n" +
+                "  • PartyManager — parti yönetimi\n" +
+                "  • KamManaManager — 10 mana, +2/dilim regen\n\n" +
+                "Assets/Data/Characters/ klasöründe 3 SO var.\n" +
+                "Console'da 'EssenceManager.Gain(5)' ile öz test edebilirsin.",
+                "Tamam");
+        }
+
+        private static CharacterClassData GetOrCreateCharacterSO(
+            string path, string className, string lore,
+            int maxHP, int attack, int defense, int moveRange,
+            int[] essenceCosts, float[] hpMult, float[] atkMult, float[] defMult,
+            bool hasMana, int maxMana)
+        {
+            CharacterClassData so = AssetDatabase.LoadAssetAtPath<CharacterClassData>(path);
+            if (so == null)
+            {
+                so = ScriptableObject.CreateInstance<CharacterClassData>();
+                AssetDatabase.CreateAsset(so, path);
+            }
+
+            var s = new SerializedObject(so);
+            s.FindProperty("_className").stringValue = className;
+            s.FindProperty("_lore").stringValue      = lore;
+            s.FindProperty("_maxHP").intValue        = maxHP;
+            s.FindProperty("_attack").intValue       = attack;
+            s.FindProperty("_defense").intValue      = defense;
+            s.FindProperty("_moveRange").intValue    = moveRange;
+            s.FindProperty("_hasManaSystem").boolValue = hasMana;
+            s.FindProperty("_maxMana").intValue        = maxMana;
+
+            SetIntArray(s,   "_essenceCostPerLevel",   essenceCosts);
+            SetFloatArray(s, "_hpMultiplierPerLevel",  hpMult);
+            SetFloatArray(s, "_atkMultiplierPerLevel", atkMult);
+            SetFloatArray(s, "_defMultiplierPerLevel", defMult);
+
+            s.ApplyModifiedProperties();
+            EditorUtility.SetDirty(so);
+            return so;
+        }
+
+        private static void SetIntArray(SerializedObject so, string propName, int[] values)
+        {
+            var prop = so.FindProperty(propName);
+            prop.ClearArray();
+            prop.arraySize = values.Length;
+            for (int i = 0; i < values.Length; i++)
+                prop.GetArrayElementAtIndex(i).intValue = values[i];
+        }
+
+        private static void SetFloatArray(SerializedObject so, string propName, float[] values)
+        {
+            var prop = so.FindProperty(propName);
+            prop.ClearArray();
+            prop.arraySize = values.Length;
+            for (int i = 0; i < values.Length; i++)
+                prop.GetArrayElementAtIndex(i).floatValue = values[i];
+        }
 
         [MenuItem("TacticalRPG/FIX - Kamerayı URP ile Düzelt")]
         public static void FixCameraURP()
@@ -710,6 +900,8 @@ namespace TacticalRPG.Editor
         {
             ActionPointManager  apManager      = FindComponentAnywhere<ActionPointManager>();
             MapCollapseManager  collapseManager = FindComponentAnywhere<MapCollapseManager>();
+            EssenceManager      essManager      = FindComponentAnywhere<EssenceManager>();
+            KamManaManager      kamMana         = FindComponentAnywhere<KamManaManager>();
 
             if (apManager == null)
             {
@@ -728,7 +920,7 @@ namespace TacticalRPG.Editor
             if (sceneRoot != null) canvasGO.transform.SetParent(sceneRoot.transform);
 
             Canvas canvas = canvasGO.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 10;
 
             CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
@@ -738,73 +930,81 @@ namespace TacticalRPG.Editor
 
             canvasGO.AddComponent<GraphicRaycaster>();
 
-            // ── Etiketler ─────────────────────────────────────────────────────
-            // Gün / Zaman dilimi — sol üst
+            // ── Etiketler (sol üstten aşağı, 48px aralık) ────────────────────
+            float yStart  = -20f;
+            float yStep   = -48f;
+            int   row     = 0;
+
             TextMeshProUGUI timeLabel = CreateTMPLabel(
-                parent       : canvasGO.transform,
-                name         : "Label_Time",
-                text         : "Gün 1  ·  Sabah",
-                anchorMin    : new Vector2(0f, 1f),
-                anchorMax    : new Vector2(0f, 1f),
-                pivot        : new Vector2(0f, 1f),
-                anchoredPos  : new Vector2(20f, -20f),
-                sizeDelta    : new Vector2(400f, 50f),
-                color        : Color.white,
-                fontSize     : 28f
-            );
+                canvasGO.transform, "Label_Time", "Gün 1  ·  Sabah",
+                new Vector2(20f, yStart + yStep * row++), new Vector2(400f, 46f),
+                Color.white, 28f);
 
-            // AP çubuğu — zaman etiketinin altında
             TextMeshProUGUI apLabel = CreateTMPLabel(
-                parent       : canvasGO.transform,
-                name         : "Label_AP",
-                text         : "AP  ■■■  3/3",
-                anchorMin    : new Vector2(0f, 1f),
-                anchorMax    : new Vector2(0f, 1f),
-                pivot        : new Vector2(0f, 1f),
-                anchoredPos  : new Vector2(20f, -78f),
-                sizeDelta    : new Vector2(400f, 44f),
-                color        : new Color(1f, 0.85f, 0.2f), // Altın sarısı
-                fontSize     : 24f
-            );
+                canvasGO.transform, "Label_AP", "AP  ■■■  3/3",
+                new Vector2(20f, yStart + yStep * row++), new Vector2(400f, 44f),
+                new Color(1f, 0.85f, 0.2f), 24f);
 
-            // Kıyamet uyarısı — AP'nin altında, kırmızı, başta gizli
+            TextMeshProUGUI essLabel = CreateTMPLabel(
+                canvasGO.transform, "Label_Essence", "Öz  0",
+                new Vector2(20f, yStart + yStep * row++), new Vector2(300f, 40f),
+                new Color(0.6f, 1f, 0.6f), 22f); // Açık yeşil
+
+            TextMeshProUGUI manaLabel = null;
+            if (kamMana != null)
+            {
+                manaLabel = CreateTMPLabel(
+                    canvasGO.transform, "Label_KamMana", "Mana  ◆◆◆◆◆◆◆◆◆◆  10/10",
+                    new Vector2(20f, yStart + yStep * row++), new Vector2(500f, 40f),
+                    new Color(0.5f, 0.8f, 1f), 20f); // Açık mavi
+            }
+            else row++; // boşluk koru
+
             TextMeshProUGUI collapseLabel = CreateTMPLabel(
-                parent       : canvasGO.transform,
-                name         : "Label_Collapse",
-                text         : "HARITA ÇÖKÜYOR",
-                anchorMin    : new Vector2(0f, 1f),
-                anchorMax    : new Vector2(0f, 1f),
-                pivot        : new Vector2(0f, 1f),
-                anchoredPos  : new Vector2(20f, -130f),
-                sizeDelta    : new Vector2(500f, 44f),
-                color        : new Color(1f, 0.25f, 0.15f), // Kırmızı
-                fontSize     : 22f
-            );
+                canvasGO.transform, "Label_Collapse", "HARITA ÇÖKÜYOR",
+                new Vector2(20f, yStart + yStep * row), new Vector2(500f, 44f),
+                new Color(1f, 0.25f, 0.15f), 22f);
             collapseLabel.gameObject.SetActive(false);
 
             // ── DebugHUD bileşeni ─────────────────────────────────────────────
             DebugHUD hud = canvasGO.AddComponent<DebugHUD>();
             var hudSO = new SerializedObject(hud);
-            hudSO.FindProperty("_apManager").objectReferenceValue      = apManager;
+            hudSO.FindProperty("_apManager").objectReferenceValue       = apManager;
             hudSO.FindProperty("_collapseManager").objectReferenceValue = collapseManager;
+            hudSO.FindProperty("_essenceManager").objectReferenceValue  = essManager;
+            hudSO.FindProperty("_kamMana").objectReferenceValue         = kamMana;
             hudSO.FindProperty("_timeLabel").objectReferenceValue       = timeLabel;
             hudSO.FindProperty("_apLabel").objectReferenceValue         = apLabel;
+            hudSO.FindProperty("_essenceLabel").objectReferenceValue    = essLabel;
+            hudSO.FindProperty("_kamManaLabel").objectReferenceValue    = manaLabel;
             hudSO.FindProperty("_collapseLabel").objectReferenceValue   = collapseLabel;
             hudSO.ApplyModifiedProperties();
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             AssetDatabase.SaveAssets();
 
-            Debug.Log("[TacticalRPG] Debug HUD kuruldu.");
+            bool hasEcon = essManager != null;
+            Debug.Log($"[TacticalRPG] Debug HUD kuruldu. Öz={hasEcon} KamMana={kamMana != null}");
             EditorUtility.DisplayDialog(
                 "Debug HUD Hazır!",
                 "Sol üstte şunlar görünecek:\n\n" +
                 "  Gün 1  ·  Sabah          (beyaz)\n" +
                 "  AP  ■■■  3/3             (altın sarısı)\n" +
-                "  HARITA ÇÖKÜYOR           (kırmızı, Gün 4'te açılır)\n\n" +
-                "Play'e bas — her adımda AP değişir,\n" +
-                "3 adımda zaman dilimi geçer.",
+                "  Öz  0                    (yeşil)" +
+                (kamMana != null ? "\n  Mana  ◆◆◆…  10/10     (mavi)\n" : "\n") +
+                "  HARITA ÇÖKÜYOR           (kırmızı, Gün 4'te)\n\n" +
+                "Faz 2.1 çalıştırmadıysan Öz/Mana boş görünür — normal.",
                 "Tamam");
+        }
+
+        // Sol-üst anchor sabitlenmiş basit overload (Faz 2 HUD için)
+        private static TextMeshProUGUI CreateTMPLabel(
+            Transform parent, string name, string text,
+            Vector2 anchoredPos, Vector2 sizeDelta, Color color, float fontSize)
+        {
+            return CreateTMPLabel(parent, name, text,
+                new Vector2(0f,1f), new Vector2(0f,1f), new Vector2(0f,1f),
+                anchoredPos, sizeDelta, color, fontSize);
         }
 
         private static TextMeshProUGUI CreateTMPLabel(
