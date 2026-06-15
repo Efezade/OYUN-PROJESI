@@ -25,6 +25,7 @@ namespace TacticalRPG.Grid
         [SerializeField] private List<HexCoordinate> _watchtowerPositions = new();
 
         private Dictionary<HexCoordinate, HexCell> _cells;
+        private bool _meshFallbackWarned;
 
         public IReadOnlyDictionary<HexCoordinate, HexCell> Cells    => _cells;
         public float HexSize => _hexSize;
@@ -89,15 +90,38 @@ namespace TacticalRPG.Grid
             if (_hexCellPrefab != null)
             {
                 go = Instantiate(_hexCellPrefab, cell.WorldPosition, Quaternion.identity, parent);
+
+                // Prefab mesh referansı kırıksa (GUID değişimi) anında düzelt
+                var mf = go.GetComponent<MeshFilter>();
+                if (mf != null && mf.sharedMesh == null)
+                {
+                    if (!_meshFallbackWarned)
+                    {
+                        Debug.LogWarning("[HexGridManager] Prefab mesh null — prosedürel fallback aktif. Faz 1.1'i yeniden çalıştırarak düzeltebilirsin.");
+                        _meshFallbackWarned = true;
+                    }
+                    Mesh fresh = HexMetrics.CreateHexMesh(0.95f);
+                    mf.sharedMesh = fresh;
+                    var mc = go.GetComponent<MeshCollider>();
+                    if (mc != null) mc.sharedMesh = fresh;
+                }
             }
             else
             {
-                // Fallback: düz silindir (görülebilir placeholder)
-                go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                // Tamamen prefabsız fallback — her şeyi sıfırdan yarat
+                go = new GameObject();
                 go.transform.SetParent(parent);
-                go.transform.position   = cell.WorldPosition;
-                go.transform.localScale = new Vector3(0.9f, 0.05f, 0.9f);
-                // Collider kalır — raycast çalışır
+                go.transform.position = cell.WorldPosition;
+
+                var mf2 = go.AddComponent<MeshFilter>();
+                mf2.sharedMesh = HexMetrics.CreateHexMesh(0.95f);
+
+                var mr2 = go.AddComponent<MeshRenderer>();
+                mr2.sharedMaterial = new Material(
+                    Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Standard"));
+
+                var mc2 = go.AddComponent<MeshCollider>();
+                mc2.sharedMesh = mf2.sharedMesh;
             }
 
             go.name           = $"Hex_{cell.Coordinate}";

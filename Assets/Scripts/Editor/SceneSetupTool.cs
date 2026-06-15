@@ -112,7 +112,15 @@ namespace TacticalRPG.Editor
 
             // 2. Kamera
             Camera cam = Camera.main;
-            Debug.Log($"[TANI] Camera.main: {(cam != null ? $"VAR — orthoSize={cam.orthographicSize}, pos={cam.transform.position}" : "YOK")}");
+            if (cam != null)
+            {
+                var urpComp = cam.gameObject.GetComponent<UniversalAdditionalCameraData>();
+                Debug.Log($"[TANI] Camera: pos={cam.transform.position} rot={cam.transform.eulerAngles} " +
+                          $"ortho={cam.orthographic} size={cam.orthographicSize} " +
+                          $"near={cam.nearClipPlane} far={cam.farClipPlane} " +
+                          $"URP={urpComp != null} cullingMask={cam.cullingMask}");
+            }
+            else Debug.LogError("[TANI] Camera.main YOK!");
 
             if (systemsRoot == null) { Debug.LogError("[TANI] SystemsRoot YOK — Faz 1.1 çalıştırılmadı!"); return; }
 
@@ -123,12 +131,22 @@ namespace TacticalRPG.Editor
             {
                 var cellCount = grid.Cells?.Count ?? -1;
                 Debug.Log($"[TANI] Hücre sayısı: {cellCount}  (beklenen: 100)");
+
                 if (grid.Cells != null && grid.Cells.Count > 0)
                 {
-                    int nullMR = 0, hidden = 0, explored = 0, visible = 0;
+                    int nullMR = 0, nullMesh = 0, disabledMR = 0, nullMat = 0;
+                    int hidden = 0, explored = 0, visible = 0;
+
                     foreach (var c in grid.Cells.Values)
                     {
-                        if (c.MeshRenderer == null) nullMR++;
+                        var mr = c.MeshRenderer;
+                        if (mr == null) { nullMR++; continue; }
+                        if (!mr.enabled) disabledMR++;
+                        if (mr.sharedMaterial == null) nullMat++;
+
+                        var mf = c.Visual?.GetComponent<MeshFilter>();
+                        if (mf != null && mf.sharedMesh == null) nullMesh++;
+
                         switch (c.FogState)
                         {
                             case FogState.Hidden:   hidden++;   break;
@@ -136,10 +154,30 @@ namespace TacticalRPG.Editor
                             case FogState.Visible:  visible++;  break;
                         }
                     }
-                    Debug.Log($"[TANI] MeshRenderer null: {nullMR} / {cellCount}");
+                    Debug.Log($"[TANI] MeshRenderer null:{nullMR}  disabled:{disabledMR}  nullMat:{nullMat}  nullMesh:{nullMesh}");
                     Debug.Log($"[TANI] FogState → Hidden:{hidden}  Explored:{explored}  Visible:{visible}");
+
+                    if (nullMR > 0)
+                        Debug.LogError($"[TANI] KRİTİK: {nullMR} karonun MeshRenderer'ı NULL! → 'FIX - Karolari Yenile' çalıştır!");
+                    if (nullMesh > 0)
+                        Debug.LogError($"[TANI] KRİTİK: {nullMesh} karonun mesh referansı NULL (prefab GUID kırık)! → 'FIX - Karolari Yenile' çalıştır!");
                     if (visible == 0)
-                        Debug.LogWarning("[TANI] SORUN: Visible karo yok! RevealArea çalışmadı veya PlayerController init edilmedi.");
+                        Debug.LogWarning("[TANI] SORUN: Visible karo yok! RevealArea çalışmadı.");
+                }
+
+                // Hex_0_0 detay incelemesi
+                var firstCoord = new HexCoordinate(0, 0);
+                if (grid.TryGetCell(firstCoord, out HexCell firstCell))
+                {
+                    var mf = firstCell.Visual?.GetComponent<MeshFilter>();
+                    var mr = firstCell.MeshRenderer;
+                    Debug.Log($"[TANI] Hex(0,0) detay: " +
+                              $"Visual={firstCell.Visual != null} " +
+                              $"MR={mr != null} " +
+                              $"MR.enabled={mr?.enabled} " +
+                              $"mesh={(mf?.sharedMesh != null ? mf.sharedMesh.name : "NULL")} " +
+                              $"mat={(mr?.sharedMaterial != null ? mr.sharedMaterial.name : "NULL")} " +
+                              $"layer={firstCell.Visual?.layer}");
                 }
             }
 
@@ -155,13 +193,98 @@ namespace TacticalRPG.Editor
             MapInputHandler input = FindComponentAnywhere<MapInputHandler>();
             Debug.Log($"[TANI] MapInputHandler: {(input != null ? "VAR" : "YOK")}");
 
-            // 7. HexCell prefab alt obje sayısı
+            // 7. HexGrid_Visuals alt obje sayısı
             Transform gridParent = grid != null ? grid.transform.Find("HexGrid_Visuals") : null;
             int childCount = gridParent != null ? gridParent.childCount : -1;
-            Debug.Log($"[TANI] HexGrid_Visuals alt obje: {childCount}  (beklenen: 0 — Play modunda dinamik üretilir, Edit modunda 100)");
+            Debug.Log($"[TANI] HexGrid_Visuals alt obje: {childCount}");
 
             Debug.Log("========== TANI BİTTİ ==========");
-            EditorUtility.DisplayDialog("Tanı tamamlandı", "Console sekmesine bak — sarı/kırmızı mesajlar sorunu gösterir.", "Tamam");
+            EditorUtility.DisplayDialog("Tanı tamamlandı",
+                "Console sekmesine bak:\n\n" +
+                "Kırmızı = kritik sorun\n" +
+                "Sarı = uyarı\n\n" +
+                "Hex(0,0) detayı kritik — mesh ve material durumunu gösterir.",
+                "Tamam");
+        }
+
+        [MenuItem("TacticalRPG/FIX - Karolari Yenile (Play modunda)")]
+        public static void FixHexTiles()
+        {
+            if (!Application.isPlaying)
+            {
+                EditorUtility.DisplayDialog("Hata", "Bu araç yalnızca PLAY modunda çalışır!\nPlay'e bas, sonra tekrar çalıştır.", "Tamam");
+                return;
+            }
+
+            HexGridManager grid = FindComponentAnywhere<HexGridManager>();
+            if (grid == null || grid.Cells == null)
+            {
+                Debug.LogError("[FIX] HexGridManager veya Cells bulunamadı!");
+                return;
+            }
+
+            Shader urpShader = Shader.Find("Universal Render Pipeline/Unlit")
+                            ?? Shader.Find("Unlit/Color")
+                            ?? Shader.Find("Standard");
+
+            // Renk tanımları
+            Material hiddenMat   = new Material(urpShader); hiddenMat.color = new Color(0.22f, 0.18f, 0.28f);
+            Material exploredMat = new Material(urpShader); exploredMat.color = new Color(0.25f, 0.25f, 0.25f);
+            Material visibleMat  = new Material(urpShader); visibleMat.color = Color.white;
+
+            if (hiddenMat.HasProperty("_BaseColor"))
+            {
+                hiddenMat.SetColor("_BaseColor",   new Color(0.22f, 0.18f, 0.28f));
+                exploredMat.SetColor("_BaseColor", new Color(0.25f, 0.25f, 0.25f));
+                visibleMat.SetColor("_BaseColor",  Color.white);
+            }
+
+            int rebuilt = 0;
+            Transform parent = grid.transform.Find("HexGrid_Visuals") ?? grid.transform;
+
+            foreach (var cell in grid.Cells.Values)
+            {
+                bool needsRebuild = cell.Visual == null
+                                 || cell.MeshRenderer == null
+                                 || !cell.MeshRenderer.enabled
+                                 || cell.Visual.GetComponent<MeshFilter>()?.sharedMesh == null;
+
+                if (!needsRebuild) continue;
+
+                // Eski Visual temizle
+                if (cell.Visual != null) Object.Destroy(cell.Visual);
+
+                // Yeni prosedürel hex tile yarat
+                var go = new GameObject($"Hex_{cell.Coordinate}");
+                go.transform.SetParent(parent);
+                go.transform.position = cell.WorldPosition;
+
+                var mf = go.AddComponent<MeshFilter>();
+                mf.sharedMesh = HexMetrics.CreateHexMesh(0.95f);
+
+                var mr = go.AddComponent<MeshRenderer>();
+
+                var mc = go.AddComponent<MeshCollider>();
+                mc.sharedMesh = mf.sharedMesh;
+
+                cell.Visual       = go;
+                cell.MeshRenderer = mr;
+
+                // Fog durumuna göre materyal uygula
+                mr.sharedMaterial = cell.FogState switch
+                {
+                    FogState.Visible  => visibleMat,
+                    FogState.Explored => exploredMat,
+                    _                 => hiddenMat,
+                };
+                rebuilt++;
+            }
+
+            int total = grid.Cells.Count;
+            Debug.Log($"[FIX] {rebuilt}/{total} karo yeniden oluşturuldu. Ekranı kontrol et!");
+
+            if (rebuilt == 0)
+                Debug.Log("[FIX] Yeniden oluşturulacak karo yok — tüm MeshRenderer'lar geçerli. Sorun başka yerde.");
         }
 
         [MenuItem("TacticalRPG/0 — Sahneyi Tamamen Temizle")]
@@ -748,10 +871,8 @@ namespace TacticalRPG.Editor
                 AssetDatabase.CreateAsset(mat, path);
             }
 
-            // URP _BaseColor, legacy _Color — ikisini de set et
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
-            if (mat.HasProperty("_Color"))     mat.SetColor("_Color",     color);
-            mat.color = color; // fallback
+            else if (mat.HasProperty("_Color")) mat.SetColor("_Color",   color);
             EditorUtility.SetDirty(mat);
             return mat;
         }
