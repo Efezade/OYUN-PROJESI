@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 40f126292c1c4394c8c6c883cb065aff, type: 3}
-  m_Name: TileMap
+  m_Name: CombatTileMap
   m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.TileMapSO
-  defaultTileId: default
+  defaultTileId: kaya
   assignments: []
