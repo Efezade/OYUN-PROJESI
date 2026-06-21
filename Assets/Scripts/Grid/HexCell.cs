@@ -23,6 +23,11 @@ namespace TacticalRPG.Grid
         public GameObject   Visual       { get; set; }
         public MeshRenderer MeshRenderer { get; set; }
 
+        // Birimlerin üstünde duracağı yüzey yüksekliği (taban üstü, dünya birimi).
+        // SpawnVisual karoyu ürettiğinde ölçer; düz placeholder = TileHeight (0.3),
+        // köprü gibi yüksek karolar daha büyük. Engebe/yükseklik desteği bundan gelir.
+        public float SurfaceHeight { get; set; } = HexMetrics.TileHeight;
+
         public HexCell(HexCoordinate coordinate, float hexSize)
         {
             Coordinate    = coordinate;

@@ -55,8 +55,10 @@ namespace TacticalRPG.Core
         private void Start()
         {
             // Grid referansı varsa kendini koordinatına göre konumla.
+            // SurfaceHeight ile köprü/engebe karolarında yüzeyin üstüne oturur.
             if (_gridManager != null && _gridManager.TryGetCell(_coord, out HexCell cell))
-                transform.position = cell.WorldPosition + Vector3.up * _heightOffset;
+                transform.position = cell.WorldPosition
+                    + Vector3.up * (_heightOffset + cell.SurfaceHeight - HexMetrics.TileHeight);
         }
 
         // ── Etki API'si (AbilityCaster çağırır) ──────────────────────────────

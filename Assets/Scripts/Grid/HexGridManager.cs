@@ -155,6 +155,48 @@ namespace TacticalRPG.Grid
                 if (entry.prefab == null && cell.MeshRenderer != null)
                     ApplyTint(cell.MeshRenderer, entry.editorColor);
             }
+
+            // Birimlerin basacağı yüzey yüksekliğini belirle (engebe/köprü desteği).
+            cell.SurfaceHeight = ResolveSurfaceHeight(cell, go, entry);
+        }
+
+        // Birimin basacağı YÜRÜME yüzeyi yüksekliği (taban üstü). Karonun zirvesi değil:
+        // hücre MERKEZİNDEN aşağı ışın atılıp en üstteki yüzey bulunur → köprüde kenardaki
+        // korkuluk/kemer değil, ortadaki güverte yakalanır; karakterin ayağı güverteye basar.
+        private float ResolveSurfaceHeight(HexCell cell, GameObject go, TilePaletteSO.TileEntry entry)
+        {
+            // 1) Palette'te elle değer verildiyse onu kullan (tam kontrol).
+            if (entry != null && entry.surfaceHeightOverride > 0f)
+                return entry.surfaceHeightOverride;
+
+            // 2) Otomatik: hücre merkezinden aşağı ışın → en üstteki yürüme yüzeyi.
+            var cols = go.GetComponentsInChildren<Collider>();
+            if (cols.Length > 0)
+            {
+                Physics.SyncTransforms(); // editör/spawn anında transform'lar güncel olsun
+
+                float top = float.NegativeInfinity;
+                foreach (var c in cols) top = Mathf.Max(top, c.bounds.max.y);
+
+                var   origin  = new Vector3(cell.WorldPosition.x, top + 0.5f, cell.WorldPosition.z);
+                var   ray     = new Ray(origin, Vector3.down);
+                float maxDist = (top + 1f) - cell.WorldPosition.y;
+                float best    = float.NegativeInfinity;
+
+                foreach (var c in cols)
+                    if (c.Raycast(ray, out RaycastHit hit, maxDist))
+                        best = Mathf.Max(best, hit.point.y);
+
+                if (best > float.NegativeInfinity)
+                    return Mathf.Max(0.01f, best - cell.WorldPosition.y);
+            }
+
+            // 3) Fallback: collider yok / ışın ıskaladı → renderer bounds tepesi.
+            var rends = go.GetComponentsInChildren<Renderer>();
+            if (rends.Length == 0) return HexMetrics.TileHeight;
+            Bounds b = rends[0].bounds;
+            for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+            return Mathf.Max(0.01f, b.max.y - cell.WorldPosition.y);
         }
 
         private TilePaletteSO.TileEntry ResolveEntry(HexCoordinate coord)

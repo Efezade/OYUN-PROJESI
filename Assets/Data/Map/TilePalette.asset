@@ -58,3 +58,8 @@ MonoBehaviour:
     prefab: {fileID: 0}
     editorColor: {r: 0.9, g: 0.93, b: 0.96, a: 1}
     isWalkable: 1
+  - id: kopru
+    displayName: Kopru
+    prefab: {fileID: 764990509630898611, guid: 777997d8699fc5145ae5873a67c22c81, type: 3}
+    editorColor: {r: 0.55, g: 0.45, b: 0.35, a: 1}
+    isWalkable: 1

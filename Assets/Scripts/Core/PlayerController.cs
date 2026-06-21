@@ -18,8 +18,10 @@ namespace TacticalRPG.Core
         [SerializeField] private FogOfWarManager _fogManager;
 
         [Header("Hareket")]
-        [SerializeField] private float _moveSpeed    = 8f;
-        [SerializeField] private float _heightOffset = 0.15f;
+        [SerializeField] private float _moveSpeed     = 8f;
+        [SerializeField] private float _heightOffset  = 0.15f;
+        // Yüzey ışınının başladığı yükseklik (karoların üstünden aşağı bakar).
+        [SerializeField] private float _rayStartHeight = 50f;
 
         [Header("Görüş / Kule")]
         [SerializeField] private int _visionRange          = 3;
@@ -46,7 +48,7 @@ namespace TacticalRPG.Core
             CurrentCoord = startCoord;
 
             if (_gridManager.TryGetCell(startCoord, out HexCell cell))
-                transform.position = cell.WorldPosition + Vector3.up * _heightOffset;
+                transform.position = GroundedPosition(cell.WorldPosition, cell);
             else
                 Debug.LogWarning($"[PlayerController] Başlangıç koordinatı {startCoord} grid'de bulunamadı!");
 
@@ -65,17 +67,21 @@ namespace TacticalRPG.Core
 
             for (int i = 1; i < path.Count; i++)
             {
-                HexCell target    = path[i];
-                Vector3 targetPos = target.WorldPosition + Vector3.up * _heightOffset;
+                HexCell target   = path[i];
+                Vector3 targetXZ = target.WorldPosition; // hedef yatay konum (y=0)
 
-                while (Vector3.Distance(transform.position, targetPos) > 0.01f)
+                // Yatay olarak hedefe ilerle; Y'yi HER KARE yüzeyden ışınla al →
+                // engebe/köprü konturunu takip eder (kemerde çıkar, çukurda iner).
+                while (HorizontalSqrDistance(transform.position, targetXZ) > 0.0001f)
                 {
-                    transform.position = Vector3.MoveTowards(
-                        transform.position, targetPos, _moveSpeed * Time.deltaTime);
+                    Vector3 curXZ = new Vector3(transform.position.x, 0f, transform.position.z);
+                    Vector3 nextXZ = Vector3.MoveTowards(curXZ, targetXZ, _moveSpeed * Time.deltaTime);
+
+                    transform.position = GroundedPosition(nextXZ, target);
                     yield return null;
                 }
 
-                transform.position = targetPos;
+                transform.position = GroundedPosition(targetXZ, target);
                 CurrentCoord       = target.Coordinate;
 
                 _fogManager.RevealArea(CurrentCoord, _visionRange);
@@ -92,6 +98,39 @@ namespace TacticalRPG.Core
         {
             _fogManager.RevealArea(cell.Coordinate, _watchtowerRevealRange);
             Debug.Log($"[Player] Kule kesfedildi: {cell.Coordinate} — {_watchtowerRevealRange} menzillik alan acildi.");
+        }
+
+        // (x,z) konumunda yüzeyin üstüne oturmuş dünya pozisyonu.
+        // Yüzey Y'si ışınla bulunur → düz karoda sabit, köprü/engebede kontur takibi.
+        private Vector3 GroundedPosition(Vector3 xz, HexCell fallbackCell)
+        {
+            float fallback  = fallbackCell != null
+                            ? fallbackCell.WorldPosition.y + fallbackCell.SurfaceHeight
+                            : 0f;
+            float surfaceY  = SampleSurfaceY(xz.x, xz.z, fallback);
+            float clearance = _heightOffset - HexMetrics.TileHeight; // karakterin yüzeye göre ofseti
+            return new Vector3(xz.x, surfaceY + clearance, xz.z);
+        }
+
+        // (x,z)'de en üstteki karo yüzeyinin dünya Y'si. Karakterin kendi collider'ı atlanır.
+        private float SampleSurfaceY(float x, float z, float fallback)
+        {
+            Vector3 origin = new Vector3(x, _rayStartHeight, z);
+            var hits = Physics.RaycastAll(origin, Vector3.down, _rayStartHeight + 5f);
+
+            float best = float.NegativeInfinity;
+            for (int i = 0; i < hits.Length; i++)
+            {
+                if (hits[i].collider.transform.IsChildOf(transform)) continue; // kendini atla
+                if (hits[i].point.y > best) best = hits[i].point.y;
+            }
+            return best > float.NegativeInfinity ? best : fallback;
+        }
+
+        private static float HorizontalSqrDistance(Vector3 a, Vector3 b)
+        {
+            float dx = a.x - b.x, dz = a.z - b.z;
+            return dx * dx + dz * dz;
         }
     }
 }

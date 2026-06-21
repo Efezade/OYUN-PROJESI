@@ -19,6 +19,10 @@ namespace TacticalRPG.Data
             public GameObject prefab;
             public Color      editorColor = Color.gray;
             public bool       isWalkable  = true;
+
+            // Birimin basacağı yüzey yüksekliği (taban üstü). > 0 ise elle belirler;
+            // <= 0 (varsayılan) ise HexGridManager hücre merkezinden ışınla otomatik ölçer.
+            public float      surfaceHeightOverride = 0f;
         }
 
         public List<TileEntry> tiles = new();
