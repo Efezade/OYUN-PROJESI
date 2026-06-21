@@ -1,36 +1,37 @@
 using System.Collections.Generic;
 using UnityEngine;
+using TacticalRPG.Data;
 
 namespace TacticalRPG.Grid
 {
-    /// <summary>
-    /// Offset-r (odd-r) düzeninde dikdörtgen hex haritası oluşturur ve yönetir.
-    /// Axial koordinat (q,r) birincil anahtar. GenerateGrid() Edit modunda da çalışır.
-    /// </summary>
-    [DefaultExecutionOrder(-100)] // FogOfWarManager ve PlayerController'dan önce çalışır
+    [DefaultExecutionOrder(-100)]
     public class HexGridManager : MonoBehaviour
     {
         [Header("Grid Boyutu")]
-        [SerializeField] private int _width  = 10;
-        [SerializeField] private int _height = 10;
-
-        [Header("Hex Geometrisi")]
+        [SerializeField] private int   _width   = 10;
+        [SerializeField] private int   _height  = 10;
         [SerializeField] private float _hexSize = 1f;
 
-        [Header("Görsel (Placeholder)")]
+        [Header("Varsayılan Görsel (Palette boşsa kullanılır)")]
         [SerializeField] private GameObject _hexCellPrefab;
         [SerializeField] private Transform  _gridParent;
+
+        [Header("Karo Sistemi")]
+        [SerializeField] private TilePaletteSO _tilePalette;
+        [SerializeField] private TileMapSO     _tileMap;
 
         [Header("Harita Özellikleri")]
         [SerializeField] private List<HexCoordinate> _watchtowerPositions = new();
 
         private Dictionary<HexCoordinate, HexCell> _cells;
-        private bool _meshFallbackWarned;
 
-        public IReadOnlyDictionary<HexCoordinate, HexCell> Cells    => _cells;
-        public float HexSize => _hexSize;
-        public int   Width   => _width;
-        public int   Height  => _height;
+        public IReadOnlyDictionary<HexCoordinate, HexCell> Cells      => _cells;
+        public float                                        HexSize    => _hexSize;
+        public int                                          Width      => _width;
+        public int                                          Height     => _height;
+        public bool                                         HasCells   => _cells != null && _cells.Count > 0;
+        public TilePaletteSO                               TilePalette => _tilePalette;
+        public TileMapSO                                   TileMap     => _tileMap;
 
         public Vector3 GridCenter
         {
@@ -45,15 +46,12 @@ namespace TacticalRPG.Grid
 
         private void Awake() => GenerateGrid();
 
-        // ── Grid üretimi ──────────────────────────────────────────────────
+        // ── Grid üretimi ──────────────────────────────────────────────────────
 
         public void GenerateGrid()
         {
             ClearVisuals();
             _cells = new Dictionary<HexCoordinate, HexCell>(_width * _height);
-
-            if (_hexCellPrefab == null)
-                Debug.LogWarning("[HexGridManager] _hexCellPrefab NULL — fallback primitive kullanılıyor. Faz 1.1'i yeniden çalıştır.");
 
             for (int r = 0; r < _height; r++)
             {
@@ -82,24 +80,35 @@ namespace TacticalRPG.Grid
             _cells?.Clear();
         }
 
+        /// <summary>
+        /// Tek bir hücrenin görselini yeniden üretir (TilePainter boyamadan sonra çağrılır).
+        /// </summary>
+        public void RegenerateCellVisual(HexCoordinate coord)
+        {
+            if (_cells == null || !_cells.TryGetValue(coord, out HexCell cell)) return;
+
+            if (cell.Visual != null)
+                DestroyImmediate(cell.Visual);
+
+            SpawnVisual(cell);
+        }
+
+        // ── Görsel üretimi ────────────────────────────────────────────────────
+
         private void SpawnVisual(HexCell cell)
         {
             Transform  parent = _gridParent != null ? _gridParent : transform;
+            GameObject prefab = ResolvePrefab(cell.Coordinate);
             GameObject go;
 
-            if (_hexCellPrefab != null)
+            if (prefab != null)
             {
-                go = Instantiate(_hexCellPrefab, cell.WorldPosition, Quaternion.identity, parent);
+                go = Instantiate(prefab, cell.WorldPosition, Quaternion.identity, parent);
 
-                // Prefab mesh referansı kırıksa (GUID değişimi) anında düzelt
+                // Kırık mesh GUID fallback (yalnızca placeholder HexCell prefabı için)
                 var mf = go.GetComponent<MeshFilter>();
                 if (mf != null && mf.sharedMesh == null)
                 {
-                    if (!_meshFallbackWarned)
-                    {
-                        Debug.LogWarning("[HexGridManager] Prefab mesh null — prosedürel fallback aktif. Faz 1.1'i yeniden çalıştırarak düzeltebilirsin.");
-                        _meshFallbackWarned = true;
-                    }
                     Mesh fresh = HexMetrics.CreateHexMesh(0.95f);
                     mf.sharedMesh = fresh;
                     var mc = go.GetComponent<MeshCollider>();
@@ -108,7 +117,7 @@ namespace TacticalRPG.Grid
             }
             else
             {
-                // Tamamen prefabsız fallback — her şeyi sıfırdan yarat
+                // Tamamen prefabsız acil fallback
                 go = new GameObject();
                 go.transform.SetParent(parent);
                 go.transform.position = cell.WorldPosition;
@@ -116,9 +125,8 @@ namespace TacticalRPG.Grid
                 var mf2 = go.AddComponent<MeshFilter>();
                 mf2.sharedMesh = HexMetrics.CreateHexMesh(0.95f);
 
-                var mr2 = go.AddComponent<MeshRenderer>();
-                mr2.sharedMaterial = new Material(
-                    Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Standard"));
+                go.AddComponent<MeshRenderer>().sharedMaterial =
+                    new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
 
                 var mc2 = go.AddComponent<MeshCollider>();
                 mc2.sharedMesh = mf2.sharedMesh;
@@ -126,16 +134,33 @@ namespace TacticalRPG.Grid
 
             go.name           = $"Hex_{cell.Coordinate}";
             cell.Visual       = go;
-            cell.MeshRenderer = go.GetComponent<MeshRenderer>();
+            // Kompleks prefablarda (child MeshRenderer) kök önce denenir
+            cell.MeshRenderer = go.GetComponent<MeshRenderer>()
+                             ?? go.GetComponentInChildren<MeshRenderer>();
         }
 
-        // ── Sorgulama API'si ──────────────────────────────────────────────
+        private GameObject ResolvePrefab(HexCoordinate coord)
+        {
+            if (_tilePalette != null && _tileMap != null)
+            {
+                string id    = _tileMap.GetTileId(coord);
+                var    entry = _tilePalette.GetById(id);
+                if (entry?.prefab != null)
+                    return entry.prefab;
+            }
+            return _hexCellPrefab;
+        }
 
-        public bool TryGetCell(HexCoordinate coord, out HexCell cell) =>
-            _cells.TryGetValue(coord, out cell);
+        // ── Sorgulama API'si ──────────────────────────────────────────────────
+
+        public bool TryGetCell(HexCoordinate coord, out HexCell cell)
+        {
+            if (_cells == null) { cell = null; return false; }
+            return _cells.TryGetValue(coord, out cell);
+        }
 
         public bool IsInBounds(HexCoordinate coord) =>
-            _cells.ContainsKey(coord);
+            _cells != null && _cells.ContainsKey(coord);
 
         public List<HexCell> GetNeighbors(HexCoordinate coord)
         {
@@ -143,7 +168,7 @@ namespace TacticalRPG.Grid
             for (int i = 0; i < 6; i++)
             {
                 HexCoordinate n = coord.GetNeighbor(i);
-                if (_cells.TryGetValue(n, out HexCell neighbor))
+                if (_cells != null && _cells.TryGetValue(n, out HexCell neighbor))
                     neighbors.Add(neighbor);
             }
             return neighbors;

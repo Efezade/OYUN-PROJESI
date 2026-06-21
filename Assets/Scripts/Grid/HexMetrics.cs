@@ -2,65 +2,83 @@ using UnityEngine;
 
 namespace TacticalRPG.Grid
 {
-    /// <summary>
-    /// Pointy-top hex geometrisi için sabitler ve prosedürel mesh üretici.
-    /// OuterRadius = hexSize ile birebir örtüşür; HexCoordinate.ToWorldPosition ile uyumludur.
-    /// </summary>
     public static class HexMetrics
     {
-        // Dış yarıçap (merkez → köşe). HexGridManager._hexSize ile eşleşmeli.
         public const float OuterRadius = 1f;
-
-        // İç yarıçap (merkez → kenar ortası) = OuterRadius * sqrt(3)/2
         public const float InnerRadius = OuterRadius * 0.866025404f;
 
+        // Karo kalınlığı — kendi assetlerinle değiştirene kadar placeholder yüksekliği
+        public const float TileHeight = 0.3f;
+
         // Pointy-top köşe noktaları — XZ düzleminde, merkez orijin
-        // Sıra: sağ-üst → üst → sol-üst → sol-alt → alt → sağ-alt
         public static readonly Vector3[] Corners =
         {
-            new( InnerRadius,  0f,  OuterRadius * 0.5f),   // 0: sağ-üst
-            new( 0f,           0f,  OuterRadius),            // 1: üst
-            new(-InnerRadius,  0f,  OuterRadius * 0.5f),   // 2: sol-üst
-            new(-InnerRadius,  0f, -OuterRadius * 0.5f),   // 3: sol-alt
-            new( 0f,           0f, -OuterRadius),            // 4: alt
-            new( InnerRadius,  0f, -OuterRadius * 0.5f),   // 5: sağ-alt
+            new( InnerRadius,  0f,  OuterRadius * 0.5f),
+            new( 0f,           0f,  OuterRadius),
+            new(-InnerRadius,  0f,  OuterRadius * 0.5f),
+            new(-InnerRadius,  0f, -OuterRadius * 0.5f),
+            new( 0f,           0f, -OuterRadius),
+            new( InnerRadius,  0f, -OuterRadius * 0.5f),
         };
 
         /// <summary>
-        /// Düz, altı kenarlı hex Mesh'i prosedürel olarak üretir.
-        /// scale: 0.95 → karolar arası görünür boşluk bırakır.
+        /// İzometrik 3D için hex prism (altılı silindir dilimi).
+        /// Üst yüz + 6 yan yüz; her yüz için ayrı vertex → doğru normal hesabı.
+        /// scale=0.95 → karolar arası boşluk; height=TileHeight.
         /// </summary>
         public static Mesh CreateHexMesh(float scale = 0.95f)
         {
-            var mesh = new Mesh { name = "HexMesh" };
+            float h = TileHeight;
+            var mesh = new Mesh { name = "HexPrismMesh" };
 
-            // 7 vertex: merkez (0) + 6 köşe (1-6)
-            var vertices = new Vector3[7];
-            vertices[0] = Vector3.zero;
-            for (int i = 0; i < 6; i++)
-                vertices[i + 1] = Corners[i] * scale;
+            // Vertex düzeni:
+            //  [0]     : üst merkez
+            //  [1..6]  : üst halka (y=h)
+            //  [7..30] : 6 yan yüz × 4 benzersiz vertex = 24 vertex (doğru normal için ayrı)
+            // Toplam: 31 vertex
 
-            // 6 üçgen — merkez etrafında fan; normal +Y olacak şekilde CW sıra
-            var triangles = new int[18];
+            var verts = new Vector3[31];
+            verts[0] = new Vector3(0f, h, 0f);
+
             for (int i = 0; i < 6; i++)
             {
-                triangles[i * 3 + 0] = 0;
-                triangles[i * 3 + 1] = (i + 1) % 6 + 1;
-                triangles[i * 3 + 2] = i + 1;
+                Vector3 c = Corners[i] * scale;
+                verts[i + 1] = new Vector3(c.x, h,  c.z);
             }
 
-            // Basit planar UV (gelecekte doku için)
-            var uvs = new Vector2[7];
-            uvs[0] = new Vector2(0.5f, 0.5f);
             for (int i = 0; i < 6; i++)
-                uvs[i + 1] = new Vector2(
-                    (Corners[i].x / (OuterRadius * 2f) + 0.5f) * scale,
-                    (Corners[i].z / (OuterRadius * 2f) + 0.5f) * scale
-                );
+            {
+                Vector3 ca = Corners[i]           * scale;
+                Vector3 cb = Corners[(i + 1) % 6] * scale;
+                int b = 7 + i * 4;
+                verts[b + 0] = new Vector3(ca.x, h,  ca.z); // üst-a
+                verts[b + 1] = new Vector3(cb.x, h,  cb.z); // üst-b
+                verts[b + 2] = new Vector3(cb.x, 0f, cb.z); // alt-b
+                verts[b + 3] = new Vector3(ca.x, 0f, ca.z); // alt-a
+            }
 
-            mesh.vertices  = vertices;
-            mesh.triangles = triangles;
-            mesh.uv        = uvs;
+            // Toplam: 6 üst üçgen (18) + 6×2 yan üçgen (36) = 54 index
+            var tris = new int[54];
+            int idx = 0;
+
+            // Üst yüz — normal +Y (CCW yukarıdan)
+            for (int i = 0; i < 6; i++)
+            {
+                tris[idx++] = 0;
+                tris[idx++] = (i + 1) % 6 + 1;
+                tris[idx++] = i + 1;
+            }
+
+            // Yan yüzler — dışa bakan normal (doğrulanmış winding)
+            for (int i = 0; i < 6; i++)
+            {
+                int b = 7 + i * 4;
+                tris[idx++] = b;     tris[idx++] = b + 2; tris[idx++] = b + 3;
+                tris[idx++] = b;     tris[idx++] = b + 1; tris[idx++] = b + 2;
+            }
+
+            mesh.vertices  = verts;
+            mesh.triangles = tris;
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             return mesh;
