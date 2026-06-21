@@ -1,5 +1,6 @@
 using UnityEngine;
 using TacticalRPG.Grid;
+using TacticalRPG.Data;
 
 namespace TacticalRPG.Core
 {
@@ -15,6 +16,9 @@ namespace TacticalRPG.Core
         [SerializeField] private PlayerController _player;
         [Tooltip("Opsiyonel — atanmışsa, yetenek hazırken tıklama hedefleme olur.")]
         [SerializeField] private AbilityCaster    _caster;
+        [Tooltip("Opsiyonel — atanmışsa sadece Overworld state'te tıklama işlenir + görev tıklaması.")]
+        [SerializeField] private GameStateManager _stateManager;
+        [SerializeField] private MissionManager   _missionManager;
 
         [Header("Raycast")]
         [SerializeField] private LayerMask _clickableLayers = ~0;
@@ -30,14 +34,24 @@ namespace TacticalRPG.Core
 
         private void Update()
         {
-            if (!Input.GetMouseButtonDown(0) || _player.IsMoving) return;
-            if (!TryGetClickedCoord(out HexCoordinate coord))     return;
+            if (!Input.GetMouseButtonDown(0)) return;
+            // Savaş/onay durumunda harita tıklaması işlenmez (akış HUD/diğer sistemlerce yönetilir).
+            if (_stateManager != null && _stateManager.State != GameState.Overworld) return;
+            if (_player.IsMoving) return;
+            if (!TryGetClickedCoord(out HexCoordinate coord)) return;
 
-            // Yetenek hazırsa tıklama hedefleme; değilse hareket.
-            if (_caster != null && _caster.HasArmedAbility)
-                _caster.TryCastAt(coord);
-            else
-                TryMoveTo(coord);
+            // 1) Yetenek hazırsa → hedefleme
+            if (_caster != null && _caster.HasArmedAbility) { _caster.TryCastAt(coord); return; }
+
+            // 2) Görev alanına tıklandıysa → onay akışı
+            if (_stateManager != null && _missionManager != null)
+            {
+                MissionData mission = _missionManager.GetMissionAt(coord);
+                if (mission != null) { _stateManager.RequestMission(mission); return; }
+            }
+
+            // 3) Aksi halde → hareket
+            TryMoveTo(coord);
         }
 
         private bool TryGetClickedCoord(out HexCoordinate coord)

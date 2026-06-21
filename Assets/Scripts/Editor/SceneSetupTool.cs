@@ -633,6 +633,123 @@ namespace TacticalRPG.Editor
         }
 
         // ─────────────────────────────────────────────────────────────────────
+        // FAZ A — Overworld ↔ Savaş geçişi (durum makinesi + görev alanları)
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/Faz A - Overworld-Savas Gecisi", false, 16)]
+        public static void SetupPhaseA()
+        {
+            GameObject sceneRoot     = GameObject.Find(SceneRootName);
+            GameObject gameManagerGO = sceneRoot != null
+                ? sceneRoot.transform.Find("GameManager")?.gameObject
+                : null;
+
+            if (gameManagerGO == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "GameManager bulunamadi! Once TAM KURULUM (veya Faz 0-2) calistir.", "Tamam");
+                return;
+            }
+
+            HexGridManager  gridManager = FindComponentAnywhere<HexGridManager>();
+            FogOfWarManager fogManager  = FindComponentAnywhere<FogOfWarManager>();
+            PlayerController player      = FindComponentAnywhere<PlayerController>();
+            MapInputHandler input        = FindComponentAnywhere<MapInputHandler>();
+
+            if (gridManager == null || fogManager == null || player == null || input == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "Gerekli sistemler eksik (Grid/Fog/Player/Input).\nOnce Faz 1'i calistir.", "Tamam");
+                return;
+            }
+
+            // ── Savaş haritası (TileMap) — overworld'den farkli, default 'kaya' ──
+            EnsureFolder("Assets/Data/Map");
+            const string combatMapPath = "Assets/Data/Map/CombatTileMap.asset";
+            TileMapSO combatMap = AssetDatabase.LoadAssetAtPath<TileMapSO>(combatMapPath);
+            if (combatMap == null)
+            {
+                combatMap = ScriptableObject.CreateInstance<TileMapSO>();
+                AssetDatabase.CreateAsset(combatMap, combatMapPath);
+            }
+            combatMap.defaultTileId = "kaya";
+            combatMap.assignments.Clear();
+            EditorUtility.SetDirty(combatMap);
+
+            // ── Görev verisi (MissionData) ────────────────────────────────────
+            EnsureFolder("Assets/Data/Missions");
+            const string missionPath = "Assets/Data/Missions/Mission1.asset";
+            MissionData mission = AssetDatabase.LoadAssetAtPath<MissionData>(missionPath);
+            if (mission == null)
+            {
+                mission = ScriptableObject.CreateInstance<MissionData>();
+                AssetDatabase.CreateAsset(mission, missionPath);
+            }
+            var missionSO = new SerializedObject(mission);
+            missionSO.FindProperty("_displayName").stringValue          = "Goblin Pususu";
+            missionSO.FindProperty("_description").stringValue           = "Ilk test gorevi.";
+            missionSO.FindProperty("_combatMap").objectReferenceValue    = combatMap;
+            missionSO.ApplyModifiedProperties();
+            EditorUtility.SetDirty(mission);
+
+            // ── GameStateManager ──────────────────────────────────────────────
+            var oldGSM = gameManagerGO.GetComponent<GameStateManager>();
+            if (oldGSM != null) Object.DestroyImmediate(oldGSM);
+            GameStateManager gsm = gameManagerGO.AddComponent<GameStateManager>();
+            var gsmSO = new SerializedObject(gsm);
+            gsmSO.FindProperty("_grid").objectReferenceValue   = gridManager;
+            gsmSO.FindProperty("_fog").objectReferenceValue    = fogManager;
+            gsmSO.FindProperty("_player").objectReferenceValue = player;
+            gsmSO.ApplyModifiedProperties();
+
+            // ── MissionManager (1 görev: Q5 R5) ───────────────────────────────
+            var oldMM = gameManagerGO.GetComponent<MissionManager>();
+            if (oldMM != null) Object.DestroyImmediate(oldMM);
+            MissionManager mm = gameManagerGO.AddComponent<MissionManager>();
+            var mmSO = new SerializedObject(mm);
+            mmSO.FindProperty("_grid").objectReferenceValue         = gridManager;
+            mmSO.FindProperty("_stateManager").objectReferenceValue = gsm;
+            var missionsProp = mmSO.FindProperty("_missions");
+            missionsProp.ClearArray();
+            missionsProp.arraySize = 1;
+            var elem0 = missionsProp.GetArrayElementAtIndex(0);
+            elem0.FindPropertyRelative("coord").FindPropertyRelative("Q").intValue = 5;
+            elem0.FindPropertyRelative("coord").FindPropertyRelative("R").intValue = 5;
+            elem0.FindPropertyRelative("mission").objectReferenceValue = mission;
+            mmSO.ApplyModifiedProperties();
+
+            // ── OverworldCombatHUD ────────────────────────────────────────────
+            var oldOH = gameManagerGO.GetComponent<OverworldCombatHUD>();
+            if (oldOH != null) Object.DestroyImmediate(oldOH);
+            OverworldCombatHUD och = gameManagerGO.AddComponent<OverworldCombatHUD>();
+            var ochSO = new SerializedObject(och);
+            ochSO.FindProperty("_stateManager").objectReferenceValue = gsm;
+            ochSO.ApplyModifiedProperties();
+
+            // ── MapInputHandler'a state + mission bağla ───────────────────────
+            var inputSO = new SerializedObject(input);
+            inputSO.FindProperty("_stateManager").objectReferenceValue   = gsm;
+            inputSO.FindProperty("_missionManager").objectReferenceValue = mm;
+            inputSO.ApplyModifiedProperties();
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            EditorUtility.DisplayDialog("Faz A — Overworld/Savas Gecisi Hazir",
+                "Kurulanlar:\n" +
+                "  • GameStateManager + MissionManager + OverworldCombatHUD\n" +
+                "  • Savas haritasi (CombatTileMap) + 1 gorev (Goblin Pususu @ Q5 R5)\n" +
+                "  • Q5 R5 hex'inde sari marker\n\n" +
+                "Play'e bas:\n" +
+                "  Sari marker'a (Q5 R5) tikla → 'Evet' → harita savas haritasina doner.\n" +
+                "  'Geri Don' ile overworld'e don.",
+                "Tamam");
+
+            Debug.Log("[TacticalRPG] Faz A (overworld-savas gecisi) kuruldu.");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // TANI — Sahne durumunu logla
         // ─────────────────────────────────────────────────────────────────────
 

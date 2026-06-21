@@ -46,6 +46,13 @@ namespace TacticalRPG.Grid
 
         private void Awake() => GenerateGrid();
 
+        /// <summary>Haritayı değiştirip grid'i yeniden üretir (overworld↔savaş geçişi).</summary>
+        public void SetTileMap(TileMapSO map)
+        {
+            _tileMap = map;
+            GenerateGrid();
+        }
+
         // ── Grid üretimi ──────────────────────────────────────────────────────
 
         public void GenerateGrid()

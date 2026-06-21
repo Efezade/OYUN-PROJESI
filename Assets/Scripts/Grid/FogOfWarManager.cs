@@ -39,6 +39,20 @@ namespace TacticalRPG.Grid
             }
         }
 
+        /// <summary>Tüm karoları yeniden Hidden yapar (overworld'e dönüşte yeniden üretilen grid için).</summary>
+        public void ResetFog() => InitializeFog();
+
+        /// <summary>Tüm karoları Visible yapar (savaş haritasında tam görüş).</summary>
+        public void RevealAll()
+        {
+            if (_gridManager.Cells == null) return;
+            foreach (var cell in _gridManager.Cells.Values)
+            {
+                cell.FogState = FogState.Visible;
+                ApplyFogVisual(cell);
+            }
+        }
+
         // ── Genel API ────────────────────────────────────────────────────
 
         /// <summary>
