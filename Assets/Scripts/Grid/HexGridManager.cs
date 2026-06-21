@@ -97,9 +97,10 @@ namespace TacticalRPG.Grid
 
         private void SpawnVisual(HexCell cell)
         {
-            Transform  parent = _gridParent != null ? _gridParent : transform;
-            GameObject prefab = ResolvePrefab(cell.Coordinate);
-            GameObject go;
+            Transform               parent = _gridParent != null ? _gridParent : transform;
+            TilePaletteSO.TileEntry entry  = ResolveEntry(cell.Coordinate);
+            GameObject              prefab = entry?.prefab != null ? entry.prefab : _hexCellPrefab;
+            GameObject              go;
 
             if (prefab != null)
             {
@@ -137,18 +138,36 @@ namespace TacticalRPG.Grid
             // Kompleks prefablarda (child MeshRenderer) kök önce denenir
             cell.MeshRenderer = go.GetComponent<MeshRenderer>()
                              ?? go.GetComponentInChildren<MeshRenderer>();
+
+            if (entry != null)
+            {
+                cell.IsWalkable = entry.isWalkable;
+
+                // Gerçek (authored) prefab yoksa placeholder'ı palet rengiyle boya.
+                // Tasarımcı FBX prefabı atayınca tint kendiliğinden devre dışı kalır.
+                if (entry.prefab == null && cell.MeshRenderer != null)
+                    ApplyTint(cell.MeshRenderer, entry.editorColor);
+            }
         }
 
-        private GameObject ResolvePrefab(HexCoordinate coord)
+        private TilePaletteSO.TileEntry ResolveEntry(HexCoordinate coord)
         {
-            if (_tilePalette != null && _tileMap != null)
-            {
-                string id    = _tileMap.GetTileId(coord);
-                var    entry = _tilePalette.GetById(id);
-                if (entry?.prefab != null)
-                    return entry.prefab;
-            }
-            return _hexCellPrefab;
+            if (_tilePalette == null || _tileMap == null) return null;
+            return _tilePalette.GetById(_tileMap.GetTileId(coord));
+        }
+
+        // Placeholder karoları palet rengiyle boyamak için (materyal kopyalamadan, MPB ile).
+        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId     = Shader.PropertyToID("_Color");
+        private MaterialPropertyBlock _tintBlock;
+
+        private void ApplyTint(MeshRenderer renderer, Color color)
+        {
+            _tintBlock ??= new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(_tintBlock);
+            _tintBlock.SetColor(BaseColorId, color); // URP/Lit
+            _tintBlock.SetColor(ColorId,     color); // Standard yedek
+            renderer.SetPropertyBlock(_tintBlock);
         }
 
         // ── Sorgulama API'si ──────────────────────────────────────────────────
