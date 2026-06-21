@@ -655,6 +655,7 @@ namespace TacticalRPG.Editor
             FogOfWarManager fogManager  = FindComponentAnywhere<FogOfWarManager>();
             PlayerController player      = FindComponentAnywhere<PlayerController>();
             MapInputHandler input        = FindComponentAnywhere<MapInputHandler>();
+            ActionPointManager apManager = FindComponentAnywhere<ActionPointManager>();
 
             if (gridManager == null || fogManager == null || player == null || input == null)
             {
@@ -697,9 +698,10 @@ namespace TacticalRPG.Editor
             if (oldGSM != null) Object.DestroyImmediate(oldGSM);
             GameStateManager gsm = gameManagerGO.AddComponent<GameStateManager>();
             var gsmSO = new SerializedObject(gsm);
-            gsmSO.FindProperty("_grid").objectReferenceValue   = gridManager;
-            gsmSO.FindProperty("_fog").objectReferenceValue    = fogManager;
-            gsmSO.FindProperty("_player").objectReferenceValue = player;
+            gsmSO.FindProperty("_grid").objectReferenceValue      = gridManager;
+            gsmSO.FindProperty("_fog").objectReferenceValue       = fogManager;
+            gsmSO.FindProperty("_player").objectReferenceValue    = player;
+            gsmSO.FindProperty("_apManager").objectReferenceValue = apManager;
             gsmSO.ApplyModifiedProperties();
 
             // ── MissionManager (1 görev: Q5 R5) ───────────────────────────────
@@ -730,7 +732,15 @@ namespace TacticalRPG.Editor
             var inputSO = new SerializedObject(input);
             inputSO.FindProperty("_stateManager").objectReferenceValue   = gsm;
             inputSO.FindProperty("_missionManager").objectReferenceValue = mm;
+            inputSO.FindProperty("_caster").objectReferenceValue         = null; // test caster bağını çöz
             inputSO.ApplyModifiedProperties();
+
+            // ── Faz 3 test iskelesini kaldır (ana haritada artık gerekmiyor) ──
+            GameObject testEnemy = GameObject.Find("Enemy_Dummy");
+            if (testEnemy != null) Object.DestroyImmediate(testEnemy);
+            var tc = gameManagerGO.GetComponent<AbilityCaster>();  if (tc != null) Object.DestroyImmediate(tc);
+            var th = gameManagerGO.GetComponent<AbilityTestHUD>(); if (th != null) Object.DestroyImmediate(th);
+            var tu = gameManagerGO.GetComponent<UnitManager>();    if (tu != null) Object.DestroyImmediate(tu);
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             AssetDatabase.SaveAssets();
@@ -740,9 +750,11 @@ namespace TacticalRPG.Editor
                 "Kurulanlar:\n" +
                 "  • GameStateManager + MissionManager + OverworldCombatHUD\n" +
                 "  • Savas haritasi (CombatTileMap) + 1 gorev (Goblin Pususu @ Q5 R5)\n" +
-                "  • Q5 R5 hex'inde sari marker\n\n" +
+                "  • Q5 R5 hex'inde sari marker\n" +
+                "  • Savasa girmek artik 1 AP harcar\n" +
+                "  • Faz 3 testi kaldirildi (kukla dusman + buyu arayuzu)\n\n" +
                 "Play'e bas:\n" +
-                "  Sari marker'a (Q5 R5) tikla → 'Evet' → harita savas haritasina doner.\n" +
+                "  Sari marker'a (Q5 R5) tikla → 'Evet' → 1 AP gider, savas haritasi acilir.\n" +
                 "  'Geri Don' ile overworld'e don.",
                 "Tamam");
 

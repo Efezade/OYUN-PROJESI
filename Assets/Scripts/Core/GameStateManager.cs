@@ -16,9 +16,10 @@ namespace TacticalRPG.Core
     public class GameStateManager : MonoBehaviour
     {
         [Header("Bağımlılıklar")]
-        [SerializeField] private HexGridManager  _grid;
-        [SerializeField] private FogOfWarManager _fog;
-        [SerializeField] private PlayerController _player;
+        [SerializeField] private HexGridManager    _grid;
+        [SerializeField] private FogOfWarManager   _fog;
+        [SerializeField] private PlayerController   _player;
+        [SerializeField] private ActionPointManager _apManager;
 
         public GameState   State          { get; private set; } = GameState.Overworld;
         public MissionData PendingMission { get; private set; }
@@ -64,6 +65,7 @@ namespace TacticalRPG.Core
             ActiveMission  = mission;
             PendingMission = null;
 
+            if (_apManager != null) _apManager.SpendAP(1); // savaşa girmek 1 AP harcar
             if (_player != null) _savedPlayerCoord = _player.CurrentCoord;
 
             if (_grid != null && mission.CombatMap != null)
