@@ -27,6 +27,9 @@ namespace TacticalRPG.Data
         [SerializeField] private float[] _atkMultiplierPerLevel  = { 1f, 1.2f, 1.5f };
         [SerializeField] private float[] _defMultiplierPerLevel  = { 1f, 1.15f, 1.4f };
 
+        [Header("Deployment (savaşa sürme öz maliyeti)")]
+        [SerializeField, Min(0)] private int _deployCost = 3;
+
         [Header("Özel Sistem")]
         [SerializeField] private bool _hasManaSystem;
         [SerializeField] private int  _maxMana;
@@ -43,6 +46,7 @@ namespace TacticalRPG.Data
         public int BaseAttack   => _attack;
         public int BaseDefense  => _defense;
         public int MoveRange    => _moveRange;
+        public int DeployCost   => _deployCost;
 
         // ── Mana ─────────────────────────────────────────────────────────────
         public bool HasManaSystem => _hasManaSystem;

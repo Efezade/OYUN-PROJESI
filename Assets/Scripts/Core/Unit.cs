@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using TacticalRPG.Grid;
+using TacticalRPG.Data;
 
 namespace TacticalRPG.Core
 {
@@ -8,8 +9,9 @@ namespace TacticalRPG.Core
 
     /// <summary>
     /// Hex üstünde duran bir savaş birimi (oyuncu veya düşman).
-    /// Can/kalkan tutar, hasar/iyileşme alır, UnitManager'a kaydolur.
-    /// Faz 3/4'te (TurnManager, combat) bu katman üstüne kurulacak.
+    /// Bir CharacterCard'a BAĞLIYSA HP/stat tek kaynaktan (karttan) gelir; bağlı değilse
+    /// kendi _maxHP'sini kullanır (basit düşman kuklası için geri uyumlu).
+    /// Faz B (deployment) oyuncu birimini Bind(card) + PlaceAt(coord) ile spawn eder.
     /// </summary>
     public class Unit : MonoBehaviour
     {
@@ -21,26 +23,42 @@ namespace TacticalRPG.Core
         [SerializeField] private HexCoordinate _coord;
         [SerializeField] private float         _heightOffset = 0.8f;
 
-        [Header("Can")]
+        [Header("Can (yalnızca KARTSIZ birimlerde kullanılır)")]
         [SerializeField, Min(1)] private int _maxHP = 10;
 
         [Header("Bağımlılıklar")]
         [SerializeField] private HexGridManager _gridManager;
         [SerializeField] private UnitManager    _unitManager;
 
-        public string        DisplayName => _displayName;
-        public UnitTeam       Team        => _team;
-        public HexCoordinate  Coordinate  => _coord;
-        public int            MaxHP       => _maxHP;
-        public int            CurrentHP   { get; private set; }
-        public int            Shield      { get; private set; }
-        public bool           IsAlive     => CurrentHP > 0;
+        private CharacterCard _card;        // bağlıysa stat kaynağı (oyuncu/kartlı birim)
+        private int           _currentHP;   // yalnızca kartsız birimde geçerli
+        private bool          _diedNotified;
 
-        /// <summary>HP veya kalkan değişti.</summary>
-        public event Action<Unit> OnStatsChanged;
+        // ── Kimlik / konum ────────────────────────────────────────────────────
+        public string        DisplayName => _card != null ? _card.Data.ClassName : _displayName;
+        public UnitTeam      Team        => _team;
+        public HexCoordinate Coordinate  => _coord;
+        public CharacterCard Card        => _card;
+
+        // ── Can / kalkan ──────────────────────────────────────────────────────
+        public int  MaxHP     => _card != null ? _card.MaxHP     : _maxHP;
+        public int  CurrentHP => _card != null ? _card.CurrentHP : _currentHP;
+        public int  Shield    { get; private set; }
+        public bool IsAlive   => CurrentHP > 0;
+
+        // ── Savaş statları (kart varsa yansıtılır; Faz C hareket/combat için) ──
+        public int Attack    => _card != null ? _card.Attack         : 0;
+        public int Defense   => _card != null ? _card.Defense        : 0;
+        public int Level     => _card != null ? _card.Level          : 1;
+        public int MoveRange => _card != null ? _card.Data.MoveRange : 0;
+
+        public event Action<Unit> OnStatsChanged; // HP veya kalkan değişti
         public event Action<Unit> OnDied;
 
-        private void Awake() => CurrentHP = _maxHP;
+        private void Awake()
+        {
+            if (_card == null) _currentHP = _maxHP;
+        }
 
         private void OnEnable()
         {
@@ -52,16 +70,56 @@ namespace TacticalRPG.Core
             if (_unitManager != null) _unitManager.Unregister(this);
         }
 
-        private void Start()
+        private void Start() => SnapToCell();
+
+        private void OnDestroy()
         {
-            // Grid referansı varsa kendini koordinatına göre konumla.
+            if (_card != null) _card.OnHPChanged -= HandleCardHPChanged;
+        }
+
+        // ── Kart bağlama (Faz B deployment) ───────────────────────────────────
+
+        /// <summary>
+        /// Birimi bir CharacterCard'a bağlar — HP/stat artık karttan gelir (tek kaynak).
+        /// Düşman da kartlı olabilir; takım bağımsızdır, çağıran ayarlar.
+        /// </summary>
+        public void Bind(CharacterCard card)
+        {
+            if (card == null) return;
+            if (_card != null) _card.OnHPChanged -= HandleCardHPChanged;
+
+            _card         = card;
+            _diedNotified = false;
+            _card.OnHPChanged += HandleCardHPChanged;
+            OnStatsChanged?.Invoke(this);
+        }
+
+        /// <summary>Birimi bir koordinata yerleştirir ve görsel olarak oraya oturtur.</summary>
+        public void PlaceAt(HexCoordinate coord)
+        {
+            _coord = coord;
+            SnapToCell();
+        }
+
+        private void SnapToCell()
+        {
             // SurfaceHeight ile köprü/engebe karolarında yüzeyin üstüne oturur.
             if (_gridManager != null && _gridManager.TryGetCell(_coord, out HexCell cell))
                 transform.position = cell.WorldPosition
                     + Vector3.up * (_heightOffset + cell.SurfaceHeight - HexMetrics.TileHeight);
         }
 
-        // ── Etki API'si (AbilityCaster çağırır) ──────────────────────────────
+        private void HandleCardHPChanged(int current, int max)
+        {
+            OnStatsChanged?.Invoke(this);
+            if (current <= 0 && !_diedNotified)
+            {
+                _diedNotified = true;
+                OnDied?.Invoke(this);
+            }
+        }
+
+        // ── Etki API'si (AbilityCaster çağırır) ───────────────────────────────
 
         public void TakeDamage(int amount)
         {
@@ -75,16 +133,32 @@ namespace TacticalRPG.Core
                 remaining -= absorbed;
             }
 
-            CurrentHP = Mathf.Max(0, CurrentHP - remaining);
-            OnStatsChanged?.Invoke(this);
+            if (remaining <= 0) { OnStatsChanged?.Invoke(this); return; }
 
-            if (!IsAlive) OnDied?.Invoke(this);
+            if (_card != null)
+            {
+                // Kart kendi Defense'ini uygular ve OnHPChanged ile event akışını tetikler.
+                _card.TakeDamage(remaining);
+            }
+            else
+            {
+                _currentHP = Mathf.Max(0, _currentHP - remaining);
+                OnStatsChanged?.Invoke(this);
+                if (!IsAlive && !_diedNotified)
+                {
+                    _diedNotified = true;
+                    OnDied?.Invoke(this);
+                }
+            }
         }
 
         public void Heal(int amount)
         {
             if (amount <= 0 || !IsAlive) return;
-            CurrentHP = Mathf.Min(_maxHP, CurrentHP + amount);
+
+            if (_card != null) { _card.Heal(amount); return; }
+
+            _currentHP = Mathf.Min(_maxHP, _currentHP + amount);
             OnStatsChanged?.Invoke(this);
         }
 
