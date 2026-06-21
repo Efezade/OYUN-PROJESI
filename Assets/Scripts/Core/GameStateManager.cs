@@ -5,7 +5,7 @@ using TacticalRPG.Data;
 
 namespace TacticalRPG.Core
 {
-    public enum GameState { Overworld, ConfirmMission, Combat }
+    public enum GameState { Overworld, ConfirmMission, Deployment, Combat }
 
     /// <summary>
     /// Oyunun üst düzey durum makinesi: Overworld ↔ Savaş geçişini yönetir.
@@ -55,12 +55,20 @@ namespace TacticalRPG.Core
         public void ConfirmMission()
         {
             if (State != GameState.ConfirmMission || PendingMission == null) return;
-            EnterCombat(PendingMission);
+            EnterDeployment(PendingMission);
+        }
+
+        /// <summary>Yerleştirme bittiğinde çağrılır (DeploymentHUD "Savaşı Başlat"). Savaşa geçer.</summary>
+        public void StartBattle()
+        {
+            if (State != GameState.Deployment) return;
+            SetState(GameState.Combat);
         }
 
         // ── Geçişler ──────────────────────────────────────────────────────────
 
-        private void EnterCombat(MissionData mission)
+        // Savaş haritasına geçer ve YERLEŞTİRME fazını açar (birimler burada öz ile sürülür).
+        private void EnterDeployment(MissionData mission)
         {
             ActiveMission  = mission;
             PendingMission = null;
@@ -73,12 +81,12 @@ namespace TacticalRPG.Core
             if (_fog != null) _fog.RevealAll();          // savaşta tam görüş
             if (_player != null) _player.gameObject.SetActive(false); // overworld jetonu gizle
 
-            SetState(GameState.Combat);
+            SetState(GameState.Deployment);
         }
 
         public void ReturnToOverworld()
         {
-            if (State != GameState.Combat) return;
+            if (State != GameState.Combat && State != GameState.Deployment) return;
             ActiveMission = null;
 
             if (_grid != null && _overworldMap != null)

@@ -762,6 +762,96 @@ namespace TacticalRPG.Editor
         }
 
         // ─────────────────────────────────────────────────────────────────────
+        // FAZ B — Deployment (öz ile birim yerleştirme)
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/Faz B - Deployment (Birim Yerlestirme)", false, 17)]
+        public static void SetupPhaseB()
+        {
+            GameObject sceneRoot     = GameObject.Find(SceneRootName);
+            GameObject gameManagerGO = sceneRoot != null
+                ? sceneRoot.transform.Find("GameManager")?.gameObject
+                : null;
+
+            if (gameManagerGO == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "GameManager bulunamadi! Once TAM KURULUM + Faz A calistir.", "Tamam");
+                return;
+            }
+
+            HexGridManager   grid    = FindComponentAnywhere<HexGridManager>();
+            EssenceManager   essence = FindComponentAnywhere<EssenceManager>();
+            PartyManager     party   = FindComponentAnywhere<PartyManager>();
+            MapInputHandler  input   = FindComponentAnywhere<MapInputHandler>();
+            GameStateManager gsm     = FindComponentAnywhere<GameStateManager>();
+
+            if (grid == null || essence == null || party == null || input == null || gsm == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "Gerekli sistemler eksik (Grid/Essence/Party/Input/GameState).\n" +
+                    "Once Faz 2 ve Faz A'yi calistir.", "Tamam");
+                return;
+            }
+
+            // ── Test icin baslangic ozunu yukselt (deploy edebilmek icin) ──
+            var emSO = new SerializedObject(essence);
+            emSO.FindProperty("_startingEssence").intValue = 20;
+            emSO.ApplyModifiedProperties();
+
+            // ── UnitManager (Faz A silmisti — geri ekle) ──
+            var oldUM = gameManagerGO.GetComponent<UnitManager>();
+            if (oldUM != null) Object.DestroyImmediate(oldUM);
+            UnitManager unitManager = gameManagerGO.AddComponent<UnitManager>();
+
+            // ── DeploymentManager ──
+            var oldDM = gameManagerGO.GetComponent<DeploymentManager>();
+            if (oldDM != null) Object.DestroyImmediate(oldDM);
+            DeploymentManager dm = gameManagerGO.AddComponent<DeploymentManager>();
+            var dmSO = new SerializedObject(dm);
+            dmSO.FindProperty("_stateManager").objectReferenceValue = gsm;
+            dmSO.FindProperty("_grid").objectReferenceValue         = grid;
+            dmSO.FindProperty("_essence").objectReferenceValue      = essence;
+            dmSO.FindProperty("_unitManager").objectReferenceValue  = unitManager;
+            dmSO.FindProperty("_deployZoneRows").intValue           = 2;
+            dmSO.ApplyModifiedProperties();
+
+            // ── DeploymentHUD ──
+            var oldDH = gameManagerGO.GetComponent<DeploymentHUD>();
+            if (oldDH != null) Object.DestroyImmediate(oldDH);
+            DeploymentHUD dh = gameManagerGO.AddComponent<DeploymentHUD>();
+            var dhSO = new SerializedObject(dh);
+            dhSO.FindProperty("_state").objectReferenceValue      = gsm;
+            dhSO.FindProperty("_deployment").objectReferenceValue = dm;
+            dhSO.FindProperty("_party").objectReferenceValue      = party;
+            dhSO.FindProperty("_essence").objectReferenceValue    = essence;
+            dhSO.ApplyModifiedProperties();
+
+            // ── MapInputHandler'a deployment bagla ──
+            var inputSO = new SerializedObject(input);
+            inputSO.FindProperty("_deployment").objectReferenceValue = dm;
+            inputSO.ApplyModifiedProperties();
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            EditorUtility.DisplayDialog("Faz B — Deployment Hazir",
+                "Kurulanlar:\n" +
+                "  • UnitManager (geri eklendi) + DeploymentManager + DeploymentHUD\n" +
+                "  • Baslangic ozu 20 yapildi (test icin)\n" +
+                "  • MapInputHandler deployment'a baglandi\n\n" +
+                "Play'e bas:\n" +
+                "  1) Sari marker'a (Q5 R5) tikla → 'Evet' → savas haritasi + YERLESTIRME acilir\n" +
+                "  2) Alt 2 satir mavi pedlerle isaretli (yerlestirme bolgesi)\n" +
+                "  3) Sol panelden kart sec → mavi pede tikla (oz harcanir, birim spawn olur)\n" +
+                "  4) 'Savasi Baslat' → combat. 'Geri Don' → overworld (birimler temizlenir).",
+                "Tamam");
+
+            Debug.Log("[TacticalRPG] Faz B (deployment) kuruldu.");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // TANI — Sahne durumunu logla
         // ─────────────────────────────────────────────────────────────────────
 

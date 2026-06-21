@@ -101,6 +101,19 @@ namespace TacticalRPG.Core
             SnapToCell();
         }
 
+        /// <summary>
+        /// Runtime spawn için bağımlılıkları + takımı ayarlar (DeploymentManager kullanır).
+        /// UnitManager'a (yeniden) kaydeder.
+        /// </summary>
+        public void Configure(HexGridManager grid, UnitManager unitManager, UnitTeam team)
+        {
+            _gridManager = grid;
+            _team        = team;
+            if (_unitManager != null && _unitManager != unitManager) _unitManager.Unregister(this);
+            _unitManager = unitManager;
+            if (_unitManager != null) _unitManager.Register(this);
+        }
+
         private void SnapToCell()
         {
             // SurfaceHeight ile köprü/engebe karolarında yüzeyin üstüne oturur.

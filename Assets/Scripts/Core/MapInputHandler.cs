@@ -19,6 +19,8 @@ namespace TacticalRPG.Core
         [Tooltip("Opsiyonel — atanmışsa sadece Overworld state'te tıklama işlenir + görev tıklaması.")]
         [SerializeField] private GameStateManager _stateManager;
         [SerializeField] private MissionManager   _missionManager;
+        [Tooltip("Opsiyonel — Deployment state'inde tıklama buraya yerleştirme olur.")]
+        [SerializeField] private DeploymentManager _deployment;
 
         [Header("Raycast")]
         [SerializeField] private LayerMask _clickableLayers = ~0;
@@ -35,7 +37,16 @@ namespace TacticalRPG.Core
         private void Update()
         {
             if (!Input.GetMouseButtonDown(0)) return;
-            // Savaş/onay durumunda harita tıklaması işlenmez (akış HUD/diğer sistemlerce yönetilir).
+
+            // Deployment: tıklama = seçili kartı hex'e yerleştir.
+            if (_stateManager != null && _stateManager.State == GameState.Deployment)
+            {
+                if (_deployment != null && TryGetClickedCoord(out HexCoordinate deployCoord))
+                    _deployment.TryDeployAt(deployCoord);
+                return;
+            }
+
+            // Diğer savaş/onay durumlarında harita tıklaması işlenmez (akış HUD'larca yönetilir).
             if (_stateManager != null && _stateManager.State != GameState.Overworld) return;
             if (_player.IsMoving) return;
             if (!TryGetClickedCoord(out HexCoordinate coord)) return;
