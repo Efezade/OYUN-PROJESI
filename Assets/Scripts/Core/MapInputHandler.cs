@@ -13,6 +13,8 @@ namespace TacticalRPG.Core
         [SerializeField] private Camera           _camera;
         [SerializeField] private HexGridManager   _gridManager;
         [SerializeField] private PlayerController _player;
+        [Tooltip("Opsiyonel — atanmışsa, yetenek hazırken tıklama hedefleme olur.")]
+        [SerializeField] private AbilityCaster    _caster;
 
         [Header("Raycast")]
         [SerializeField] private LayerMask _clickableLayers = ~0;
@@ -28,18 +30,28 @@ namespace TacticalRPG.Core
 
         private void Update()
         {
-            if (Input.GetMouseButtonDown(0) && !_player.IsMoving)
-                TryMoveToClick();
+            if (!Input.GetMouseButtonDown(0) || _player.IsMoving) return;
+            if (!TryGetClickedCoord(out HexCoordinate coord))     return;
+
+            // Yetenek hazırsa tıklama hedefleme; değilse hareket.
+            if (_caster != null && _caster.HasArmedAbility)
+                _caster.TryCastAt(coord);
+            else
+                TryMoveTo(coord);
         }
 
-        private void TryMoveToClick()
+        private bool TryGetClickedCoord(out HexCoordinate coord)
         {
+            coord = default;
             Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
             if (!Physics.Raycast(ray, out RaycastHit hit, _rayDistance, _clickableLayers))
-                return;
+                return false;
+            coord = _gridManager.WorldToHex(hit.point);
+            return true;
+        }
 
-            HexCoordinate targetCoord = _gridManager.WorldToHex(hit.point);
-
+        private void TryMoveTo(HexCoordinate targetCoord)
+        {
             if (!_gridManager.TryGetCell(targetCoord, out HexCell target)) return;
             if (!target.IsWalkable)                                         return;
             if (target.FogState == FogState.Hidden)                         return;

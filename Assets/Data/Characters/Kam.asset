@@ -33,3 +33,7 @@ MonoBehaviour:
   - 1.3
   _hasManaSystem: 1
   _maxMana: 10
+  _abilities:
+  - {fileID: 11400000, guid: c6f62d9f091a47dd824ad26bf014c2c2, type: 2}
+  - {fileID: 11400000, guid: f3fbb401ef124ce69be0267ee68abdd0, type: 2}
+  - {fileID: 11400000, guid: c96377633b8a42b9990cd784d972af01, type: 2}

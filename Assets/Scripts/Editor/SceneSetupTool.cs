@@ -495,6 +495,144 @@ namespace TacticalRPG.Editor
         }
 
         // ─────────────────────────────────────────────────────────────────────
+        // FAZ 3 (test) — Yetenek kullanımı dikey dilimi
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/Faz 3 - Yetenek Test Kurulumu", false, 15)]
+        public static void SetupPhase3()
+        {
+            GameObject sceneRoot     = GameObject.Find(SceneRootName);
+            GameObject gameManagerGO = sceneRoot != null
+                ? sceneRoot.transform.Find("GameManager")?.gameObject
+                : null;
+
+            if (gameManagerGO == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "GameManager bulunamadi! Once TAM KURULUM (veya Faz 0-2) calistir.", "Tamam");
+                return;
+            }
+
+            HexGridManager  gridManager = FindComponentAnywhere<HexGridManager>();
+            PlayerController player      = FindComponentAnywhere<PlayerController>();
+            PartyManager     party       = FindComponentAnywhere<PartyManager>();
+            KamManaManager   kamMana     = FindComponentAnywhere<KamManaManager>();
+            MapInputHandler  input       = FindComponentAnywhere<MapInputHandler>();
+
+            if (gridManager == null || player == null || party == null || kamMana == null || input == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "Gerekli sistemler eksik (Grid/Player/Party/KamMana/Input).\nOnce Faz 1 ve Faz 2'yi calistir.", "Tamam");
+                return;
+            }
+
+            // ── Kam'a 3 yeteneği ata ──────────────────────────────────────────
+            CharacterClassData kamData = AssetDatabase.LoadAssetAtPath<CharacterClassData>(
+                "Assets/Data/Characters/Kam.asset");
+            KamAbilityData[] abilities =
+            {
+                AssetDatabase.LoadAssetAtPath<KamAbilityData>("Assets/Data/Abilities/AtesTopu.asset"),
+                AssetDatabase.LoadAssetAtPath<KamAbilityData>("Assets/Data/Abilities/Sifa.asset"),
+                AssetDatabase.LoadAssetAtPath<KamAbilityData>("Assets/Data/Abilities/RuhKalkani.asset"),
+            };
+
+            if (kamData != null)
+            {
+                var kamSO    = new SerializedObject(kamData);
+                var listProp = kamSO.FindProperty("_abilities");
+                listProp.ClearArray();
+                int count = 0;
+                foreach (var ab in abilities) if (ab != null) count++;
+                listProp.arraySize = count;
+                int idx = 0;
+                foreach (var ab in abilities)
+                    if (ab != null) listProp.GetArrayElementAtIndex(idx++).objectReferenceValue = ab;
+                kamSO.ApplyModifiedProperties();
+                EditorUtility.SetDirty(kamData);
+            }
+            else
+            {
+                Debug.LogWarning("[Faz3] Kam.asset bulunamadi — yetenekler atanamadi. Once Faz 2'yi calistir.");
+            }
+
+            // ── UnitManager (GameManager üstünde) ─────────────────────────────
+            var oldUM = gameManagerGO.GetComponent<UnitManager>();
+            if (oldUM != null) Object.DestroyImmediate(oldUM);
+            UnitManager unitManager = gameManagerGO.AddComponent<UnitManager>();
+
+            // ── Kukla düşman (kırmızı kapsül) ─────────────────────────────────
+            GameObject oldEnemy = GameObject.Find("Enemy_Dummy");
+            if (oldEnemy != null) Object.DestroyImmediate(oldEnemy);
+
+            GameObject enemyGO = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            enemyGO.name = "Enemy_Dummy";
+            enemyGO.transform.SetParent(sceneRoot.transform);
+            enemyGO.transform.localScale = new Vector3(0.45f, 0.45f, 0.45f);
+            Object.DestroyImmediate(enemyGO.GetComponent<CapsuleCollider>());
+
+            Material enemyMat = GetOrCreateMaterial("EnemyPlaceholder", new Color(0.85f, 0.15f, 0.15f));
+            enemyGO.GetComponent<MeshRenderer>().sharedMaterial = enemyMat;
+
+            var enemyCoord = new HexCoordinate(5, 4);
+            enemyGO.transform.position = enemyCoord.ToWorldPosition(gridManager.HexSize) + Vector3.up * 0.8f;
+
+            Unit enemyUnit = enemyGO.AddComponent<Unit>();
+            var enemySO = new SerializedObject(enemyUnit);
+            enemySO.FindProperty("_displayName").stringValue          = "Kukla";
+            enemySO.FindProperty("_team").enumValueIndex              = (int)UnitTeam.Enemy;
+            enemySO.FindProperty("_maxHP").intValue                   = 12;
+            enemySO.FindProperty("_heightOffset").floatValue          = 0.8f;
+            enemySO.FindProperty("_gridManager").objectReferenceValue = gridManager;
+            enemySO.FindProperty("_unitManager").objectReferenceValue = unitManager;
+            enemySO.FindProperty("_coord").FindPropertyRelative("Q").intValue = 5;
+            enemySO.FindProperty("_coord").FindPropertyRelative("R").intValue = 4;
+            enemySO.ApplyModifiedProperties();
+
+            // ── AbilityCaster (GameManager üstünde) ───────────────────────────
+            var oldCaster = gameManagerGO.GetComponent<AbilityCaster>();
+            if (oldCaster != null) Object.DestroyImmediate(oldCaster);
+            AbilityCaster caster = gameManagerGO.AddComponent<AbilityCaster>();
+            var casterSO = new SerializedObject(caster);
+            casterSO.FindProperty("_player").objectReferenceValue       = player;
+            casterSO.FindProperty("_kamMana").objectReferenceValue      = kamMana;
+            casterSO.FindProperty("_partyManager").objectReferenceValue = party;
+            casterSO.FindProperty("_unitManager").objectReferenceValue  = unitManager;
+            casterSO.FindProperty("_casterClassName").stringValue       = "Kam";
+            casterSO.ApplyModifiedProperties();
+
+            // ── MapInputHandler'a caster'ı bağla ──────────────────────────────
+            var inputSO = new SerializedObject(input);
+            inputSO.FindProperty("_caster").objectReferenceValue = caster;
+            inputSO.ApplyModifiedProperties();
+
+            // ── AbilityTestHUD (GameManager üstünde) ──────────────────────────
+            var oldHud = gameManagerGO.GetComponent<AbilityTestHUD>();
+            if (oldHud != null) Object.DestroyImmediate(oldHud);
+            AbilityTestHUD hud = gameManagerGO.AddComponent<AbilityTestHUD>();
+            var hudSO = new SerializedObject(hud);
+            hudSO.FindProperty("_caster").objectReferenceValue      = caster;
+            hudSO.FindProperty("_kamMana").objectReferenceValue     = kamMana;
+            hudSO.FindProperty("_unitManager").objectReferenceValue = unitManager;
+            hudSO.ApplyModifiedProperties();
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            EditorUtility.DisplayDialog("Faz 3 — Yetenek Testi Hazir",
+                "Kurulanlar:\n" +
+                "  • Kukla dusman (kirmizi kapsul, Q5 R4, 12 HP)\n" +
+                "  • UnitManager + AbilityCaster + AbilityTestHUD\n" +
+                "  • Kam'a 3 yetenek atandi\n\n" +
+                "Play'e bas, sonra:\n" +
+                "  1 / 2 / 3 ile yetenek sec  →  kuklaya sol tikla.\n" +
+                "  Sag ust kosedeki panelden mana ve HP'yi izle.",
+                "Tamam");
+
+            Debug.Log("[TacticalRPG] Faz 3 (yetenek testi) kuruldu.");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // TANI — Sahne durumunu logla
         // ─────────────────────────────────────────────────────────────────────
 

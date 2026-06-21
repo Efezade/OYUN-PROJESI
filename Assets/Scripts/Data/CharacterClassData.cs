@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TacticalRPG.Data
@@ -30,6 +31,9 @@ namespace TacticalRPG.Data
         [SerializeField] private bool _hasManaSystem;
         [SerializeField] private int  _maxMana;
 
+        [Header("Yetenekler (Kam vb. — boş olabilir)")]
+        [SerializeField] private List<KamAbilityData> _abilities = new();
+
         // ── Kimlik ───────────────────────────────────────────────────────────
         public string ClassName => _className;
         public string Lore      => _lore;
@@ -43,6 +47,9 @@ namespace TacticalRPG.Data
         // ── Mana ─────────────────────────────────────────────────────────────
         public bool HasManaSystem => _hasManaSystem;
         public int  MaxMana       => _maxMana;
+
+        // ── Yetenekler ────────────────────────────────────────────────────────
+        public IReadOnlyList<KamAbilityData> Abilities => _abilities;
 
         // ── Seviye sorgulama ──────────────────────────────────────────────────
         public const int MaxLevel = 3; // 1, 2, 3
