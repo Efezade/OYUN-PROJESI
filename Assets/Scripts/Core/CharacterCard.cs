@@ -21,8 +21,9 @@ namespace TacticalRPG.Core
         public int Speed       => Data.Speed;
         public int AttackRange => Data.AttackRange;
 
-        public bool IsAlive    => CurrentHP > 0;
-        public bool CanLevelUp => Level < CharacterClassData.MaxLevel;
+        public bool IsAlive     => CurrentHP > 0;
+        public bool CanLevelUp  => Level < CharacterClassData.MaxLevel;
+        public bool IsCommander => Data.IsCommander;
 
         public event Action<int, int> OnHPChanged;   // current, max
         public event Action<int>      OnLevelChanged; // new level
@@ -46,6 +47,13 @@ namespace TacticalRPG.Core
         public void Heal(int amount)
         {
             CurrentHP = Math.Min(MaxHP, CurrentHP + Math.Max(0, amount));
+            OnHPChanged?.Invoke(CurrentHP, MaxHP);
+        }
+
+        /// <summary>HP'yi tamamen doldurur (her savaş başında taze birim olarak inmek için).</summary>
+        public void RestoreFull()
+        {
+            CurrentHP = MaxHP;
             OnHPChanged?.Invoke(CurrentHP, MaxHP);
         }
 

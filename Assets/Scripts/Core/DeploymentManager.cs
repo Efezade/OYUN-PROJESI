@@ -17,6 +17,8 @@ namespace TacticalRPG.Core
         [SerializeField] private HexGridManager    _grid;
         [SerializeField] private EssenceManager    _essence;
         [SerializeField] private UnitManager       _unitManager;
+        [Tooltip("Komutanı (Kam) otomatik indirmek için parti kaynağı.")]
+        [SerializeField] private PartyManager      _party;
 
         [Header("Yerleştirme Bölgesi")]
         [Tooltip("Savaş haritasının alt kaç satırı yerleştirme bölgesi olsun (R < bu değer).")]
@@ -36,9 +38,11 @@ namespace TacticalRPG.Core
         private readonly HashSet<CharacterCard> _deployedCards = new();
         private Transform _container;
         private Material  _zoneMat;
+        private Unit      _commanderUnit; // otomatik inen Kam (ücretsiz, zorunlu)
 
         public IReadOnlyList<HexCoordinate> Zone => _zone;
         public int  DeployedCount => _deployed.Count;
+        public Unit CommanderUnit => _commanderUnit; // otomatik inen Kam (yoksa null)
         public bool IsCardDeployed(CharacterCard c) => c != null && _deployedCards.Contains(c);
 
         private void OnEnable()
@@ -68,6 +72,7 @@ namespace TacticalRPG.Core
             TeardownDeployment(); // önceki kalıntı varsa temizle
             BuildZone();
             ShowMarkers();
+            SpawnCommander();     // Kam zorunlu + ücretsiz iner
         }
 
         // Pedleri kaldırır, yerleştirilen birimleri despawn eder, seçimi sıfırlar.
@@ -79,7 +84,8 @@ namespace TacticalRPG.Core
 
             _deployed.Clear();
             _deployedCards.Clear();
-            SelectedCard = null;
+            _commanderUnit = null;
+            SelectedCard   = null;
         }
 
         private void BuildZone()
@@ -102,6 +108,7 @@ namespace TacticalRPG.Core
         {
             if (_stateManager == null || _stateManager.State != GameState.Deployment) return false;
             if (SelectedCard == null)              return false;
+            if (SelectedCard.IsCommander)          return false; // Kam otomatik iner, elle yerleştirilmez
             if (IsCardDeployed(SelectedCard))      return false;
             if (!_zone.Contains(coord))            return false;
             if (_unitManager != null && _unitManager.GetUnitAt(coord) != null) return false;
@@ -136,17 +143,66 @@ namespace TacticalRPG.Core
                 go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
                 go.transform.SetParent(_container);
                 go.transform.localScale = Vector3.one * 0.45f;
-                TintRenderer(go.GetComponent<Renderer>(), _playerUnitColor);
+                // Her kahraman kendi sınıf rengiyle (UnitColor) gelir → ayırt edilebilir.
+                Color tint = card.Data != null ? card.Data.UnitColor : _playerUnitColor;
+                TintRenderer(go.GetComponent<Renderer>(), tint);
             }
             go.name = $"Unit_{card.Data.ClassName}_{coord}";
 
             Unit unit = go.GetComponent<Unit>();
             if (unit == null) unit = go.AddComponent<Unit>();
 
+            card.RestoreFull(); // taze birim olarak in (savaş başı tam HP)
             unit.Configure(_grid, _unitManager, UnitTeam.Player);
             unit.Bind(card);
             unit.PlaceAt(coord);
             return unit;
+        }
+
+        // ── Komutan (Kam) — zorunlu + ücretsiz iniş ───────────────────────────
+
+        /// <summary>Partideki komutanı (Kam) öz harcamadan, yerleştirme bölgesine otomatik indirir.</summary>
+        private void SpawnCommander()
+        {
+            if (_party == null) return;
+
+            CharacterCard commander = FindCommanderCard();
+            if (commander == null) return;
+
+            if (!TryPickCommanderCell(out HexCoordinate cell))
+            {
+                Debug.LogWarning("[Deployment] Komutan için boş yerleştirme hücresi bulunamadı.");
+                return;
+            }
+
+            _commanderUnit = SpawnUnit(cell, commander);
+            _deployed.Add(_commanderUnit);
+            _deployedCards.Add(commander);
+            Debug.Log($"[Deployment] Komutan {commander.Data.ClassName} → {cell} otomatik indi (ücretsiz).");
+        }
+
+        private CharacterCard FindCommanderCard()
+        {
+            foreach (var c in _party.Party)
+                if (c != null && c.IsCommander) return c;
+            return null;
+        }
+
+        // Yerleştirme bölgesinde komutana en uygun boş hücreyi seç (alt-orta tercih edilir).
+        private bool TryPickCommanderCell(out HexCoordinate result)
+        {
+            result = default;
+            int  centerQ = _grid != null ? _grid.Width / 2 : 5;
+            int  bestScore = int.MaxValue;
+            bool found = false;
+
+            foreach (var coord in _zone)
+            {
+                if (_unitManager != null && _unitManager.GetUnitAt(coord) != null) continue;
+                int score = coord.R * 100 + Mathf.Abs(coord.Q - centerQ); // önce en alt satır, sonra merkez sütun
+                if (score < bestScore) { bestScore = score; result = coord; found = true; }
+            }
+            return found;
         }
 
         // ── Görsel vurgulama ──────────────────────────────────────────────────

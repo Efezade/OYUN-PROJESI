@@ -33,6 +33,10 @@ namespace TacticalRPG.Data
 
         [Header("Deployment (savaşa sürme öz maliyeti)")]
         [SerializeField, Min(0)] private int _deployCost = 3;
+        [Tooltip("Komutan (Kam): savaşa ZORUNLU + ÜCRETSİZ iner, ölürse sefer kaybedilir.")]
+        [SerializeField] private bool _isCommander;
+        [Tooltip("Bu sınıfın savaş alanındaki birim rengi (her kahraman farklı renk olsun diye).")]
+        [SerializeField] private Color _unitColor = new(0.30f, 0.60f, 1f);
 
         [Header("Özel Sistem")]
         [SerializeField] private bool _hasManaSystem;
@@ -50,9 +54,11 @@ namespace TacticalRPG.Data
         public int BaseAttack   => _attack;
         public int BaseDefense  => _defense;
         public int MoveRange    => _moveRange;
-        public int Speed        => _speed;
-        public int AttackRange  => _attackRange;
-        public int DeployCost   => _deployCost;
+        public int   Speed       => _speed;
+        public int   AttackRange => _attackRange;
+        public int   DeployCost  => _deployCost;
+        public bool  IsCommander => _isCommander;
+        public Color UnitColor   => _unitColor;
 
         // ── Mana ─────────────────────────────────────────────────────────────
         public bool HasManaSystem => _hasManaSystem;

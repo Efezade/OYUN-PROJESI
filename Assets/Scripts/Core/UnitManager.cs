@@ -37,6 +37,17 @@ namespace TacticalRPG.Core
             return null;
         }
 
+        /// <summary>Yaşayan komutan (Kam) birimini döndürür; yoksa null.</summary>
+        public Unit GetCommander()
+        {
+            foreach (var u in _units)
+                if (u != null && u.IsAlive && u.IsCommander) return u;
+            return null;
+        }
+
+        /// <summary>Hayatta bir komutan (Kam) var mı? (Yenilgi kontrolü.)</summary>
+        public bool HasAliveCommander() => GetCommander() != null;
+
         /// <summary>Belirtilen takımdaki yaşayan birim sayısı (win/lose kontrolü).</summary>
         public int CountAlive(UnitTeam team)
         {

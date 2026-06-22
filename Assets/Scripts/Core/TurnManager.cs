@@ -29,7 +29,8 @@ namespace TacticalRPG.Core
         private readonly List<Unit> _order = new();
         private int  _index;
         private bool _combatActive;
-        private bool _busy; // hareket/AI coroutine sürüyor → oyuncu girdisi kilitli
+        private bool _busy;             // hareket/AI coroutine sürüyor → oyuncu girdisi kilitli
+        private bool _commanderPresent; // savaşta komutan (Kam) var mı → yenilgi koşulunu belirler
 
         public Unit         CurrentUnit     { get; private set; }
         public CombatResult Result          { get; private set; } = CombatResult.Ongoing;
@@ -73,6 +74,12 @@ namespace TacticalRPG.Core
             _combatActive = true;
             Result        = CombatResult.Ongoing;
             _index        = -1;
+
+            // Savaşa bir komutan (Kam) katıldıysa yenilgi = komutan ölümü; aksi halde
+            // (komutansız test) yenilgi = tüm oyuncu birimlerinin ölümü.
+            _commanderPresent = false;
+            foreach (var u in _order) if (u != null && u.IsCommander) { _commanderPresent = true; break; }
+
             SubscribeDeaths();
 
             if (CheckEnd()) return; // (teorik) tek taraf varsa hemen bitir
@@ -151,6 +158,19 @@ namespace TacticalRPG.Core
         {
             if (!IsPlayerTurn) return;
             AdvanceTurn();
+        }
+
+        /// <summary>
+        /// Kam başarılı bir büyü yaptığında AbilityCaster bunu çağırır: aktif birimin
+        /// "saldırı/eylem" hakkını tüketir, win/lose kontrolü + otomatik tur sonu yapar.
+        /// (Hasar/mana/etki AbilityCaster'da; burada yalnızca tur defteri tutulur.)
+        /// </summary>
+        public void RegisterCommanderAction()
+        {
+            if (!IsPlayerTurn || CurrentHasActed) return;
+            CurrentHasActed = true;
+            OnTurnChanged?.Invoke();
+            if (!CheckEnd()) AutoEndIfDone();
         }
 
         private void TryMove(Unit unit, HexCoordinate dest)
@@ -359,12 +379,16 @@ namespace TacticalRPG.Core
         private bool CheckEnd()
         {
             if (!_combatActive) return true;
+            if (_unitManager == null) return false;
 
-            int players = _unitManager != null ? _unitManager.CountAlive(UnitTeam.Player) : 0;
-            int enemies = _unitManager != null ? _unitManager.CountAlive(UnitTeam.Enemy)  : 0;
+            if (_unitManager.CountAlive(UnitTeam.Enemy) == 0)
+            { Finish(CombatResult.PlayerWon); return true; }
 
-            if (enemies == 0) { Finish(CombatResult.PlayerWon);  return true; }
-            if (players == 0) { Finish(CombatResult.PlayerLost); return true; }
+            // Yenilgi: komutan (Kam) varsa onun ölümü; yoksa tüm oyuncu birimleri.
+            bool lost = _commanderPresent
+                ? !_unitManager.HasAliveCommander()
+                : _unitManager.CountAlive(UnitTeam.Player) == 0;
+            if (lost) { Finish(CombatResult.PlayerLost); return true; }
             return false;
         }
 

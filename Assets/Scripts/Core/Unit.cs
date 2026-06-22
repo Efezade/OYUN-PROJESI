@@ -49,6 +49,7 @@ namespace TacticalRPG.Core
         public UnitTeam      Team        => _team;
         public HexCoordinate Coordinate  => _coord;
         public CharacterCard Card        => _card;
+        public bool          IsCommander => _card != null && _card.IsCommander;
 
         // ── Can / kalkan ──────────────────────────────────────────────────────
         public int  MaxHP     => _card != null ? _card.MaxHP     : _maxHP;

@@ -48,11 +48,12 @@ namespace TacticalRPG.Core
                 return;
             }
 
-            // Combat: tıklama = aktif birimi hareket ettir / düşmana saldır (TurnManager karar verir).
+            // Combat: Kam büyü hazırsa tıklama = büyü hedefleme; değilse hareket/saldırı.
             if (_stateManager != null && _stateManager.State == GameState.Combat)
             {
-                if (_turnManager != null && TryGetClickedCoord(out HexCoordinate combatCoord))
-                    _turnManager.HandlePlayerClick(combatCoord);
+                if (!TryGetClickedCoord(out HexCoordinate combatCoord)) return;
+                if (_caster != null && _caster.HasArmedAbility) { _caster.TryCastAt(combatCoord); return; }
+                if (_turnManager != null) _turnManager.HandlePlayerClick(combatCoord);
                 return;
             }
 

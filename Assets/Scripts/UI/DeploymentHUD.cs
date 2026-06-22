@@ -25,6 +25,7 @@ namespace TacticalRPG.UI
 
             GUILayout.Label("YERLESTIRME — kart sec, mavi hex'e tikla");
             GUILayout.Label($"Oz: {(_essence != null ? _essence.CurrentEssence : 0)}");
+            DrawCommanderLine();
             GUILayout.Space(4);
 
             DrawCardList();
@@ -43,12 +44,24 @@ namespace TacticalRPG.UI
             GUILayout.EndArea();
         }
 
+        // Komutan (Kam) elle yerleştirilmez — otomatik + ücretsiz iner.
+        private void DrawCommanderLine()
+        {
+            if (_party == null) return;
+            foreach (var card in _party.Party)
+            {
+                if (card == null || !card.IsCommander) continue;
+                GUILayout.Label($"Komutan: {card.Data.ClassName} — otomatik iner (ucretsiz)");
+            }
+        }
+
         private void DrawCardList()
         {
             if (_party == null || _deployment == null) return;
 
             foreach (var card in _party.Party)
             {
+                if (card.IsCommander) continue; // komutan otomatik iner, listede gösterilmez
                 bool deployed = _deployment.IsCardDeployed(card);
                 bool selected = _deployment.SelectedCard == card;
                 int  cost     = card.Data.DeployCost;

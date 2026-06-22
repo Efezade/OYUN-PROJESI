@@ -7,81 +7,105 @@ using TacticalRPG.Grid;
 namespace TacticalRPG.Core
 {
     /// <summary>
-    /// Kam'ın yeteneklerini kullanan kaster.
-    /// 1/2/3 tuşlarıyla yetenek "hazırlar" (arm), hedefe tıklanınca uygular.
-    /// Menzil = oyuncu konumundan (PlayerController.CurrentCoord) hedefe hex mesafesi.
-    /// Mana KamManaManager'dan harcanır. Etki uygulaması Unit üzerine.
-    /// (Tam combat/initiative Faz 3-4; bu, dikey dilim için kaster çekirdeği.)
+    /// Kam'ın (komutan) savaştaki büyü kasteri.
+    /// Origin = komutan BİRİMİNİN hex konumu (PlayerController değil); yetenekler komutanın
+    /// kartından okunur. Büyü, Kam'ın TUR EYLEMİDİR: yalnızca Kam'ın sırasında ve eylemi
+    /// harcanmamışken 1/2/3 ile hazırlanır, hedefe tıklanınca uygulanır. Mana KamManaManager'dan
+    /// düşer; başarı sonrası TurnManager'a eylem bildirilir (win/lose + otomatik tur sonu).
+    /// (Event-driven; bağımlılık tek yönlü: AbilityCaster → TurnManager/UnitManager/KamMana.)
     /// </summary>
     public class AbilityCaster : MonoBehaviour
     {
         [Header("Bağımlılıklar")]
-        [SerializeField] private PlayerController _player;
-        [SerializeField] private KamManaManager   _kamMana;
-        [SerializeField] private PartyManager     _partyManager;
-        [SerializeField] private UnitManager      _unitManager;
+        [SerializeField] private TurnManager    _turnManager;
+        [SerializeField] private KamManaManager _kamMana;
+        [SerializeField] private UnitManager    _unitManager;
 
-        [Header("Ayar")]
-        [Tooltip("Yetenekleri hangi parti sınıfından okuyacağı.")]
-        [SerializeField] private string _casterClassName = "Kam";
+        public KamAbilityData ArmedAbility    { get; private set; }
+        public bool           HasArmedAbility => ArmedAbility != null;
 
-        private IReadOnlyList<KamAbilityData> _abilities;
-
-        public IReadOnlyList<KamAbilityData> Abilities    => _abilities;
-        public KamAbilityData                ArmedAbility { get; private set; }
-        public bool                          HasArmedAbility => ArmedAbility != null;
+        /// <summary>Aktif komutanın (Kam) yetenek listesi — yoksa null.</summary>
+        public IReadOnlyList<KamAbilityData> Abilities
+        {
+            get
+            {
+                Unit cmd = _unitManager != null ? _unitManager.GetCommander() : null;
+                return cmd != null && cmd.Card != null ? cmd.Card.Data.Abilities : null;
+            }
+        }
 
         /// <summary>Hazırlanan yetenek / durum değişti (HUD yenilensin).</summary>
         public event Action         OnStateChanged;
         /// <summary>Kullanıcıya gösterilecek kısa geri bildirim metni.</summary>
         public event Action<string> OnCastMessage;
 
-        private void Start()
-        {
-            if (_partyManager != null)
-            {
-                CharacterCard card = _partyManager.FindByClass(_casterClassName);
-                if (card != null) _abilities = card.Data.Abilities;
-            }
-
-            if (_abilities == null || _abilities.Count == 0)
-                Debug.LogWarning($"[AbilityCaster] '{_casterClassName}' için yetenek bulunamadı. " +
-                                 "Faz 3 kurulumunu çalıştırdın mı / Kam'a yetenek atandı mı?");
-        }
-
         private void Update()
         {
-            if      (Input.GetKeyDown(KeyCode.Alpha1)) ArmIndex(0);
-            else if (Input.GetKeyDown(KeyCode.Alpha2)) ArmIndex(1);
-            else if (Input.GetKeyDown(KeyCode.Alpha3)) ArmIndex(2);
+            // Yalnızca Kam'ın oyuncu turunda büyü hazırlanabilir.
+            if (ActiveCommander() == null)
+            {
+                if (HasArmedAbility) Disarm();
+                return;
+            }
+
+            if      (Input.GetKeyDown(KeyCode.Alpha1)) ArmAbility(0);
+            else if (Input.GetKeyDown(KeyCode.Alpha2)) ArmAbility(1);
+            else if (Input.GetKeyDown(KeyCode.Alpha3)) ArmAbility(2);
             else if (Input.GetKeyDown(KeyCode.Escape) && HasArmedAbility) Disarm();
         }
 
-        private void ArmIndex(int index)
+        // ── Hazırlama ─────────────────────────────────────────────────────────
+
+        /// <summary>Belirtilen yeteneği hazırlar (yalnızca Kam'ın turunda, eylemi harcanmamışken).</summary>
+        public void ArmAbility(int index)
         {
-            if (_abilities == null || index < 0 || index >= _abilities.Count) return;
-            ArmedAbility = _abilities[index];
+            Unit cmd = ActiveCommander();
+            if (cmd == null) return;
+            if (_turnManager.CurrentHasActed) { Message("Bu tur eylem zaten yapildi."); return; }
+
+            var list = cmd.Card.Data.Abilities;
+            if (list == null || index < 0 || index >= list.Count) return;
+
+            ArmedAbility = list[index];
             OnStateChanged?.Invoke();
         }
 
-        private void Disarm()
+        public void Disarm()
         {
+            if (!HasArmedAbility) return;
             ArmedAbility = null;
             OnStateChanged?.Invoke();
         }
 
+        // ── Uygulama ──────────────────────────────────────────────────────────
+
         /// <summary>Hazırlanmış yeteneği hedef koordinata uygular. Başarı durumunu döndürür.</summary>
         public bool TryCastAt(HexCoordinate targetCoord)
         {
-            if (!HasArmedAbility)               return false;
-            if (_unitManager == null || _player == null) return false;
+            if (!HasArmedAbility) return false;
+
+            Unit cmd = ActiveCommander();
+            if (cmd == null) { Disarm(); return false; }
+            if (_turnManager.CurrentHasActed) { Message("Bu tur eylem zaten yapildi."); return false; }
 
             KamAbilityData ability = ArmedAbility;
 
-            Unit target = _unitManager.GetUnitAt(targetCoord);
-            if (target == null) { Message("Hedefte birim yok.");                       return false; }
+            Unit target = _unitManager != null ? _unitManager.GetUnitAt(targetCoord) : null;
+            if (target == null) { Message("Hedefte birim yok."); return false; }
 
-            int dist = _player.CurrentCoord.DistanceTo(targetCoord);
+            // Hedef türü: hasar düşmana, iyileştirme/güçlendirme dosta (Kam dahil).
+            bool validTarget = ability.Effect == AbilityEffectType.Damage
+                ? target.Team == UnitTeam.Enemy
+                : target.Team == UnitTeam.Player;
+            if (!validTarget)
+            {
+                Message(ability.Effect == AbilityEffectType.Damage
+                    ? "Hasar buyusu dusmana kullanilir."
+                    : "Bu buyu dost birime kullanilir.");
+                return false;
+            }
+
+            int dist = cmd.Coordinate.DistanceTo(targetCoord);
             if (dist > ability.Range) { Message($"Menzil disi ({dist} > {ability.Range})."); return false; }
 
             if (_kamMana == null || !_kamMana.CanCast(ability.ManaCost))
@@ -89,9 +113,10 @@ namespace TacticalRPG.Core
 
             _kamMana.TrySpendMana(ability.ManaCost);
             ApplyEffect(ability, target);
-
             Message($"{ability.DisplayName} -> {target.DisplayName}  ({ability.Effect} {ability.Power})");
-            Disarm(); // tek kullanım sonrası bırak
+
+            Disarm();
+            _turnManager.RegisterCommanderAction(); // eylemi tüket + win/lose + otomatik tur sonu
             return true;
         }
 
@@ -103,6 +128,16 @@ namespace TacticalRPG.Core
                 case AbilityEffectType.Heal:   target.Heal(ability.Power);       break;
                 case AbilityEffectType.Buff:   target.AddShield(ability.Power);  break;
             }
+        }
+
+        // ── Yardımcılar ───────────────────────────────────────────────────────
+
+        // Şu an oynayabilir durumdaki komutan birimi (Kam'ın oyuncu turu) — değilse null.
+        private Unit ActiveCommander()
+        {
+            if (_turnManager == null || !_turnManager.IsPlayerTurn) return null;
+            Unit cur = _turnManager.CurrentUnit;
+            return (cur != null && cur.IsCommander && cur.Card != null) ? cur : null;
         }
 
         private void Message(string text)

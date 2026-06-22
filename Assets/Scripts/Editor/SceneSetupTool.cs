@@ -43,6 +43,7 @@ namespace TacticalRPG.Editor
                 SetupPhaseB();    // deployment (oz ile birim yerlestirme)
                 SetupPhaseC();    // dusman roster spawn (3 Goblin)
                 SetupPhaseC3();   // tur sistemi (initiative + hareket + saldiri + AI)
+                SetupPhaseC4();   // Kam komutan + savas buyusu + lose=Kam olumu
             }
             finally { _silentSetup = false; }
 
@@ -60,9 +61,11 @@ namespace TacticalRPG.Editor
                 "  • Faz A — Overworld/Savas gecisi + gorev\n" +
                 "  • Faz B — Deployment (oz ile yerlestirme)\n" +
                 "  • Faz C — Dusman spawn (3 Goblin)\n" +
-                "  • Faz C3 — Tur sistemi (initiative + hareket + saldiri + AI)\n\n" +
+                "  • Faz C3 — Tur sistemi (initiative + hareket + saldiri + AI)\n" +
+                "  • Faz C4 — Kam komutan + savas buyusu + lose=Kam olumu\n\n" +
                 "Ctrl+S ile kaydet, Play'e bas:\n" +
-                "Sari marker (Q5R5) → Evet → yerlestir → SAVASI BASLAT.",
+                "Sari marker (Q5R5) → Evet → Kam otomatik iner → digerlerini yerlestir →\n" +
+                "SAVASI BASLAT. Kam'in turunda 1/2/3 ile buyu sec, hedefe tikla.",
                 "Tamam");
         }
 
@@ -352,7 +355,8 @@ namespace TacticalRPG.Editor
                 hpMult:  new[] { 1f, 1.25f, 1.6f  },
                 atkMult: new[] { 1f, 1.3f,  1.7f  },
                 defMult: new[] { 1f, 1.1f,  1.3f  },
-                hasMana: true, maxMana: 10);
+                hasMana: true, maxMana: 10,
+                isCommander: true, unitColor: new Color(1f, 0.80f, 0.15f)); // Kam = altın (komutan)
 
             CharacterClassData warriorData = GetOrCreateCharacterSO(
                 path: "Assets/Data/Characters/Savascı.asset", className: "Savasci",
@@ -362,7 +366,8 @@ namespace TacticalRPG.Editor
                 hpMult:  new[] { 1f, 1.35f, 1.75f },
                 atkMult: new[] { 1f, 1.2f,  1.5f  },
                 defMult: new[] { 1f, 1.25f, 1.6f  },
-                hasMana: false, maxMana: 0);
+                hasMana: false, maxMana: 0,
+                unitColor: new Color(0.25f, 0.45f, 0.95f)); // Savasci = mavi
 
             CharacterClassData rangerData = GetOrCreateCharacterSO(
                 path: "Assets/Data/Characters/Ranger.asset", className: "Ranger",
@@ -372,7 +377,8 @@ namespace TacticalRPG.Editor
                 hpMult:  new[] { 1f, 1.2f,  1.55f },
                 atkMult: new[] { 1f, 1.25f, 1.6f  },
                 defMult: new[] { 1f, 1.1f,  1.25f },
-                hasMana: false, maxMana: 0);
+                hasMana: false, maxMana: 0,
+                unitColor: new Color(0.20f, 0.80f, 0.75f)); // Ranger = turkuaz
 
             GameObject gameManagerGO = sceneRoot != null
                 ? sceneRoot.transform.Find("GameManager")?.gameObject
@@ -609,15 +615,15 @@ namespace TacticalRPG.Editor
             enemySO.ApplyModifiedProperties();
 
             // ── AbilityCaster (GameManager üstünde) ───────────────────────────
+            // NOT: Faz 3 eski test sandbox'ıdır; gerçek savaş büyüsü artık Faz C4'tedir
+            // (turn-tabanlı, komutan birimi origin). Burada sadece referansları bağlarız;
+            // tam işlev için Faz C4 + tur sistemi (Faz C3) gerekir.
             var oldCaster = gameManagerGO.GetComponent<AbilityCaster>();
             if (oldCaster != null) Object.DestroyImmediate(oldCaster);
             AbilityCaster caster = gameManagerGO.AddComponent<AbilityCaster>();
             var casterSO = new SerializedObject(caster);
-            casterSO.FindProperty("_player").objectReferenceValue       = player;
-            casterSO.FindProperty("_kamMana").objectReferenceValue      = kamMana;
-            casterSO.FindProperty("_partyManager").objectReferenceValue = party;
-            casterSO.FindProperty("_unitManager").objectReferenceValue  = unitManager;
-            casterSO.FindProperty("_casterClassName").stringValue       = "Kam";
+            casterSO.FindProperty("_kamMana").objectReferenceValue     = kamMana;
+            casterSO.FindProperty("_unitManager").objectReferenceValue = unitManager;
             casterSO.ApplyModifiedProperties();
 
             // ── MapInputHandler'a caster'ı bağla ──────────────────────────────
@@ -1055,6 +1061,120 @@ namespace TacticalRPG.Editor
         }
 
         // ─────────────────────────────────────────────────────────────────────
+        // FAZ C4 — Kam komutan (zorunlu birim) + savaş büyüsü + lose=Kam ölümü
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/Faz C4 - Kam Komutan + Buyu", false, 20)]
+        public static void SetupPhaseC4()
+        {
+            GameObject sceneRoot     = GameObject.Find(SceneRootName);
+            GameObject gameManagerGO = sceneRoot != null
+                ? sceneRoot.transform.Find("GameManager")?.gameObject
+                : null;
+
+            if (gameManagerGO == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "GameManager bulunamadi! Once TAM KURULUM (veya Faz 0-2 + A + B + C + C3) calistir.", "Tamam");
+                return;
+            }
+
+            KamManaManager    kamMana   = FindComponentAnywhere<KamManaManager>();
+            UnitManager       um        = FindComponentAnywhere<UnitManager>();
+            PartyManager      party     = FindComponentAnywhere<PartyManager>();
+            MapInputHandler   input     = FindComponentAnywhere<MapInputHandler>();
+            TurnManager       tm        = FindComponentAnywhere<TurnManager>();
+            DeploymentManager dm        = FindComponentAnywhere<DeploymentManager>();
+            CombatHUD         combatHUD = FindComponentAnywhere<CombatHUD>();
+
+            if (kamMana == null || um == null || party == null || input == null || tm == null || dm == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "Gerekli sistemler eksik (KamMana/UnitManager/Party/Input/TurnManager/Deployment).\n" +
+                    "Once Faz 2 + Faz A + Faz B + Faz C + Faz C3'u calistir.", "Tamam");
+                return;
+            }
+
+            // ── 1) Kam büyüleri (create-or-load) + Kam'a ata ───────────────────
+            EnsureFolder("Assets/Data");
+            EnsureFolder("Assets/Data/Abilities");
+            KamAbilityData ates = GetOrCreateAbilitySO(
+                "Assets/Data/Abilities/AtesTopu.asset", "ates_topu", "Ates Topu",
+                "Hedef dusmana alev yagdirir.", AbilityEffectType.Damage, manaCost: 3, range: 4, power: 6);
+            KamAbilityData sifa = GetOrCreateAbilitySO(
+                "Assets/Data/Abilities/Sifa.asset", "sifa", "Sifa",
+                "Dost birimi iyilestirir.", AbilityEffectType.Heal, manaCost: 2, range: 3, power: 5);
+            KamAbilityData kalkan = GetOrCreateAbilitySO(
+                "Assets/Data/Abilities/RuhKalkani.asset", "ruh_kalkani", "Ruh Kalkani",
+                "Dost birime kalkan verir.", AbilityEffectType.Buff, manaCost: 4, range: 2, power: 3);
+
+            CharacterClassData kamData = AssetDatabase.LoadAssetAtPath<CharacterClassData>(
+                "Assets/Data/Characters/Kam.asset");
+            if (kamData != null)
+            {
+                var kamSO = new SerializedObject(kamData);
+                kamSO.FindProperty("_isCommander").boolValue = true; // garanti (Faz 2 tekrar calismadi ise)
+                var listProp = kamSO.FindProperty("_abilities");
+                listProp.ClearArray();
+                listProp.arraySize = 3;
+                listProp.GetArrayElementAtIndex(0).objectReferenceValue = ates;
+                listProp.GetArrayElementAtIndex(1).objectReferenceValue = sifa;
+                listProp.GetArrayElementAtIndex(2).objectReferenceValue = kalkan;
+                kamSO.ApplyModifiedProperties();
+                EditorUtility.SetDirty(kamData);
+            }
+            else Debug.LogWarning("[Faz C4] Kam.asset bulunamadi — once Faz 2'yi calistir.");
+
+            // ── 2) AbilityCaster (GameManager üstünde) — origin: komutan birimi ─
+            var oldCaster = gameManagerGO.GetComponent<AbilityCaster>();
+            if (oldCaster != null) Object.DestroyImmediate(oldCaster);
+            AbilityCaster caster = gameManagerGO.AddComponent<AbilityCaster>();
+            var casterSO = new SerializedObject(caster);
+            casterSO.FindProperty("_turnManager").objectReferenceValue = tm;
+            casterSO.FindProperty("_kamMana").objectReferenceValue     = kamMana;
+            casterSO.FindProperty("_unitManager").objectReferenceValue = um;
+            casterSO.ApplyModifiedProperties();
+
+            // ── 3) MapInputHandler'a caster'i bagla (combat'ta buyu hedefleme) ─
+            var inputSO = new SerializedObject(input);
+            inputSO.FindProperty("_caster").objectReferenceValue = caster;
+            inputSO.ApplyModifiedProperties();
+
+            // ── 4) DeploymentManager'a party'yi bagla (Kam otomatik iner) ──────
+            var dmSO = new SerializedObject(dm);
+            dmSO.FindProperty("_party").objectReferenceValue = party;
+            dmSO.ApplyModifiedProperties();
+
+            // ── 5) CombatHUD'a caster + mana bagla (Kam turunda buyu paneli) ───
+            if (combatHUD != null)
+            {
+                var chSO = new SerializedObject(combatHUD);
+                chSO.FindProperty("_caster").objectReferenceValue  = caster;
+                chSO.FindProperty("_kamMana").objectReferenceValue = kamMana;
+                chSO.ApplyModifiedProperties();
+            }
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            if (!_silentSetup) EditorUtility.DisplayDialog("Faz C4 — Kam Komutan + Buyu Hazir",
+                "Kurulanlar:\n" +
+                "  • Kam artik KOMUTAN: savasa zorunlu + ucretsiz iner (altin renk)\n" +
+                "  • Diger kahramanlar farkli renklerde (Savasci mavi, Ranger turkuaz)\n" +
+                "  • Kam'a 3 buyu atandi (Ates Topu / Sifa / Ruh Kalkani)\n" +
+                "  • AbilityCaster combat'a baglandi (origin: Kam birimi)\n" +
+                "  • YENILGI artik = Kam'in olumu (sefer biter)\n\n" +
+                "Play → marker → Evet → YERLESTIRME (Kam otomatik iner):\n" +
+                "  • Kam'in turunda 1/2/3 ile buyu sec → hedefe tikla (mana harcanir).\n" +
+                "  • Hasar dusmana; Sifa/Kalkan dost birime (Kam dahil).\n" +
+                "  • Kam olurse YENILGI; tum Goblinler olunce ZAFER.",
+                "Tamam");
+
+            Debug.Log("[TacticalRPG] Faz C4 (Kam komutan + buyu) kuruldu.");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // TANI — Sahne durumunu logla
         // ─────────────────────────────────────────────────────────────────────
 
@@ -1197,7 +1317,8 @@ namespace TacticalRPG.Editor
             string path, string className, string lore,
             int maxHP, int attack, int defense, int moveRange,
             int[] essenceCosts, float[] hpMult, float[] atkMult, float[] defMult,
-            bool hasMana, int maxMana, int speed = 5, int attackRange = 1)
+            bool hasMana, int maxMana, int speed = 5, int attackRange = 1,
+            bool isCommander = false, Color? unitColor = null)
         {
             CharacterClassData so = AssetDatabase.LoadAssetAtPath<CharacterClassData>(path);
             if (so == null)
@@ -1216,10 +1337,35 @@ namespace TacticalRPG.Editor
             s.FindProperty("_attackRange").intValue    = attackRange;
             s.FindProperty("_hasManaSystem").boolValue = hasMana;
             s.FindProperty("_maxMana").intValue        = maxMana;
+            s.FindProperty("_isCommander").boolValue   = isCommander;
+            if (unitColor.HasValue) s.FindProperty("_unitColor").colorValue = unitColor.Value;
             SetIntArray(s,   "_essenceCostPerLevel",   essenceCosts);
             SetFloatArray(s, "_hpMultiplierPerLevel",  hpMult);
             SetFloatArray(s, "_atkMultiplierPerLevel", atkMult);
             SetFloatArray(s, "_defMultiplierPerLevel", defMult);
+            s.ApplyModifiedProperties();
+            EditorUtility.SetDirty(so);
+            return so;
+        }
+
+        private static KamAbilityData GetOrCreateAbilitySO(
+            string path, string id, string displayName, string description,
+            AbilityEffectType effect, int manaCost, int range, int power)
+        {
+            KamAbilityData so = AssetDatabase.LoadAssetAtPath<KamAbilityData>(path);
+            if (so == null)
+            {
+                so = ScriptableObject.CreateInstance<KamAbilityData>();
+                AssetDatabase.CreateAsset(so, path);
+            }
+            var s = new SerializedObject(so);
+            s.FindProperty("_id").stringValue          = id;
+            s.FindProperty("_displayName").stringValue = displayName;
+            s.FindProperty("_description").stringValue = description;
+            s.FindProperty("_manaCost").intValue       = manaCost;
+            s.FindProperty("_range").intValue          = range;
+            s.FindProperty("_effect").enumValueIndex   = (int)effect;
+            s.FindProperty("_power").intValue          = power;
             s.ApplyModifiedProperties();
             EditorUtility.SetDirty(so);
             return so;
