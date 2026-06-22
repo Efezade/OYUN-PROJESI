@@ -6,16 +6,19 @@ using TacticalRPG.Data;
 namespace TacticalRPG.Core
 {
     /// <summary>
-    /// Parti kartlarını yönetir: oluşturma, seviye atlama, kayıp takibi.
-    /// Tüm öz harcaması bu sınıf üzerinden geçer (EssenceManager'ı doğrudan çağırır).
+    /// Parti kartlarını yönetir: üretme (öz tarifi), seviye atlama, kayıp takibi.
+    /// Tüm öz harcaması EssenceWallet (çok-tipli) üzerinden geçer.
     /// </summary>
     public class PartyManager : MonoBehaviour
     {
         [Header("Bağımlılıklar")]
-        [SerializeField] private EssenceManager _essenceManager;
+        [SerializeField] private EssenceWallet _wallet;
 
-        [Header("Başlangıç Partisi")]
+        [Header("Başlangıç Partisi (genelde sadece Kam — diğerleri özle üretilir)")]
         [SerializeField] private List<CharacterClassData> _startingClasses = new();
+
+        [Tooltip("Seviye atlama maliyetinin harcanacağı öz türü (geçici — çok-tipliye sonra genişler).")]
+        [SerializeField] private EssenceType _levelUpCostType = EssenceType.Toprak;
 
         private readonly List<CharacterCard> _party = new();
 
@@ -27,6 +30,8 @@ namespace TacticalRPG.Core
         public event Action<CharacterCard>       OnCardDied;
         /// <summary>Parti tamamen silindi → Game Over</summary>
         public event Action                      OnPartyWiped;
+        /// <summary>Roster değişti (yeni birim üretildi) → UI yenilensin.</summary>
+        public event Action                      OnRosterChanged;
 
         private void Awake()
         {
@@ -44,6 +49,22 @@ namespace TacticalRPG.Core
             return card;
         }
 
+        /// <summary>Öz tarifini harcayarak yeni bir asker kartı üretir (overworld). Başarıyı döndürür.</summary>
+        public bool TryCreate(UnitRecipe recipe)
+        {
+            if (recipe == null || recipe.UnitClass == null) return false;
+            if (_wallet == null || !_wallet.TrySpend(recipe.Cost))
+            {
+                Debug.Log($"[Party] {recipe.DisplayName} için yeterli öz yok.");
+                return false;
+            }
+
+            CharacterCard card = AddCard(recipe.UnitClass);
+            OnRosterChanged?.Invoke();
+            Debug.Log($"[Party] {recipe.DisplayName} üretildi.");
+            return card != null;
+        }
+
         // ── Seviye atlama ─────────────────────────────────────────────────────
 
         /// <summary>Öz yeterliyse kartı bir seviye yükseltir. Başarı durumunu döndürür.</summary>
@@ -52,10 +73,11 @@ namespace TacticalRPG.Core
             if (card == null || !card.CanLevelUp) return false;
 
             int cost = card.Data.GetEssenceCost(card.Level + 1);
-            if (_essenceManager == null || !_essenceManager.TrySpend(cost))
+            var typedCost = new[] { new EssenceAmount(_levelUpCostType, cost) };
+            if (_wallet == null || !_wallet.TrySpend(typedCost))
             {
-                Debug.Log($"[Party] {card.Data.ClassName} Sv{card.Level + 1} için yeterli öz yok. " +
-                          $"Gerekli: {cost}  Mevcut: {_essenceManager?.CurrentEssence ?? 0}");
+                Debug.Log($"[Party] {card.Data.ClassName} Sv{card.Level + 1} için yeterli öz yok " +
+                          $"(gerekli: {cost} {_levelUpCostType}).");
                 return false;
             }
 

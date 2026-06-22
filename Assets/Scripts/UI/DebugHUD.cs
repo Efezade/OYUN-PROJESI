@@ -2,6 +2,7 @@ using System.Text;
 using UnityEngine;
 using TMPro;
 using TacticalRPG.Core;
+using TacticalRPG.Data;
 
 namespace TacticalRPG.UI
 {
@@ -14,7 +15,7 @@ namespace TacticalRPG.UI
         [Header("Bağımlılıklar")]
         [SerializeField] private ActionPointManager  _apManager;
         [SerializeField] private MapCollapseManager  _collapseManager;
-        [SerializeField] private EssenceManager      _essenceManager;
+        [SerializeField] private EssenceWallet       _wallet;
         [SerializeField] private KamManaManager      _kamMana;
 
         [Header("UI Etiketleri")]
@@ -35,8 +36,8 @@ namespace TacticalRPG.UI
             }
             if (_collapseManager != null)
                 _collapseManager.OnTileCollapsed += HandleTileCollapsed;
-            if (_essenceManager != null)
-                _essenceManager.OnEssenceChanged += HandleEssenceChanged;
+            if (_wallet != null)
+                _wallet.OnChanged += HandleEssenceChanged;
             if (_kamMana != null)
                 _kamMana.OnManaChanged += HandleManaChanged;
         }
@@ -50,8 +51,8 @@ namespace TacticalRPG.UI
             }
             if (_collapseManager != null)
                 _collapseManager.OnTileCollapsed -= HandleTileCollapsed;
-            if (_essenceManager != null)
-                _essenceManager.OnEssenceChanged -= HandleEssenceChanged;
+            if (_wallet != null)
+                _wallet.OnChanged -= HandleEssenceChanged;
             if (_kamMana != null)
                 _kamMana.OnManaChanged -= HandleManaChanged;
         }
@@ -62,7 +63,7 @@ namespace TacticalRPG.UI
                 _collapseLabel.gameObject.SetActive(false);
 
             if (_essenceLabel != null)
-                _essenceLabel.gameObject.SetActive(_essenceManager != null);
+                _essenceLabel.gameObject.SetActive(_wallet != null);
             if (_kamManaLabel != null)
                 _kamManaLabel.gameObject.SetActive(_kamMana != null);
 
@@ -73,8 +74,8 @@ namespace TacticalRPG.UI
                 HandleTimeAdvanced(_apManager.CurrentDay, _apManager.CurrentSlot,
                                    _apManager.GetCurrentSlotName());
             }
-            if (_essenceManager != null)
-                HandleEssenceChanged(_essenceManager.CurrentEssence, 0);
+            if (_wallet != null)
+                HandleEssenceChanged();
             if (_kamMana != null)
                 HandleManaChanged(_kamMana.CurrentMana, _kamMana.MaxMana);
         }
@@ -98,10 +99,13 @@ namespace TacticalRPG.UI
             _timeLabel.text = $"Gün {day}  ·  {slotName}";
         }
 
-        private void HandleEssenceChanged(int current, int delta)
+        private void HandleEssenceChanged()
         {
-            if (_essenceLabel == null) return;
-            _essenceLabel.text = $"Öz  {current}";
+            if (_essenceLabel == null || _wallet == null) return;
+            _essenceLabel.text =
+                $"Öz  {EssenceType.Ates}:{_wallet.Get(EssenceType.Ates)}  " +
+                $"{EssenceType.Su}:{_wallet.Get(EssenceType.Su)}  " +
+                $"{EssenceType.Toprak}:{_wallet.Get(EssenceType.Toprak)}";
         }
 
         private void HandleManaChanged(int current, int max)

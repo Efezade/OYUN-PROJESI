@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e253ec72a59904d48b61e357c9b71868, type: 3}
+  m_Name: EssenceConfig
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.EssenceConfigSO
+  _types:
+  - type: 0
+    displayName: Ates
+    color: {r: 0.9, g: 0.25, b: 0.2, a: 1}
+    spawnWeight: 1
+  - type: 1
+    displayName: Su
+    color: {r: 0.25, g: 0.5, b: 0.95, a: 1}
+    spawnWeight: 1
+  - type: 2
+    displayName: Toprak
+    color: {r: 0.35, g: 0.75, b: 0.35, a: 1}
+    spawnWeight: 1
+  _tileChance: 0.55
+  _minPerTile: 1
+  _maxPerTile: 4

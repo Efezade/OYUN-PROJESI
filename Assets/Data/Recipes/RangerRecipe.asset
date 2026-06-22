@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89b9ebd443167cf47842e329d3f834ed, type: 3}
+  m_Name: RangerRecipe
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.UnitRecipe
+  _displayName: Ranger
+  _unitClass: {fileID: 11400000, guid: 1b53cd56646ed1b4eb4525137fd5571d, type: 2}
+  _cost:
+  - type: 1
+    amount: 2
+  - type: 2
+    amount: 1

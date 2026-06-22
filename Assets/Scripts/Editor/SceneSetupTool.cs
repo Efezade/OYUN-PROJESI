@@ -44,6 +44,7 @@ namespace TacticalRPG.Editor
                 SetupPhaseC();    // dusman roster spawn (3 Goblin)
                 SetupPhaseC3();   // tur sistemi (initiative + hareket + saldiri + AI)
                 SetupPhaseC4();   // Kam komutan + savas buyusu + lose=Kam olumu
+                SetupPhaseD();    // cok-tipli oz + harita toplama + tarifle birim uretme
             }
             finally { _silentSetup = false; }
 
@@ -62,10 +63,11 @@ namespace TacticalRPG.Editor
                 "  • Faz B — Deployment (oz ile yerlestirme)\n" +
                 "  • Faz C — Dusman spawn (3 Goblin)\n" +
                 "  • Faz C3 — Tur sistemi (initiative + hareket + saldiri + AI)\n" +
-                "  • Faz C4 — Kam komutan + savas buyusu + lose=Kam olumu\n\n" +
+                "  • Faz C4 — Kam komutan + savas buyusu + lose=Kam olumu\n" +
+                "  • Faz D — Cok-tipli oz + harita toplama + tarifle birim uretme\n\n" +
                 "Ctrl+S ile kaydet, Play'e bas:\n" +
-                "Sari marker (Q5R5) → Evet → Kam otomatik iner → digerlerini yerlestir →\n" +
-                "SAVASI BASLAT. Kam'in turunda 1/2/3 ile buyu sec, hedefe tikla.",
+                "Overworld'de renkli ozleri TOPLA (sag panel, 1 AP) → SavasciRanger URET →\n" +
+                "Sari marker (Q5R5) → Evet → Kam + uretilen birimleri yerlestir → SAVASI BASLAT.",
                 "Tamam");
         }
 
@@ -390,27 +392,27 @@ namespace TacticalRPG.Editor
                 gameManagerGO.transform.SetParent(systemsRoot.transform);
             }
 
-            // EssenceManager
-            var oldEM = gameManagerGO.GetComponent<EssenceManager>();
+            // EssenceWallet (çok-tipli öz — eski tek-havuz EssenceManager yerine)
+            var oldEM = gameManagerGO.GetComponent<EssenceWallet>();
             if (oldEM != null) Object.DestroyImmediate(oldEM);
-            EssenceManager essManager = gameManagerGO.AddComponent<EssenceManager>();
-            var emSO = new SerializedObject(essManager);
-            emSO.FindProperty("_startingEssence").intValue = 0;
-            emSO.FindProperty("_maxEssence").intValue      = 99;
+            EssenceWallet wallet = gameManagerGO.AddComponent<EssenceWallet>();
+            var emSO = new SerializedObject(wallet);
+            emSO.FindProperty("_startAtes").intValue   = 4; // test: bir-iki birim üretmeye yeter
+            emSO.FindProperty("_startSu").intValue     = 4;
+            emSO.FindProperty("_startToprak").intValue = 4;
             emSO.ApplyModifiedProperties();
 
-            // PartyManager
+            // PartyManager — başlangıçta SADECE Kam; Savaşçı/Ranger özle üretilir (Faz D tarifleri)
             var oldPM = gameManagerGO.GetComponent<PartyManager>();
             if (oldPM != null) Object.DestroyImmediate(oldPM);
             PartyManager partyManager = gameManagerGO.AddComponent<PartyManager>();
             var pmSO = new SerializedObject(partyManager);
-            pmSO.FindProperty("_essenceManager").objectReferenceValue = essManager;
+            pmSO.FindProperty("_wallet").objectReferenceValue = wallet;
             var classList = pmSO.FindProperty("_startingClasses");
             classList.ClearArray();
-            classList.arraySize = 3;
+            classList.arraySize = 1;
             classList.GetArrayElementAtIndex(0).objectReferenceValue = kamData;
-            classList.GetArrayElementAtIndex(1).objectReferenceValue = warriorData;
-            classList.GetArrayElementAtIndex(2).objectReferenceValue = rangerData;
+            // warriorData/rangerData asset olarak yine üretildi (üstte) — Faz D tarifleri path'ten yükler.
             pmSO.ApplyModifiedProperties();
 
             // KamManaManager
@@ -439,7 +441,7 @@ namespace TacticalRPG.Editor
         {
             ActionPointManager apManager       = FindComponentAnywhere<ActionPointManager>();
             MapCollapseManager collapseManager = FindComponentAnywhere<MapCollapseManager>();
-            EssenceManager     essManager      = FindComponentAnywhere<EssenceManager>();
+            EssenceWallet      wallet          = FindComponentAnywhere<EssenceWallet>();
             KamManaManager     kamMana         = FindComponentAnywhere<KamManaManager>();
 
             if (apManager == null)
@@ -505,7 +507,7 @@ namespace TacticalRPG.Editor
             var hudSO = new SerializedObject(hud);
             hudSO.FindProperty("_apManager").objectReferenceValue       = apManager;
             hudSO.FindProperty("_collapseManager").objectReferenceValue = collapseManager;
-            hudSO.FindProperty("_essenceManager").objectReferenceValue  = essManager;
+            hudSO.FindProperty("_wallet").objectReferenceValue          = wallet;
             hudSO.FindProperty("_kamMana").objectReferenceValue         = kamMana;
             hudSO.FindProperty("_timeLabel").objectReferenceValue       = timeLabel;
             hudSO.FindProperty("_apLabel").objectReferenceValue         = apLabel;
@@ -807,23 +809,19 @@ namespace TacticalRPG.Editor
             }
 
             HexGridManager   grid    = FindComponentAnywhere<HexGridManager>();
-            EssenceManager   essence = FindComponentAnywhere<EssenceManager>();
             PartyManager     party   = FindComponentAnywhere<PartyManager>();
             MapInputHandler  input   = FindComponentAnywhere<MapInputHandler>();
             GameStateManager gsm     = FindComponentAnywhere<GameStateManager>();
 
-            if (grid == null || essence == null || party == null || input == null || gsm == null)
+            if (grid == null || party == null || input == null || gsm == null)
             {
                 EditorUtility.DisplayDialog("Hata",
-                    "Gerekli sistemler eksik (Grid/Essence/Party/Input/GameState).\n" +
+                    "Gerekli sistemler eksik (Grid/Party/Input/GameState).\n" +
                     "Once Faz 2 ve Faz A'yi calistir.", "Tamam");
                 return;
             }
 
-            // ── Test icin baslangic ozunu yukselt (deploy edebilmek icin) ──
-            var emSO = new SerializedObject(essence);
-            emSO.FindProperty("_startingEssence").intValue = 20;
-            emSO.ApplyModifiedProperties();
+            // Deployment artık bedava (öz birim üretirken harcanır) — başlangıç özü Faz D'de.
 
             // ── UnitManager (Faz A silmisti — geri ekle) ──
             var oldUM = gameManagerGO.GetComponent<UnitManager>();
@@ -837,8 +835,8 @@ namespace TacticalRPG.Editor
             var dmSO = new SerializedObject(dm);
             dmSO.FindProperty("_stateManager").objectReferenceValue = gsm;
             dmSO.FindProperty("_grid").objectReferenceValue         = grid;
-            dmSO.FindProperty("_essence").objectReferenceValue      = essence;
             dmSO.FindProperty("_unitManager").objectReferenceValue  = unitManager;
+            dmSO.FindProperty("_party").objectReferenceValue        = party;
             dmSO.FindProperty("_deployZoneRows").intValue           = 2;
             dmSO.ApplyModifiedProperties();
 
@@ -850,7 +848,6 @@ namespace TacticalRPG.Editor
             dhSO.FindProperty("_state").objectReferenceValue      = gsm;
             dhSO.FindProperty("_deployment").objectReferenceValue = dm;
             dhSO.FindProperty("_party").objectReferenceValue      = party;
-            dhSO.FindProperty("_essence").objectReferenceValue    = essence;
             dhSO.ApplyModifiedProperties();
 
             // ── MapInputHandler'a deployment bagla ──
@@ -1175,6 +1172,167 @@ namespace TacticalRPG.Editor
         }
 
         // ─────────────────────────────────────────────────────────────────────
+        // FAZ D — Çok-tipli öz + harita toplama + tarifle birim üretme
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/Faz D - Oz Toplama + Birim Uretme", false, 21)]
+        public static void SetupPhaseD()
+        {
+            GameObject sceneRoot     = GameObject.Find(SceneRootName);
+            GameObject gameManagerGO = sceneRoot != null
+                ? sceneRoot.transform.Find("GameManager")?.gameObject
+                : null;
+
+            if (gameManagerGO == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "GameManager bulunamadi! Once TAM KURULUM (veya Faz 0-2 + A) calistir.", "Tamam");
+                return;
+            }
+
+            HexGridManager     grid   = FindComponentAnywhere<HexGridManager>();
+            GameStateManager   gsm    = FindComponentAnywhere<GameStateManager>();
+            PlayerController    player = FindComponentAnywhere<PlayerController>();
+            ActionPointManager ap     = FindComponentAnywhere<ActionPointManager>();
+            EssenceWallet      wallet = FindComponentAnywhere<EssenceWallet>();
+            PartyManager       party  = FindComponentAnywhere<PartyManager>();
+
+            if (grid == null || gsm == null || player == null || wallet == null || party == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "Gerekli sistemler eksik (Grid/GameState/Player/Wallet/Party).\n" +
+                    "Once Faz 0-2 + Faz A'yi calistir.", "Tamam");
+                return;
+            }
+
+            // ── 1) Öz config asset (tip ad/renk + spawn oranları) ─────────────
+            EnsureFolder("Assets/Data");
+            EnsureFolder("Assets/Data/Config");
+            EssenceConfigSO config = GetOrCreateEssenceConfig("Assets/Data/Config/EssenceConfig.asset");
+
+            // ── 2) Üretim tarifleri (Savaşçı/Ranger — 2 öz kombinasyonu) ──────
+            EnsureFolder("Assets/Data/Recipes");
+            CharacterClassData warriorData = AssetDatabase.LoadAssetAtPath<CharacterClassData>(
+                "Assets/Data/Characters/Savascı.asset");
+            CharacterClassData rangerData = AssetDatabase.LoadAssetAtPath<CharacterClassData>(
+                "Assets/Data/Characters/Ranger.asset");
+
+            UnitRecipe savasciRecipe = MakeRecipe(
+                "Assets/Data/Recipes/SavasciRecipe.asset", "Savasci", warriorData,
+                new[] { new EssenceAmount(EssenceType.Ates, 2), new EssenceAmount(EssenceType.Toprak, 1) });
+            UnitRecipe rangerRecipe = MakeRecipe(
+                "Assets/Data/Recipes/RangerRecipe.asset", "Ranger", rangerData,
+                new[] { new EssenceAmount(EssenceType.Su, 2), new EssenceAmount(EssenceType.Toprak, 1) });
+
+            // ── 3) EssenceNodeManager (harita öz node'ları + topla) ───────────
+            var oldEN = gameManagerGO.GetComponent<EssenceNodeManager>();
+            if (oldEN != null) Object.DestroyImmediate(oldEN);
+            EssenceNodeManager nodes = gameManagerGO.AddComponent<EssenceNodeManager>();
+            var enSO = new SerializedObject(nodes);
+            enSO.FindProperty("_grid").objectReferenceValue         = grid;
+            enSO.FindProperty("_stateManager").objectReferenceValue = gsm;
+            enSO.FindProperty("_player").objectReferenceValue        = player;
+            enSO.FindProperty("_ap").objectReferenceValue            = ap;
+            enSO.FindProperty("_wallet").objectReferenceValue        = wallet;
+            enSO.FindProperty("_config").objectReferenceValue        = config;
+            enSO.ApplyModifiedProperties();
+
+            // ── 4) OverworldEssenceHUD (cüzdan + topla + tarif paneli) ────────
+            var oldOE = gameManagerGO.GetComponent<OverworldEssenceHUD>();
+            if (oldOE != null) Object.DestroyImmediate(oldOE);
+            OverworldEssenceHUD oeh = gameManagerGO.AddComponent<OverworldEssenceHUD>();
+            var oeSO = new SerializedObject(oeh);
+            oeSO.FindProperty("_state").objectReferenceValue  = gsm;
+            oeSO.FindProperty("_wallet").objectReferenceValue = wallet;
+            oeSO.FindProperty("_nodes").objectReferenceValue  = nodes;
+            oeSO.FindProperty("_player").objectReferenceValue = player;
+            oeSO.FindProperty("_party").objectReferenceValue  = party;
+            oeSO.FindProperty("_config").objectReferenceValue = config;
+            var recipesProp = oeSO.FindProperty("_recipes");
+            recipesProp.ClearArray();
+            recipesProp.arraySize = 2;
+            recipesProp.GetArrayElementAtIndex(0).objectReferenceValue = savasciRecipe;
+            recipesProp.GetArrayElementAtIndex(1).objectReferenceValue = rangerRecipe;
+            oeSO.ApplyModifiedProperties();
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            if (!_silentSetup) EditorUtility.DisplayDialog("Faz D — Oz Toplama + Uretim Hazir",
+                "Kurulanlar:\n" +
+                "  • Cok-tipli oz (Ates/Su/Toprak) — cuzdan + ÖZ DEPOSU gosterimi\n" +
+                "  • Haritada rastgele renkli oz node'lari (config'den ayarlanir)\n" +
+                "  • EssenceNodeManager + OverworldEssenceHUD (sag ust)\n" +
+                "  • Tarifler: Savasci = 2 Ates+1 Toprak, Ranger = 2 Su+1 Toprak\n" +
+                "  • Parti artik SADECE Kam ile baslar; digerleri ozle uretilir\n\n" +
+                "Play (Overworld):\n" +
+                "  • Renkli oz olan karoya git → sag panelden 'Topla (1 AP)'.\n" +
+                "  • Yeterli oz olunca 'Uret: Savasci/Ranger' → roster'a eklenir.\n" +
+                "  • Savasa girince uretilen birimleri BEDAVA yerlestir.",
+                "Tamam");
+
+            Debug.Log("[TacticalRPG] Faz D (oz toplama + uretim) kuruldu.");
+        }
+
+        // EssenceConfig asset'i oluşturur/günceller (3 tip: ad+renk+spawn ağırlığı).
+        private static EssenceConfigSO GetOrCreateEssenceConfig(string path)
+        {
+            EssenceConfigSO cfg = AssetDatabase.LoadAssetAtPath<EssenceConfigSO>(path);
+            if (cfg == null)
+            {
+                cfg = ScriptableObject.CreateInstance<EssenceConfigSO>();
+                AssetDatabase.CreateAsset(cfg, path);
+            }
+            var so    = new SerializedObject(cfg);
+            var types = so.FindProperty("_types");
+            types.ClearArray();
+            types.arraySize = 3;
+            SetEssenceType(types.GetArrayElementAtIndex(0), EssenceType.Ates,   "Ates",   new Color(0.90f, 0.25f, 0.20f), 1);
+            SetEssenceType(types.GetArrayElementAtIndex(1), EssenceType.Su,     "Su",     new Color(0.25f, 0.50f, 0.95f), 1);
+            SetEssenceType(types.GetArrayElementAtIndex(2), EssenceType.Toprak, "Toprak", new Color(0.35f, 0.75f, 0.35f), 1);
+            so.FindProperty("_tileChance").floatValue = 0.55f;
+            so.FindProperty("_minPerTile").intValue   = 1;
+            so.FindProperty("_maxPerTile").intValue   = 4;
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(cfg);
+            return cfg;
+        }
+
+        private static void SetEssenceType(SerializedProperty e, EssenceType t, string name, Color c, int weight)
+        {
+            e.FindPropertyRelative("type").enumValueIndex     = (int)t;
+            e.FindPropertyRelative("displayName").stringValue = name;
+            e.FindPropertyRelative("color").colorValue        = c;
+            e.FindPropertyRelative("spawnWeight").intValue    = weight;
+        }
+
+        private static UnitRecipe MakeRecipe(string path, string name, CharacterClassData unit, EssenceAmount[] cost)
+        {
+            UnitRecipe r = AssetDatabase.LoadAssetAtPath<UnitRecipe>(path);
+            if (r == null)
+            {
+                r = ScriptableObject.CreateInstance<UnitRecipe>();
+                AssetDatabase.CreateAsset(r, path);
+            }
+            var so = new SerializedObject(r);
+            so.FindProperty("_displayName").stringValue        = name;
+            so.FindProperty("_unitClass").objectReferenceValue = unit;
+            var costProp = so.FindProperty("_cost");
+            costProp.ClearArray();
+            costProp.arraySize = cost.Length;
+            for (int i = 0; i < cost.Length; i++)
+            {
+                var e = costProp.GetArrayElementAtIndex(i);
+                e.FindPropertyRelative("type").enumValueIndex = (int)cost[i].type;
+                e.FindPropertyRelative("amount").intValue     = cost[i].amount;
+            }
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(r);
+            return r;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // TANI — Sahne durumunu logla
         // ─────────────────────────────────────────────────────────────────────
 
@@ -1227,7 +1385,7 @@ namespace TacticalRPG.Editor
             Debug.Log($"[TANI] PlayerController={player != null}{(player != null ? $" konum:{player.CurrentCoord}" : "")}");
 
             ActionPointManager ap = FindComponentAnywhere<ActionPointManager>();
-            EssenceManager ess    = FindComponentAnywhere<EssenceManager>();
+            EssenceWallet  ess    = FindComponentAnywhere<EssenceWallet>();
             KamManaManager mana   = FindComponentAnywhere<KamManaManager>();
             Debug.Log($"[TANI] AP={ap != null}  Essence={ess != null}  KamMana={mana != null}");
 

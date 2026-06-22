@@ -13,7 +13,6 @@ namespace TacticalRPG.UI
         [SerializeField] private GameStateManager  _state;
         [SerializeField] private DeploymentManager _deployment;
         [SerializeField] private PartyManager      _party;
-        [SerializeField] private EssenceManager    _essence;
 
         private void OnGUI()
         {
@@ -23,8 +22,7 @@ namespace TacticalRPG.UI
             var rect = new Rect(12f, 80f, w, h);
             GUILayout.BeginArea(rect, GUI.skin.box);
 
-            GUILayout.Label("YERLESTIRME — kart sec, mavi hex'e tikla");
-            GUILayout.Label($"Oz: {(_essence != null ? _essence.CurrentEssence : 0)}");
+            GUILayout.Label("YERLESTIRME — kart sec, mavi hex'e tikla (bedava)");
             DrawCommanderLine();
             GUILayout.Space(4);
 
@@ -64,14 +62,11 @@ namespace TacticalRPG.UI
                 if (card.IsCommander) continue; // komutan otomatik iner, listede gösterilmez
                 bool deployed = _deployment.IsCardDeployed(card);
                 bool selected = _deployment.SelectedCard == card;
-                int  cost     = card.Data.DeployCost;
-                bool canAfford = _essence != null && _essence.CanAfford(cost);
 
                 string tag = deployed ? "  [yerlesti]"
                            : selected ? "  ◄ secili"
-                           : !canAfford ? "  (oz yok)"
                            : "";
-                string label = $"{card.Data.ClassName} Sv{card.Level}  HP{card.MaxHP}  oz{cost}{tag}";
+                string label = $"{card.Data.ClassName} Sv{card.Level}  HP{card.MaxHP}{tag}";
 
                 GUI.enabled = !deployed;
                 if (GUILayout.Button(label, GUILayout.Height(28)))

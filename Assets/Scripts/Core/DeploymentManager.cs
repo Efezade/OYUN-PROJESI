@@ -15,7 +15,6 @@ namespace TacticalRPG.Core
         [Header("Bağımlılıklar")]
         [SerializeField] private GameStateManager _stateManager;
         [SerializeField] private HexGridManager    _grid;
-        [SerializeField] private EssenceManager    _essence;
         [SerializeField] private UnitManager       _unitManager;
         [Tooltip("Komutanı (Kam) otomatik indirmek için parti kaynağı.")]
         [SerializeField] private PartyManager      _party;
@@ -113,17 +112,11 @@ namespace TacticalRPG.Core
             if (!_zone.Contains(coord))            return false;
             if (_unitManager != null && _unitManager.GetUnitAt(coord) != null) return false;
 
-            int cost = SelectedCard.Data.DeployCost;
-            if (_essence == null || !_essence.TrySpend(cost))
-            {
-                Debug.Log($"[Deployment] Yetersiz öz: {SelectedCard.Data.ClassName} için {cost} gerekli.");
-                return false;
-            }
-
+            // Deployment artık BEDAVA — öz, birimi overworld'de ÜRETİRKEN harcandı.
             Unit unit = SpawnUnit(coord, SelectedCard);
             _deployed.Add(unit);
             _deployedCards.Add(SelectedCard);
-            Debug.Log($"[Deployment] {SelectedCard.Data.ClassName} → {coord} yerleştirildi (öz -{cost}).");
+            Debug.Log($"[Deployment] {SelectedCard.Data.ClassName} → {coord} yerleştirildi.");
 
             SelectedCard = null; // bir tıkta bir kart
             return true;
