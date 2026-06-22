@@ -18,6 +18,8 @@ MonoBehaviour:
   _attack: 6
   _defense: 1
   _moveRange: 4
+  _speed: 5
+  _attackRange: 1
   _essenceCostPerLevel: 00000000050000000b000000
   _hpMultiplierPerLevel:
   - 1
@@ -31,5 +33,7 @@ MonoBehaviour:
   - 1
   - 1.1
   - 1.25
+  _deployCost: 3
   _hasManaSystem: 0
   _maxMana: 0
+  _abilities: []

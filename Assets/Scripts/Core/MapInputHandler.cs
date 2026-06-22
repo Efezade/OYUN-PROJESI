@@ -21,6 +21,8 @@ namespace TacticalRPG.Core
         [SerializeField] private MissionManager   _missionManager;
         [Tooltip("Opsiyonel — Deployment state'inde tıklama buraya yerleştirme olur.")]
         [SerializeField] private DeploymentManager _deployment;
+        [Tooltip("Opsiyonel — Combat state'inde tıklama aktif birim hareket/saldırı olur.")]
+        [SerializeField] private TurnManager _turnManager;
 
         [Header("Raycast")]
         [SerializeField] private LayerMask _clickableLayers = ~0;
@@ -43,6 +45,14 @@ namespace TacticalRPG.Core
             {
                 if (_deployment != null && TryGetClickedCoord(out HexCoordinate deployCoord))
                     _deployment.TryDeployAt(deployCoord);
+                return;
+            }
+
+            // Combat: tıklama = aktif birimi hareket ettir / düşmana saldır (TurnManager karar verir).
+            if (_stateManager != null && _stateManager.State == GameState.Combat)
+            {
+                if (_turnManager != null && TryGetClickedCoord(out HexCoordinate combatCoord))
+                    _turnManager.HandlePlayerClick(combatCoord);
                 return;
             }
 

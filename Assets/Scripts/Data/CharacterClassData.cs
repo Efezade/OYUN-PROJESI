@@ -20,6 +20,10 @@ namespace TacticalRPG.Data
         [SerializeField] private int _attack     = 3;
         [SerializeField] private int _defense    = 1;
         [SerializeField] private int _moveRange  = 3;
+        [Tooltip("Initiative — yüksek hız savaşta daha önce oynar (XCOM/Banner Saga sırası).")]
+        [SerializeField, Min(1)] private int _speed       = 5;
+        [Tooltip("Temel saldırı menzili (1 = bitişik hex).")]
+        [SerializeField, Min(1)] private int _attackRange = 1;
 
         [Header("Seviye İlerlemesi (index = hedef seviye, 0=Sv1 1=Sv2 2=Sv3)")]
         [SerializeField] private int[]   _essenceCostPerLevel    = { 0, 5, 12 };
@@ -46,6 +50,8 @@ namespace TacticalRPG.Data
         public int BaseAttack   => _attack;
         public int BaseDefense  => _defense;
         public int MoveRange    => _moveRange;
+        public int Speed        => _speed;
+        public int AttackRange  => _attackRange;
         public int DeployCost   => _deployCost;
 
         // ── Mana ─────────────────────────────────────────────────────────────

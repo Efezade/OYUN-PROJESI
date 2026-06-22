@@ -15,3 +15,19 @@ MonoBehaviour:
   _displayName: Goblin Pususu
   _description: Ilk test gorevi.
   _combatMap: {fileID: 11400000, guid: 951542e6ea3dd884397181126a132c21, type: 2}
+  _enemyRoster:
+  - enemyClass: {fileID: 11400000, guid: 8f1f8e98d62ecf3458a89d4a8ef5de74, type: 2}
+    coord:
+      Q: 2
+      R: 7
+    level: 1
+  - enemyClass: {fileID: 11400000, guid: 8f1f8e98d62ecf3458a89d4a8ef5de74, type: 2}
+    coord:
+      Q: 4
+      R: 7
+    level: 1
+  - enemyClass: {fileID: 11400000, guid: 8f1f8e98d62ecf3458a89d4a8ef5de74, type: 2}
+    coord:
+      Q: 3
+      R: 8
+    level: 1

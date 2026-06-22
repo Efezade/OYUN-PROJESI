@@ -17,6 +17,9 @@ namespace TacticalRPG.Core
         public int MaxHP     => Data.GetMaxHP(Level);
         public int Attack    => Data.GetAttack(Level);
         public int Defense   => Data.GetDefense(Level);
+        public int MoveRange   => Data.MoveRange;
+        public int Speed       => Data.Speed;
+        public int AttackRange => Data.AttackRange;
 
         public bool IsAlive    => CurrentHP > 0;
         public bool CanLevelUp => Level < CharacterClassData.MaxLevel;
@@ -24,9 +27,10 @@ namespace TacticalRPG.Core
         public event Action<int, int> OnHPChanged;   // current, max
         public event Action<int>      OnLevelChanged; // new level
 
-        public CharacterCard(CharacterClassData data)
+        public CharacterCard(CharacterClassData data, int level = 1)
         {
             Data      = data;
+            Level     = Math.Max(1, Math.Min(level, CharacterClassData.MaxLevel));
             CurrentHP = MaxHP;
         }
 

@@ -36,5 +36,14 @@ namespace TacticalRPG.Core
                 if (u != null && u.Team == UnitTeam.Enemy) return u;
             return null;
         }
+
+        /// <summary>Belirtilen takımdaki yaşayan birim sayısı (win/lose kontrolü).</summary>
+        public int CountAlive(UnitTeam team)
+        {
+            int n = 0;
+            foreach (var u in _units)
+                if (u != null && u.IsAlive && u.Team == team) n++;
+            return n;
+        }
     }
 }

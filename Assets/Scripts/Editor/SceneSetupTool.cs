@@ -19,6 +19,10 @@ namespace TacticalRPG.Editor
         private const string MaterialsPath   = "Assets/Art/Materials";
         private const string PrefabsGridPath = "Assets/Prefabs/Grid";
 
+        // TAM KURULUM zinciri sırasında alt-fazların başarı dialoglarını bastırır
+        // (tek özet kutu FullSetup sonunda gösterilir). Hata dialogları bastırılmaz.
+        private static bool _silentSetup;
+
         // ─────────────────────────────────────────────────────────────────────
         // TAM KURULUM — tek tıkla tüm fazları sırasıyla çalıştırır
         // ─────────────────────────────────────────────────────────────────────
@@ -26,10 +30,21 @@ namespace TacticalRPG.Editor
         [MenuItem("TacticalRPG/TAM KURULUM (Tek Tikla)", false, 1)]
         public static void FullSetup()
         {
-            SetupPhase0();
-            SetupPhase1();
-            SetupPhase2();
-            SetupDebugHUD();
+            // Tüm fazları sırayla kurar (temiz rebuild). Bağımlılık sırası:
+            // 0→1→2→HUD→A→B→C→C3. Faz 3 (eski yetenek test sandbox'ı) DAHİL DEĞİL.
+            _silentSetup = true;
+            try
+            {
+                SetupPhase0();    // kamera, isik, GameManager
+                SetupPhase1();    // grid, fog, oyuncu, AP, kiyamet
+                SetupPhase2();    // karakterler, oz, kam mana
+                SetupDebugHUD();  // debug HUD
+                SetupPhaseA();    // overworld<->savas durum makinesi + gorev
+                SetupPhaseB();    // deployment (oz ile birim yerlestirme)
+                SetupPhaseC();    // dusman roster spawn (3 Goblin)
+                SetupPhaseC3();   // tur sistemi (initiative + hareket + saldiri + AI)
+            }
+            finally { _silentSetup = false; }
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             AssetDatabase.SaveAssets();
@@ -37,12 +52,17 @@ namespace TacticalRPG.Editor
 
             EditorUtility.DisplayDialog(
                 "TAM KURULUM Tamamlandi!",
-                "Tum fazlar basariyla kuruldu:\n\n" +
+                "Tum oyun TEK TIKLA kuruldu:\n\n" +
                 "  • Faz 0 — Kamera, Isik\n" +
                 "  • Faz 1 — Hex Grid, Oyuncu, AP, Kiyamet\n" +
                 "  • Faz 2 — Karakter Sistemi (Kam, Savasci, Ranger)\n" +
-                "  • Debug HUD\n\n" +
-                "Ctrl+S ile kaydet, sonra Play'e bas!",
+                "  • Debug HUD\n" +
+                "  • Faz A — Overworld/Savas gecisi + gorev\n" +
+                "  • Faz B — Deployment (oz ile yerlestirme)\n" +
+                "  • Faz C — Dusman spawn (3 Goblin)\n" +
+                "  • Faz C3 — Tur sistemi (initiative + hareket + saldiri + AI)\n\n" +
+                "Ctrl+S ile kaydet, Play'e bas:\n" +
+                "Sari marker (Q5R5) → Evet → yerlestir → SAVASI BASLAT.",
                 "Tamam");
         }
 
@@ -746,7 +766,7 @@ namespace TacticalRPG.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            EditorUtility.DisplayDialog("Faz A — Overworld/Savas Gecisi Hazir",
+            if (!_silentSetup) EditorUtility.DisplayDialog("Faz A — Overworld/Savas Gecisi Hazir",
                 "Kurulanlar:\n" +
                 "  • GameStateManager + MissionManager + OverworldCombatHUD\n" +
                 "  • Savas haritasi (CombatTileMap) + 1 gorev (Goblin Pususu @ Q5 R5)\n" +
@@ -836,7 +856,7 @@ namespace TacticalRPG.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            EditorUtility.DisplayDialog("Faz B — Deployment Hazir",
+            if (!_silentSetup) EditorUtility.DisplayDialog("Faz B — Deployment Hazir",
                 "Kurulanlar:\n" +
                 "  • UnitManager (geri eklendi) + DeploymentManager + DeploymentHUD\n" +
                 "  • Baslangic ozu 20 yapildi (test icin)\n" +
@@ -849,6 +869,189 @@ namespace TacticalRPG.Editor
                 "Tamam");
 
             Debug.Log("[TacticalRPG] Faz B (deployment) kuruldu.");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // FAZ C — Düşman roster spawn (savaş alanına düşman birimleri)
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/Faz C - Dusman Spawn", false, 18)]
+        public static void SetupPhaseC()
+        {
+            GameObject sceneRoot     = GameObject.Find(SceneRootName);
+            GameObject gameManagerGO = sceneRoot != null
+                ? sceneRoot.transform.Find("GameManager")?.gameObject
+                : null;
+
+            if (gameManagerGO == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "GameManager bulunamadi! Once TAM KURULUM + Faz A + Faz B calistir.", "Tamam");
+                return;
+            }
+
+            HexGridManager   grid        = FindComponentAnywhere<HexGridManager>();
+            GameStateManager gsm         = FindComponentAnywhere<GameStateManager>();
+            UnitManager      unitManager = FindComponentAnywhere<UnitManager>();
+
+            if (grid == null || gsm == null || unitManager == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "Gerekli sistemler eksik (Grid/GameState/UnitManager).\n" +
+                    "Once Faz A ve Faz B'yi calistir.", "Tamam");
+                return;
+            }
+
+            // ── Düşman sınıfı: Goblin (kartlı düşman, yakın dövüş) ─────────────
+            EnsureFolder("Assets/Data");
+            EnsureFolder("Assets/Data/Characters");
+            CharacterClassData goblinData = GetOrCreateCharacterSO(
+                path: "Assets/Data/Characters/Goblin.asset", className: "Goblin",
+                lore: "Erlik'in zayif ama kalabalik askerleri. Yakin dovusur.",
+                maxHP: 8, attack: 3, defense: 0, moveRange: 3,
+                essenceCosts: new[] { 0, 5, 12 },
+                hpMult:  new[] { 1f, 1.3f,  1.7f },
+                atkMult: new[] { 1f, 1.2f,  1.5f },
+                defMult: new[] { 1f, 1.15f, 1.4f },
+                hasMana: false, maxMana: 0,
+                speed: 4, attackRange: 1);
+
+            // ── Mission1 roster'ini 3 Goblin ile doldur (üst bölge) ───────────
+            const string missionPath = "Assets/Data/Missions/Mission1.asset";
+            MissionData mission = AssetDatabase.LoadAssetAtPath<MissionData>(missionPath);
+            if (mission == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "Mission1.asset bulunamadi! Once Faz A'yi calistir.", "Tamam");
+                return;
+            }
+
+            var missionSO  = new SerializedObject(mission);
+            var rosterProp = missionSO.FindProperty("_enemyRoster");
+            rosterProp.ClearArray();
+            var enemyCoords = new[] { (2, 7), (4, 7), (3, 8) }; // deploy zonundan (R<2) uzak
+            rosterProp.arraySize = enemyCoords.Length;
+            for (int i = 0; i < enemyCoords.Length; i++)
+            {
+                var e = rosterProp.GetArrayElementAtIndex(i);
+                e.FindPropertyRelative("enemyClass").objectReferenceValue              = goblinData;
+                e.FindPropertyRelative("coord").FindPropertyRelative("Q").intValue     = enemyCoords[i].Item1;
+                e.FindPropertyRelative("coord").FindPropertyRelative("R").intValue     = enemyCoords[i].Item2;
+                e.FindPropertyRelative("level").intValue                               = 1;
+            }
+            missionSO.ApplyModifiedProperties();
+            EditorUtility.SetDirty(mission);
+
+            // ── EnemySpawner (GameManager üstünde) ─────────────────────────────
+            var oldES = gameManagerGO.GetComponent<EnemySpawner>();
+            if (oldES != null) Object.DestroyImmediate(oldES);
+            EnemySpawner spawner = gameManagerGO.AddComponent<EnemySpawner>();
+            var esSO = new SerializedObject(spawner);
+            esSO.FindProperty("_stateManager").objectReferenceValue = gsm;
+            esSO.FindProperty("_grid").objectReferenceValue         = grid;
+            esSO.FindProperty("_unitManager").objectReferenceValue  = unitManager;
+            esSO.ApplyModifiedProperties();
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            if (!_silentSetup) EditorUtility.DisplayDialog("Faz C — Dusman Spawn Hazir",
+                "Kurulanlar:\n" +
+                "  • Goblin dusman sinifi (Assets/Data/Characters/Goblin.asset)\n" +
+                "  • Mission1 roster'ina 3 Goblin (Q2R7, Q4R7, Q3R8)\n" +
+                "  • EnemySpawner GameManager'a eklendi + wire\n\n" +
+                "Play'e bas:\n" +
+                "  Sari marker (Q5 R5) → 'Evet' → savas haritasi + YERLESTIRME.\n" +
+                "  Ust bolgede 3 kirmizi Goblin gorunur (deployment sirasinda).\n" +
+                "  'Geri Don' ile dusmanlar temizlenir.\n\n" +
+                "NOT: Tur sistemi + hareket + saldiri Faz C3'te gelecek.",
+                "Tamam");
+
+            Debug.Log("[TacticalRPG] Faz C (dusman spawn) kuruldu.");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // FAZ C3 — Tur sistemi (initiative + hareket + saldırı + AI + win/lose)
+        // ─────────────────────────────────────────────────────────────────────
+
+        [MenuItem("TacticalRPG/Faz C3 - Tur Sistemi (Savas)", false, 19)]
+        public static void SetupPhaseC3()
+        {
+            GameObject sceneRoot     = GameObject.Find(SceneRootName);
+            GameObject gameManagerGO = sceneRoot != null
+                ? sceneRoot.transform.Find("GameManager")?.gameObject
+                : null;
+
+            if (gameManagerGO == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "GameManager bulunamadi! Once TAM KURULUM + Faz A + Faz B + Faz C calistir.", "Tamam");
+                return;
+            }
+
+            HexGridManager   grid  = FindComponentAnywhere<HexGridManager>();
+            GameStateManager gsm   = FindComponentAnywhere<GameStateManager>();
+            UnitManager      um    = FindComponentAnywhere<UnitManager>();
+            MapInputHandler  input = FindComponentAnywhere<MapInputHandler>();
+
+            if (grid == null || gsm == null || um == null || input == null)
+            {
+                EditorUtility.DisplayDialog("Hata",
+                    "Gerekli sistemler eksik (Grid/GameState/UnitManager/Input).\n" +
+                    "Once Faz A, Faz B ve Faz C'yi calistir.", "Tamam");
+                return;
+            }
+
+            // ── TurnManager ───────────────────────────────────────────────────
+            var oldTM = gameManagerGO.GetComponent<TurnManager>();
+            if (oldTM != null) Object.DestroyImmediate(oldTM);
+            TurnManager tm = gameManagerGO.AddComponent<TurnManager>();
+            var tmSO = new SerializedObject(tm);
+            tmSO.FindProperty("_stateManager").objectReferenceValue = gsm;
+            tmSO.FindProperty("_grid").objectReferenceValue         = grid;
+            tmSO.FindProperty("_unitManager").objectReferenceValue  = um;
+            tmSO.ApplyModifiedProperties();
+
+            // ── CombatHighlighter ─────────────────────────────────────────────
+            var oldCH = gameManagerGO.GetComponent<CombatHighlighter>();
+            if (oldCH != null) Object.DestroyImmediate(oldCH);
+            CombatHighlighter ch = gameManagerGO.AddComponent<CombatHighlighter>();
+            var chSO = new SerializedObject(ch);
+            chSO.FindProperty("_turnManager").objectReferenceValue = tm;
+            chSO.FindProperty("_grid").objectReferenceValue        = grid;
+            chSO.ApplyModifiedProperties();
+
+            // ── CombatHUD ─────────────────────────────────────────────────────
+            var oldHud = gameManagerGO.GetComponent<CombatHUD>();
+            if (oldHud != null) Object.DestroyImmediate(oldHud);
+            CombatHUD hud = gameManagerGO.AddComponent<CombatHUD>();
+            var hudSO = new SerializedObject(hud);
+            hudSO.FindProperty("_state").objectReferenceValue       = gsm;
+            hudSO.FindProperty("_turnManager").objectReferenceValue = tm;
+            hudSO.ApplyModifiedProperties();
+
+            // ── MapInputHandler'a turnManager bagla ───────────────────────────
+            var inputSO = new SerializedObject(input);
+            inputSO.FindProperty("_turnManager").objectReferenceValue = tm;
+            inputSO.ApplyModifiedProperties();
+
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            if (!_silentSetup) EditorUtility.DisplayDialog("Faz C3 — Tur Sistemi Hazir",
+                "Kurulanlar:\n" +
+                "  • TurnManager (hiza gore initiative) + CombatHUD + CombatHighlighter\n" +
+                "  • MapInputHandler savas tiklamasina baglandi\n\n" +
+                "Play → marker → Evet → kart yerlestir → SAVASI BASLAT:\n" +
+                "  • Sol ustte sira paneli; aktif birimin ustunde sari top.\n" +
+                "  • SENIN TURUN: yesil karoya tikla = git, kirmizi dusmana tikla = saldir.\n" +
+                "  • 'Turu Bitir' ile siradakine gec; dusmanlar otomatik oynar.\n" +
+                "  • Tum Goblin olunce ZAFER, tum birimlerin olunce YENILGI.",
+                "Tamam");
+
+            Debug.Log("[TacticalRPG] Faz C3 (tur sistemi) kuruldu.");
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -994,7 +1197,7 @@ namespace TacticalRPG.Editor
             string path, string className, string lore,
             int maxHP, int attack, int defense, int moveRange,
             int[] essenceCosts, float[] hpMult, float[] atkMult, float[] defMult,
-            bool hasMana, int maxMana)
+            bool hasMana, int maxMana, int speed = 5, int attackRange = 1)
         {
             CharacterClassData so = AssetDatabase.LoadAssetAtPath<CharacterClassData>(path);
             if (so == null)
@@ -1009,6 +1212,8 @@ namespace TacticalRPG.Editor
             s.FindProperty("_attack").intValue         = attack;
             s.FindProperty("_defense").intValue        = defense;
             s.FindProperty("_moveRange").intValue      = moveRange;
+            s.FindProperty("_speed").intValue          = speed;
+            s.FindProperty("_attackRange").intValue    = attackRange;
             s.FindProperty("_hasManaSystem").boolValue = hasMana;
             s.FindProperty("_maxMana").intValue        = maxMana;
             SetIntArray(s,   "_essenceCostPerLevel",   essenceCosts);

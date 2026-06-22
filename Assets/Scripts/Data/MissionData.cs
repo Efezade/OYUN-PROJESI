@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using TacticalRPG.Grid;
 
 namespace TacticalRPG.Data
 {
@@ -15,10 +17,24 @@ namespace TacticalRPG.Data
         [Tooltip("Bu göreve girilince yüklenecek savaş haritası (TileMap).")]
         [SerializeField] private TileMapSO _combatMap;
 
-        // Faz C: düşman roster'ı (liste of {enemyData, coord}) buraya eklenecek.
+        [Header("Düşman Roster (Faz C — savaşa girince spawn olur)")]
+        [SerializeField] private List<EnemySpawn> _enemyRoster = new();
 
         public string    DisplayName => _displayName;
         public string    Description => _description;
         public TileMapSO CombatMap   => _combatMap;
+        public IReadOnlyList<EnemySpawn> EnemyRoster => _enemyRoster;
+
+        /// <summary>Tek bir düşman spawn tanımı: sınıf + savaş haritasındaki konum + seviye.</summary>
+        [System.Serializable]
+        public struct EnemySpawn
+        {
+            [Tooltip("Spawn edilecek düşman sınıfı (CharacterClassData).")]
+            public CharacterClassData enemyClass;
+            [Tooltip("Savaş haritasında doğacağı hex.")]
+            public HexCoordinate      coord;
+            [Tooltip("Düşmanın seviyesi (1-3).")]
+            [Min(1)] public int       level;
+        }
     }
 }

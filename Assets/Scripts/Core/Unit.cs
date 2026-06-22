@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using TacticalRPG.Grid;
 using TacticalRPG.Data;
@@ -22,9 +24,17 @@ namespace TacticalRPG.Core
         [Header("Konum")]
         [SerializeField] private HexCoordinate _coord;
         [SerializeField] private float         _heightOffset = 0.8f;
+        [SerializeField] private float         _moveSpeed    = 8f;
 
         [Header("Can (yalnızca KARTSIZ birimlerde kullanılır)")]
         [SerializeField, Min(1)] private int _maxHP = 10;
+
+        [Header("Savaş statları (yalnızca KARTSIZ birimlerde)")]
+        [SerializeField, Min(0)] private int _attack      = 3;
+        [SerializeField, Min(0)] private int _defense     = 0;
+        [SerializeField, Min(1)] private int _speed       = 5;
+        [SerializeField, Min(1)] private int _moveRange   = 3;
+        [SerializeField, Min(1)] private int _attackRange = 1;
 
         [Header("Bağımlılıklar")]
         [SerializeField] private HexGridManager _gridManager;
@@ -46,11 +56,13 @@ namespace TacticalRPG.Core
         public int  Shield    { get; private set; }
         public bool IsAlive   => CurrentHP > 0;
 
-        // ── Savaş statları (kart varsa yansıtılır; Faz C hareket/combat için) ──
-        public int Attack    => _card != null ? _card.Attack         : 0;
-        public int Defense   => _card != null ? _card.Defense        : 0;
-        public int Level     => _card != null ? _card.Level          : 1;
-        public int MoveRange => _card != null ? _card.Data.MoveRange : 0;
+        // ── Savaş statları (kart varsa karttan; yoksa kartsız fallback alanlarından) ──
+        public int Attack      => _card != null ? _card.Attack      : _attack;
+        public int Defense     => _card != null ? _card.Defense     : _defense;
+        public int Level       => _card != null ? _card.Level       : 1;
+        public int MoveRange   => _card != null ? _card.MoveRange   : _moveRange;
+        public int Speed       => _card != null ? _card.Speed       : _speed;
+        public int AttackRange => _card != null ? _card.AttackRange : _attackRange;
 
         public event Action<Unit> OnStatsChanged; // HP veya kalkan değişti
         public event Action<Unit> OnDied;
@@ -116,10 +128,41 @@ namespace TacticalRPG.Core
 
         private void SnapToCell()
         {
-            // SurfaceHeight ile köprü/engebe karolarında yüzeyin üstüne oturur.
             if (_gridManager != null && _gridManager.TryGetCell(_coord, out HexCell cell))
-                transform.position = cell.WorldPosition
-                    + Vector3.up * (_heightOffset + cell.SurfaceHeight - HexMetrics.TileHeight);
+                transform.position = SurfacePosition(cell);
+        }
+
+        // Hücrenin yürüme yüzeyine oturmuş dünya pozisyonu (köprü/engebe SurfaceHeight ile).
+        private Vector3 SurfacePosition(HexCell cell) =>
+            cell.WorldPosition + Vector3.up * (_heightOffset + cell.SurfaceHeight - HexMetrics.TileHeight);
+
+        // ── Hareket (TurnManager savaşta çağırır) ─────────────────────────────
+
+        public bool IsMoving { get; private set; }
+
+        /// <summary>Birimi verilen hücre yolu boyunca yürütür (path[0] = mevcut konum).</summary>
+        public void MoveAlongPath(List<HexCell> path, Action onComplete = null)
+        {
+            if (path == null || path.Count < 2) { onComplete?.Invoke(); return; }
+            StartCoroutine(MoveRoutine(path, onComplete));
+        }
+
+        private IEnumerator MoveRoutine(List<HexCell> path, Action onComplete)
+        {
+            IsMoving = true;
+            for (int i = 1; i < path.Count; i++)
+            {
+                HexCell cell   = path[i];
+                Vector3 target = SurfacePosition(cell);
+                while ((transform.position - target).sqrMagnitude > 0.0001f)
+                {
+                    transform.position = Vector3.MoveTowards(transform.position, target, _moveSpeed * Time.deltaTime);
+                    yield return null;
+                }
+                _coord = cell.Coordinate;
+            }
+            IsMoving = false;
+            onComplete?.Invoke();
         }
 
         private void HandleCardHPChanged(int current, int max)

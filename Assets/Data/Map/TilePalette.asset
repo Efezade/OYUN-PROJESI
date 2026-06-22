@@ -18,48 +18,58 @@ MonoBehaviour:
     prefab: {fileID: 0}
     editorColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
     isWalkable: 1
+    surfaceHeightOverride: 0
   - id: cimen
     displayName: Cim
     prefab: {fileID: 0}
     editorColor: {r: 0.4, g: 0.65, b: 0.32, a: 1}
     isWalkable: 1
+    surfaceHeightOverride: 0
   - id: orman
     displayName: Orman
     prefab: {fileID: 0}
     editorColor: {r: 0.18, g: 0.42, b: 0.22, a: 1}
     isWalkable: 1
+    surfaceHeightOverride: 0
   - id: kum
     displayName: Kum
     prefab: {fileID: 0}
     editorColor: {r: 0.84, g: 0.76, b: 0.5, a: 1}
     isWalkable: 1
+    surfaceHeightOverride: 0
   - id: kaya
     displayName: Kaya
     prefab: {fileID: 0}
     editorColor: {r: 0.46, g: 0.44, b: 0.42, a: 1}
     isWalkable: 1
+    surfaceHeightOverride: 0
   - id: dag
     displayName: Dag
     prefab: {fileID: 0}
     editorColor: {r: 0.4, g: 0.34, b: 0.3, a: 1}
     isWalkable: 0
+    surfaceHeightOverride: 0
   - id: su
     displayName: Su
     prefab: {fileID: 0}
     editorColor: {r: 0.24, g: 0.52, b: 0.82, a: 1}
     isWalkable: 0
+    surfaceHeightOverride: 0
   - id: lav
     displayName: Lav
     prefab: {fileID: 0}
     editorColor: {r: 0.82, g: 0.28, b: 0.12, a: 1}
     isWalkable: 0
+    surfaceHeightOverride: 0
   - id: kar
     displayName: Kar
     prefab: {fileID: 0}
     editorColor: {r: 0.9, g: 0.93, b: 0.96, a: 1}
     isWalkable: 1
+    surfaceHeightOverride: 0
   - id: kopru
     displayName: Kopru
     prefab: {fileID: 764990509630898611, guid: 777997d8699fc5145ae5873a67c22c81, type: 3}
     editorColor: {r: 0.55, g: 0.45, b: 0.35, a: 1}
     isWalkable: 1
+    surfaceHeightOverride: 0
