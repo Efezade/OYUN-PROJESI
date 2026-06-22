@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Sifa
   m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.KamAbilityData
   _id: sifa
-  _displayName: Şifa
-  _description: Bir dost birimin canını yeniler.
+  _displayName: Sifa
+  _description: Dost birimi iyilestirir.
   _icon: {fileID: 0}
   _manaCost: 2
   _range: 3

@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: AtesTopu
   m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.KamAbilityData
   _id: ates_topu
-  _displayName: Ateş Topu
-  _description: Hedefe alev fırlatıp isabet eden birime hasar verir.
+  _displayName: Ates Topu
+  _description: Hedef dusmana alev yagdirir.
   _icon: {fileID: 0}
   _manaCost: 3
   _range: 4

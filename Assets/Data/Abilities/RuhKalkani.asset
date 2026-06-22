@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: RuhKalkani
   m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.KamAbilityData
   _id: ruh_kalkani
-  _displayName: Ruh Kalkanı
-  _description: Bir dost birime geçici savunma kalkanı verir.
+  _displayName: Ruh Kalkani
+  _description: Dost birime kalkan verir.
   _icon: {fileID: 0}
   _manaCost: 4
   _range: 2

@@ -34,6 +34,8 @@ MonoBehaviour:
   - 1.25
   - 1.6
   _deployCost: 3
+  _isCommander: 0
+  _unitColor: {r: 0.25, g: 0.45, b: 0.95, a: 1}
   _hasManaSystem: 0
   _maxMana: 0
   _abilities: []
