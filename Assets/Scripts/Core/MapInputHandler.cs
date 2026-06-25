@@ -65,11 +65,16 @@ namespace TacticalRPG.Core
             // 1) Yetenek hazırsa → hedefleme
             if (_caster != null && _caster.HasArmedAbility) { _caster.TryCastAt(coord); return; }
 
-            // 2) Görev alanına tıklandıysa → onay akışı
+            // 2) Görev karosuna tıklandıysa → YETERİNCE YAKINSA onay akışı, uzaksa oraya yürü.
             if (_stateManager != null && _missionManager != null)
             {
                 MissionData mission = _missionManager.GetMissionAt(coord);
-                if (mission != null) { _stateManager.RequestMission(mission); return; }
+                if (mission != null)
+                {
+                    if (_player.CurrentCoord.DistanceTo(coord) <= _missionManager.EnterRange)
+                    { _stateManager.RequestMission(mission); return; }
+                    // Çok uzak → göreve girme; marker'a doğru yürü (aşağıya düş).
+                }
             }
 
             // 3) Aksi halde → hareket

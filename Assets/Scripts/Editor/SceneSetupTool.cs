@@ -753,7 +753,9 @@ namespace TacticalRPG.Editor
             if (oldOH != null) Object.DestroyImmediate(oldOH);
             OverworldCombatHUD och = gameManagerGO.AddComponent<OverworldCombatHUD>();
             var ochSO = new SerializedObject(och);
-            ochSO.FindProperty("_stateManager").objectReferenceValue = gsm;
+            ochSO.FindProperty("_stateManager").objectReferenceValue   = gsm;
+            ochSO.FindProperty("_missionManager").objectReferenceValue = mm;     // yakınlık istemi
+            ochSO.FindProperty("_player").objectReferenceValue         = player; // "Savaşa Gir" mesafesi
             ochSO.ApplyModifiedProperties();
 
             // ── MapInputHandler'a state + mission bağla ───────────────────────
@@ -1205,10 +1207,15 @@ namespace TacticalRPG.Editor
                 return;
             }
 
-            // ── 1) Öz config asset (tip ad/renk + spawn oranları) ─────────────
+            // ── 1) Öz config asset (tip ad/renk + prefab) ─────────────────────
             EnsureFolder("Assets/Data");
             EnsureFolder("Assets/Data/Config");
             EssenceConfigSO config = GetOrCreateEssenceConfig("Assets/Data/Config/EssenceConfig.asset");
+
+            // El yapımı öz haritası (rastgele DEĞİL). VARSA KORUNUR — boyamaların TAM KURULUM'da
+            // silinmez; yoksa birkaç örnek yerleşimle oluşturulur (Essence Painter ile düzenle).
+            EnsureFolder("Assets/Data/Map");
+            EssenceMapSO essenceMap = GetOrCreateEssenceMap("Assets/Data/Map/EssenceMap.asset");
 
             // ── 2) Üretim tarifleri (Savaşçı/Ranger — 2 öz kombinasyonu) ──────
             EnsureFolder("Assets/Data/Recipes");
@@ -1235,9 +1242,13 @@ namespace TacticalRPG.Editor
             enSO.FindProperty("_ap").objectReferenceValue            = ap;
             enSO.FindProperty("_wallet").objectReferenceValue        = wallet;
             enSO.FindProperty("_config").objectReferenceValue        = config;
+            enSO.FindProperty("_map").objectReferenceValue           = essenceMap;
+            enSO.FindProperty("_nodeHeight").floatValue              = 0.12f; // yere yakın
+            enSO.FindProperty("_nodeScale").floatValue               = 0.16f;
+            enSO.FindProperty("_ringRadius").floatValue              = 0.34f;
             enSO.ApplyModifiedProperties();
 
-            // ── 4) OverworldEssenceHUD (cüzdan + topla + tarif paneli) ────────
+            // ── 4) OverworldEssenceHUD (sadece cüzdan + topla + roster — ÜRETİM YOK) ─
             var oldOE = gameManagerGO.GetComponent<OverworldEssenceHUD>();
             if (oldOE != null) Object.DestroyImmediate(oldOE);
             OverworldEssenceHUD oeh = gameManagerGO.AddComponent<OverworldEssenceHUD>();
@@ -1248,12 +1259,27 @@ namespace TacticalRPG.Editor
             oeSO.FindProperty("_player").objectReferenceValue = player;
             oeSO.FindProperty("_party").objectReferenceValue  = party;
             oeSO.FindProperty("_config").objectReferenceValue = config;
-            var recipesProp = oeSO.FindProperty("_recipes");
-            recipesProp.ClearArray();
-            recipesProp.arraySize = 2;
-            recipesProp.GetArrayElementAtIndex(0).objectReferenceValue = savasciRecipe;
-            recipesProp.GetArrayElementAtIndex(1).objectReferenceValue = rangerRecipe;
             oeSO.ApplyModifiedProperties();
+
+            // ── 5) DeploymentHUD'a üretim bağla (öz harcayarak birim üretme ARTIK BURADA) ─
+            DeploymentHUD deployHud = FindComponentAnywhere<DeploymentHUD>();
+            if (deployHud != null)
+            {
+                var dhSO = new SerializedObject(deployHud);
+                dhSO.FindProperty("_wallet").objectReferenceValue = wallet;
+                dhSO.FindProperty("_config").objectReferenceValue = config;
+                var recipesProp = dhSO.FindProperty("_recipes");
+                recipesProp.ClearArray();
+                recipesProp.arraySize = 2;
+                recipesProp.GetArrayElementAtIndex(0).objectReferenceValue = savasciRecipe;
+                recipesProp.GetArrayElementAtIndex(1).objectReferenceValue = rangerRecipe;
+                dhSO.ApplyModifiedProperties();
+            }
+            else
+            {
+                Debug.LogWarning("[TacticalRPG] Faz D: DeploymentHUD bulunamadi — once Faz B calistir " +
+                                 "(uretim tarifleri yerlestirme ekranina baglanamadi).");
+            }
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             AssetDatabase.SaveAssets();
@@ -1262,49 +1288,65 @@ namespace TacticalRPG.Editor
             if (!_silentSetup) EditorUtility.DisplayDialog("Faz D — Oz Toplama + Uretim Hazir",
                 "Kurulanlar:\n" +
                 "  • Cok-tipli oz (Ates/Su/Toprak) — cuzdan + ÖZ DEPOSU gosterimi\n" +
-                "  • Haritada rastgele renkli oz node'lari (config'den ayarlanir)\n" +
-                "  • EssenceNodeManager + OverworldEssenceHUD (sag ust)\n" +
-                "  • Tarifler: Savasci = 2 Ates+1 Toprak, Ranger = 2 Su+1 Toprak\n" +
-                "  • Parti artik SADECE Kam ile baslar; digerleri ozle uretilir\n\n" +
+                "  • EL YAPIMI oz haritasi (EssenceMap) — RASTGELE DEGIL\n" +
+                "  • Ozler artik karo yuzeyine YAKIN; her tur tek kure (ust uste binmez)\n" +
+                "  • Birim URETME artik YERLESTIRME ekraninda (overworld'de DEGIL)\n" +
+                "  • 'Savasa Gir' istemi yalniz goreve ~1 hex yaklasinca cikar\n\n" +
+                "Oz yerlestirmek icin:\n" +
+                "  • TacticalRPG → Essence Painter - Oz Boyama → tur sec + miktar gir → karoya tikla.\n" +
+                "  • Kendi (animasyonlu) oz prefab'ini EssenceConfig'de ilgili ture ata.\n\n" +
                 "Play (Overworld):\n" +
-                "  • Renkli oz olan karoya git → sag panelden 'Topla (1 AP)'.\n" +
-                "  • Yeterli oz olunca 'Uret: Savasci/Ranger' → roster'a eklenir.\n" +
-                "  • Savasa girince uretilen birimleri BEDAVA yerlestir.",
+                "  • Ozlu karoya git → sag panelden 'Topla (1 AP)'.\n" +
+                "  • Savas karosuna yaklas → 'Savasa Gir' → yerlestirmede 'Uret' + BEDAVA yerlestir.",
                 "Tamam");
 
-            Debug.Log("[TacticalRPG] Faz D (oz toplama + uretim) kuruldu.");
+            Debug.Log("[TacticalRPG] Faz D (el yapimi oz haritasi + uretim yerlestirmede) kuruldu.");
         }
 
-        // EssenceConfig asset'i oluşturur/günceller (3 tip: ad+renk+spawn ağırlığı).
+        // El yapımı öz haritası asset'i: VARSA korunur (boyamalar silinmez); yoksa örneklerle oluşturulur.
+        private static EssenceMapSO GetOrCreateEssenceMap(string path)
+        {
+            EssenceMapSO map = AssetDatabase.LoadAssetAtPath<EssenceMapSO>(path);
+            if (map != null) return map; // mevcut boyamayı koru
+
+            map = ScriptableObject.CreateInstance<EssenceMapSO>();
+            AssetDatabase.CreateAsset(map, path);
+
+            // Sadece İLK oluşturmada birkaç örnek (oyuncu başlangıcı Q3R4 yakını) — sonra painter ile düzenle.
+            map.SetAmount(new HexCoordinate(2, 4), EssenceType.Toprak, 3);
+            map.SetAmount(new HexCoordinate(4, 4), EssenceType.Su,     2);
+            map.SetAmount(new HexCoordinate(4, 5), EssenceType.Ates,   2);
+            map.SetAmount(new HexCoordinate(4, 5), EssenceType.Toprak, 1);
+            EditorUtility.SetDirty(map);
+            return map;
+        }
+
+        // EssenceConfig asset'i oluşturur/günceller (3 tip: ad+renk; prefab boş = placeholder).
         private static EssenceConfigSO GetOrCreateEssenceConfig(string path)
         {
             EssenceConfigSO cfg = AssetDatabase.LoadAssetAtPath<EssenceConfigSO>(path);
-            if (cfg == null)
-            {
-                cfg = ScriptableObject.CreateInstance<EssenceConfigSO>();
-                AssetDatabase.CreateAsset(cfg, path);
-            }
+            if (cfg != null) return cfg; // mevcut config'i KORU — kullanicinin prefab/renk atamalari silinmesin
+
+            cfg = ScriptableObject.CreateInstance<EssenceConfigSO>();
+            AssetDatabase.CreateAsset(cfg, path);
+
             var so    = new SerializedObject(cfg);
             var types = so.FindProperty("_types");
             types.ClearArray();
             types.arraySize = 3;
-            SetEssenceType(types.GetArrayElementAtIndex(0), EssenceType.Ates,   "Ates",   new Color(0.90f, 0.25f, 0.20f), 1);
-            SetEssenceType(types.GetArrayElementAtIndex(1), EssenceType.Su,     "Su",     new Color(0.25f, 0.50f, 0.95f), 1);
-            SetEssenceType(types.GetArrayElementAtIndex(2), EssenceType.Toprak, "Toprak", new Color(0.35f, 0.75f, 0.35f), 1);
-            so.FindProperty("_tileChance").floatValue = 0.55f;
-            so.FindProperty("_minPerTile").intValue   = 1;
-            so.FindProperty("_maxPerTile").intValue   = 4;
+            SetEssenceType(types.GetArrayElementAtIndex(0), EssenceType.Ates,   "Ates",   new Color(0.90f, 0.25f, 0.20f));
+            SetEssenceType(types.GetArrayElementAtIndex(1), EssenceType.Su,     "Su",     new Color(0.25f, 0.50f, 0.95f));
+            SetEssenceType(types.GetArrayElementAtIndex(2), EssenceType.Toprak, "Toprak", new Color(0.35f, 0.75f, 0.35f));
             so.ApplyModifiedProperties();
             EditorUtility.SetDirty(cfg);
             return cfg;
         }
 
-        private static void SetEssenceType(SerializedProperty e, EssenceType t, string name, Color c, int weight)
+        private static void SetEssenceType(SerializedProperty e, EssenceType t, string name, Color c)
         {
             e.FindPropertyRelative("type").enumValueIndex     = (int)t;
             e.FindPropertyRelative("displayName").stringValue = name;
             e.FindPropertyRelative("color").colorValue        = c;
-            e.FindPropertyRelative("spawnWeight").intValue    = weight;
         }
 
         private static UnitRecipe MakeRecipe(string path, string name, CharacterClassData unit, EssenceAmount[] cost)

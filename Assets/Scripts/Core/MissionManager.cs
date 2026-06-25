@@ -26,6 +26,9 @@ namespace TacticalRPG.Core
         [Header("Görevler")]
         [SerializeField] private List<MissionPlacement> _missions = new();
 
+        [Tooltip("Oyuncu göreve girmek için karoya kaç hex yakın olmalı (0 = sadece üstünde, 1 = bitişik de olur).")]
+        [SerializeField, Min(0)] private int _enterRange = 1;
+
         [Header("Marker Görseli")]
         [SerializeField] private Color _markerColor  = new(1f, 0.85f, 0.1f);
         [SerializeField] private float _markerHeight = 1.3f;
@@ -45,10 +48,21 @@ namespace TacticalRPG.Core
 
         private void Start() => SpawnMarkers();
 
+        public int EnterRange => _enterRange;
+
         public MissionData GetMissionAt(HexCoordinate coord)
         {
             foreach (var m in _missions)
                 if (m.mission != null && m.coord == coord) return m.mission;
+            return null;
+        }
+
+        /// <summary>Verilen konuma _enterRange içindeki ilk görevi döndürür (yoksa null).
+        /// Hem "savaşa gir" istemini hem de tıklama-onayını kapıya bağlamak için kullanılır.</summary>
+        public MissionData GetEnterableMission(HexCoordinate from)
+        {
+            foreach (var m in _missions)
+                if (m.mission != null && from.DistanceTo(m.coord) <= _enterRange) return m.mission;
             return null;
         }
 

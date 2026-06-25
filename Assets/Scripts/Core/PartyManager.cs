@@ -49,7 +49,8 @@ namespace TacticalRPG.Core
             return card;
         }
 
-        /// <summary>Öz tarifini harcayarak yeni bir asker kartı üretir (overworld). Başarıyı döndürür.</summary>
+        /// <summary>Öz tarifini harcayarak yeni bir asker kartı üretir (savaş öncesi yerleştirme ekranı).
+        /// Başarıyı döndürür.</summary>
         public bool TryCreate(UnitRecipe recipe)
         {
             if (recipe == null || recipe.UnitClass == null) return false;

@@ -1,16 +1,22 @@
 using UnityEngine;
 using TacticalRPG.Core;
+using TacticalRPG.Data;
 
 namespace TacticalRPG.UI
 {
     /// <summary>
-    /// Faz A geçici IMGUI akış paneli: görev onayı (Evet/Hayır) ve savaşta "Geri Dön".
-    /// State gated olduğu için (sadece ConfirmMission/Combat'ta çizer) tıklama çakışması yok.
-    /// Gerçek UI Faz B/C ve cila aşamasında uGUI'ye taşınacak.
+    /// Geçici IMGUI akış paneli:
+    ///   • Overworld: görev karosuna yeterince yaklaşınca "Savaşa Gir" istemi (proximity).
+    ///   • ConfirmMission: Evet/Hayır onayı.
+    ///   • Combat: "Geri Dön".
+    /// State gated olduğu için tıklama çakışması yok. Cila aşamasında uGUI'ye taşınacak.
     /// </summary>
     public class OverworldCombatHUD : MonoBehaviour
     {
         [SerializeField] private GameStateManager _stateManager;
+        [Tooltip("Yakınlık istemi için — atanmazsa istem çizilmez (geri uyumlu).")]
+        [SerializeField] private MissionManager   _missionManager;
+        [SerializeField] private PlayerController _player;
 
         private void OnGUI()
         {
@@ -18,9 +24,27 @@ namespace TacticalRPG.UI
 
             switch (_stateManager.State)
             {
-                case GameState.ConfirmMission: DrawConfirm(); break;
-                case GameState.Combat:         DrawCombat();  break;
+                case GameState.Overworld:      DrawNearbyMissionPrompt(); break;
+                case GameState.ConfirmMission:  DrawConfirm();             break;
+                case GameState.Combat:          DrawCombat();              break;
             }
+        }
+
+        // Oyuncu bir görev karosunun _enterRange içindeyse "Savaşa Gir" istemi göster.
+        private void DrawNearbyMissionPrompt()
+        {
+            if (_missionManager == null || _player == null) return;
+
+            MissionData mission = _missionManager.GetEnterableMission(_player.CurrentCoord);
+            if (mission == null) return;
+
+            const float w = 360f, h = 76f;
+            var rect = new Rect((Screen.width - w) * 0.5f, 12f, w, h);
+            GUILayout.BeginArea(rect, GUI.skin.box);
+            GUILayout.Label($"Gorev yakinda: '{mission.DisplayName}'");
+            if (GUILayout.Button("Savasa Gir", GUILayout.Height(34)))
+                _stateManager.RequestMission(mission);
+            GUILayout.EndArea();
         }
 
         private void DrawConfirm()
