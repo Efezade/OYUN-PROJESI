@@ -32,8 +32,16 @@ namespace TacticalRPG.Editor
         // Görsel %95 footprint — köşe-köşe = 2*OuterRadius*0.95 = 1.90 m.
         private const float ArtScale = 0.95f;
 
+        // Karolar FBX'ten baş-aşağı (ters) geliyor → tarama sırasında bu döndürmeyle düzeltilir.
+        // Eksen yanlış sonuç verirse Euler'ı ayarla: (0,0,180)=Z-flip, (90,0,0)=Z-up→Y-up vb.
+        private static readonly Quaternion ImportFlip = Quaternion.Euler(180f, 0f, 0f);
+
         // Güvenlik eşikleri (temiz bir karo ~1.9 m ≈ 2 birimdir).
-        private const float MaxFootprint  = 50f; // bunun üstü = bozuk model → ATLANIR
+        // Footprint TEK BAŞINA "bozuk" demek DEĞİL: importer her boyutu 1.90'a auto-scale eder, yani
+        // temiz ama 1000x Blender-ölçekli FBX'ler (köprü dahil — footprint ~1900) geçerli olmalı. Bu
+        // eşik artık yalnızca absürt/dejenere değerleri eler. (v1 felaketi büyük footprint'ten DEĞİL,
+        // OFF-CENTER geometriden kaynaklıydı; gerekirse ileride merkez-kayma kontrolü eklenebilir.)
+        private const float MaxFootprint  = 100000f;
         private const float WarnFootprint = 5f;  // bunun üstü = işlenir ama uyarılır
         private const int   WarnMeshCount = 20;   // çok parçalı = uyarılır (tek mesh önerilir)
 
@@ -136,7 +144,7 @@ namespace TacticalRPG.Editor
             var inst = (GameObject)PrefabUtility.InstantiatePrefab(model);
             inst.transform.SetParent(root.transform, false);
             inst.transform.localPosition = Vector3.zero;
-            inst.transform.localRotation = Quaternion.identity; // Y-up varsayılır (otomatik döndürme yok)
+            inst.transform.localRotation = ImportFlip; // karolar FBX'ten ters geliyor → 180° X ile düzelt
             inst.transform.localScale    = Vector3.one;
 
             Bounds b0 = ComputeBounds(root);
@@ -189,7 +197,7 @@ namespace TacticalRPG.Editor
         // Bilinen karo → güzel varsayılan; bilinmeyen → dosya adından genel giriş.
         private static TileDef ResolveDef(string stem)
         {
-            string key = stem.ToLowerInvariant();
+            string key = NormalizeKey(stem);
             if (Overrides.TryGetValue(key, out TileDef d)) return d;
             return new TileDef
             {
@@ -216,6 +224,32 @@ namespace TacticalRPG.Editor
         }
 
         // ── Yardımcılar ───────────────────────────────────────────────────────
+
+        // Türkçe karakterleri ASCII'ye indirger ki "ağaçkaro1" → "agackaro1" tablo anahtarıyla
+        // eşleşsin (yoksa Türkçe adlı karolar bilinmeyen sayılıp genel/bozuk id + yanlış
+        // yürünürlük/renk/yükseklik alır). Hem Overrides lookup hem id üretimi için kullanılır.
+        private static string NormalizeKey(string s)
+        {
+            var sb = new System.Text.StringBuilder(s.Length);
+            foreach (char c in s.ToLowerInvariant())
+            {
+                switch (c)
+                {
+                    case 'ğ': sb.Append('g'); break;
+                    case 'ç': sb.Append('c'); break;
+                    case 'ş': sb.Append('s'); break;
+                    case 'ı': sb.Append('i'); break;
+                    case 'ö': sb.Append('o'); break;
+                    case 'ü': sb.Append('u'); break;
+                    case 'â': sb.Append('a'); break;
+                    case 'î': sb.Append('i'); break;
+                    case 'û': sb.Append('u'); break;
+                    // _, -, boşluk vb. AT: "agac_karo_1" / "agac karo 1" → "agackaro1" (tabloyla eşleşsin).
+                    default:  if (char.IsLetterOrDigit(c)) sb.Append(c); break;
+                }
+            }
+            return sb.ToString();
+        }
 
         private static string Sanitize(string s)
         {

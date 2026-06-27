@@ -14,62 +14,74 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.TilePaletteSO
   tiles:
   - id: default
-    displayName: Varsayilan
-    prefab: {fileID: 0}
-    editorColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-    isWalkable: 1
-    surfaceHeightOverride: 0
-  - id: cimen
-    displayName: Cim
-    prefab: {fileID: 0}
-    editorColor: {r: 0.4, g: 0.65, b: 0.32, a: 1}
-    isWalkable: 1
-    surfaceHeightOverride: 0
-  - id: orman
-    displayName: Orman
-    prefab: {fileID: 0}
-    editorColor: {r: 0.18, g: 0.42, b: 0.22, a: 1}
-    isWalkable: 1
-    surfaceHeightOverride: 0
-  - id: kum
-    displayName: Kum
-    prefab: {fileID: 0}
-    editorColor: {r: 0.84, g: 0.76, b: 0.5, a: 1}
-    isWalkable: 1
-    surfaceHeightOverride: 0
-  - id: kaya
-    displayName: Kaya
-    prefab: {fileID: 0}
-    editorColor: {r: 0.46, g: 0.44, b: 0.42, a: 1}
-    isWalkable: 1
-    surfaceHeightOverride: 0
-  - id: dag
-    displayName: Dag
-    prefab: {fileID: 0}
-    editorColor: {r: 0.4, g: 0.34, b: 0.3, a: 1}
-    isWalkable: 0
-    surfaceHeightOverride: 0
-  - id: su
-    displayName: Su
-    prefab: {fileID: 0}
-    editorColor: {r: 0.24, g: 0.52, b: 0.82, a: 1}
-    isWalkable: 0
-    surfaceHeightOverride: 0
-  - id: lav
-    displayName: Lav
-    prefab: {fileID: 0}
-    editorColor: {r: 0.82, g: 0.28, b: 0.12, a: 1}
-    isWalkable: 0
-    surfaceHeightOverride: 0
-  - id: kar
-    displayName: Kar
-    prefab: {fileID: 0}
-    editorColor: {r: 0.9, g: 0.93, b: 0.96, a: 1}
+    displayName: Standart
+    prefab: {fileID: 8968978067696730621, guid: 5e9457159260cd845874fea1158c0658, type: 3}
+    editorColor: {r: 0.55, g: 0.55, b: 0.55, a: 1}
     isWalkable: 1
     surfaceHeightOverride: 0
   - id: kopru
-    displayName: Kopru
-    prefab: {fileID: 764990509630898611, guid: 777997d8699fc5145ae5873a67c22c81, type: 3}
+    displayName: "K\xF6pr\xFC"
+    prefab: {fileID: 7834664810089002725, guid: 99f8c92d4a8c46147ab0de3f8e199745, type: 3}
     editorColor: {r: 0.55, g: 0.45, b: 0.35, a: 1}
     isWalkable: 1
+    surfaceHeightOverride: 0
+  - id: barbarkarakteri
+    displayName: barbarkarakteri
+    prefab: {fileID: 2365868163860744472, guid: 873e773dab20bd84091d1729e9c0d03c, type: 3}
+    editorColor: {r: 0.85, g: 0.425, b: 0.7366668, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0
+  - id: agac1
+    displayName: "A\u011Fa\xE7 1"
+    prefab: {fileID: 4838299069624766153, guid: 36ad959f8730b3a4f8af78931975ded9, type: 3}
+    editorColor: {r: 0.2, g: 0.45, b: 0.22, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0.3
+  - id: agac2
+    displayName: "A\u011Fa\xE7 2"
+    prefab: {fileID: 155864130603136039, guid: 2908f9a3158ccfb42afac21486c10e59, type: 3}
+    editorColor: {r: 0.22, g: 0.5, b: 0.24, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0.3
+  - id: agac3
+    displayName: "A\u011Fa\xE7 3"
+    prefab: {fileID: 2999539568372860915, guid: c3d7cc97fadb87c4489e9bd52ca572ac, type: 3}
+    editorColor: {r: 0.18, g: 0.4, b: 0.2, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0.3
+  - id: cicek
+    displayName: "\xC7i\xE7ek"
+    prefab: {fileID: 4674819220444537325, guid: 48fcdfb25c381c047b7e7c0bd2dc5328, type: 3}
+    editorColor: {r: 0.72, g: 0.55, b: 0.8, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0.3
+  - id: kule
+    displayName: Kule
+    prefab: {fileID: 186096939709808759, guid: a580abeb04635ec429dc2aa67d5e0c08, type: 3}
+    editorColor: {r: 0.5, g: 0.48, b: 0.46, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0.3
+  - id: kum
+    displayName: Kum
+    prefab: {fileID: 7451080782150078508, guid: 68fdb89a2601d6646b21988ecc0c4c29, type: 3}
+    editorColor: {r: 0.84, g: 0.76, b: 0.5, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0
+  - id: lav
+    displayName: Lav
+    prefab: {fileID: 6679325916122202230, guid: db38f526af2418b439bc60a0da2e844e, type: 3}
+    editorColor: {r: 0.82, g: 0.28, b: 0.12, a: 1}
+    isWalkable: 0
+    surfaceHeightOverride: 0
+  - id: mantar
+    displayName: Mantar
+    prefab: {fileID: 1491404702431365764, guid: f6c1dfe9443f20d4d9f47e7a67617dca, type: 3}
+    editorColor: {r: 0.78, g: 0.46, b: 0.4, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0.3
+  - id: su
+    displayName: Su
+    prefab: {fileID: 5348334762194260780, guid: 9aae77a7d4fc2ad42b3b0b33ccb46ed4, type: 3}
+    editorColor: {r: 0.24, g: 0.52, b: 0.82, a: 1}
+    isWalkable: 0
     surfaceHeightOverride: 0
