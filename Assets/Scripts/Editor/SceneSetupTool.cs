@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using TMPro;
@@ -107,7 +108,10 @@ namespace TacticalRPG.Editor
             cam.backgroundColor  = new Color(0.04f, 0.03f, 0.07f);
 
             var urpData = cameraGO.AddComponent<UniversalAdditionalCameraData>();
-            urpData.renderShadows        = false;
+            urpData.renderShadows        = true;   // gercekci grafik: golgeler acik
+            urpData.renderPostProcessing = true;   // Global Volume efektleri (tonemapping/bloom) gorunsun
+            urpData.antialiasing         = AntialiasingMode.SubpixelMorphologicalAntiAliasing; // SMAA
+            urpData.antialiasingQuality  = AntialiasingQuality.High;
             urpData.requiresColorTexture = false;
             urpData.requiresDepthTexture = false;
 
@@ -119,11 +123,15 @@ namespace TacticalRPG.Editor
             lightGO.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
             Light light = lightGO.AddComponent<Light>();
             light.type      = LightType.Directional;
-            light.intensity = 2f;
-            light.color     = Color.white;
+            light.intensity = 1.6f;
+            light.color     = new Color(1f, 0.96f, 0.9f); // hafif sicak gunes
+            light.shadows   = LightShadows.Soft;          // gercekci yumusak golgeler
 
             // GameManager
             new GameObject("GameManager").transform.SetParent(root.transform);
+
+            // Gercekci grafik preset'i — Global Volume + post-process (otomatik, her TAM KURULUM'da).
+            SetupRealisticGraphics(root.transform);
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             Debug.Log("[TacticalRPG] Faz 0 tamamlandi.");
@@ -244,10 +252,18 @@ namespace TacticalRPG.Editor
             playerGO.transform.localScale = new Vector3(0.45f, 0.45f, 0.45f);
             Object.DestroyImmediate(playerGO.GetComponent<CapsuleCollider>());
 
-            // Turuncu placeholder materyal — kendi karakterinle değiştirilecek
+            // Turuncu placeholder materyal — model atanınca gizlenir.
             EnsureFolder("Assets/Art/Materials");
             Material playerMat = GetOrCreateMaterial("PlayerPlaceholder", new Color(0.95f, 0.45f, 0.1f));
             playerGO.GetComponent<MeshRenderer>().sharedMaterial = playerMat;
+
+            // Karakter modeli (soyguncu) — KALICI bake: kapsül görseli tamamen kaldırılır, model child
+            // olarak sahneye saklanır (editörde de görünür, Play gerekmez), DİK döndürülür, karoya
+            // sığacak boya auto-scale edilir, ayağı zemine oturtulur.
+            GameObject charModel = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/Art/Models/Characters/soyguncu_karakteri.fbx");
+            if (charModel != null)
+                BakeCharacterModel(playerGO, charModel);
 
             PlayerController playerCtrl = playerGO.AddComponent<PlayerController>();
             var playerSO = new SerializedObject(playerCtrl);
@@ -1519,6 +1535,83 @@ namespace TacticalRPG.Editor
             EditorUtility.SetDirty(mat);
             return mat;
         }
+
+        // ── Karakter modeli bake (placeholder kapsül → gerçek model, KALICI) ──────
+        // FBX YATIK geldiği için dik döndürülür. Hâlâ yanlışsa bu Euler'ı ayarla:
+        // (90,0,0) ters yön, (0,0,90) yan, (0,180,0) arka dönük. Boy karoya sığacak auto-scale.
+        private static readonly Vector3 CharacterModelEuler  = new Vector3(90f, 0f, 0f);
+        private const           float   CharacterModelHeight = 1.5f;
+
+        /// <summary>
+        /// Bir karakter FBX'ini parent GO'ya KALICI bake eder: kapsül görselini kaldırır, modeli child
+        /// ekler, dik döndürür, hedef boya auto-scale eder, ayağı parent orijinine (zemine) oturtur.
+        /// Edit-time çalışır → sahneye saklanır, editörde de görünür (Play gerekmez).
+        /// </summary>
+        private static void BakeCharacterModel(GameObject parent, GameObject fbx)
+        {
+            var mr = parent.GetComponent<MeshRenderer>(); if (mr != null) Object.DestroyImmediate(mr);
+            var mf = parent.GetComponent<MeshFilter>();   if (mf != null) Object.DestroyImmediate(mf);
+            parent.transform.localScale = Vector3.one; // kapsül 0.45 ölçeği gerekmez
+
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(fbx, parent.transform);
+            model.name = "Model";
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.Euler(CharacterModelEuler);
+            model.transform.localScale    = Vector3.one;
+
+            var rends = model.GetComponentsInChildren<Renderer>();
+            if (rends.Length == 0) return;
+
+            Bounds b = rends[0].bounds;                                   // auto-scale: dünya boyu → hedef
+            for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+            if (b.size.y > 0.0001f)
+                model.transform.localScale = Vector3.one * (CharacterModelHeight / b.size.y);
+
+            b = rends[0].bounds;                                         // ayağı zemine otur
+            for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+            model.transform.position += Vector3.up * (parent.transform.position.y - b.min.y);
+        }
+
+        // ── Gerçekçi grafik preset'i (Global Volume + post-process) ──────────────
+        // ACES tonemapping + bloom + vignette + renk. Kamera/ışık gölgeleri Faz 0'da açıldı.
+        // Idempotent: profil asset'i (Assets/Data/PostFX_Profile.asset) yeniden kullanılır.
+        private static void SetupRealisticGraphics(Transform parent)
+        {
+            const string profilePath = "Assets/Data/PostFX_Profile.asset";
+            EnsureFolder("Assets/Data");
+            var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(profilePath);
+            if (profile == null)
+            {
+                profile = ScriptableObject.CreateInstance<VolumeProfile>();
+                AssetDatabase.CreateAsset(profile, profilePath);
+            }
+
+            var tone = GetOrAddVolumeOverride<Tonemapping>(profile);
+            tone.mode.overrideState = true; tone.mode.value = TonemappingMode.ACES;
+
+            var bloom = GetOrAddVolumeOverride<Bloom>(profile);
+            bloom.intensity.overrideState = true; bloom.intensity.value = 0.6f;
+            bloom.threshold.overrideState = true; bloom.threshold.value = 1.05f;
+
+            var vig = GetOrAddVolumeOverride<Vignette>(profile);
+            vig.intensity.overrideState = true; vig.intensity.value = 0.28f;
+
+            var col = GetOrAddVolumeOverride<ColorAdjustments>(profile);
+            col.contrast.overrideState   = true; col.contrast.value   = 12f;
+            col.saturation.overrideState = true; col.saturation.value = 6f;
+
+            EditorUtility.SetDirty(profile);
+
+            var volGO = new GameObject("Global Volume");
+            volGO.transform.SetParent(parent, false);
+            var vol = volGO.AddComponent<Volume>();
+            vol.isGlobal      = true;
+            vol.priority      = 1f;
+            vol.sharedProfile = profile;
+        }
+
+        private static T GetOrAddVolumeOverride<T>(VolumeProfile profile) where T : VolumeComponent
+            => profile.TryGet<T>(out T comp) ? comp : profile.Add<T>(true);
 
         private static Mesh GetOrCreateHexMesh()
         {
