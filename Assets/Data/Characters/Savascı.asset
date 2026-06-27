@@ -37,6 +37,10 @@ MonoBehaviour:
   _deployCost: 3
   _isCommander: 0
   _unitColor: {r: 0.25, g: 0.45, b: 0.95, a: 1}
+  _unitModel: {fileID: 0}
+  _unitModelHeight: 1.5
+  _unitModelEuler: {x: 90, y: 0, z: 0}
+  _unitModelYOffset: 0
   _hasManaSystem: 0
   _maxMana: 0
   _abilities: []

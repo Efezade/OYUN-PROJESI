@@ -383,6 +383,19 @@ namespace TacticalRPG.Editor
                 hasMana: true, maxMana: 10,
                 isCommander: true, unitColor: new Color(1f, 0.80f, 0.15f)); // Kam = altın (komutan)
 
+            // Kam'a soyguncu modelini ata → savaşta da kapsül yerine model (DeploymentManager bakar).
+            // Overworld bake'iyle aynı euler/boy (tutarlı duruş).
+            GameObject kamModel = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/Art/Models/Characters/soyguncu_karakteri.fbx");
+            if (kamModel != null)
+            {
+                var kamModelSO = new SerializedObject(kamData);
+                kamModelSO.FindProperty("_unitModel").objectReferenceValue = kamModel;
+                kamModelSO.FindProperty("_unitModelHeight").floatValue      = CharacterModelHeight;
+                kamModelSO.FindProperty("_unitModelEuler").vector3Value     = CharacterModelEuler;
+                kamModelSO.ApplyModifiedProperties();
+            }
+
             CharacterClassData warriorData = GetOrCreateCharacterSO(
                 path: "Assets/Data/Characters/Savascı.asset", className: "Savasci",
                 lore: "Kilic ustasi. On saflarda durur, darbeleri gogusler.",

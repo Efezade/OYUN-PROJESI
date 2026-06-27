@@ -142,6 +142,11 @@ namespace TacticalRPG.Core
             }
             go.name = $"Unit_{card.Data.ClassName}_{coord}";
 
+            // Sınıfın modeli varsa kapsülü gerçek modelle değiştir (auto-scale + yön; Kam = soyguncu).
+            if (card.Data != null && card.Data.UnitModel != null)
+                go.AddComponent<CharacterModelBinder>()
+                  .Apply(card.Data.UnitModel, card.Data.UnitModelHeight, card.Data.UnitModelEuler, card.Data.UnitModelYOffset);
+
             Unit unit = go.GetComponent<Unit>();
             if (unit == null) unit = go.AddComponent<Unit>();
 

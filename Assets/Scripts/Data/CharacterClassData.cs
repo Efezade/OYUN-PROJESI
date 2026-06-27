@@ -41,6 +41,13 @@ namespace TacticalRPG.Data
         [Tooltip("Bu sınıfın savaş alanındaki birim rengi (her kahraman farklı renk olsun diye).")]
         [SerializeField] private Color _unitColor = new(0.30f, 0.60f, 1f);
 
+        [Header("Görsel Model (opsiyonel — savaşta kapsül yerine)")]
+        [Tooltip("Atanırsa savaşta bu birim kapsül yerine bu modelle görünür (auto-scale + yön).")]
+        [SerializeField] private GameObject _unitModel;
+        [SerializeField] private float      _unitModelHeight  = 1.5f;
+        [SerializeField] private Vector3    _unitModelEuler   = new(90f, 0f, 0f);
+        [SerializeField] private float      _unitModelYOffset = 0f;
+
         [Header("Özel Sistem")]
         [SerializeField] private bool _hasManaSystem;
         [SerializeField] private int  _maxMana;
@@ -63,6 +70,10 @@ namespace TacticalRPG.Data
         public int   DeployCost  => _deployCost;
         public bool  IsCommander => _isCommander;
         public Color UnitColor   => _unitColor;
+        public GameObject UnitModel        => _unitModel;
+        public float      UnitModelHeight  => _unitModelHeight;
+        public Vector3    UnitModelEuler   => _unitModelEuler;
+        public float      UnitModelYOffset => _unitModelYOffset;
 
         // ── Mana ─────────────────────────────────────────────────────────────
         public bool HasManaSystem => _hasManaSystem;
