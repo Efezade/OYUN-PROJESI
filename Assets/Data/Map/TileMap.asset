@@ -21,15 +21,15 @@ MonoBehaviour:
   - coord:
       Q: 0
       R: 4
-    tileId: su
+    tileId: kar
   - coord:
       Q: -1
       R: 6
-    tileId: su
+    tileId: kar
   - coord:
       Q: 1
       R: 4
-    tileId: kopru
+    tileId: su
   - coord:
       Q: 2
       R: 2
@@ -37,7 +37,7 @@ MonoBehaviour:
   - coord:
       Q: -1
       R: 5
-    tileId: su
+    tileId: kar
   - coord:
       Q: -2
       R: 7
@@ -105,7 +105,7 @@ MonoBehaviour:
   - coord:
       Q: -2
       R: 6
-    tileId: su
+    tileId: kopru
   - coord:
       Q: -3
       R: 7
@@ -113,7 +113,7 @@ MonoBehaviour:
   - coord:
       Q: -3
       R: 8
-    tileId: su
+    tileId: lav
   - coord:
       Q: 0
       R: 3
@@ -125,7 +125,7 @@ MonoBehaviour:
   - coord:
       Q: -2
       R: 5
-    tileId: cimen
+    tileId: kopru
   - coord:
       Q: -3
       R: 6
@@ -145,19 +145,19 @@ MonoBehaviour:
   - coord:
       Q: 2
       R: 4
-    tileId: kopru
+    tileId: su
   - coord:
       Q: 1
       R: 5
-    tileId: kopru
+    tileId: su
   - coord:
       Q: 0
       R: 5
-    tileId: kopru
+    tileId: kar
   - coord:
       Q: 0
       R: 6
-    tileId: kopru
+    tileId: su
   - coord:
       Q: 6
       R: 2
@@ -169,15 +169,15 @@ MonoBehaviour:
   - coord:
       Q: 4
       R: 3
-    tileId: kar
+    tileId: kopru
   - coord:
       Q: 4
       R: 4
-    tileId: kar
+    tileId: kopru
   - coord:
       Q: 3
       R: 5
-    tileId: kar
+    tileId: kopru
   - coord:
       Q: 2
       R: 7
@@ -189,7 +189,7 @@ MonoBehaviour:
   - coord:
       Q: 4
       R: 7
-    tileId: kar
+    tileId: cimen
   - coord:
       Q: 6
       R: 6
@@ -209,7 +209,7 @@ MonoBehaviour:
   - coord:
       Q: 6
       R: 1
-    tileId: cimen
+    tileId: su
   - coord:
       Q: 7
       R: 1
@@ -245,15 +245,15 @@ MonoBehaviour:
   - coord:
       Q: 7
       R: 0
-    tileId: cimen
+    tileId: su
   - coord:
       Q: 4
       R: 5
-    tileId: kum
+    tileId: kopru
   - coord:
       Q: 3
       R: 6
-    tileId: kum
+    tileId: kopru
   - coord:
       Q: 4
       R: 6
@@ -262,3 +262,71 @@ MonoBehaviour:
       Q: 5
       R: 5
     tileId: kum
+  - coord:
+      Q: -1
+      R: 7
+    tileId: kar
+  - coord:
+      Q: 2
+      R: 5
+    tileId: su
+  - coord:
+      Q: 2
+      R: 6
+    tileId: kopru
+  - coord:
+      Q: 3
+      R: 4
+    tileId: kopru
+  - coord:
+      Q: 3
+      R: 3
+    tileId: kopru
+  - coord:
+      Q: 4
+      R: 2
+    tileId: kopru
+  - coord:
+      Q: 5
+      R: 2
+    tileId: kopru
+  - coord:
+      Q: -1
+      R: 8
+    tileId: kopru
+  - coord:
+      Q: 0
+      R: 7
+    tileId: su
+  - coord:
+      Q: 0
+      R: 8
+    tileId: lav
+  - coord:
+      Q: 1
+      R: 8
+    tileId: lav
+  - coord:
+      Q: 1
+      R: 6
+    tileId: su
+  - coord:
+      Q: 1
+      R: 7
+    tileId: kopru
+  - coord:
+      Q: -2
+      R: 8
+    tileId: lav
+  - coord:
+      Q: 2
+      R: 8
+    tileId: cimen
+  - coord:
+      Q: 3
+      R: 8
+    tileId: cimen
+  - coord:
+      Q: 0
+      R: 9
+    tileId: su

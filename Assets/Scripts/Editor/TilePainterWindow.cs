@@ -28,6 +28,10 @@ namespace TacticalRPG.Editor
 
         private Vector2 _scroll;
 
+        // Klasörden karo ekleme: taranacak klasör (oturumlar arası EditorPrefs'te hatırlanır).
+        private const string ScanFolderPrefKey = "TacticalRPG.TilePainter.ScanFolder";
+        private DefaultAsset _scanFolder;
+
         [MenuItem("TacticalRPG/Tile Painter - Karo Boyama", false, 20)]
         public static void OpenWindow()
         {
@@ -39,6 +43,10 @@ namespace TacticalRPG.Editor
         {
             SceneView.duringSceneGui += OnSceneGUI;
             AutoFindReferences();
+
+            string saved = EditorPrefs.GetString(ScanFolderPrefKey, "Assets/Art/Models/Tiles");
+            if (!string.IsNullOrEmpty(saved))
+                _scanFolder = AssetDatabase.LoadAssetAtPath<DefaultAsset>(saved);
         }
 
         private void OnDisable()
@@ -81,7 +89,60 @@ namespace TacticalRPG.Editor
             EditorGUILayout.Space(6);
             DrawPalette();
             EditorGUILayout.Space(6);
+            DrawScanSection();
+            EditorGUILayout.Space(6);
             DrawControls();
+        }
+
+        // ── Klasörden karo ekleme ─────────────────────────────────────────────
+
+        private void DrawScanSection()
+        {
+            EditorGUILayout.LabelField("Klasörden Karo Ekle", EditorStyles.boldLabel);
+
+            EditorGUI.BeginChangeCheck();
+            _scanFolder = (DefaultAsset)EditorGUILayout.ObjectField(
+                "Karo Klasörü", _scanFolder, typeof(DefaultAsset), false);
+            if (EditorGUI.EndChangeCheck())
+                EditorPrefs.SetString(ScanFolderPrefKey,
+                    _scanFolder != null ? AssetDatabase.GetAssetPath(_scanFolder) : "");
+
+            using (new EditorGUI.DisabledScope(_scanFolder == null))
+            {
+                if (GUILayout.Button("🔍  Klasörü Tara → Palete Ekle", GUILayout.Height(26)))
+                    ScanFolder();
+            }
+
+            EditorGUILayout.HelpBox(
+                "Klasördeki FBX/prefab karolar otomatik palete eklenir (FBX hex boyutuna ölçeklenir, " +
+                "pivotu ayarlanır, collider eklenir). Bozuk/dev model varsa eklenmez, uyarı verilir.",
+                MessageType.None);
+        }
+
+        private void ScanFolder()
+        {
+            string folder = AssetDatabase.GetAssetPath(_scanFolder);
+            if (string.IsNullOrEmpty(folder) || !AssetDatabase.IsValidFolder(folder))
+            {
+                EditorUtility.DisplayDialog("Hata", "Geçerli bir proje klasörü seç.", "Tamam");
+                return;
+            }
+
+            int n = TileFolderImporter.ImportFolder(folder, _palette, out string report);
+
+            EditorUtility.SetDirty(_palette);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            RegenerateAll();
+
+            Debug.Log($"[TilePainter] Klasör tarandı: {folder}\nEklenen/güncellenen: {n}\n{report}");
+            EditorUtility.DisplayDialog("Klasör Tarandı",
+                $"Palete eklenen/güncellenen karo: {n}\n\n" +
+                "Atlanan veya uyarı varsa Console'a bak.\n\n" +
+                "Paletten seçip Scene'de boyayabilirsin.", "Tamam");
+
+            if (_selectedIndex >= _palette.tiles.Count) _selectedIndex = 0;
+            Repaint();
         }
 
         private void DrawReferences()
