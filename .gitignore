@@ -108,3 +108,14 @@ ignore.conf
 
 # Project-specific extras
 handoff.md
+
+# Unity crash-recovery (gecici kurtarma sahnesi; Unity'de dogrulayip silinebilir)
+/[Aa]ssets/_[Rr]ecovery/
+/[Aa]ssets/_[Rr]ecovery.meta
+
+# Ham karo FBX'leri — her biri ~58MB (gomulu yuksek-coz texture), toplam ~641MB.
+# Git'e cok agir; aktif harita eski "kopru karo.fbx"yi kullanir (o takipte). Bunlar
+# Blender'da texture'siz kucultulup tekrar eklenecek. Yeni Tile_*.prefab'lar bu FBX'lere
+# bagli oldugu icin temiz clone'da o 11 karonun mesh'i eksik gorunur (yerelde sorun yok).
+/[Aa]ssets/[Aa]rt/[Mm]odels/[Tt]iles/
+/[Aa]ssets/[Aa]rt/[Mm]odels/[Tt]iles.meta
