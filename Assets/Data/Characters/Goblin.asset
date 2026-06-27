@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.CharacterClassData
   _className: Goblin
   _lore: Erlik'in zayif ama kalabalik askerleri. Yakin dovusur.
+  _unitNames: []
   _maxHP: 8
   _attack: 3
   _defense: 0

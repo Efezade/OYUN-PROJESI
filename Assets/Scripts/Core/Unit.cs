@@ -40,12 +40,30 @@ namespace TacticalRPG.Core
         [SerializeField] private HexGridManager _gridManager;
         [SerializeField] private UnitManager    _unitManager;
 
+        [Header("Hasar görseli")]
+        [Tooltip("Vurulduğunda bir anlığına bu renge çakar, sonra kendi rengine döner.")]
+        [SerializeField] private Color _hitFlashColor = new(1f, 0.25f, 0.20f);
+        [SerializeField, Min(0.05f)] private float _hitFlashDuration = 0.5f;
+
         private CharacterCard _card;        // bağlıysa stat kaynağı (oyuncu/kartlı birim)
         private int           _currentHP;   // yalnızca kartsız birimde geçerli
         private bool          _diedNotified;
+        private string        _runtimeName; // savaş başı atanan benzersiz isim (örn. "Goblin 2")
+
+        // Hasar flaşı (MaterialPropertyBlock → paylaşılan materyali bozmaz; URP _BaseColor).
+        private Renderer              _renderer;
+        private MaterialPropertyBlock _mpb;
+        private Color                 _baseColor = Color.white;
+        private Coroutine             _flashCo;
+        private static readonly int   BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int   ColorId     = Shader.PropertyToID("_Color");
 
         // ── Kimlik / konum ────────────────────────────────────────────────────
-        public string        DisplayName => _card != null ? _card.Data.ClassName : _displayName;
+        // Öncelik: runtime atanan isim > kart sınıf adı > Inspector _displayName.
+        public string        DisplayName =>
+            !string.IsNullOrEmpty(_runtimeName) ? _runtimeName
+            : (_card != null ? _card.Data.ClassName : _displayName);
+        public bool          HasInstanceName => !string.IsNullOrEmpty(_runtimeName);
         public UnitTeam      Team        => _team;
         public HexCoordinate Coordinate  => _coord;
         public CharacterCard Card        => _card;
@@ -71,6 +89,20 @@ namespace TacticalRPG.Core
         private void Awake()
         {
             if (_card == null) _currentHP = _maxHP;
+
+            _renderer = GetComponentInChildren<Renderer>();
+            _mpb      = new MaterialPropertyBlock();
+            CacheBaseColor();
+        }
+
+        // Spawner birimi boyadıktan (sharedMaterial) SONRA AddComponent ettiği için Awake'te okunur.
+        private void CacheBaseColor()
+        {
+            if (_renderer == null || _renderer.sharedMaterial == null) return;
+            Material m = _renderer.sharedMaterial;
+            _baseColor = m.HasProperty(BaseColorId) ? m.GetColor(BaseColorId)
+                       : m.HasProperty(ColorId)     ? m.GetColor(ColorId)
+                       : m.color;
         }
 
         private void OnEnable()
@@ -106,6 +138,12 @@ namespace TacticalRPG.Core
             _card.OnHPChanged += HandleCardHPChanged;
             OnStatsChanged?.Invoke(this);
         }
+
+        /// <summary>
+        /// Savaş başında benzersiz görünen isim atar (örn. "Goblin 2"). CombatNameplateHUD çağırır.
+        /// DisplayName artık bunu döndürür → tur paneli/mesajlar da aynı ismi gösterir.
+        /// </summary>
+        public void SetInstanceName(string instanceName) => _runtimeName = instanceName;
 
         /// <summary>Birimi bir koordinata yerleştirir ve görsel olarak oraya oturtur.</summary>
         public void PlaceAt(HexCoordinate coord)
@@ -181,6 +219,7 @@ namespace TacticalRPG.Core
         public void TakeDamage(int amount)
         {
             if (amount <= 0 || !IsAlive) return;
+            int beforeHP = CurrentHP;
 
             int remaining = amount;
             if (Shield > 0)
@@ -207,6 +246,40 @@ namespace TacticalRPG.Core
                     OnDied?.Invoke(this);
                 }
             }
+
+            if (CurrentHP < beforeHP) PlayHitFlash(); // gerçekten can gittiyse kırmızı çak
+        }
+
+        // ── Hasar flaşı ───────────────────────────────────────────────────────
+
+        private void PlayHitFlash()
+        {
+            if (_renderer == null || !gameObject.activeInHierarchy) return;
+            if (_flashCo != null) StopCoroutine(_flashCo);
+            _flashCo = StartCoroutine(HitFlashRoutine());
+        }
+
+        private IEnumerator HitFlashRoutine()
+        {
+            float t = 0f;
+            while (t < _hitFlashDuration)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(1f - t / _hitFlashDuration); // 1 (tam kırmızı) → 0 (kendi rengi)
+                ApplyTint(Color.Lerp(_baseColor, _hitFlashColor, k));
+                yield return null;
+            }
+            ApplyTint(_baseColor);
+            _flashCo = null;
+        }
+
+        private void ApplyTint(Color c)
+        {
+            if (_renderer == null) return;
+            _renderer.GetPropertyBlock(_mpb);
+            _mpb.SetColor(BaseColorId, c);
+            _mpb.SetColor(ColorId, c);
+            _renderer.SetPropertyBlock(_mpb);
         }
 
         public void Heal(int amount)

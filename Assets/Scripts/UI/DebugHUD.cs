@@ -13,6 +13,8 @@ namespace TacticalRPG.UI
     public class DebugHUD : MonoBehaviour
     {
         [Header("Bağımlılıklar")]
+        [Tooltip("Durum makinesi — HUD yalnızca Overworld/ConfirmMission'da görünür (savaş/yerleştirme ekranlarında gizlenir).")]
+        [SerializeField] private GameStateManager    _state;
         [SerializeField] private ActionPointManager  _apManager;
         [SerializeField] private MapCollapseManager  _collapseManager;
         [SerializeField] private EssenceWallet       _wallet;
@@ -27,6 +29,15 @@ namespace TacticalRPG.UI
 
         private readonly StringBuilder _sb = new StringBuilder(48);
 
+        // Bu HUD bir overworld panelidir; Canvas'ı kapatarak savaş/yerleştirme
+        // ekranlarında gizlenir (CombatHUD/DeploymentHUD ile sol-üstte çakışmasın).
+        private Canvas _canvas;
+
+        private void Awake()
+        {
+            _canvas = GetComponent<Canvas>();
+        }
+
         private void OnEnable()
         {
             if (_apManager != null)
@@ -40,6 +51,8 @@ namespace TacticalRPG.UI
                 _wallet.OnChanged += HandleEssenceChanged;
             if (_kamMana != null)
                 _kamMana.OnManaChanged += HandleManaChanged;
+            if (_state != null)
+                _state.OnStateChanged += HandleStateChanged;
         }
 
         private void OnDisable()
@@ -55,6 +68,8 @@ namespace TacticalRPG.UI
                 _wallet.OnChanged -= HandleEssenceChanged;
             if (_kamMana != null)
                 _kamMana.OnManaChanged -= HandleManaChanged;
+            if (_state != null)
+                _state.OnStateChanged -= HandleStateChanged;
         }
 
         private void Start()
@@ -78,6 +93,17 @@ namespace TacticalRPG.UI
                 HandleEssenceChanged();
             if (_kamMana != null)
                 HandleManaChanged(_kamMana.CurrentMana, _kamMana.MaxMana);
+
+            // Başlangıç görünürlüğü — event kaçırılsa bile state'le senkron
+            HandleStateChanged(_state != null ? _state.State : GameState.Overworld);
+        }
+
+        // Overworld HUD'ı: savaş/yerleştirme ekranlarında Canvas'ı kapat (UI çakışmasını önler).
+        // Canvas kapalıyken bile bileşen event dinlemeye devam eder; dönüşte etiketler güncel olur.
+        private void HandleStateChanged(GameState state)
+        {
+            if (_canvas == null) return;
+            _canvas.enabled = state == GameState.Overworld || state == GameState.ConfirmMission;
         }
 
         // ── Handler'lar ───────────────────────────────────────────────────────

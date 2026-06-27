@@ -14,6 +14,9 @@ namespace TacticalRPG.Data
         [SerializeField] private string _className = "Adsız";
         [TextArea(2, 4)]
         [SerializeField] private string _lore = "";
+        [Tooltip("Bu sınıftan üretilen birimlere atanacak özel isim havuzu (opsiyonel). " +
+                 "Boşsa savaşta otomatik 'Sınıf 1 / Sınıf 2…' kullanılır.")]
+        [SerializeField] private List<string> _unitNames = new();
 
         [Header("Temel İstatistikler (Seviye 1)")]
         [SerializeField] private int _maxHP      = 10;
@@ -48,6 +51,7 @@ namespace TacticalRPG.Data
         // ── Kimlik ───────────────────────────────────────────────────────────
         public string ClassName => _className;
         public string Lore      => _lore;
+        public IReadOnlyList<string> UnitNames => _unitNames;
 
         // ── Temel değerler ────────────────────────────────────────────────────
         public int BaseMaxHP    => _maxHP;

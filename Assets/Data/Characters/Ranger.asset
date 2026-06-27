@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.CharacterClassData
   _className: Ranger
   _lore: Uzak mesafe uzmani. Gorunmez olur, ince stratejiler kurar.
+  _unitNames: []
   _maxHP: 10
   _attack: 6
   _defense: 1

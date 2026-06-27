@@ -80,6 +80,13 @@ namespace TacticalRPG.Editor
         {
             DestroyRoot(SceneRootName);
 
+            // Sahnedeki TÜM kameraları sil. Unity'nin varsayılan "Main Camera"sı SceneRoot DIŞINDA
+            // (kök seviyede) durduğu için DestroyRoot onu temizlemez → iki "Main Camera" oluşur,
+            // ikisi de MainCamera tag'li olunca Camera.main YANLIŞ olanı (perspektif default) döndürür
+            // ve nameplate + tıklama-raycast bozulur. Tek kamera garantisi için hepsini temizliyoruz.
+            foreach (Camera existingCam in Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                Object.DestroyImmediate(existingCam.gameObject);
+
             GameObject root = new GameObject(SceneRootName);
 
             // İzometrik kamera — 30° eğim, 45° yatay döndürme
@@ -443,6 +450,7 @@ namespace TacticalRPG.Editor
             MapCollapseManager collapseManager = FindComponentAnywhere<MapCollapseManager>();
             EssenceWallet      wallet          = FindComponentAnywhere<EssenceWallet>();
             KamManaManager     kamMana         = FindComponentAnywhere<KamManaManager>();
+            GameStateManager   gsm             = FindComponentAnywhere<GameStateManager>(); // TAM KURULUM'da henüz null olabilir → Faz A bağlar
 
             if (apManager == null)
             {
@@ -505,6 +513,7 @@ namespace TacticalRPG.Editor
 
             DebugHUD hud = canvasGO.AddComponent<DebugHUD>();
             var hudSO = new SerializedObject(hud);
+            hudSO.FindProperty("_state").objectReferenceValue           = gsm;
             hudSO.FindProperty("_apManager").objectReferenceValue       = apManager;
             hudSO.FindProperty("_collapseManager").objectReferenceValue = collapseManager;
             hudSO.FindProperty("_wallet").objectReferenceValue          = wallet;
@@ -731,6 +740,17 @@ namespace TacticalRPG.Editor
             gsmSO.FindProperty("_player").objectReferenceValue    = player;
             gsmSO.FindProperty("_apManager").objectReferenceValue = apManager;
             gsmSO.ApplyModifiedProperties();
+
+            // ── DebugHUD'a state bağla ────────────────────────────────────────
+            // DebugHUD, GameStateManager'dan ÖNCE kurulur (TAM KURULUM sırası: HUD → Faz A),
+            // bu yüzden _state burada bağlanır. Böylece HUD savaş/yerleştirmede gizlenir.
+            DebugHUD debugHud = FindComponentAnywhere<DebugHUD>();
+            if (debugHud != null)
+            {
+                var dhudSO = new SerializedObject(debugHud);
+                dhudSO.FindProperty("_state").objectReferenceValue = gsm;
+                dhudSO.ApplyModifiedProperties();
+            }
 
             // ── MissionManager (1 görev: Q5 R5) ───────────────────────────────
             var oldMM = gameManagerGO.GetComponent<MissionManager>();
@@ -1036,6 +1056,17 @@ namespace TacticalRPG.Editor
             hudSO.FindProperty("_turnManager").objectReferenceValue = tm;
             hudSO.ApplyModifiedProperties();
 
+            // ── CombatNameplateHUD (birim ustu isim + can bari) ───────────────
+            var oldNP = gameManagerGO.GetComponent<CombatNameplateHUD>();
+            if (oldNP != null) Object.DestroyImmediate(oldNP);
+            CombatNameplateHUD np = gameManagerGO.AddComponent<CombatNameplateHUD>();
+            var npSO = new SerializedObject(np);
+            npSO.FindProperty("_state").objectReferenceValue       = gsm;
+            npSO.FindProperty("_unitManager").objectReferenceValue = um;
+            npSO.FindProperty("_turnManager").objectReferenceValue = tm;
+            npSO.FindProperty("_camera").objectReferenceValue      = Camera.main;
+            npSO.ApplyModifiedProperties();
+
             // ── MapInputHandler'a turnManager bagla ───────────────────────────
             var inputSO = new SerializedObject(input);
             inputSO.FindProperty("_turnManager").objectReferenceValue = tm;
@@ -1048,6 +1079,7 @@ namespace TacticalRPG.Editor
             if (!_silentSetup) EditorUtility.DisplayDialog("Faz C3 — Tur Sistemi Hazir",
                 "Kurulanlar:\n" +
                 "  • TurnManager (hiza gore initiative) + CombatHUD + CombatHighlighter\n" +
+                "  • CombatNameplateHUD: her birimin ustunde isim + can bari (dost yesil / dusman kirmizi)\n" +
                 "  • MapInputHandler savas tiklamasina baglandi\n\n" +
                 "Play → marker → Evet → kart yerlestir → SAVASI BASLAT:\n" +
                 "  • Sol ustte sira paneli; aktif birimin ustunde sari top.\n" +
