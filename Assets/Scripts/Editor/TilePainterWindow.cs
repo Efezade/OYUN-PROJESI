@@ -22,11 +22,13 @@ namespace TacticalRPG.Editor
         private TileMapSO      _tileMap;
 
         private int     _selectedIndex = 0;
+        private int     _currentFace = 1;   // Küp = 6 yüz; şu an düzenlenen yüz (1=Ön … 6=Alt)
         private bool    _isPainting    = false;
         private bool    _hasHovered    = false;
         private HexCoordinate _hoveredCoord;
 
         private Vector2 _scroll;
+        private Vector2 _windowScroll;   // tüm pencere kaydırması (yüz seçici içeriği aşağı itince kontroller erişilebilsin)
 
         // Klasörden karo ekleme: taranacak klasör (oturumlar arası EditorPrefs'te hatırlanır).
         private const string ScanFolderPrefKey = "TacticalRPG.TilePainter.ScanFolder";
@@ -66,6 +68,7 @@ namespace TacticalRPG.Editor
             {
                 _palette = _gridManager.TilePalette;
                 _tileMap = _gridManager.TileMap;
+                DetectCurrentFace();
             }
         }
 
@@ -86,12 +89,88 @@ namespace TacticalRPG.Editor
                 return;
             }
 
+            _windowScroll = EditorGUILayout.BeginScrollView(_windowScroll);
+            EditorGUILayout.Space(6);
+            DrawFaceSelector();
             EditorGUILayout.Space(6);
             DrawPalette();
             EditorGUILayout.Space(6);
             DrawScanSection();
             EditorGUILayout.Space(6);
             DrawControls();
+            EditorGUILayout.EndScrollView();
+        }
+
+        // ── Küp yüzü seçici (Küp = 6 yüz, açılım/cross düzeni) ───────────────
+        // Her yüz KENDİ TileMapSO asset'i: yüz 1 (Ön) = TileMap.asset; 2-6 = Face_N.asset (ilk
+        // seçimde oluşur). Yüz seçince grid o yüzün haritasıyla yenilenir → tasarlarsın, Ctrl+S
+        // kalıcı kaydolur. (Sonra: oyun-içi yüz çubuğu + kenar geçişleri + küp dönüşü aynı asset'leri kullanır.)
+        private static readonly string[] FaceNames = { "", "Ön", "Sağ", "Arka", "Sol", "Üst", "Alt" }; // 1-6
+
+        private void DrawFaceSelector()
+        {
+            EditorGUILayout.LabelField($"Küp Yüzü — şu an: YÜZ {_currentFace} ({FaceNames[_currentFace]})",
+                EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Küpün 6 yüzü = 6 harita. Yüzü seç → tasarla → Ctrl+S (her yüz ayrı + kalıcı).",
+                EditorStyles.miniLabel);
+
+            const float w = 72f, h = 34f;
+            EditorGUILayout.BeginHorizontal();                       // Üst (Ön'ün üstünde)
+            GUILayout.Space(w + 3f); FaceButton(5, w, h);
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();                       // Ekvator: Sol-Ön-Sağ-Arka
+            FaceButton(4, w, h); FaceButton(1, w, h); FaceButton(2, w, h); FaceButton(3, w, h);
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();                       // Alt
+            GUILayout.Space(w + 3f); FaceButton(6, w, h);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void FaceButton(int face, float w, float h)
+        {
+            Color prev = GUI.backgroundColor;
+            if (face == _currentFace) GUI.backgroundColor = new Color(0.40f, 0.80f, 1f);
+            if (GUILayout.Button($"{face} {FaceNames[face]}", GUILayout.Width(w), GUILayout.Height(h)))
+                SelectFace(face);
+            GUI.backgroundColor = prev;
+        }
+
+        private void SelectFace(int n)
+        {
+            if (n < 1 || n > 6) return;
+            TileMapSO map = LoadOrCreateFace(n);
+            if (map == null) return;
+            _currentFace = n;
+            _tileMap     = map;
+            if (_gridManager != null)
+            {
+                _gridManager.SetTileMap(map); // _tileMap'i değiştirir + grid'i yeniden üretir
+                EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            }
+        }
+
+        private void DetectCurrentFace()
+        {
+            string path = _tileMap != null ? AssetDatabase.GetAssetPath(_tileMap) : "";
+            for (int n = 1; n <= 6; n++)
+                if (path == FaceAssetPath(n)) { _currentFace = n; return; }
+            _currentFace = 1;
+        }
+
+        private static string FaceAssetPath(int n) =>
+            n == 1 ? "Assets/Data/Map/TileMap.asset" : $"Assets/Data/Map/Face_{n}.asset";
+
+        private static TileMapSO LoadOrCreateFace(int n)
+        {
+            string path = FaceAssetPath(n);
+            var map = AssetDatabase.LoadAssetAtPath<TileMapSO>(path);
+            if (map == null)
+            {
+                map = ScriptableObject.CreateInstance<TileMapSO>();
+                AssetDatabase.CreateAsset(map, path);
+                AssetDatabase.SaveAssets();
+            }
+            return map;
         }
 
         // ── Klasörden karo ekleme ─────────────────────────────────────────────
@@ -159,6 +238,8 @@ namespace TacticalRPG.Editor
         private void DrawPalette()
         {
             EditorGUILayout.LabelField("Karo Paleti", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Sağdaki düğme: üstünden GEÇİLİR (yeşil) / GEÇİLMEZ (kırmızı). Tıkla → değiştir.",
+                EditorStyles.miniLabel);
 
             if (_palette.tiles.Count == 0)
             {
@@ -177,23 +258,35 @@ namespace TacticalRPG.Editor
                 var  entry      = _palette.tiles[i];
                 bool isSelected = i == _selectedIndex;
 
+                Rect r = EditorGUILayout.GetControlRect(false, 30);
+
+                // Sol = seçim (renk+isim); sağ = yürünürlük anahtarı (ayrı buton → tık çakışmaz).
+                const float toggleW = 96f;
+                Rect selectRect = new Rect(r.x, r.y, r.width - toggleW - 4f, r.height);
+                Rect toggleRect = new Rect(r.xMax - toggleW, r.y + 4f, toggleW, r.height - 8f);
+
                 Color prevBG = GUI.backgroundColor;
                 GUI.backgroundColor = isSelected ? Color.white : entry.editorColor * 0.6f;
-
-                Rect r = EditorGUILayout.GetControlRect(false, 30);
-                if (GUI.Button(r, GUIContent.none,
+                if (GUI.Button(selectRect, GUIContent.none,
                         isSelected ? EditorStyles.helpBox : EditorStyles.miniButton))
                     _selectedIndex = i;
+                GUI.backgroundColor = prevBG;
 
-                // Renk karesi
                 EditorGUI.DrawRect(new Rect(r.x + 4, r.y + 5, 20, 20), entry.editorColor);
-
-                // İsim + id
                 var labelStyle = new GUIStyle(EditorStyles.label);
                 if (isSelected) labelStyle.fontStyle = FontStyle.Bold;
-                GUI.Label(new Rect(r.x + 30, r.y + 6, r.width - 34, 20),
+                GUI.Label(new Rect(r.x + 30, r.y + 6, selectRect.width - 34f, 20),
                     $"{entry.displayName}  [{entry.id}]", labelStyle);
 
+                // Yürünürlük anahtarı — tıkla → değiş + paleti dirty + grid hemen yenilen.
+                GUI.backgroundColor = entry.isWalkable ? new Color(0.40f, 0.82f, 0.45f)
+                                                       : new Color(0.90f, 0.42f, 0.36f);
+                if (GUI.Button(toggleRect, entry.isWalkable ? "Yürünür ✓" : "Yürünmez ✗"))
+                {
+                    entry.isWalkable = !entry.isWalkable;
+                    EditorUtility.SetDirty(_palette);
+                    RegenerateAll(); // yürünürlük hemen etki etsin (grid yeniden üretilir)
+                }
                 GUI.backgroundColor = prevBG;
             }
 

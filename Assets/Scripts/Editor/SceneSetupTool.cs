@@ -46,6 +46,7 @@ namespace TacticalRPG.Editor
                 SetupPhaseC3();   // tur sistemi (initiative + hareket + saldiri + AI)
                 SetupPhaseC4();   // Kam komutan + savas buyusu + lose=Kam olumu
                 SetupPhaseD();    // cok-tipli oz + harita toplama + tarifle birim uretme
+                SetupCubeFaces(); // Bolum 1 = KUP (6 yuz) + manuel yuz cubugu
             }
             finally { _silentSetup = false; }
 
@@ -1625,6 +1626,60 @@ namespace TacticalRPG.Editor
 
         private static T GetOrAddVolumeOverride<T>(VolumeProfile profile) where T : VolumeComponent
             => profile.TryGet<T>(out T comp) ? comp : profile.Add<T>(true);
+
+        // ── Bölüm 1 = KÜP (6 yüz) — CubeFaceManager + 6 yüz asset ────────────
+        // Yüz 1 (Ön) = TileMap.asset (mevcut harita); 2-6 = Face_N.asset (boş, kullanıcı tasarlar).
+        // Manager grid'i seçili yüzle yeniden üretir; alt çubuktan manuel geçiş. (Otomatik kenar
+        // çerçeve + geçiş + küp dönüşü sonraki adımda eklenecek.)
+        private static void SetupCubeFaces()
+        {
+            var grid   = FindComponentAnywhere<HexGridManager>();
+            var player = FindComponentAnywhere<PlayerController>();
+            var state  = FindComponentAnywhere<GameStateManager>();
+            if (grid == null) { Debug.LogError("[Kup] HexGridManager yok — Faz 1 calistir."); return; }
+
+            GameObject host = state != null ? state.gameObject : GameObject.Find("GameManager");
+            if (host == null) { Debug.LogError("[Kup] Host GameObject bulunamadi."); return; }
+
+            var mgr = host.GetComponent<CubeFaceManager>();
+            if (mgr == null) mgr = host.AddComponent<CubeFaceManager>();
+
+            var so = new SerializedObject(mgr);
+            so.FindProperty("_grid").objectReferenceValue   = grid;
+            so.FindProperty("_player").objectReferenceValue = player;
+            so.FindProperty("_state").objectReferenceValue  = state;
+            var faces = so.FindProperty("_faces");
+            faces.arraySize = 6;
+            for (int n = 1; n <= 6; n++)
+                faces.GetArrayElementAtIndex(n - 1).objectReferenceValue = LoadOrCreateFaceAsset(n);
+            so.ApplyModifiedProperties();
+
+            // CubeRig — kup illuzyonu (aktif yuzun 4 komsusunu kenarlardan katlanmis panel render eder)
+            var rig = host.GetComponent<CubeRig>();
+            if (rig == null) rig = host.AddComponent<CubeRig>();
+            var rigSO = new SerializedObject(rig);
+            rigSO.FindProperty("_grid").objectReferenceValue  = grid;
+            rigSO.FindProperty("_faces").objectReferenceValue = mgr;
+            rigSO.FindProperty("_placeholderTile").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Grid/HexCell.prefab");
+            rigSO.ApplyModifiedProperties();
+
+            Debug.Log("[Kup] CubeFaceManager + CubeRig kuruldu (6 yuz + kup illuzyonu yan panelleri).");
+        }
+
+        private static TileMapSO LoadOrCreateFaceAsset(int n)
+        {
+            EnsureFolder("Assets/Data/Map");
+            string path = n == 1 ? "Assets/Data/Map/TileMap.asset" : $"Assets/Data/Map/Face_{n}.asset";
+            var map = AssetDatabase.LoadAssetAtPath<TileMapSO>(path);
+            if (map == null)
+            {
+                map = ScriptableObject.CreateInstance<TileMapSO>();
+                AssetDatabase.CreateAsset(map, path);
+                AssetDatabase.SaveAssets();
+            }
+            return map;
+        }
 
         private static Mesh GetOrCreateHexMesh()
         {

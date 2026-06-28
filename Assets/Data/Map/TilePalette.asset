@@ -29,25 +29,25 @@ MonoBehaviour:
     displayName: barbarkarakteri
     prefab: {fileID: 2365868163860744472, guid: 873e773dab20bd84091d1729e9c0d03c, type: 3}
     editorColor: {r: 0.85, g: 0.425, b: 0.7366668, a: 1}
-    isWalkable: 1
+    isWalkable: 0
     surfaceHeightOverride: 0
   - id: agac1
     displayName: "A\u011Fa\xE7 1"
     prefab: {fileID: 4838299069624766153, guid: 36ad959f8730b3a4f8af78931975ded9, type: 3}
     editorColor: {r: 0.2, g: 0.45, b: 0.22, a: 1}
-    isWalkable: 1
+    isWalkable: 0
     surfaceHeightOverride: 0.3
   - id: agac2
     displayName: "A\u011Fa\xE7 2"
     prefab: {fileID: 155864130603136039, guid: 2908f9a3158ccfb42afac21486c10e59, type: 3}
     editorColor: {r: 0.22, g: 0.5, b: 0.24, a: 1}
-    isWalkable: 1
+    isWalkable: 0
     surfaceHeightOverride: 0.3
   - id: agac3
     displayName: "A\u011Fa\xE7 3"
     prefab: {fileID: 2999539568372860915, guid: c3d7cc97fadb87c4489e9bd52ca572ac, type: 3}
     editorColor: {r: 0.18, g: 0.4, b: 0.2, a: 1}
-    isWalkable: 1
+    isWalkable: 0
     surfaceHeightOverride: 0.3
   - id: cicek
     displayName: "\xC7i\xE7ek"
@@ -59,7 +59,7 @@ MonoBehaviour:
     displayName: Kule
     prefab: {fileID: 186096939709808759, guid: a580abeb04635ec429dc2aa67d5e0c08, type: 3}
     editorColor: {r: 0.5, g: 0.48, b: 0.46, a: 1}
-    isWalkable: 1
+    isWalkable: 0
     surfaceHeightOverride: 0.3
   - id: kum
     displayName: Kum
