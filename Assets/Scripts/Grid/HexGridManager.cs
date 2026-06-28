@@ -32,6 +32,7 @@ namespace TacticalRPG.Grid
         public bool                                         HasCells   => _cells != null && _cells.Count > 0;
         public TilePaletteSO                               TilePalette => _tilePalette;
         public TileMapSO                                   TileMap     => _tileMap;
+        public Transform                                   GridRoot    => _gridParent != null ? _gridParent : transform;
 
         public Vector3 GridCenter
         {

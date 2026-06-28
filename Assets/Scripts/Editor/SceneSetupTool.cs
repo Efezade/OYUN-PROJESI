@@ -1658,13 +1658,23 @@ namespace TacticalRPG.Editor
             var rig = host.GetComponent<CubeRig>();
             if (rig == null) rig = host.AddComponent<CubeRig>();
             var rigSO = new SerializedObject(rig);
-            rigSO.FindProperty("_grid").objectReferenceValue  = grid;
-            rigSO.FindProperty("_faces").objectReferenceValue = mgr;
+            rigSO.FindProperty("_grid").objectReferenceValue   = grid;
+            rigSO.FindProperty("_faces").objectReferenceValue  = mgr;
+            rigSO.FindProperty("_player").objectReferenceValue = player;
             rigSO.FindProperty("_placeholderTile").objectReferenceValue =
                 AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Grid/HexCell.prefab");
             rigSO.ApplyModifiedProperties();
 
-            Debug.Log("[Kup] CubeFaceManager + CubeRig kuruldu (6 yuz + kup illuzyonu yan panelleri).");
+            // MapInputHandler'a CubeRig'i bagla → yan yuze tiklama = Kam kenara yuruyup karsi yuze gecsin
+            var mih = FindComponentAnywhere<MapInputHandler>();
+            if (mih != null)
+            {
+                var mihSO = new SerializedObject(mih);
+                mihSO.FindProperty("_cubeRig").objectReferenceValue = rig;
+                mihSO.ApplyModifiedProperties();
+            }
+
+            Debug.Log("[Kup] CubeFaceManager + CubeRig + tikla-yuru-gec kuruldu (6 yuz, karinca-kup).");
         }
 
         private static TileMapSO LoadOrCreateFaceAsset(int n)

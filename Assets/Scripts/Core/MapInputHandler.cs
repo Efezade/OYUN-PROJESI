@@ -23,6 +23,8 @@ namespace TacticalRPG.Core
         [SerializeField] private DeploymentManager _deployment;
         [Tooltip("Opsiyonel — Combat state'inde tıklama aktif birim hareket/saldırı olur.")]
         [SerializeField] private TurnManager _turnManager;
+        [Tooltip("Opsiyonel — atanmışsa, küp yan yüzüne tıklayınca Kam o kenara yürüyüp karşı yüze geçer.")]
+        [SerializeField] private CubeRig _cubeRig;
 
         [Header("Raycast")]
         [SerializeField] private LayerMask _clickableLayers = ~0;
@@ -60,6 +62,21 @@ namespace TacticalRPG.Core
             // Diğer savaş/onay durumlarında harita tıklaması işlenmez (akış HUD'larca yönetilir).
             if (_stateManager != null && _stateManager.State != GameState.Overworld) return;
             if (_player.IsMoving) return;
+            if (_cubeRig != null && _cubeRig.IsBusy) return;   // küp geçiş/dönüş sürerken giriş yok
+
+            // Küp yan yüzüne tıklandıysa → Kam o kenara yürüyüp karşı yüze geçer (cross). Hareket DEĞİL.
+            if (_cubeRig != null)
+            {
+                Ray pr = _camera.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(pr, out RaycastHit ph, _rayDistance) &&
+                    ph.collider.GetComponentInParent<CubeFacePanel>() is CubeFacePanel fp)
+                {
+                    Debug.Log($"[Cross] yan yuz tiklandi: face={fp.Face} dir={fp.Dir}");
+                    _cubeRig.StartCrossing(fp.Face, fp.Dir);
+                    return;
+                }
+            }
+
             if (!TryGetClickedCoord(out HexCoordinate coord)) return;
 
             // 1) Yetenek hazırsa → hedefleme
