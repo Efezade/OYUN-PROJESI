@@ -109,35 +109,33 @@ namespace TacticalRPG.Editor
 
         private void DrawFaceSelector()
         {
-            EditorGUILayout.LabelField($"Küp Yüzü — şu an: YÜZ {_currentFace} ({FaceNames[_currentFace]})",
+            EditorGUILayout.LabelField($"Harita (3×3 snake) — şu an: HARİTA {_currentFace}",
                 EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Küpün 6 yüzü = 6 harita. Yüzü seç → tasarla → Ctrl+S (her yüz ayrı + kalıcı).",
+            EditorGUILayout.LabelField("9 harita. Haritayı seç → tasarla → Ctrl+S (her harita ayrı + kalıcı).",
                 EditorStyles.miniLabel);
 
             const float w = 72f, h = 34f;
-            EditorGUILayout.BeginHorizontal();                       // Üst (Ön'ün üstünde)
-            GUILayout.Space(w + 3f); FaceButton(5, w, h);
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.BeginHorizontal();                       // Ekvator: Sol-Ön-Sağ-Arka
-            FaceButton(4, w, h); FaceButton(1, w, h); FaceButton(2, w, h); FaceButton(3, w, h);
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.BeginHorizontal();                       // Alt
-            GUILayout.Space(w + 3f); FaceButton(6, w, h);
-            EditorGUILayout.EndHorizontal();
+            int[,] layout = { { 9, 8, 7 }, { 6, 5, 4 }, { 3, 2, 1 } };  // snake dizilim
+            for (int r = 0; r < 3; r++)
+            {
+                EditorGUILayout.BeginHorizontal();
+                for (int col = 0; col < 3; col++) FaceButton(layout[r, col], w, h);
+                EditorGUILayout.EndHorizontal();
+            }
         }
 
         private void FaceButton(int face, float w, float h)
         {
             Color prev = GUI.backgroundColor;
             if (face == _currentFace) GUI.backgroundColor = new Color(0.40f, 0.80f, 1f);
-            if (GUILayout.Button($"{face} {FaceNames[face]}", GUILayout.Width(w), GUILayout.Height(h)))
+            if (GUILayout.Button($"Harita {face}", GUILayout.Width(w), GUILayout.Height(h)))
                 SelectFace(face);
             GUI.backgroundColor = prev;
         }
 
         private void SelectFace(int n)
         {
-            if (n < 1 || n > 6) return;
+            if (n < 1 || n > 9) return;
             TileMapSO map = LoadOrCreateFace(n);
             if (map == null) return;
             _currentFace = n;
@@ -152,7 +150,7 @@ namespace TacticalRPG.Editor
         private void DetectCurrentFace()
         {
             string path = _tileMap != null ? AssetDatabase.GetAssetPath(_tileMap) : "";
-            for (int n = 1; n <= 6; n++)
+            for (int n = 1; n <= 9; n++)
                 if (path == FaceAssetPath(n)) { _currentFace = n; return; }
             _currentFace = 1;
         }

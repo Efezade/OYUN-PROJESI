@@ -74,3 +74,15 @@ MonoBehaviour:
       Q: 2
       R: 2
     tileId: kopru
+  - coord:
+      Q: 4
+      R: 7
+    tileId: kopru
+  - coord:
+      Q: 5
+      R: 6
+    tileId: kopru
+  - coord:
+      Q: 5
+      R: 3
+    tileId: kopru

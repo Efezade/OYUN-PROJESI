@@ -23,8 +23,8 @@ namespace TacticalRPG.Core
         [SerializeField] private DeploymentManager _deployment;
         [Tooltip("Opsiyonel — Combat state'inde tıklama aktif birim hareket/saldırı olur.")]
         [SerializeField] private TurnManager _turnManager;
-        [Tooltip("Opsiyonel — atanmışsa, küp yan yüzüne tıklayınca Kam o kenara yürüyüp karşı yüze geçer.")]
-        [SerializeField] private CubeRig _cubeRig;
+        [Tooltip("Opsiyonel — atanmışsa, harita DIŞINA tıklayınca o yöndeki komşu haritaya geçilir (3×3).")]
+        [SerializeField] private WorldGridManager _worldGrid;
 
         [Header("Raycast")]
         [SerializeField] private LayerMask _clickableLayers = ~0;
@@ -62,21 +62,21 @@ namespace TacticalRPG.Core
             // Diğer savaş/onay durumlarında harita tıklaması işlenmez (akış HUD'larca yönetilir).
             if (_stateManager != null && _stateManager.State != GameState.Overworld) return;
             if (_player.IsMoving) return;
-            if (_cubeRig != null && _cubeRig.IsBusy) return;   // küp geçiş/dönüş sürerken giriş yok
+            if (_worldGrid != null && _worldGrid.IsBusy) return;   // harita geçişi sürerken giriş yok
 
-            // Küp yan yüzüne tıklandıysa → Kam o kenara yürüyüp karşı yüze geçer (cross). Hareket DEĞİL.
-            if (_cubeRig != null)
+            // Haritanın DIŞINDAki siyah geçiş işaretçisine tıklandıysa → komşu haritaya geç.
+            if (_worldGrid != null)
             {
-                Ray pr = _camera.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(pr, out RaycastHit ph, _rayDistance) &&
-                    ph.collider.GetComponentInParent<CubeFacePanel>() is CubeFacePanel fp)
+                Ray mray = _camera.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(mray, out RaycastHit mhit, _rayDistance) &&
+                    mhit.collider.GetComponentInParent<TransitionMarker>() is TransitionMarker tm)
                 {
-                    Debug.Log($"[Cross] yan yuz tiklandi: face={fp.Face} dir={fp.Dir}");
-                    _cubeRig.StartCrossing(fp.Face, fp.Dir);
+                    _worldGrid.StartTransition(tm.EdgeCoord);
                     return;
                 }
             }
 
+            // Boşluğa tıklama → hiçbir şey.
             if (!TryGetClickedCoord(out HexCoordinate coord)) return;
 
             // 1) Yetenek hazırsa → hedefleme
@@ -94,7 +94,14 @@ namespace TacticalRPG.Core
                 }
             }
 
-            // 3) Aksi halde → hareket
+            // 3) Kenar (geçiş) karosuna tıklandıysa → Kam o kenara yürüyüp komşu haritaya geçer.
+            if (_worldGrid != null && _worldGrid.IsTransitionCell(coord) >= 0)
+            {
+                _worldGrid.StartTransition(coord);
+                return;
+            }
+
+            // 4) Aksi halde → hareket
             TryMoveTo(coord);
         }
 

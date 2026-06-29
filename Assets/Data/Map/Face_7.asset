@@ -10,32 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 40f126292c1c4394c8c6c883cb065aff, type: 3}
-  m_Name: Face_4
+  m_Name: Face_7
   m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.TileMapSO
   defaultTileId: default
   assignments:
   - coord:
-      Q: 3
-      R: 3
-    tileId: kopru
-  - coord:
-      Q: 4
-      R: 3
-    tileId: kopru
-  - coord:
-      Q: 3
-      R: 4
-    tileId: kopru
-  - coord:
       Q: 2
-      R: 5
-    tileId: kopru
-  - coord:
-      Q: 2
-      R: 4
-    tileId: default
-  - coord:
-      Q: 3
       R: 8
     tileId: kopru
   - coord:
@@ -43,86 +23,74 @@ MonoBehaviour:
       R: 7
     tileId: kopru
   - coord:
-      Q: 2
-      R: 7
-    tileId: kopru
-  - coord:
-      Q: 2
+      Q: 4
       R: 6
-    tileId: default
+    tileId: kopru
   - coord:
-      Q: 1
+      Q: 5
       R: 5
-    tileId: default
+    tileId: kopru
   - coord:
-      Q: 4
-      R: 5
+      Q: 6
+      R: 4
+    tileId: kopru
+  - coord:
+      Q: 5
+      R: 4
     tileId: kopru
   - coord:
       Q: 4
       R: 4
     tileId: kopru
   - coord:
-      Q: 4
-      R: 2
-    tileId: default
-  - coord:
-      Q: 4
-      R: 1
-    tileId: default
-  - coord:
       Q: 3
-      R: 1
-    tileId: default
-  - coord:
-      Q: 5
-      R: 5
-    tileId: default
-  - coord:
-      Q: 3
-      R: 0
-    tileId: default
-  - coord:
-      Q: 5
       R: 3
-    tileId: default
-  - coord:
-      Q: 5
-      R: 8
     tileId: kopru
   - coord:
-      Q: 4
-      R: 8
+      Q: 2
+      R: 3
     tileId: kopru
   - coord:
       Q: 1
-      R: 7
-    tileId: kopru
-  - coord:
-      Q: 1
-      R: 6
+      R: 3
     tileId: kopru
   - coord:
       Q: 0
-      R: 6
+      R: 3
+    tileId: kopru
+  - coord:
+      Q: 0
+      R: 2
+    tileId: kopru
+  - coord:
+      Q: 1
+      R: 5
+    tileId: default
+  - coord:
+      Q: 2
+      R: 5
+    tileId: kopru
+  - coord:
+      Q: 2
+      R: 4
+    tileId: kopru
+  - coord:
+      Q: 3
+      R: 4
+    tileId: kopru
+  - coord:
+      Q: 4
+      R: 3
     tileId: kopru
   - coord:
       Q: 5
       R: 2
     tileId: kopru
   - coord:
-      Q: 3
-      R: 2
-    tileId: kopru
-  - coord:
-      Q: 2
-      R: 2
-    tileId: kopru
-  - coord:
-      Q: 2
+      Q: 5
       R: 1
-    tileId: kopru
+    tileId: default
   - coord:
-      Q: 1
-      R: 1
-    tileId: kopru
+      Q: 5
+      R: 0
+    tileId: default

@@ -46,7 +46,7 @@ namespace TacticalRPG.Editor
                 SetupPhaseC3();   // tur sistemi (initiative + hareket + saldiri + AI)
                 SetupPhaseC4();   // Kam komutan + savas buyusu + lose=Kam olumu
                 SetupPhaseD();    // cok-tipli oz + harita toplama + tarifle birim uretme
-                SetupCubeFaces(); // Bolum 1 = KUP (6 yuz) + manuel yuz cubugu
+                SetupWorld3x3(); // Bolum 1 = 9 harita 3x3 snake + kenardan gecis
             }
             finally { _silentSetup = false; }
 
@@ -1674,7 +1674,81 @@ namespace TacticalRPG.Editor
                 mihSO.ApplyModifiedProperties();
             }
 
-            Debug.Log("[Kup] CubeFaceManager + CubeRig + tikla-yuru-gec kuruldu (6 yuz, karinca-kup).");
+            // ADIM 1 — GERCEK KARO KUP (clip ile kenar kesimi; gorunum testi).
+            // Dokulu CubeRig + eski TexturedCubeRig kapali; CubeTileRig acik.
+            var tcubeOld = host.GetComponent<TexturedCubeRig>();
+            if (tcubeOld != null) Object.DestroyImmediate(tcubeOld);
+            if (rig != null) rig.enabled = false;
+
+            var tileRig = host.GetComponent<CubeTileRig>();
+            if (tileRig == null) tileRig = host.AddComponent<CubeTileRig>();
+            var trSO = new SerializedObject(tileRig);
+            trSO.FindProperty("_grid").objectReferenceValue  = grid;
+            trSO.FindProperty("_faces").objectReferenceValue = mgr;
+            trSO.FindProperty("_placeholderTile").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Grid/HexCell.prefab");
+            trSO.ApplyModifiedProperties();
+
+            Debug.Log("[Kup] ADIM 1: GERCEK KARO kup + clip kenar kesimi (CubeTileRig; gorunum testi, grid gizli).");
+        }
+
+        // ── BÖLÜM 1 = 9 HARİTA 3x3 SNAKE (küp YERİNE) ──────────────────────
+        // 9 harita (Harita1=TileMap.asset, 2-9=Face_N.asset) + WorldGridManager. Eski küp
+        // bileşenlerini kaldırır. Kenardan yürüyünce komşu harita yüklenir (MapInputHandler).
+        private static void SetupWorld3x3()
+        {
+            var grid   = FindComponentAnywhere<HexGridManager>();
+            var player = FindComponentAnywhere<PlayerController>();
+            if (grid == null) { Debug.LogError("[3x3] HexGridManager yok — Faz 1 calistir."); return; }
+
+            var state = FindComponentAnywhere<GameStateManager>();
+            GameObject host = state != null ? state.gameObject : GameObject.Find("GameManager");
+            if (host == null) { Debug.LogError("[3x3] Host GameObject bulunamadi."); return; }
+
+            // Eski küp bileşenlerini kaldır (artık kullanilmiyor).
+            RemoveIfPresent<CubeRig>(host);
+            RemoveIfPresent<CubeTileRig>(host);
+            RemoveIfPresent<TexturedCubeRig>(host);
+            RemoveIfPresent<CubeFaceManager>(host);
+
+            var wgm = host.GetComponent<WorldGridManager>();
+            if (wgm == null) wgm = host.AddComponent<WorldGridManager>();
+            var so = new SerializedObject(wgm);
+            so.FindProperty("_grid").objectReferenceValue   = grid;
+            so.FindProperty("_player").objectReferenceValue = player;
+            so.FindProperty("_flatTile").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Grid/HexCell.prefab");
+            var maps = so.FindProperty("_maps");
+            maps.arraySize = 9;
+            for (int n = 1; n <= 9; n++)
+                maps.GetArrayElementAtIndex(n - 1).objectReferenceValue = LoadOrCreateFaceAsset(n);
+            so.ApplyModifiedProperties();
+
+            // MapInputHandler'a bagla (harita disina tiklama = gecis).
+            var mih = FindComponentAnywhere<MapInputHandler>();
+            if (mih != null)
+            {
+                var mihSO = new SerializedObject(mih);
+                var prop  = mihSO.FindProperty("_worldGrid");
+                if (prop != null) { prop.objectReferenceValue = wgm; mihSO.ApplyModifiedProperties(); }
+            }
+
+            if (grid.GridRoot != null) grid.GridRoot.gameObject.SetActive(true); // grid gizli kalmasin
+
+            // TAB minimap (3x3 snake; aktif harita parlar).
+            var mm = host.GetComponent<TacticalRPG.UI.MinimapHUD>();
+            if (mm == null) mm = host.AddComponent<TacticalRPG.UI.MinimapHUD>();
+            var mmSO = new SerializedObject(mm);
+            mmSO.FindProperty("_world").objectReferenceValue = wgm;
+            mmSO.ApplyModifiedProperties();
+
+            Debug.Log("[3x3] 9 harita + WorldGridManager + TAB minimap kuruldu (snake 3x3, kenardan gecis).");
+        }
+
+        private static void RemoveIfPresent<T>(GameObject go) where T : Component
+        {
+            var comp = go.GetComponent<T>();
+            if (comp != null) Object.DestroyImmediate(comp);
         }
 
         private static TileMapSO LoadOrCreateFaceAsset(int n)
