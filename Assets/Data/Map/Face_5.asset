@@ -23,10 +23,6 @@ MonoBehaviour:
       R: 6
     tileId: kopru
   - coord:
-      Q: 1
-      R: 6
-    tileId: kopru
-  - coord:
       Q: 3
       R: 5
     tileId: kopru
@@ -86,3 +82,15 @@ MonoBehaviour:
       Q: 5
       R: 3
     tileId: kopru
+  - coord:
+      Q: 1
+      R: 4
+    tileId: mantar
+  - coord:
+      Q: 1
+      R: 5
+    tileId: mantar
+  - coord:
+      Q: 1
+      R: 6
+    tileId: mantar

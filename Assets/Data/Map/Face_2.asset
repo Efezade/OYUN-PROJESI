@@ -33,7 +33,7 @@ MonoBehaviour:
   - coord:
       Q: 4
       R: 5
-    tileId: kopru
+    tileId: agac2
   - coord:
       Q: 4
       R: 4
@@ -82,3 +82,39 @@ MonoBehaviour:
       Q: 1
       R: 5
     tileId: default
+  - coord:
+      Q: 2
+      R: 4
+    tileId: agac2
+  - coord:
+      Q: 3
+      R: 4
+    tileId: agac2
+  - coord:
+      Q: 3
+      R: 5
+    tileId: agac2
+  - coord:
+      Q: 5
+      R: 4
+    tileId: agac2
+  - coord:
+      Q: 6
+      R: 4
+    tileId: agac2
+  - coord:
+      Q: 6
+      R: 5
+    tileId: agac2
+  - coord:
+      Q: 5
+      R: 6
+    tileId: agac2
+  - coord:
+      Q: 6
+      R: 2
+    tileId: agac2
+  - coord:
+      Q: 6
+      R: 1
+    tileId: agac2
