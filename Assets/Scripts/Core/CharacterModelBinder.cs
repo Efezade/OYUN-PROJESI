@@ -23,20 +23,26 @@ namespace TacticalRPG.Core
         [SerializeField] private float _yOffset = 0f;
         [Tooltip("Açıkken alttaki kapsül mesh'i gizlenir (model onun yerine görünür).")]
         [SerializeField] private bool _hidePlaceholder = true;
+        [Tooltip("Atanırsa modelin Animator'üne takılır (yürüme vb. animasyonlar oynar).")]
+        [SerializeField] private RuntimeAnimatorController _animatorController;
 
         /// <summary>Takılan modelin ana renderer'ı (Unit hasar-flaşını buna yöneltebilir).</summary>
         public Renderer ModelRenderer { get; private set; }
+
+        /// <summary>Takılan modelin Animator'ü (controller atandıysa; CharacterAnimationDriver bulur).</summary>
+        public Animator ModelAnimator { get; private set; }
 
         private GameObject _instance;
 
         private void Awake()
         {
             if (_modelPrefab != null && _instance == null)
-                Apply(_modelPrefab, _targetHeight, _euler, _yOffset, _hidePlaceholder);
+                Apply(_modelPrefab, _targetHeight, _euler, _yOffset, _hidePlaceholder, _animatorController);
         }
 
         /// <summary>Modeli takar (runtime spawn için). Tekrar çağrılırsa öncekini değiştirir.</summary>
-        public void Apply(GameObject modelPrefab, float targetHeight, Vector3 euler, float yOffset, bool hidePlaceholder = true)
+        public void Apply(GameObject modelPrefab, float targetHeight, Vector3 euler, float yOffset,
+                          bool hidePlaceholder = true, RuntimeAnimatorController animatorController = null)
         {
             if (modelPrefab == null) return;
             if (_instance != null) Destroy(_instance);
@@ -59,6 +65,16 @@ namespace TacticalRPG.Core
 
             t.localPosition = new Vector3(0f, yOffset, 0f);
             ModelRenderer = _instance.GetComponentInChildren<Renderer>();
+
+            // Animasyon: rigli FBX'in Animator'ü kökünde gelir; controller atanırsa çalıştırılır.
+            // Konum koddan sürülür (PlayerController/Unit) → root motion kapalı, animasyon yerinde oynar.
+            ModelAnimator = _instance.GetComponentInChildren<Animator>(true);
+            if (animatorController != null)
+            {
+                if (ModelAnimator == null) ModelAnimator = _instance.AddComponent<Animator>();
+                ModelAnimator.runtimeAnimatorController = animatorController;
+                ModelAnimator.applyRootMotion           = false;
+            }
         }
 
         private static Bounds WorldBounds(GameObject go)

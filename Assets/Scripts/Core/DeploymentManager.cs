@@ -142,10 +142,17 @@ namespace TacticalRPG.Core
             }
             go.name = $"Unit_{card.Data.ClassName}_{coord}";
 
-            // Sınıfın modeli varsa kapsülü gerçek modelle değiştir (auto-scale + yön; Kam = soyguncu).
+            // Sınıfın modeli varsa kapsülü gerçek modelle değiştir (auto-scale + yön; Kam = animasyonlu barbar).
+            // Controller da atanmışsa birim yürürken animasyon oynar (hareketi driver algılar).
             if (card.Data != null && card.Data.UnitModel != null)
+            {
                 go.AddComponent<CharacterModelBinder>()
-                  .Apply(card.Data.UnitModel, card.Data.UnitModelHeight, card.Data.UnitModelEuler, card.Data.UnitModelYOffset);
+                  .Apply(card.Data.UnitModel, card.Data.UnitModelHeight, card.Data.UnitModelEuler,
+                         card.Data.UnitModelYOffset, true, card.Data.UnitAnimator);
+
+                if (card.Data.UnitAnimator != null)
+                    go.AddComponent<CharacterAnimationDriver>(); // binder'dan SONRA → Animator'ü bulur
+            }
 
             Unit unit = go.GetComponent<Unit>();
             if (unit == null) unit = go.AddComponent<Unit>();

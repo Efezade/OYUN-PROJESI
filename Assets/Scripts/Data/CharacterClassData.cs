@@ -47,6 +47,9 @@ namespace TacticalRPG.Data
         [SerializeField] private float      _unitModelHeight  = 1.5f;
         [SerializeField] private Vector3    _unitModelEuler   = new(90f, 0f, 0f);
         [SerializeField] private float      _unitModelYOffset = 0f;
+        [Tooltip("Atanırsa modelin Animator'üne takılır → birim hareket ederken yürüme animasyonu oynar " +
+                 "(hareketi CharacterAnimationDriver algılar).")]
+        [SerializeField] private RuntimeAnimatorController _unitAnimator;
 
         [Header("Özel Sistem")]
         [SerializeField] private bool _hasManaSystem;
@@ -74,6 +77,7 @@ namespace TacticalRPG.Data
         public float      UnitModelHeight  => _unitModelHeight;
         public Vector3    UnitModelEuler   => _unitModelEuler;
         public float      UnitModelYOffset => _unitModelYOffset;
+        public RuntimeAnimatorController UnitAnimator => _unitAnimator;
 
         // ── Mana ─────────────────────────────────────────────────────────────
         public bool HasManaSystem => _hasManaSystem;

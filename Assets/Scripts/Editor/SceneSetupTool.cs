@@ -158,11 +158,16 @@ namespace TacticalRPG.Editor
             EnsureFolder("Assets/Data/Config");
             EnsureFolder("Assets/Data/Map");     // TilePalette + TileMap
 
-            Material hiddenMat    = GetOrCreateMaterial("FogHidden",    new Color(0.22f, 0.18f, 0.28f));
-            Material exploredMat  = GetOrCreateMaterial("FogExplored",  new Color(0.25f, 0.25f, 0.25f));
-            Material visibleMat   = GetOrCreateMaterial("FogVisible",   Color.white);
+            // Not: Sis artık materyal değiştirmez; karonun temel rengini MaterialPropertyBlock
+            // ile karartır (FogOfWarManager). Bu yüzden ayrı FogHidden/FogExplored materyali yok.
+            Material baseTileMat  = GetOrCreateMaterial("TileBase",     Color.white);
             Material collapsedMat = GetOrCreateMaterial("TileCollapsed",new Color(0.15f, 0.05f, 0.05f));
-            GameObject hexCellPrefab = GetOrCreateHexCellPrefab(visibleMat);
+            GameObject hexCellPrefab = GetOrCreateHexCellPrefab(baseTileMat);
+
+            // Sis kapağı görseli (asset): görülmemiş karonun üstünü örten koyu hex kapak.
+            // Whitebox placeholder — kendi bulut/sis modelinle (FogTile.prefab) değiştirebilirsin.
+            Material fogTileMat = GetOrCreateMaterial("FogTile", new Color(0.04f, 0.04f, 0.07f));
+            GameObject fogTilePrefab = GetOrCreateFogTilePrefab(fogTileMat);
 
             // ── TilePalette — varsayılan giriş (placeholder hex prism) ────────
             const string palettePath = "Assets/Data/Map/TilePalette.asset";
@@ -240,10 +245,10 @@ namespace TacticalRPG.Editor
             FogOfWarManager fogManager = fogGO.AddComponent<FogOfWarManager>();
 
             var fogSO = new SerializedObject(fogManager);
-            fogSO.FindProperty("_gridManager").objectReferenceValue      = gridManager;
-            fogSO.FindProperty("_hiddenMaterial").objectReferenceValue   = hiddenMat;
-            fogSO.FindProperty("_exploredMaterial").objectReferenceValue = exploredMat;
-            fogSO.FindProperty("_visibleMaterial").objectReferenceValue  = visibleMat;
+            fogSO.FindProperty("_gridManager").objectReferenceValue     = gridManager;
+            fogSO.FindProperty("_fogTilePrefab").objectReferenceValue   = fogTilePrefab;
+            // Sis parlaklık çarpanları (_visibleBrightness/_exploredBrightness/_hiddenBrightness)
+            // kod varsayılanlarını kullanır; ayrı materyal ataması yok.
             fogSO.ApplyModifiedProperties();
 
             // ── Player — kapsül (kendi karakterinle değiştirene kadar placeholder) ──
@@ -258,13 +263,40 @@ namespace TacticalRPG.Editor
             Material playerMat = GetOrCreateMaterial("PlayerPlaceholder", new Color(0.95f, 0.45f, 0.1f));
             playerGO.GetComponent<MeshRenderer>().sharedMaterial = playerMat;
 
-            // Karakter modeli (soyguncu) — KALICI bake: kapsül görseli tamamen kaldırılır, model child
-            // olarak sahneye saklanır (editörde de görünür, Play gerekmez), DİK döndürülür, karoya
-            // sığacak boya auto-scale edilir, ayağı zemine oturtulur.
-            GameObject charModel = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/Art/Models/Characters/soyguncu_karakteri.fbx");
+            // Karakter modeli — Kam'ın ANİMASYONLU FBX'i (Assets/.../Characters/Kam, Mixamo rig).
+            // Import ayarları + KamAnimator.controller kurulumunu CharacterAnimationImporter yapar
+            // (idempotent). Kam klasörü boşsa eski statik soyguncu modeline düşülür (animasyonsuz).
+            // KALICI bake: kapsül görseli kaldırılır, model child olarak sahneye saklanır.
+            RuntimeAnimatorController kamAnimator = CharacterAnimationImporter.SetupKam();
+            GameObject charModel = CharacterAnimationImporter.FindKamModelFbx();
+            Vector3    charEuler = KamAnimatedModelEuler;                 // Mixamo: dik gelir
+            if (charModel == null)
+            {
+                charModel = AssetDatabase.LoadAssetAtPath<GameObject>(LegacyCharacterFbxPath);
+                charEuler = CharacterModelEuler;                          // Blender export yatıktı
+            }
             if (charModel != null)
-                BakeCharacterModel(playerGO, charModel);
+            {
+                BakeCharacterModel(playerGO, charModel, charEuler);
+
+                // Animasyon: modelin Animator'üne controller tak + hareketten süren bileşen.
+                if (kamAnimator != null)
+                {
+                    Animator kamAnim = playerGO.GetComponentInChildren<Animator>(true);
+                    if (kamAnim == null)
+                    {
+                        Transform modelChild = playerGO.transform.Find("Model");
+                        kamAnim = (modelChild != null ? modelChild.gameObject : playerGO).AddComponent<Animator>();
+                    }
+                    kamAnim.runtimeAnimatorController = kamAnimator;
+                    kamAnim.applyRootMotion           = false; // konum PlayerController'dan gelir
+
+                    var animDriver  = playerGO.AddComponent<CharacterAnimationDriver>();
+                    var animDriverSO = new SerializedObject(animDriver);
+                    animDriverSO.FindProperty("_animator").objectReferenceValue = kamAnim;
+                    animDriverSO.ApplyModifiedProperties();
+                }
+            }
 
             PlayerController playerCtrl = playerGO.AddComponent<PlayerController>();
             var playerSO = new SerializedObject(playerCtrl);
@@ -273,7 +305,7 @@ namespace TacticalRPG.Editor
             playerSO.FindProperty("_moveSpeed").floatValue             = 8f;
             // TileHeight (0.3) + kapsül yarı-yüksekliği (0.45) + küçük boşluk
             playerSO.FindProperty("_heightOffset").floatValue          = 0.8f;
-            playerSO.FindProperty("_visionRange").intValue             = 4;
+            playerSO.FindProperty("_visionRange").intValue             = 2;
             playerSO.FindProperty("_watchtowerRevealRange").intValue   = 5;
             playerSO.FindProperty("_startCoord").FindPropertyRelative("Q").intValue = 3;
             playerSO.FindProperty("_startCoord").FindPropertyRelative("R").intValue = 4;
@@ -384,16 +416,24 @@ namespace TacticalRPG.Editor
                 hasMana: true, maxMana: 10,
                 isCommander: true, unitColor: new Color(1f, 0.80f, 0.15f)); // Kam = altın (komutan)
 
-            // Kam'a soyguncu modelini ata → savaşta da kapsül yerine model (DeploymentManager bakar).
-            // Overworld bake'iyle aynı euler/boy (tutarlı duruş).
-            GameObject kamModel = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/Art/Models/Characters/soyguncu_karakteri.fbx");
+            // Kam'a ANİMASYONLU modelini ata → savaşta da kapsül yerine model + yürüme animasyonu
+            // (DeploymentManager, CharacterModelBinder + CharacterAnimationDriver kurar).
+            // Kam klasörü boşsa eski statik soyguncu modeline düşülür (animasyonsuz).
+            RuntimeAnimatorController kamUnitAnimator = CharacterAnimationImporter.SetupKam();
+            GameObject kamModel = CharacterAnimationImporter.FindKamModelFbx();
+            Vector3    kamEuler = KamAnimatedModelEuler;
+            if (kamModel == null)
+            {
+                kamModel = AssetDatabase.LoadAssetAtPath<GameObject>(LegacyCharacterFbxPath);
+                kamEuler = CharacterModelEuler;
+            }
             if (kamModel != null)
             {
                 var kamModelSO = new SerializedObject(kamData);
-                kamModelSO.FindProperty("_unitModel").objectReferenceValue = kamModel;
-                kamModelSO.FindProperty("_unitModelHeight").floatValue      = CharacterModelHeight;
-                kamModelSO.FindProperty("_unitModelEuler").vector3Value     = CharacterModelEuler;
+                kamModelSO.FindProperty("_unitModel").objectReferenceValue    = kamModel;
+                kamModelSO.FindProperty("_unitModelHeight").floatValue        = CharacterModelHeight;
+                kamModelSO.FindProperty("_unitModelEuler").vector3Value       = kamEuler;
+                kamModelSO.FindProperty("_unitAnimator").objectReferenceValue = kamUnitAnimator;
                 kamModelSO.ApplyModifiedProperties();
             }
 
@@ -1551,17 +1591,20 @@ namespace TacticalRPG.Editor
         }
 
         // ── Karakter modeli bake (placeholder kapsül → gerçek model, KALICI) ──────
-        // FBX YATIK geldiği için dik döndürülür. Hâlâ yanlışsa bu Euler'ı ayarla:
+        // Eski Blender FBX'i (soyguncu) YATIK geldiği için (90,0,0) ile dik döndürülür;
+        // Mixamo rig'li animasyonlu Kam FBX'i DİK gelir → (0,0,0). Yanlış duruşta Euler'ı ayarla:
         // (90,0,0) ters yön, (0,0,90) yan, (0,180,0) arka dönük. Boy karoya sığacak auto-scale.
-        private static readonly Vector3 CharacterModelEuler  = new Vector3(90f, 0f, 0f);
-        private const           float   CharacterModelHeight = 1.5f;
+        private static readonly Vector3 CharacterModelEuler    = new Vector3(90f, 0f, 0f);
+        private static readonly Vector3 KamAnimatedModelEuler  = Vector3.zero;
+        private const           float   CharacterModelHeight   = 1.5f;
+        private const           string  LegacyCharacterFbxPath = "Assets/Art/Models/Characters/soyguncu_karakteri.fbx";
 
         /// <summary>
         /// Bir karakter FBX'ini parent GO'ya KALICI bake eder: kapsül görselini kaldırır, modeli child
-        /// ekler, dik döndürür, hedef boya auto-scale eder, ayağı parent orijinine (zemine) oturtur.
+        /// ekler, verilen euler ile döndürür, hedef boya auto-scale eder, ayağı parent orijinine oturtur.
         /// Edit-time çalışır → sahneye saklanır, editörde de görünür (Play gerekmez).
         /// </summary>
-        private static void BakeCharacterModel(GameObject parent, GameObject fbx)
+        private static void BakeCharacterModel(GameObject parent, GameObject fbx, Vector3 euler)
         {
             var mr = parent.GetComponent<MeshRenderer>(); if (mr != null) Object.DestroyImmediate(mr);
             var mf = parent.GetComponent<MeshFilter>();   if (mf != null) Object.DestroyImmediate(mf);
@@ -1570,7 +1613,7 @@ namespace TacticalRPG.Editor
             var model = (GameObject)PrefabUtility.InstantiatePrefab(fbx, parent.transform);
             model.name = "Model";
             model.transform.localPosition = Vector3.zero;
-            model.transform.localRotation = Quaternion.Euler(CharacterModelEuler);
+            model.transform.localRotation = Quaternion.Euler(euler);
             model.transform.localScale    = Vector3.one;
 
             var rends = model.GetComponentsInChildren<Renderer>();
@@ -1788,6 +1831,60 @@ namespace TacticalRPG.Editor
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
             Object.DestroyImmediate(go);
             return prefab;
+        }
+
+        // Sis kapağı prefabı: karo üstüne oturan düz hex kapak. COLLIDER YOK — sis, karo
+        // tıklamasını ve yüzey (zemin) ışınını engellememeli. Kullanıcı kendi modeliyle değiştirir.
+        private static GameObject GetOrCreateFogTilePrefab(Material fogMat)
+        {
+            string path = $"{PrefabsGridPath}/FogTile.prefab";
+            Mesh fogMesh = GetOrCreateFogMesh();
+
+            GameObject go = new GameObject("FogTile");
+            go.AddComponent<MeshFilter>().sharedMesh = fogMesh;
+            go.AddComponent<MeshRenderer>().sharedMaterial = fogMat;
+
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
+            Object.DestroyImmediate(go);
+            return prefab;
+        }
+
+        private static Mesh GetOrCreateFogMesh()
+        {
+            string meshPath = "Assets/Art/Meshes/FogHexMesh.asset";
+            EnsureFolder("Assets/Art/Meshes");
+            AssetDatabase.DeleteAsset(meshPath);
+            Mesh mesh = CreateFlatHexMesh(1.0f);   // karodan (0.95) hafif büyük → boşluk kalmaz
+            AssetDatabase.CreateAsset(mesh, meshPath);
+            return mesh;
+        }
+
+        // Tek yüzlü düz hex (üstten bakışta karoyu tam örter). Yukarı (+Y) bakan normal.
+        private static Mesh CreateFlatHexMesh(float scale)
+        {
+            var mesh  = new Mesh { name = "FlatHexMesh" };
+            var verts = new Vector3[7];
+            verts[0] = Vector3.zero;                       // merkez
+            for (int i = 0; i < 6; i++)
+            {
+                Vector3 c = HexMetrics.Corners[i] * scale;
+                verts[i + 1] = new Vector3(c.x, 0f, c.z);
+            }
+
+            var tris = new int[18];
+            int idx = 0;
+            for (int i = 0; i < 6; i++)
+            {
+                tris[idx++] = 0;
+                tris[idx++] = (i + 1) % 6 + 1;
+                tris[idx++] = i + 1;
+            }
+
+            mesh.vertices  = verts;
+            mesh.triangles = tris;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         private static CharacterClassData GetOrCreateCharacterSO(
