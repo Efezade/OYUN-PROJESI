@@ -24,7 +24,8 @@ namespace TacticalRPG.Core
         [SerializeField] private float _rayStartHeight = 50f;
 
         [Header("Görüş / Kule")]
-        [SerializeField] private int _visionRange          = 3;
+        [Tooltip("Kam'ın bulunduğu karodan kaç karo uzağa kadar sisi açtığı (hex adımı).")]
+        [SerializeField] private int _visionRange          = 2;
         [SerializeField] private int _watchtowerRevealRange = 5;
 
         [Header("Başlangıç Koordinatı")]

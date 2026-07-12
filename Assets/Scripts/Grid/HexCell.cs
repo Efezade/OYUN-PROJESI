@@ -23,6 +23,11 @@ namespace TacticalRPG.Grid
         public GameObject   Visual       { get; set; }
         public MeshRenderer MeshRenderer { get; set; }
 
+        // Sisten bağımsız TEMEL renk (placeholder tint için editorColor, dokulu/authored
+        // karo için beyaz). FogOfWarManager bunu parlaklıkla çarpıp _BaseColor'a yazar,
+        // böylece materyali değiştirmeden (boyanmış karoyu bozmadan) sis efekti verir.
+        public Color BaseColor { get; set; } = Color.white;
+
         // Birimlerin üstünde duracağı yüzey yüksekliği (taban üstü, dünya birimi).
         // SpawnVisual karoyu ürettiğinde ölçer; düz placeholder = TileHeight (0.3),
         // köprü gibi yüksek karolar daha büyük. Engebe/yükseklik desteği bundan gelir.

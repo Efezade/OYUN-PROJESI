@@ -65,8 +65,9 @@ namespace TacticalRPG.Core
             TileMapSO map = _maps[n - 1];
             if (map == null || _grid == null) return;
             CurrentMap = n;
-            _grid.SetTileMap(map);
-            if (_player != null) _player.Initialize(_player.CurrentCoord);
+            _grid.SetTileMap(map);   // grid yeniden üretilir → sis (OnGridRegenerated) tümü Hidden olur
+            // Kam'ı ÇAĞIRAN konumlandırır (geçişte karşı kenardaki 'entry' hücresi). Burada
+            // eski koordinatta Initialize edersek yeni haritada yanlış yerde sis açılırdı.
             MarkBorders();
         }
 
@@ -230,7 +231,8 @@ namespace TacticalRPG.Core
                 if (!IsOnEdge(kv.Key, dir)) continue;
                 int d = Mathf.Abs(LateralOf(kv.Key, dir) - lateral);
                 if (d < bDAny) { bDAny = d; anyBest = kv.Value; }
-                if (kv.Value.IsWalkable && kv.Value.FogState != FogState.Hidden && d < bD)
+                // Yürünür kenar hücresini tercih et (yeni harita sisli doğar; fog şartı kalktı).
+                if (kv.Value.IsWalkable && d < bD)
                 { bD = d; best = kv.Value; }
             }
             return best ?? anyBest;

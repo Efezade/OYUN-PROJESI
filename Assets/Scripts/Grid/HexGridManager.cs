@@ -34,6 +34,10 @@ namespace TacticalRPG.Grid
         public TileMapSO                                   TileMap     => _tileMap;
         public Transform                                   GridRoot    => _gridParent != null ? _gridParent : transform;
 
+        /// <summary>Grid her (yeniden) üretildiğinde tetiklenir. FogOfWarManager dinler →
+        /// harita değişince (SetTileMap) sisi yeniden kurar.</summary>
+        public event System.Action OnGridRegenerated;
+
         public Vector3 GridCenter
         {
             get
@@ -77,6 +81,8 @@ namespace TacticalRPG.Grid
                     SpawnVisual(cell);
                 }
             }
+
+            OnGridRegenerated?.Invoke();   // sis yeniden kurulsun (harita değişiminde)
         }
 
         public void ClearVisuals()
@@ -150,6 +156,10 @@ namespace TacticalRPG.Grid
             if (entry != null)
             {
                 cell.IsWalkable = entry.isWalkable;
+
+                // Sisin çarpacağı temel renk: placeholder=editorColor, dokulu prefab=beyaz
+                // (beyaz × doku = doku bozulmaz; sis sadece kararma çarpanı uygular).
+                cell.BaseColor = entry.prefab == null ? entry.editorColor : Color.white;
 
                 // Gerçek (authored) prefab yoksa placeholder'ı palet rengiyle boya.
                 // Tasarımcı FBX prefabı atayınca tint kendiliğinden devre dışı kalır.
