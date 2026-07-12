@@ -24,22 +24,7 @@ MonoBehaviour:
     type: 1
     amount: 3
   - coord:
-      Q: 4
-      R: 5
-    type: 0
-    amount: 2
-  - coord:
-      Q: 4
-      R: 5
-    type: 2
-    amount: 1
-  - coord:
       Q: 3
-      R: 5
-    type: 1
-    amount: 1
-  - coord:
-      Q: 4
       R: 5
     type: 1
     amount: 1
@@ -123,3 +108,28 @@ MonoBehaviour:
       R: 8
     type: 0
     amount: 2
+  - coord:
+      Q: 5
+      R: 2
+    type: 2
+    amount: 5
+  - coord:
+      Q: 5
+      R: 2
+    type: 1
+    amount: 4
+  - coord:
+      Q: 4
+      R: 6
+    type: 0
+    amount: 1
+  - coord:
+      Q: 4
+      R: 6
+    type: 1
+    amount: 3
+  - coord:
+      Q: 4
+      R: 6
+    type: 2
+    amount: 3

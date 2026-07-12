@@ -109,4 +109,48 @@ MonoBehaviour:
   - coord:
       Q: 5
       R: 2
+    tileId: kum
+  - coord:
+      Q: 3
+      R: 3
     tileId: kopru
+  - coord:
+      Q: 1
+      R: 3
+    tileId: kopru
+  - coord:
+      Q: 8
+      R: 0
+    tileId: kopru
+  - coord:
+      Q: 6
+      R: 2
+    tileId: agac1
+  - coord:
+      Q: 7
+      R: 2
+    tileId: agac1
+  - coord:
+      Q: 8
+      R: 2
+    tileId: agac1
+  - coord:
+      Q: 6
+      R: 1
+    tileId: agac2
+  - coord:
+      Q: 6
+      R: 0
+    tileId: agac1
+  - coord:
+      Q: 5
+      R: 1
+    tileId: agac1
+  - coord:
+      Q: 7
+      R: 1
+    tileId: agac1
+  - coord:
+      Q: 7
+      R: 0
+    tileId: agac2

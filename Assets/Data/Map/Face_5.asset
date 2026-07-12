@@ -45,7 +45,7 @@ MonoBehaviour:
   - coord:
       Q: 0
       R: 4
-    tileId: kopru
+    tileId: lav
   - coord:
       Q: 2
       R: 8
@@ -65,11 +65,11 @@ MonoBehaviour:
   - coord:
       Q: 3
       R: 2
-    tileId: kopru
+    tileId: lav
   - coord:
       Q: 2
       R: 2
-    tileId: kopru
+    tileId: lav
   - coord:
       Q: 4
       R: 7
@@ -85,7 +85,7 @@ MonoBehaviour:
   - coord:
       Q: 1
       R: 4
-    tileId: mantar
+    tileId: agac3
   - coord:
       Q: 1
       R: 5
@@ -94,3 +94,59 @@ MonoBehaviour:
       Q: 1
       R: 6
     tileId: mantar
+  - coord:
+      Q: -1
+      R: 6
+    tileId: agac2
+  - coord:
+      Q: 0
+      R: 6
+    tileId: agac2
+  - coord:
+      Q: 0
+      R: 7
+    tileId: agac2
+  - coord:
+      Q: 0
+      R: 5
+    tileId: lav
+  - coord:
+      Q: 2
+      R: 4
+    tileId: lav
+  - coord:
+      Q: -1
+      R: 9
+    tileId: kopru
+  - coord:
+      Q: 0
+      R: 8
+    tileId: kopru
+  - coord:
+      Q: 3
+      R: 3
+    tileId: lav
+  - coord:
+      Q: 4
+      R: 3
+    tileId: agac2
+  - coord:
+      Q: 2
+      R: 3
+    tileId: agac3
+  - coord:
+      Q: 3
+      R: 1
+    tileId: lav
+  - coord:
+      Q: 1
+      R: 2
+    tileId: lav
+  - coord:
+      Q: 0
+      R: 3
+    tileId: lav
+  - coord:
+      Q: -1
+      R: 4
+    tileId: lav

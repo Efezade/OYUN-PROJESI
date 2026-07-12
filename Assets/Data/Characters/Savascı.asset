@@ -41,6 +41,7 @@ MonoBehaviour:
   _unitModelHeight: 1.5
   _unitModelEuler: {x: 90, y: 0, z: 0}
   _unitModelYOffset: 0
+  _unitAnimator: {fileID: 0}
   _hasManaSystem: 0
   _maxMana: 0
   _abilities: []
