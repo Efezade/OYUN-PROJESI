@@ -164,9 +164,17 @@ namespace TacticalRPG.Editor
             Material collapsedMat = GetOrCreateMaterial("TileCollapsed",new Color(0.15f, 0.05f, 0.05f));
             GameObject hexCellPrefab = GetOrCreateHexCellPrefab(baseTileMat);
 
-            // Sis kapağı görseli (asset): görülmemiş karonun üstünü örten koyu hex kapak.
-            // Whitebox placeholder — kendi bulut/sis modelinle (FogTile.prefab) değiştirebilirsin.
-            Material fogTileMat = GetOrCreateMaterial("FogTile", new Color(0.04f, 0.04f, 0.07f));
+            // Sis kapağı görseli (asset): görülmemiş karonun üstünü örten 3B bulut öbeği.
+            // Yumuşak beyaz + hafif kendinden-ışıklı → karanlık sis alanında "bulut denizi" gibi
+            // okunur (karo artık kapkara görünmez). Whitebox placeholder — kendi bulut/sis modelinle
+            // (FogTile.prefab) değiştirebilirsin.
+            Material fogTileMat = GetOrCreateMaterial("FogTile", new Color(0.90f, 0.93f, 1.0f));
+            if (fogTileMat.HasProperty("_EmissionColor"))
+            {
+                fogTileMat.EnableKeyword("_EMISSION");
+                fogTileMat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+                fogTileMat.SetColor("_EmissionColor", new Color(0.16f, 0.18f, 0.26f)); // hafif öz-parıltı
+            }
             GameObject fogTilePrefab = GetOrCreateFogTilePrefab(fogTileMat);
 
             // ── TilePalette — varsayılan giriş (placeholder hex prism) ────────
@@ -303,10 +311,12 @@ namespace TacticalRPG.Editor
             playerSO.FindProperty("_gridManager").objectReferenceValue = gridManager;
             playerSO.FindProperty("_fogManager").objectReferenceValue  = fogManager;
             playerSO.FindProperty("_moveSpeed").floatValue             = 8f;
-            // TileHeight (0.3) + kapsül yarı-yüksekliği (0.45) + küçük boşluk
-            playerSO.FindProperty("_heightOffset").floatValue          = 0.8f;
-            playerSO.FindProperty("_visionRange").intValue             = 2;
-            playerSO.FindProperty("_watchtowerRevealRange").intValue   = 5;
+            // Ayağı-orijinde bake edilmiş model → yüzeye SIFIR clearance (feet=surface, uçmaz):
+            // PlayerController.SurfaceY'de clearance = _heightOffset - TileHeight = 0 için _heightOffset=TileHeight.
+            // Model yoksa (kapsül fallback) eski tuning: TileHeight(0.3)+kapsül yarı-yükseklik(0.45)+boşluk.
+            playerSO.FindProperty("_heightOffset").floatValue          =
+                charModel != null ? HexMetrics.TileHeight : 0.8f;
+            playerSO.FindProperty("_visionRange").intValue             = 1; // dinamik sis baloncuğu = 1 karo
             playerSO.FindProperty("_startCoord").FindPropertyRelative("Q").intValue = 3;
             playerSO.FindProperty("_startCoord").FindPropertyRelative("R").intValue = 4;
             playerSO.ApplyModifiedProperties();
@@ -1624,9 +1634,13 @@ namespace TacticalRPG.Editor
             if (b.size.y > 0.0001f)
                 model.transform.localScale = Vector3.one * (CharacterModelHeight / b.size.y);
 
-            b = rends[0].bounds;                                         // ayağı zemine otur
+            b = rends[0].bounds;                                         // yatay merkezle + ayağı zemine otur
             for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
-            model.transform.position += Vector3.up * (parent.transform.position.y - b.min.y);
+            Vector3 pivot = parent.transform.position;
+            model.transform.position += new Vector3(
+                pivot.x - b.center.x,   // yatayda karo merkezine hizala (FBX pivotu kaymış olabilir)
+                pivot.y - b.min.y,      // ayak tabanı parent orijinine (zemin) otursun
+                pivot.z - b.center.z);
         }
 
         // ── Gerçekçi grafik preset'i (Global Volume + post-process) ──────────────
@@ -1670,74 +1684,9 @@ namespace TacticalRPG.Editor
         private static T GetOrAddVolumeOverride<T>(VolumeProfile profile) where T : VolumeComponent
             => profile.TryGet<T>(out T comp) ? comp : profile.Add<T>(true);
 
-        // ── Bölüm 1 = KÜP (6 yüz) — CubeFaceManager + 6 yüz asset ────────────
-        // Yüz 1 (Ön) = TileMap.asset (mevcut harita); 2-6 = Face_N.asset (boş, kullanıcı tasarlar).
-        // Manager grid'i seçili yüzle yeniden üretir; alt çubuktan manuel geçiş. (Otomatik kenar
-        // çerçeve + geçiş + küp dönüşü sonraki adımda eklenecek.)
-        private static void SetupCubeFaces()
-        {
-            var grid   = FindComponentAnywhere<HexGridManager>();
-            var player = FindComponentAnywhere<PlayerController>();
-            var state  = FindComponentAnywhere<GameStateManager>();
-            if (grid == null) { Debug.LogError("[Kup] HexGridManager yok — Faz 1 calistir."); return; }
-
-            GameObject host = state != null ? state.gameObject : GameObject.Find("GameManager");
-            if (host == null) { Debug.LogError("[Kup] Host GameObject bulunamadi."); return; }
-
-            var mgr = host.GetComponent<CubeFaceManager>();
-            if (mgr == null) mgr = host.AddComponent<CubeFaceManager>();
-
-            var so = new SerializedObject(mgr);
-            so.FindProperty("_grid").objectReferenceValue   = grid;
-            so.FindProperty("_player").objectReferenceValue = player;
-            so.FindProperty("_state").objectReferenceValue  = state;
-            var faces = so.FindProperty("_faces");
-            faces.arraySize = 6;
-            for (int n = 1; n <= 6; n++)
-                faces.GetArrayElementAtIndex(n - 1).objectReferenceValue = LoadOrCreateFaceAsset(n);
-            so.ApplyModifiedProperties();
-
-            // CubeRig — kup illuzyonu (aktif yuzun 4 komsusunu kenarlardan katlanmis panel render eder)
-            var rig = host.GetComponent<CubeRig>();
-            if (rig == null) rig = host.AddComponent<CubeRig>();
-            var rigSO = new SerializedObject(rig);
-            rigSO.FindProperty("_grid").objectReferenceValue   = grid;
-            rigSO.FindProperty("_faces").objectReferenceValue  = mgr;
-            rigSO.FindProperty("_player").objectReferenceValue = player;
-            rigSO.FindProperty("_placeholderTile").objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Grid/HexCell.prefab");
-            rigSO.ApplyModifiedProperties();
-
-            // MapInputHandler'a CubeRig'i bagla → yan yuze tiklama = Kam kenara yuruyup karsi yuze gecsin
-            var mih = FindComponentAnywhere<MapInputHandler>();
-            if (mih != null)
-            {
-                var mihSO = new SerializedObject(mih);
-                mihSO.FindProperty("_cubeRig").objectReferenceValue = rig;
-                mihSO.ApplyModifiedProperties();
-            }
-
-            // ADIM 1 — GERCEK KARO KUP (clip ile kenar kesimi; gorunum testi).
-            // Dokulu CubeRig + eski TexturedCubeRig kapali; CubeTileRig acik.
-            var tcubeOld = host.GetComponent<TexturedCubeRig>();
-            if (tcubeOld != null) Object.DestroyImmediate(tcubeOld);
-            if (rig != null) rig.enabled = false;
-
-            var tileRig = host.GetComponent<CubeTileRig>();
-            if (tileRig == null) tileRig = host.AddComponent<CubeTileRig>();
-            var trSO = new SerializedObject(tileRig);
-            trSO.FindProperty("_grid").objectReferenceValue  = grid;
-            trSO.FindProperty("_faces").objectReferenceValue = mgr;
-            trSO.FindProperty("_placeholderTile").objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Grid/HexCell.prefab");
-            trSO.ApplyModifiedProperties();
-
-            Debug.Log("[Kup] ADIM 1: GERCEK KARO kup + clip kenar kesimi (CubeTileRig; gorunum testi, grid gizli).");
-        }
-
-        // ── BÖLÜM 1 = 9 HARİTA 3x3 SNAKE (küp YERİNE) ──────────────────────
-        // 9 harita (Harita1=TileMap.asset, 2-9=Face_N.asset) + WorldGridManager. Eski küp
-        // bileşenlerini kaldırır. Kenardan yürüyünce komşu harita yüklenir (MapInputHandler).
+        // ── BÖLÜM 1 = 9 HARİTA 3x3 SNAKE (eski küp konsepti TERK EDİLDİ) ────
+        // 9 harita (Harita1=TileMap.asset, 2-9=Face_N.asset) + WorldGridManager.
+        // Kenardan yürüyünce komşu harita yüklenir (MapInputHandler).
         private static void SetupWorld3x3()
         {
             var grid   = FindComponentAnywhere<HexGridManager>();
@@ -1748,12 +1697,7 @@ namespace TacticalRPG.Editor
             GameObject host = state != null ? state.gameObject : GameObject.Find("GameManager");
             if (host == null) { Debug.LogError("[3x3] Host GameObject bulunamadi."); return; }
 
-            // Eski küp bileşenlerini kaldır (artık kullanilmiyor).
-            RemoveIfPresent<CubeRig>(host);
-            RemoveIfPresent<CubeTileRig>(host);
-            RemoveIfPresent<TexturedCubeRig>(host);
-            RemoveIfPresent<CubeFaceManager>(host);
-
+            // (Eski küp bileşenleri projeden tamamen kaldırıldı — artık temizlenecek tip yok.)
             var wgm = host.GetComponent<WorldGridManager>();
             if (wgm == null) wgm = host.AddComponent<WorldGridManager>();
             var so = new SerializedObject(wgm);
@@ -1785,13 +1729,19 @@ namespace TacticalRPG.Editor
             mmSO.FindProperty("_world").objectReferenceValue = wgm;
             mmSO.ApplyModifiedProperties();
 
-            Debug.Log("[3x3] 9 harita + WorldGridManager + TAB minimap kuruldu (snake 3x3, kenardan gecis).");
-        }
+            // ── WatchtowerManager — kule ile ada sisini KALICI kaldırma (yakınlık istemi + epik efekt)
+            var fog = FindComponentAnywhere<FogOfWarManager>();
+            var wt  = host.GetComponent<WatchtowerManager>();
+            if (wt == null) wt = host.AddComponent<WatchtowerManager>();
+            var wtSO = new SerializedObject(wt);
+            wtSO.FindProperty("_grid").objectReferenceValue   = grid;
+            wtSO.FindProperty("_player").objectReferenceValue = player;
+            wtSO.FindProperty("_fog").objectReferenceValue    = fog;
+            wtSO.FindProperty("_world").objectReferenceValue  = wgm;
+            wtSO.FindProperty("_state").objectReferenceValue  = state;
+            wtSO.ApplyModifiedProperties();
 
-        private static void RemoveIfPresent<T>(GameObject go) where T : Component
-        {
-            var comp = go.GetComponent<T>();
-            if (comp != null) Object.DestroyImmediate(comp);
+            Debug.Log("[3x3] 9 harita + WorldGridManager + TAB minimap + Kule sis-acma kuruldu (snake 3x3).");
         }
 
         private static TileMapSO LoadOrCreateFaceAsset(int n)
@@ -1833,58 +1783,47 @@ namespace TacticalRPG.Editor
             return prefab;
         }
 
-        // Sis kapağı prefabı: karo üstüne oturan düz hex kapak. COLLIDER YOK — sis, karo
-        // tıklamasını ve yüzey (zemin) ışınını engellememeli. Kullanıcı kendi modeliyle değiştirir.
+        // Sis kapağı prefabı: karonun üstüne oturan yumuşak 3B bulut öbeği (üst üste binen küreler).
+        // COLLIDER YOK — sis, karo tıklamasını ve yüzey (zemin) ışınını engellememeli.
+        // Hex karodan (~1.9m) biraz geniş → komşu bulutlarla üst üste binip sürekli "bulut denizi"
+        // oluşturur. Whitebox placeholder — kendi bulut modelinle bu prefabı değiştirebilirsin.
         private static GameObject GetOrCreateFogTilePrefab(Material fogMat)
         {
             string path = $"{PrefabsGridPath}/FogTile.prefab";
-            Mesh fogMesh = GetOrCreateFogMesh();
 
-            GameObject go = new GameObject("FogTile");
-            go.AddComponent<MeshFilter>().sharedMesh = fogMesh;
-            go.AddComponent<MeshRenderer>().sharedMaterial = fogMat;
+            // Küre öbekleri (yerel konum + çap[m]). KOMPAKT + ALÇAK: her bulut kendi hex'ine (~1.6m)
+            // sığar, komşuya taşmaz. (Önceden büyük+yüksekti → izometrik kameradan komşu gizli karonun
+            // bulutu öne sarkıp görünür karoyu örtüyordu. Hafif kabarır ama tepesi alçak.)
+            var puffs = new (Vector3 pos, float dia)[]
+            {
+                (new Vector3( 0.00f, 0.38f,  0.00f), 0.92f),
+                (new Vector3( 0.38f, 0.30f,  0.14f), 0.66f),
+                (new Vector3(-0.38f, 0.31f, -0.12f), 0.68f),
+                (new Vector3( 0.14f, 0.32f,  0.38f), 0.62f),
+                (new Vector3(-0.16f, 0.31f, -0.38f), 0.60f),
+                (new Vector3( 0.32f, 0.26f, -0.32f), 0.52f),
+                (new Vector3(-0.34f, 0.27f,  0.32f), 0.54f),
+            };
 
-            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
-            Object.DestroyImmediate(go);
+            // Built-in küre mesh'ini geçici bir primitive'den al (collider'sız çocuklar üretiriz).
+            GameObject probe = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            Mesh sphereMesh = probe.GetComponent<MeshFilter>().sharedMesh;
+
+            GameObject root = new GameObject("FogTile");
+            foreach (var p in puffs)
+            {
+                GameObject puff = new GameObject("Puff");
+                puff.transform.SetParent(root.transform, false);
+                puff.transform.localPosition = p.pos;
+                puff.transform.localScale    = Vector3.one * p.dia;
+                puff.AddComponent<MeshFilter>().sharedMesh = sphereMesh;
+                puff.AddComponent<MeshRenderer>().sharedMaterial = fogMat;
+            }
+            Object.DestroyImmediate(probe);
+
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
             return prefab;
-        }
-
-        private static Mesh GetOrCreateFogMesh()
-        {
-            string meshPath = "Assets/Art/Meshes/FogHexMesh.asset";
-            EnsureFolder("Assets/Art/Meshes");
-            AssetDatabase.DeleteAsset(meshPath);
-            Mesh mesh = CreateFlatHexMesh(1.0f);   // karodan (0.95) hafif büyük → boşluk kalmaz
-            AssetDatabase.CreateAsset(mesh, meshPath);
-            return mesh;
-        }
-
-        // Tek yüzlü düz hex (üstten bakışta karoyu tam örter). Yukarı (+Y) bakan normal.
-        private static Mesh CreateFlatHexMesh(float scale)
-        {
-            var mesh  = new Mesh { name = "FlatHexMesh" };
-            var verts = new Vector3[7];
-            verts[0] = Vector3.zero;                       // merkez
-            for (int i = 0; i < 6; i++)
-            {
-                Vector3 c = HexMetrics.Corners[i] * scale;
-                verts[i + 1] = new Vector3(c.x, 0f, c.z);
-            }
-
-            var tris = new int[18];
-            int idx = 0;
-            for (int i = 0; i < 6; i++)
-            {
-                tris[idx++] = 0;
-                tris[idx++] = (i + 1) % 6 + 1;
-                tris[idx++] = i + 1;
-            }
-
-            mesh.vertices  = verts;
-            mesh.triangles = tris;
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            return mesh;
         }
 
         private static CharacterClassData GetOrCreateCharacterSO(

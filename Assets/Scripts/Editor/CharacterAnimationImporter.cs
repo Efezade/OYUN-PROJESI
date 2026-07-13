@@ -220,12 +220,13 @@ namespace TacticalRPG.Editor
 
                 AnimatorStateTransition toWalk = idleState.AddTransition(walkState);
                 toWalk.hasExitTime = false;
-                toWalk.duration    = 0.10f;
+                toWalk.duration    = 0.06f;
                 toWalk.AddCondition(AnimatorConditionMode.If, 0f, IsMovingParam);
 
+                // Durunca yürüyüşten hızlı çık (ayaklar arkadan sürüklenmesin).
                 AnimatorStateTransition toIdle = walkState.AddTransition(idleState);
                 toIdle.hasExitTime = false;
-                toIdle.duration    = 0.15f;
+                toIdle.duration    = 0.06f;
                 toIdle.AddCondition(AnimatorConditionMode.IfNot, 0f, IsMovingParam);
             }
 

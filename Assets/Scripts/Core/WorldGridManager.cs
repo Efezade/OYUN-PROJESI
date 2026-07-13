@@ -24,6 +24,10 @@ namespace TacticalRPG.Core
         public int  CurrentMap { get; private set; } = 1;
         public bool IsBusy => _transitioning;
 
+        /// <summary>Aktif harita adası değişince tetiklenir. WatchtowerManager dinler →
+        /// yeni adanın (kalıcı açık mı?) sis durumunu yeniden uygular.</summary>
+        public event System.Action OnMapChanged;
+
         private HexPathfinder _pathfinder;
         private bool _transitioning;
         private readonly Dictionary<HexCoordinate, int> _transitionDirs = new();
@@ -69,6 +73,7 @@ namespace TacticalRPG.Core
             // Kam'ı ÇAĞIRAN konumlandırır (geçişte karşı kenardaki 'entry' hücresi). Burada
             // eski koordinatta Initialize edersek yeni haritada yanlış yerde sis açılırdı.
             MarkBorders();
+            OnMapChanged?.Invoke();  // WatchtowerManager → bu ada kalıcı açıksa sisi geri aç
         }
 
         // ── SİYAH ÇERÇEVE (geçiş karoları) ───────────────────────────────────

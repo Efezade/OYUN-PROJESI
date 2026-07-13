@@ -157,6 +157,10 @@ namespace TacticalRPG.Grid
             {
                 cell.IsWalkable = entry.isWalkable;
 
+                // Boyanmış "kule" karosu → görev karosu: WatchtowerManager bunun 1 karo yakınında
+                // ADA sisini kalıcı kaldırma istemi gösterir (sabit _watchtowerPositions'a EK).
+                if (entry.id == "kule") cell.CellType = CellType.Watchtower;
+
                 // Sisin çarpacağı temel renk: placeholder=editorColor, dokulu prefab=beyaz
                 // (beyaz × doku = doku bozulmaz; sis sadece kararma çarpanı uygular).
                 cell.BaseColor = entry.prefab == null ? entry.editorColor : Color.white;

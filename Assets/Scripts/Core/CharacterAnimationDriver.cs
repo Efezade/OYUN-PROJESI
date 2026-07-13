@@ -23,8 +23,8 @@ namespace TacticalRPG.Core
         [SerializeField, Min(0.01f)] private float _moveSpeedThreshold = 0.5f;
         [Tooltip("Tek karede bundan uzun yer değiştirme = ışınlanma (harita geçişi vb.) → yürüme sayılmaz.")]
         [SerializeField, Min(0.1f)] private float _teleportDistance = 1.5f;
-        [Tooltip("Hareket bittikten sonra yürüme pozundan çıkmadan önce beklenecek süre (sn) — adım aralarında titremesin.")]
-        [SerializeField, Min(0f)] private float _stopDelay = 0.10f;
+        [Tooltip("Hareket bittikten sonra yürüme pozundan çıkmadan önce beklenecek süre (sn) — adım aralarında titremesin. Kısa: durunca ayaklar hemen dursun.")]
+        [SerializeField, Min(0f)] private float _stopDelay = 0.04f;
 
         [Header("Yön")]
         [Tooltip("Karakter yürürken gövdesi hareket yönüne dönsün mü.")]

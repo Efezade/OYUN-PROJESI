@@ -8,8 +8,8 @@ namespace TacticalRPG.Core
 {
     /// <summary>
     /// Oyuncu karakterini hex karolar üzerinde hareket ettirir.
-    /// A* yoluyla ilerler, her adımda FogOfWar'ı günceller.
-    /// Kule (Watchtower) karosuna girildiğinde geniş alan açılır.
+    /// A* yoluyla ilerler, her adımda FogOfWar'ı günceller (dinamik görüş baloncuğu).
+    /// Kule ile kalıcı sis açma artık WatchtowerManager'ın işi (yakınlık istemi + onay).
     /// </summary>
     public class PlayerController : MonoBehaviour
     {
@@ -18,15 +18,15 @@ namespace TacticalRPG.Core
         [SerializeField] private FogOfWarManager _fogManager;
 
         [Header("Hareket")]
-        [SerializeField] private float _moveSpeed     = 8f;
-        [SerializeField] private float _heightOffset  = 0.15f;
-        // Yüzey ışınının başladığı yükseklik (karoların üstünden aşağı bakar).
-        [SerializeField] private float _rayStartHeight = 50f;
+        [SerializeField] private float _moveSpeed    = 8f;
+        [Tooltip("Karakterin yüzeye göre dikey ofseti (ayak payı). Ayağı-orijinde bake edilmiş " +
+                 "modelde TileHeight (clearance 0 → ayak yüzeye basar); kapsül fallback'inde daha büyük.")]
+        [SerializeField] private float _heightOffset = 0.15f;
 
-        [Header("Görüş / Kule")]
-        [Tooltip("Kam'ın bulunduğu karodan kaç karo uzağa kadar sisi açtığı (hex adımı).")]
-        [SerializeField] private int _visionRange          = 2;
-        [SerializeField] private int _watchtowerRevealRange = 5;
+        [Header("Görüş")]
+        [Tooltip("Kam'ın bulunduğu karodan kaç karo uzağa kadar bulutsuz gördüğü (hex adımı). " +
+                 "Dinamik sis: karakter ilerledikçe baloncuk taşınır, arka yeniden bulutlanır.")]
+        [SerializeField] private int _visionRange = 1;
 
         [Header("Başlangıç Koordinatı")]
         [SerializeField] private HexCoordinate _startCoord;
@@ -49,7 +49,7 @@ namespace TacticalRPG.Core
             CurrentCoord = startCoord;
 
             if (_gridManager.TryGetCell(startCoord, out HexCell cell))
-                transform.position = GroundedPosition(cell.WorldPosition, cell);
+                transform.position = GroundedAt(cell);
             else
                 Debug.LogWarning($"[PlayerController] Başlangıç koordinatı {startCoord} grid'de bulunamadı!");
 
@@ -68,65 +68,53 @@ namespace TacticalRPG.Core
 
             for (int i = 1; i < path.Count; i++)
             {
-                HexCell target   = path[i];
-                Vector3 targetXZ = target.WorldPosition; // hedef yatay konum (y=0)
+                HexCell from   = path[i - 1];
+                HexCell target = path[i];
 
-                // Yatay olarak hedefe ilerle; Y'yi HER KARE yüzeyden ışınla al →
-                // engebe/köprü konturunu takip eder (kemerde çıkar, çukurda iner).
+                Vector3 fromXZ   = new Vector3(from.WorldPosition.x,   0f, from.WorldPosition.z);
+                Vector3 targetXZ = new Vector3(target.WorldPosition.x, 0f, target.WorldPosition.z);
+                float   fromY    = SurfaceY(from);
+                float   toY      = SurfaceY(target);
+                float   span     = Vector3.Distance(fromXZ, targetXZ);
+
+                // Yatayda hedefe ilerle; Y'yi iki karo YÜZEYİ arasında enterpole et → güverteden
+                // güverteye pürüzsüz yürüme. (Eski her-kare RaycastAll rastgele en yüksek collider'a
+                // biniyordu → köprü geçişinde kemer üstüne çıkıp havada kalıyordu. Artık ayak yüzeyde.)
                 while (HorizontalSqrDistance(transform.position, targetXZ) > 0.0001f)
                 {
-                    Vector3 curXZ = new Vector3(transform.position.x, 0f, transform.position.z);
+                    Vector3 curXZ  = new Vector3(transform.position.x, 0f, transform.position.z);
                     Vector3 nextXZ = Vector3.MoveTowards(curXZ, targetXZ, _moveSpeed * Time.deltaTime);
 
-                    transform.position = GroundedPosition(nextXZ, target);
+                    float k = span > 0.0001f ? 1f - Vector3.Distance(nextXZ, targetXZ) / span : 1f;
+                    float y = Mathf.Lerp(fromY, toY, Mathf.Clamp01(k));
+                    transform.position = new Vector3(nextXZ.x, y, nextXZ.z);
                     yield return null;
                 }
 
-                transform.position = GroundedPosition(targetXZ, target);
+                transform.position = new Vector3(targetXZ.x, toY, targetXZ.z);
                 CurrentCoord       = target.Coordinate;
 
                 _fogManager.RevealArea(CurrentCoord, _visionRange);
                 OnMoved?.Invoke(CurrentCoord);
-
-                if (target.CellType == CellType.Watchtower)
-                    HandleWatchtower(target);
             }
 
             IsMoving = false;
         }
 
-        private void HandleWatchtower(HexCell cell)
+        /// <summary>Görüş baloncuğunu mevcut konumda yeniden kurar (sis kilidi değişince —
+        /// örn. savaştan dönünce ya da kule açılmamış adaya dönünce WatchtowerManager çağırır).</summary>
+        public void RefreshVision()
         {
-            _fogManager.RevealArea(cell.Coordinate, _watchtowerRevealRange);
-            Debug.Log($"[Player] Kule kesfedildi: {cell.Coordinate} — {_watchtowerRevealRange} menzillik alan acildi.");
+            if (_fogManager != null) _fogManager.RevealArea(CurrentCoord, _visionRange);
         }
 
-        // (x,z) konumunda yüzeyin üstüne oturmuş dünya pozisyonu.
-        // Yüzey Y'si ışınla bulunur → düz karoda sabit, köprü/engebede kontur takibi.
-        private Vector3 GroundedPosition(Vector3 xz, HexCell fallbackCell)
-        {
-            float fallback  = fallbackCell != null
-                            ? fallbackCell.WorldPosition.y + fallbackCell.SurfaceHeight
-                            : 0f;
-            float surfaceY  = SampleSurfaceY(xz.x, xz.z, fallback);
-            float clearance = _heightOffset - HexMetrics.TileHeight; // karakterin yüzeye göre ofseti
-            return new Vector3(xz.x, surfaceY + clearance, xz.z);
-        }
+        // Karonun YÜRÜME yüzeyinin dünya Y'si + karakterin ayak payı (clearance).
+        // clearance = _heightOffset - TileHeight → ayağı-orijinde bake'li modelde 0 (ayak yüzeye basar).
+        private float SurfaceY(HexCell cell) =>
+            cell.WorldPosition.y + cell.SurfaceHeight + (_heightOffset - HexMetrics.TileHeight);
 
-        // (x,z)'de en üstteki karo yüzeyinin dünya Y'si. Karakterin kendi collider'ı atlanır.
-        private float SampleSurfaceY(float x, float z, float fallback)
-        {
-            Vector3 origin = new Vector3(x, _rayStartHeight, z);
-            var hits = Physics.RaycastAll(origin, Vector3.down, _rayStartHeight + 5f);
-
-            float best = float.NegativeInfinity;
-            for (int i = 0; i < hits.Length; i++)
-            {
-                if (hits[i].collider.transform.IsChildOf(transform)) continue; // kendini atla
-                if (hits[i].point.y > best) best = hits[i].point.y;
-            }
-            return best > float.NegativeInfinity ? best : fallback;
-        }
+        private Vector3 GroundedAt(HexCell cell) =>
+            new Vector3(cell.WorldPosition.x, SurfaceY(cell), cell.WorldPosition.z);
 
         private static float HorizontalSqrDistance(Vector3 a, Vector3 b)
         {
