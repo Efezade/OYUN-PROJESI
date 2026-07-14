@@ -1,19 +1,17 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace TacticalRPG.Grid
 {
     /// <summary>
-    /// Hex karolarının görünürlük durumunu (sis) yönetir.
-    /// Karonun KENDİ görselini (placeholder tint / boyanmış-dokulu prefab) KORUR:
-    /// materyali değiştirmek yerine MaterialPropertyBlock ile temel rengini bir
-    /// parlaklık çarpanıyla karartır.
-    ///   Visible  = tam parlak (görüş içi),
-    ///   Explored = hafif kararmış (daha önce görülmüş, hatırlanan),
-    ///   Hidden   = neredeyse siyah (hiç görülmemiş).
-    /// Grid yeniden üretilince (harita geçişi) HexGridManager.OnGridRegenerated ile
-    /// sis otomatik yeniden kurulur.
+    /// Hex karolarının görünürlük durumunu (sis) yönetir — SAYDAMLIK yöntemiyle.
+    /// Her karonun ÜSTÜNDE KALICI bir bulut kapağı durur (Instantiate/Destroy YOK — pop yok);
+    /// bulutun OPAKLIĞI (alpha) yumuşakça değişir:
+    ///   Visible  = alpha 0 (tam saydam → karo net görünür),
+    ///   Hidden   = alpha _hiddenAlpha (opak → alttaki karo görünmez).
+    /// Görüş baloncuğu (RevealArea) karakterle gezer; kule (SetFullReveal) tüm adayı saydamlaştırır.
+    /// Ayrıca karonun temel rengi de parlaklıkla karartılır (ikinci katman).
+    /// Grid yeniden üretilince (harita geçişi) HexGridManager.OnGridRegenerated ile sis yeniden kurulur.
     /// </summary>
     [DefaultExecutionOrder(-50)] // HexGridManager'dan sonra, PlayerController'dan önce
     public class FogOfWarManager : MonoBehaviour
@@ -21,41 +19,57 @@ namespace TacticalRPG.Grid
         [Header("Bağımlılık")]
         [SerializeField] private HexGridManager _gridManager;
 
-        [Header("Sis Parlaklığı (temel rengin çarpanı)")]
-        [Tooltip("Görüş içindeki karo — tam parlaklık.")]
-        [SerializeField, Range(0f, 1f)] private float _visibleBrightness  = 1f;
-        [Tooltip("Daha önce görülmüş ama şu an görüş dışı — kararmış 'hatırlama'.")]
-        [SerializeField, Range(0f, 1f)] private float _exploredBrightness = 0.4f;
-        [Tooltip("Hiç görülmemiş — neredeyse siyah (sis).")]
-        [SerializeField, Range(0f, 1f)] private float _hiddenBrightness   = 0.05f;
+        [Header("Sis Parlaklığı (karonun temel rengi çarpanı)")]
+        [SerializeField, Range(0f, 1f)] private float _visibleBrightness = 1f;
+        [Tooltip("Hiç görülmemiş — neredeyse siyah (bulut zaten örter; bu ikinci katman).")]
+        [SerializeField, Range(0f, 1f)] private float _hiddenBrightness  = 0.05f;
 
-        [Header("Sis Görseli (asset — istediğin modelle değiştir)")]
-        [Tooltip("Görülmemiş (Hidden) karonun ÜSTÜNE konan sis kapağı prefabı. Kendi bulut/sis " +
-                 "modelinle değiştirebilirsin; boşsa sadece karartma uygulanır.")]
+        [Header("Bulut Kapağı (SAYDAMLIKLA açılır/kapanır — yok edilmez)")]
+        [Tooltip("Karonun üstüne konan bulut prefabı. Kendi bulut modelinle değiştirebilirsin.")]
         [SerializeField] private GameObject _fogTilePrefab;
-        [Tooltip("Sis kapağının karo yüzeyinin ne kadar ÜSTÜNE konacağı (z-fighting'i önler).")]
-        [SerializeField] private float _fogLift = 0.03f;
+        [Tooltip("Bulutun karo tabanının ne kadar üstünde duracağı (havada dursun diye yüksek).")]
+        [SerializeField] private float _fogLift = 0.45f;
+        [Tooltip("Gizli karonun bulut opaklığı (1 = gerçek karoyu tamamen örter).")]
+        [SerializeField, Range(0f, 1f)] private float _hiddenAlpha = 1f;
+        [Tooltip("Opaklık değişim hızı (birim/sn) — DÜŞÜK = daha yumuşak/geçişken belirme.")]
+        [SerializeField] private float _fadeSpeed = 2.5f;
+        [Tooltip("Bulutsuz baloncuğun kenarındaki geçiş bandı (karo). Karakter yürürken saydamlık " +
+                 "bu bant üzerinden sürekli/dinamik değişir.")]
+        [SerializeField] private float _fogFalloff = 1.4f;
+        [Tooltip("Gerçek karo yalnız bulut bundan OPAKKEN gizli (ağaçlar sızmasın). Yüksek(0.9) → " +
+                 "sadece TAM sisliyken gizli; bulut inceldikçe karo altından yumuşak belirir (pat yok).")]
+        [SerializeField, Range(0f, 1f)] private float _tileRevealAlpha = 0.9f;
 
-        [Header("Kule ile Kalıcı Açılış (epik efekt)")]
-        [Tooltip("Kule aktifleşince bulut kapaklarının süzülüp kaybolurken yükseleceği mesafe (m).")]
-        [SerializeField] private float _revealLiftHeight = 6f;
+        [Header("Rüzgar (bulutlar hafif hareketli)")]
+        [SerializeField] private float _windSpeed = 0.7f;
+        [SerializeField] private float _windAmount = 0.13f;
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor"); // URP/Lit
         private static readonly int ColorId     = Shader.PropertyToID("_Color");     // Standard yedek
         private MaterialPropertyBlock _block;
 
-        // Kule ile açılmış ada → dinamik sis (RevealArea) kilitlenir, tüm karolar Visible kalır.
+        // Kule ile açılmış ada → dinamik sis (RevealArea) kilitlenir, tüm karolar saydam kalır.
         private bool _fullyRevealed;
         public bool IsFullyRevealed => _fullyRevealed;
 
-        // RevealArea'nın görüş baloncuğu için yeniden kullanılan koordinat kümesi (çöp üretmez).
-        private readonly HashSet<HexCoordinate> _visibleScratch = new();
+        // Karo başına KALICI bulut kapağı.
+        private class Cap
+        {
+            public GameObject     go;
+            public MeshRenderer[] rends;      // kahverengi örtünün render'ları
+            public Renderer[]     tileRends;  // GERÇEK karonun render'ları (gizliyken kapalı)
+            public Color          baseColor;
+            public float          alpha;
+            public float          target;
+            public Vector3        basePos;   // rüzgar salınımının merkez konumu
+            public float          phase;     // her buluta farklı faz (senkron olmasınlar)
+        }
 
-        // Sis kapağı havuzu — karo başına tek örnek, yeniden kullanılır (Instantiate/Destroy değil).
         private Transform _fogRoot;
-        private readonly Dictionary<HexCoordinate, GameObject> _caps = new();
+        private readonly Dictionary<HexCoordinate, Cap> _caps    = new();
+        private readonly HashSet<HexCoordinate>         _fading  = new();
+        private readonly List<HexCoordinate>            _doneTmp = new();
 
-        // HexGridManager(-100) Awake'inde grid üretilmiş olur; burada (-50) dinlemeye başlarız.
         private void Awake()
         {
             if (_gridManager == null)
@@ -66,7 +80,7 @@ namespace TacticalRPG.Grid
             _fogRoot = new GameObject("FogTiles").transform;
             _fogRoot.SetParent(transform, false);
 
-            _gridManager.OnGridRegenerated += InitializeFog; // harita değişince sisi yeniden kur
+            _gridManager.OnGridRegenerated += InitializeFog;
             InitializeFog();
         }
 
@@ -78,162 +92,197 @@ namespace TacticalRPG.Grid
         private void InitializeFog()
         {
             if (_gridManager.Cells == null) return;
+            _fading.Clear();
             foreach (var cell in _gridManager.Cells.Values)
             {
                 cell.FogState = FogState.Hidden;
-                ApplyFogVisual(cell);
+                SetCellBrightness(cell, _hiddenBrightness);
+
+                Cap cap = EnsureCap(cell);
+                if (cap == null) continue;
+                cap.target = TargetAlpha(cell);
+                cap.alpha  = cap.target;   // yüklemede anında (fade yok)
+                ApplyCapAlpha(cap);
             }
         }
 
         /// <summary>Tüm karoları yeniden Hidden yapar (grid yeniden üretilince otomatik çağrılır).</summary>
         public void ResetFog() => InitializeFog();
 
-        /// <summary>Tüm karoları Visible yapar (savaş haritasında tam görüş).</summary>
+        // ── Genel API ────────────────────────────────────────────────────
+
+        /// <summary>Tüm karoları görünür yapar (savaş haritasında tam görüş / kule açılınca).</summary>
         public void RevealAll()
         {
             if (_gridManager.Cells == null) return;
             foreach (var cell in _gridManager.Cells.Values)
             {
                 cell.FogState = FogState.Visible;
-                ApplyFogVisual(cell);
+                SetCellBrightness(cell, _visibleBrightness);
+                MarkFade(cell);
             }
         }
 
-        // ── Genel API ────────────────────────────────────────────────────
-
         /// <summary>
-        /// DİNAMİK SİS: yalnızca merkez etrafında visionRange adımlık alanı Visible tutar; geri
-        /// kalan TÜM karolar (arkadaki iz dahil) yeniden Hidden olur (yeniden bulutlanır) →
-        /// bulutsuz görüş baloncuğu karakterle birlikte hareket eder. Kule ile açılmış adada
-        /// (kilitli) çağrı yok sayılır, sis kalıcı açık kalır.
+        /// DİNAMİK SİS (SÜREKLİ): karakterin CANLI dünya konumuna göre her karonun bulut opaklığını
+        /// mesafeyle belirler → karakter YÜRÜRKEN saydamlık sürekli/akışkan değişir (karoya varınca
+        /// pat diye değil). visionRadius içi tam saydam, _fogFalloff bandında yumuşak geçiş, ötesi opak.
+        /// Kule ile açık adada (kilitli) yok sayılır.
         /// </summary>
-        public void RevealArea(HexCoordinate origin, int visionRange)
+        public void UpdateFogAround(Vector3 worldPos, float visionRadiusTiles)
         {
-            if (_fullyRevealed) return;
-            if (_gridManager.Cells == null) return;
+            if (_fullyRevealed || _gridManager.Cells == null) return;
 
-            _visibleScratch.Clear();
-            foreach (var coord in GetCoordsInRange(origin, visionRange))
-                _visibleScratch.Add(coord);
+            float spacing = Mathf.Sqrt(3f) * Mathf.Max(0.01f, _gridManager.HexSize); // komşu karo mesafesi
+            float band    = Mathf.Max(0.01f, _fogFalloff);
 
             foreach (var cell in _gridManager.Cells.Values)
             {
-                FogState desired = _visibleScratch.Contains(cell.Coordinate)
-                    ? FogState.Visible : FogState.Hidden;
-                if (cell.FogState != desired)
+                float dx = worldPos.x - cell.WorldPosition.x;
+                float dz = worldPos.z - cell.WorldPosition.z;
+                float d  = Mathf.Sqrt(dx * dx + dz * dz) / spacing;           // karo biriminde mesafe
+                float a  = Mathf.Clamp01((d - visionRadiusTiles) / band) * _hiddenAlpha;
+
+                if (_caps.TryGetValue(cell.Coordinate, out Cap cap) && cap != null &&
+                    !Mathf.Approximately(cap.target, a))
                 {
-                    cell.FogState = desired;
-                    ApplyFogVisual(cell);
+                    cap.target = a;
+                    _fading.Add(cell.Coordinate);
                 }
+
+                // Mantık durumu + ikinci katman karartma (sürekli).
+                cell.FogState = a < _hiddenAlpha * 0.5f ? FogState.Visible : FogState.Hidden;
+                SetCellBrightness(cell, Mathf.Lerp(_visibleBrightness, _hiddenBrightness, a / Mathf.Max(0.001f, _hiddenAlpha)));
             }
         }
 
         /// <summary>
         /// Kule ile bu ADAnın sisini kalıcı aç/kapat. Açıkken dinamik sis (RevealArea) kilitlenir,
-        /// tüm karolar Visible kalır. Harita değişiminde WatchtowerManager yeniden uygular.
+        /// tüm bulutlar saydamlaşır (ada %100 görünür). Harita değişiminde WatchtowerManager yeniden uygular.
         /// </summary>
         public void SetFullReveal(bool revealed)
         {
             _fullyRevealed = revealed;
-            if (revealed) RevealAll();
+            if (revealed) RevealAll();   // hepsi Visible → bulutlar 0'a fade (Update yumuşatır)
         }
 
-        /// <summary>
-        /// Kule aktifleşince: bulut kapaklarını yukarı süzülüp küçülerek kaldırır (epik his),
-        /// zemini aydınlatır, sonra adayı kalıcı Visible'a kilitler.
-        /// </summary>
-        public void RevealAllAnimated(float duration)
-        {
-            _fullyRevealed = true;
-            if (isActiveAndEnabled && duration > 0f && _gridManager.Cells != null)
-                StartCoroutine(RevealLiftRoutine(duration));
-            else
-                RevealAll();
-        }
-
-        private IEnumerator RevealLiftRoutine(float duration)
-        {
-            // Şu an bulutlu (Hidden) karoların kapaklarını topla; zemini hemen aydınlat.
-            var lifting    = new List<Transform>();
-            var startPos   = new List<Vector3>();
-            var startScale = new List<Vector3>();
-            foreach (var cell in _gridManager.Cells.Values)
-            {
-                if (cell.FogState == FogState.Hidden &&
-                    _caps.TryGetValue(cell.Coordinate, out GameObject cap) && cap != null && cap.activeSelf)
-                {
-                    lifting.Add(cap.transform);
-                    startPos.Add(cap.transform.position);
-                    startScale.Add(cap.transform.localScale);
-                }
-                cell.FogState = FogState.Visible;
-                SetCellBrightness(cell, _visibleBrightness);   // zemin renklenir (kapak henüz durur)
-            }
-
-            float t = 0f;
-            while (t < duration)
-            {
-                t += Time.deltaTime;
-                float k    = Mathf.Clamp01(t / duration);
-                float ease = k * k;                            // hızlanan yükseliş
-                for (int i = 0; i < lifting.Count; i++)
-                {
-                    if (lifting[i] == null) continue;
-                    lifting[i].position   = startPos[i] + Vector3.up * (ease * _revealLiftHeight);
-                    lifting[i].localScale = Vector3.Lerp(startScale[i], startScale[i] * 0.05f, k);
-                }
-                yield return null;
-            }
-
-            // Bitir: kapakları normal yolla gizle (havuza döner) + ölçeği eski haline getir.
-            RevealAll();
-            for (int i = 0; i < lifting.Count; i++)
-                if (lifting[i] != null) lifting[i].localScale = startScale[i];
-        }
+        /// <summary>Kule aktifleşince adanın bulutlarını yumuşakça saydamlaştırır (epik his — beam/halka
+        /// WatchtowerManager'da). Saydamlık geçişi _fadeSpeed ile animasyonlu olduğu için SetFullReveal yeter.</summary>
+        public void RevealAllAnimated(float duration) => SetFullReveal(true);
 
         public FogState GetFogState(HexCoordinate coord) =>
             _gridManager.TryGetCell(coord, out HexCell c) ? c.FogState : FogState.Hidden;
 
-        public bool IsVisible(HexCoordinate coord) =>
-            GetFogState(coord) == FogState.Visible;
+        public bool IsVisible(HexCoordinate coord) => GetFogState(coord) == FogState.Visible;
+        public bool IsKnown(HexCoordinate coord)   => GetFogState(coord) != FogState.Hidden;
 
-        public bool IsKnown(HexCoordinate coord) =>
-            GetFogState(coord) != FogState.Hidden;
-
-        // ── Yardımcı metodlar ─────────────────────────────────────────────
-
-        private List<HexCoordinate> GetCoordsInRange(HexCoordinate origin, int range)
+        // ── Opaklık animasyonu + rüzgar salınımı ────────────────────────────
+        private void Update()
         {
-            var result = new List<HexCoordinate>();
-            for (int q = -range; q <= range; q++)
+            // (1) Opaklık fade.
+            if (_fading.Count > 0)
             {
-                int rMin = Mathf.Max(-range, -q - range);
-                int rMax = Mathf.Min(range, -q + range);
-                for (int r = rMin; r <= rMax; r++)
+                float step = _fadeSpeed * Time.deltaTime;
+                _doneTmp.Clear();
+                foreach (var coord in _fading)
                 {
-                    var coord = new HexCoordinate(origin.Q + q, origin.R + r);
-                    if (_gridManager.IsInBounds(coord))
-                        result.Add(coord);
+                    if (!_caps.TryGetValue(coord, out Cap cap) || cap == null || cap.go == null)
+                    { _doneTmp.Add(coord); continue; }
+
+                    cap.alpha = Mathf.MoveTowards(cap.alpha, cap.target, step);
+                    ApplyCapAlpha(cap);
+                    if (Mathf.Approximately(cap.alpha, cap.target)) _doneTmp.Add(coord);
+                }
+                for (int i = 0; i < _doneTmp.Count; i++) _fading.Remove(_doneTmp[i]);
+            }
+
+            // (2) Rüzgar: görünen bulutlar merkezleri etrafında yavaş/yumuşak salınır (esinti hissi).
+            if (_windAmount > 0.0001f)
+            {
+                float t = Time.time * _windSpeed;
+                foreach (var kv in _caps)
+                {
+                    Cap cap = kv.Value;
+                    if (cap == null || cap.go == null || cap.alpha <= 0.01f) continue; // saydam bulut = kapalı
+                    float p = cap.phase;
+                    Vector3 w = new Vector3(
+                        Mathf.Sin(t + p)          * _windAmount,
+                        Mathf.Sin(t * 0.6f + p)   * _windAmount * 0.5f,
+                        Mathf.Cos(t * 0.8f + p)   * _windAmount);
+                    cap.go.transform.position = cap.basePos + w;
                 }
             }
-            return result;
         }
 
-        // İki katman: (1) karonun temel rengini parlaklıkla çarparak karartır (MPB — materyali
-        // değiştirmez, boyanmış karo korunur), (2) Hidden karonun ÜSTÜNE sis kapağı (asset) koyar.
-        private void ApplyFogVisual(HexCell cell)
-        {
-            // (1) Parlaklık — explored=kararmış hatırlama, visible=tam, hidden=neredeyse siyah.
-            float b = cell.FogState switch
-            {
-                FogState.Visible  => _visibleBrightness,
-                FogState.Explored => _exploredBrightness,
-                _                 => _hiddenBrightness,
-            };
-            SetCellBrightness(cell, b);
+        // ── Yardımcılar ─────────────────────────────────────────────────────
 
-            // (2) Sis kapağı — sadece hiç görülmemiş (Hidden) karoda; terreni fiziksel olarak örter.
-            UpdateFogCap(cell);
+        private float TargetAlpha(HexCell cell) =>
+            (_fullyRevealed || cell.FogState == FogState.Visible) ? 0f : _hiddenAlpha;
+
+        private void MarkFade(HexCell cell)
+        {
+            Cap cap = EnsureCap(cell);
+            if (cap == null) return;
+            cap.target = TargetAlpha(cell);
+            if (!Mathf.Approximately(cap.alpha, cap.target))
+                _fading.Add(cell.Coordinate);
+        }
+
+        // Karo başına KALICI bulut kapağı (yoksa üretir, varsa konumlar). Asla yok edilmez.
+        private Cap EnsureCap(HexCell cell)
+        {
+            if (_fogTilePrefab == null || _fogRoot == null) return null;
+
+            if (!_caps.TryGetValue(cell.Coordinate, out Cap cap) || cap == null || cap.go == null)
+            {
+                GameObject go = Instantiate(_fogTilePrefab, _fogRoot);
+                go.name = $"Fog_{cell.Coordinate}";
+                var rends = go.GetComponentsInChildren<MeshRenderer>();
+
+                Color bc = Color.white;
+                if (rends.Length > 0 && rends[0].sharedMaterial != null &&
+                    rends[0].sharedMaterial.HasProperty(BaseColorId))
+                    bc = rends[0].sharedMaterial.GetColor(BaseColorId);
+                bc.a = 1f;
+
+                cap = new Cap { go = go, rends = rends, baseColor = bc, alpha = _hiddenAlpha, target = _hiddenAlpha,
+                                phase = Random.Range(0f, 6.283f) };
+                _caps[cell.Coordinate] = cap;
+            }
+
+            // Bulut karonun ÜSTÜNDE havada dursun. GERÇEK karonun render'larını önbelleğe al (grid
+            // yeniden üretilmişse yenile) — sadece TAM sisliyken kapatacağız (yumuşak beliriş).
+            cap.basePos = cell.WorldPosition + Vector3.up * (cell.SurfaceHeight + _fogLift);
+            cap.go.transform.position = cap.basePos;
+            if (!cap.go.activeSelf) cap.go.SetActive(true);
+            return cap;
+        }
+
+        // Örtüye opaklığı yaz (MPB) + GERÇEK karoyu aç/kapat: örtü opaksa gerçek karo GİZLİ (kahverengi
+        // görünür), örtü yeterince solunca gerçek karo (ağaçlar dahil) BELİRİR → "var oluyor" hissi.
+        private void ApplyCapAlpha(Cap cap)
+        {
+            if (cap.rends == null) return;
+            _block ??= new MaterialPropertyBlock();
+
+            Color c = cap.baseColor;
+            c.a = cap.alpha;
+            bool coverVisible = cap.alpha > 0.001f;
+
+            foreach (var r in cap.rends)
+            {
+                if (r == null) continue;
+                if (coverVisible)
+                {
+                    r.GetPropertyBlock(_block);
+                    _block.SetColor(BaseColorId, c);
+                    _block.SetColor(ColorId, c);
+                    r.SetPropertyBlock(_block);
+                }
+                if (r.enabled != coverVisible) r.enabled = coverVisible;
+            }
+            // NOT: gerçek karo render'ı HİÇ kapatılmaz (havada bulut → kapatırsak karonun yerinde delik
+            // kalır). Havadaki opak bulut karoyu görsel olarak örter; bulut solunca karo yumuşak belirir.
         }
 
         // Karonun temel rengini parlaklık çarpanıyla _BaseColor'a yazar (materyali bozmadan, MPB).
@@ -249,26 +298,6 @@ namespace TacticalRPG.Grid
             _block.SetColor(BaseColorId, c);
             _block.SetColor(ColorId, c);
             cell.MeshRenderer.SetPropertyBlock(_block);
-        }
-
-        // Karo başına sis kapağını (asset) havuzdan alıp konumlandırır ve durumuna göre aç/kapatır.
-        private void UpdateFogCap(HexCell cell)
-        {
-            if (_fogTilePrefab == null || _fogRoot == null) return; // asset yoksa yalnız karartma kalır
-
-            bool covered = cell.FogState == FogState.Hidden;
-
-            if (!_caps.TryGetValue(cell.Coordinate, out GameObject cap) || cap == null)
-            {
-                if (!covered) return;                         // görünür karoya kapak üretme
-                cap = Instantiate(_fogTilePrefab, _fogRoot);  // havuza ekle (bir kez)
-                cap.name = $"Fog_{cell.Coordinate}";
-                _caps[cell.Coordinate] = cap;
-            }
-
-            // Karonun yürüme yüzeyinin biraz üstüne otur (engebe/köprü yüksekliğini takip eder).
-            cap.transform.position = cell.WorldPosition + Vector3.up * (cell.SurfaceHeight + _fogLift);
-            if (cap.activeSelf != covered) cap.SetActive(covered);
         }
     }
 }

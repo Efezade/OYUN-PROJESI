@@ -98,3 +98,7 @@ MonoBehaviour:
       Q: 5
       R: 5
     tileId: kopru
+  - coord:
+      Q: 6
+      R: 3
+    tileId: portal1

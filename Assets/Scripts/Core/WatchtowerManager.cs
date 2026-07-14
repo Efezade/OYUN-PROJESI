@@ -37,6 +37,15 @@ namespace TacticalRPG.Core
         [SerializeField] private Color _beamColor = new Color(1f, 0.95f, 0.6f);
         [SerializeField] private Color _ringColor = new Color(0.6f, 0.85f, 1f);
 
+        [Header("Kule Göstergesi (sisin üstünde SİYAH İNCİ küre)")]
+        [SerializeField] private Color _markerColor  = new Color(0.03f, 0.03f, 0.05f); // koyu (beyaz bulutta net)
+        [SerializeField] private float _markerHeight = 1.5f;   // karo üstü — sisin üstünde dursun
+        [SerializeField] private float _markerSize   = 0.55f;
+
+        private Transform _markerRoot;
+        private Material  _markerMat;
+        private readonly Dictionary<HexCoordinate, GameObject> _towerMarkers = new();
+
         private readonly HashSet<int> _revealedMaps = new();
         private bool    _busy;
         private HexCell _nearbyTower;   // istem için son bulunan yakın kule (yoksa null)
@@ -48,6 +57,7 @@ namespace TacticalRPG.Core
             if (_player != null) _player.OnMoved       += HandleMoved;
             if (_world  != null) _world.OnMapChanged   += HandleMapChanged;
             if (_state  != null) _state.OnStateChanged += HandleStateChanged;
+            if (_grid   != null) _grid.OnGridRegenerated += BuildTowerMarkers; // harita değişince yenile
         }
 
         private void OnDisable()
@@ -55,9 +65,71 @@ namespace TacticalRPG.Core
             if (_player != null) _player.OnMoved       -= HandleMoved;
             if (_world  != null) _world.OnMapChanged   -= HandleMapChanged;
             if (_state  != null) _state.OnStateChanged -= HandleStateChanged;
+            if (_grid   != null) _grid.OnGridRegenerated -= BuildTowerMarkers;
         }
 
-        private void Start() => ApplyRevealStateForCurrentMap();
+        private void Start()
+        {
+            ApplyRevealStateForCurrentMap();
+            BuildTowerMarkers();
+        }
+
+        // Her kule karosunun üstüne sisin üstünde parlayan bir küre koy (kulenin yerini belli eder).
+        private void BuildTowerMarkers()
+        {
+            if (_grid == null || _grid.Cells == null) return;
+            if (_markerRoot == null)
+            {
+                _markerRoot = new GameObject("KuleGosterge").transform;
+                _markerRoot.SetParent(transform, false);
+            }
+            foreach (var kv in _towerMarkers) if (kv.Value != null) Destroy(kv.Value);
+            _towerMarkers.Clear();
+
+            if (_markerMat == null)
+            {
+                Shader sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+                _markerMat = new Material(sh);
+                if (_markerMat.HasProperty("_BaseColor")) _markerMat.SetColor("_BaseColor", _markerColor);
+                if (_markerMat.HasProperty("_Color"))     _markerMat.SetColor("_Color",     _markerColor);
+                // Siyah inci: emissive DEĞİL (bloom'a kaçıp beyazlaşmasın) — parıltı cilalı yüzeyden.
+                if (_markerMat.HasProperty("_Smoothness")) _markerMat.SetFloat("_Smoothness", 0.95f);
+                if (_markerMat.HasProperty("_Metallic"))   _markerMat.SetFloat("_Metallic",   0.6f);
+                _markerMat.DisableKeyword("_EMISSION");
+            }
+
+            // YALNIZ boyanmış "kule" karosu → gösterge (sabit/rastgele karolarda değil).
+            var tileMap = _grid.TileMap;
+            if (tileMap == null) return;
+            foreach (var cell in _grid.Cells.Values)
+            {
+                if (tileMap.GetTileId(cell.Coordinate) != "kule") continue;
+                var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                var col = go.GetComponent<Collider>(); if (col != null) Destroy(col);
+                go.name = $"KuleGosterge_{cell.Coordinate}";
+                go.transform.SetParent(_markerRoot, false);
+                go.transform.position   = cell.WorldPosition + Vector3.up * (cell.SurfaceHeight + _markerHeight);
+                go.transform.localScale = Vector3.one * _markerSize;
+                go.GetComponent<MeshRenderer>().sharedMaterial = _markerMat;
+                _towerMarkers[cell.Coordinate] = go;
+            }
+        }
+
+        // Sis varken göster (sisin üstünde parlar), sis yokken gizle (kuleyi zaten görüyoruz) +
+        // hafif salınım (ışıltı hissi).
+        private void Update()
+        {
+            if (_towerMarkers.Count == 0 || _fog == null) return;
+            float bob = Mathf.Sin(Time.time * 2f) * 0.06f;
+            foreach (var kv in _towerMarkers)
+            {
+                if (kv.Value == null) continue;
+                bool fogged = !_fog.IsVisible(kv.Key);
+                if (kv.Value.activeSelf != fogged) kv.Value.SetActive(fogged);
+                if (fogged && _grid.TryGetCell(kv.Key, out HexCell c))
+                    kv.Value.transform.position = c.WorldPosition + Vector3.up * (c.SurfaceHeight + _markerHeight + bob);
+            }
+        }
 
         // ── Sis durumunu adaya göre uygula ───────────────────────────────────
         private void HandleMapChanged() => ApplyRevealStateForCurrentMap();

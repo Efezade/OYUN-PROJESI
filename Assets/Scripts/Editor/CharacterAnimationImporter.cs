@@ -217,6 +217,7 @@ namespace TacticalRPG.Editor
             {
                 AnimatorState walkState = sm.AddState("Walk");
                 walkState.motion = walk;
+                walkState.speed  = 0.75f; // yürüyüş temposu (hareket hızıyla orantılı, ayak kayması az)
 
                 AnimatorStateTransition toWalk = idleState.AddTransition(walkState);
                 toWalk.hasExitTime = false;

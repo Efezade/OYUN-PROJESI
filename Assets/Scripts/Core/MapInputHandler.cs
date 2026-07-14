@@ -30,6 +30,10 @@ namespace TacticalRPG.Core
         [SerializeField] private LayerMask _clickableLayers = ~0;
         [SerializeField] private float     _rayDistance     = 300f;
 
+        [Header("Hareket Menzili")]
+        [Tooltip("Tek tıkla en fazla kaç karo yürünür. 2 = 2 karo uzağa basınca yürür, 3 karo uzağa basınca yürümez.")]
+        [SerializeField] private int _maxMoveRange = 2;
+
         private HexPathfinder _pathfinder;
 
         private void Awake()
@@ -64,14 +68,22 @@ namespace TacticalRPG.Core
             if (_player.IsMoving) return;
             if (_worldGrid != null && _worldGrid.IsBusy) return;   // harita geçişi sürerken giriş yok
 
-            // Haritanın DIŞINDAki siyah geçiş işaretçisine tıklandıysa → komşu haritaya geç.
+            // Haritanın DIŞINDAki (sınır ötesi) geçiş işaretçisine tıklandıysa → İKİ ADIMLI geçiş:
+            // karakter O SINIR KENARINDA duruyorsa komşu adaya geç; değilse önce sınıra doğru yürü
+            // (bir daha sınır ötesine basınca geçilir).
             if (_worldGrid != null)
             {
                 Ray mray = _camera.ScreenPointToRay(Input.mousePosition);
                 if (Physics.Raycast(mray, out RaycastHit mhit, _rayDistance) &&
                     mhit.collider.GetComponentInParent<TransitionMarker>() is TransitionMarker tm)
                 {
-                    _worldGrid.StartTransition(tm.EdgeCoord);
+                    // Karakter sınır karosuna YETERİNCE YAKINSA (menzil içinde) komşu adaya geç;
+                    // değilse önce sınıra doğru yürü (bir daha basınca geçer). Mesafeyle kontrol —
+                    // oyuncu en dış transition karosunda değil, iç yürünebilir karoda durabilir.
+                    if (_player.CurrentCoord.DistanceTo(tm.EdgeCoord) <= _maxMoveRange)
+                        _worldGrid.StartTransition(tm.EdgeCoord);
+                    else
+                        TryMoveTo(tm.EdgeCoord);
                     return;
                 }
             }
@@ -94,14 +106,8 @@ namespace TacticalRPG.Core
                 }
             }
 
-            // 3) Kenar (geçiş) karosuna tıklandıysa → Kam o kenara yürüyüp komşu haritaya geçer.
-            if (_worldGrid != null && _worldGrid.IsTransitionCell(coord) >= 0)
-            {
-                _worldGrid.StartTransition(coord);
-                return;
-            }
-
-            // 4) Aksi halde → hareket
+            // 3) Aksi halde → hareket. (Sınır karosuna basmak ARTIK geçirmez; sadece oraya yürür →
+            // karakter sınırda durur. Geçiş yalnız sınır ÖTESİNDEKİ işaretçiye basınca olur, yukarıda.)
             TryMoveTo(coord);
         }
 
@@ -119,12 +125,14 @@ namespace TacticalRPG.Core
         {
             if (!_gridManager.TryGetCell(targetCoord, out HexCell target)) return;
             if (!target.IsWalkable)                                         return;
-            if (target.FogState == FogState.Hidden)                         return;
+            // Sisli (Hidden) karoya YÜRÜNEBİLİR (görüş 1, hareket 2) — sisin içine 2 karo girilir.
             if (!_gridManager.TryGetCell(_player.CurrentCoord, out HexCell start)) return;
 
             var path = _pathfinder.FindPath(start, target, _gridManager);
-            if (path != null)
-                _player.MoveAlongPath(path);
+            if (path == null) return;
+            // Menzil kapısı: en fazla _maxMoveRange karo. 3+ karo uzağa basınca hiç yürümez.
+            if (path.Count - 1 > _maxMoveRange) return;
+            _player.MoveAlongPath(path);
         }
     }
 }

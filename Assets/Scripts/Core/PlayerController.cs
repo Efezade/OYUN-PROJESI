@@ -18,7 +18,7 @@ namespace TacticalRPG.Core
         [SerializeField] private FogOfWarManager _fogManager;
 
         [Header("Hareket")]
-        [SerializeField] private float _moveSpeed    = 8f;
+        [SerializeField] private float _moveSpeed    = 4.5f;
         [Tooltip("Karakterin yüzeye göre dikey ofseti (ayak payı). Ayağı-orijinde bake edilmiş " +
                  "modelde TileHeight (clearance 0 → ayak yüzeye basar); kapsül fallback'inde daha büyük.")]
         [SerializeField] private float _heightOffset = 0.15f;
@@ -53,7 +53,19 @@ namespace TacticalRPG.Core
             else
                 Debug.LogWarning($"[PlayerController] Başlangıç koordinatı {startCoord} grid'de bulunamadı!");
 
-            _fogManager.RevealArea(CurrentCoord, _visionRange);
+            _fogManager.UpdateFogAround(transform.position, _visionRange);
+            _lastFogSample = transform.position;
+        }
+
+        // Karakter hareket ettikçe sisi CANLI konumla güncelle → saydamlık sürekli/akışkan değişir
+        // (karoya varınca pat diye değil). Dururken güncelleme yok (konum değişmez).
+        private Vector3 _lastFogSample = new Vector3(float.MaxValue, 0f, 0f);
+        private void Update()
+        {
+            if (_fogManager == null) return;
+            if ((transform.position - _lastFogSample).sqrMagnitude < 0.00005f) return;
+            _fogManager.UpdateFogAround(transform.position, _visionRange);
+            _lastFogSample = transform.position;
         }
 
         public void MoveAlongPath(List<HexCell> path)
@@ -94,7 +106,7 @@ namespace TacticalRPG.Core
                 transform.position = new Vector3(targetXZ.x, toY, targetXZ.z);
                 CurrentCoord       = target.Coordinate;
 
-                _fogManager.RevealArea(CurrentCoord, _visionRange);
+                // Sis Update()'te canlı konumla sürekli güncellenir; burada sadece tur/olay eventi.
                 OnMoved?.Invoke(CurrentCoord);
             }
 
@@ -105,7 +117,7 @@ namespace TacticalRPG.Core
         /// örn. savaştan dönünce ya da kule açılmamış adaya dönünce WatchtowerManager çağırır).</summary>
         public void RefreshVision()
         {
-            if (_fogManager != null) _fogManager.RevealArea(CurrentCoord, _visionRange);
+            if (_fogManager != null) _fogManager.UpdateFogAround(transform.position, _visionRange);
         }
 
         // Karonun YÜRÜME yüzeyinin dünya Y'si + karakterin ayak payı (clearance).

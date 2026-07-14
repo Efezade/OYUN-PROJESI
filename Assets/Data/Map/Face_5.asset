@@ -150,3 +150,7 @@ MonoBehaviour:
       Q: -1
       R: 4
     tileId: lav
+  - coord:
+      Q: 2
+      R: 1
+    tileId: cicek

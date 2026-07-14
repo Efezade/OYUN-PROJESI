@@ -107,6 +107,15 @@ namespace TacticalRPG.Core
             return true;
         }
 
+        /// <summary>Karodaki özü TOPLAMADAN kaldırır (karo çökünce üstündeki öz de yok olur).</summary>
+        public void RemoveNodeAt(HexCoordinate c)
+        {
+            bool changed = false;
+            if (_visuals.TryGetValue(c, out GameObject go)) { if (go != null) Destroy(go); _visuals.Remove(c); changed = true; }
+            if (_nodes.Remove(c)) changed = true;
+            if (changed) OnNodesChanged?.Invoke();
+        }
+
         // ── Spawn (el yapımı haritadan) ────────────────────────────────────────
 
         private void SpawnNodes()

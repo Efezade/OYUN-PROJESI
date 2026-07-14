@@ -221,7 +221,7 @@ MonoBehaviour:
   - coord:
       Q: 6
       R: 5
-    tileId: cicek
+    tileId: portal2
   - coord:
       Q: 1
       R: 6
@@ -357,7 +357,7 @@ MonoBehaviour:
   - coord:
       Q: 7
       R: 3
-    tileId: mantar
+    tileId: cicek
   - coord:
       Q: 8
       R: 3
@@ -385,7 +385,7 @@ MonoBehaviour:
   - coord:
       Q: 5
       R: 7
-    tileId: mantar
+    tileId: cicek
   - coord:
       Q: 4
       R: 7

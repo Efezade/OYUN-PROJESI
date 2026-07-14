@@ -23,6 +23,10 @@ namespace TacticalRPG.Core
         public int CurrentDay     { get; private set; } = 1;
         public int CurrentSlot    { get; private set; } = 0;
         public int TotalMoves     { get; private set; } = 0;
+        public int SlotsPerDay    => _config != null ? _config.TimeSlotsPerDay : 6;
+
+        /// <summary>Bu günün SONUNA (yeni gün) kadar kalan toplam AP — collapse geri sayımı için.</summary>
+        public int APRemainingToday => CurrentAP + Mathf.Max(0, SlotsPerDay - 1 - CurrentSlot) * MaxAP;
 
         // Event'ler — UI bu event'leri dinler
         public event Action<int, int>    OnAPChanged;        // (currentAP, maxAP)

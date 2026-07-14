@@ -168,13 +168,21 @@ namespace TacticalRPG.Editor
             // Yumuşak beyaz + hafif kendinden-ışıklı → karanlık sis alanında "bulut denizi" gibi
             // okunur (karo artık kapkara görünmez). Whitebox placeholder — kendi bulut/sis modelinle
             // (FogTile.prefab) değiştirebilirsin.
+            // SAYDAM BULUT: gizli karonun üstünde havada duran yumuşak bulut. Opaklığı karo başına MPB
+            // (_BaseColor.a) ile değişir (FogOfWarManager); solunca alttaki gerçek karo yumuşak belirir.
+            // Emission KAPALI — yoksa alpha 0'da bile parıldar (%100 saydam olmaz).
             Material fogTileMat = GetOrCreateMaterial("FogTile", new Color(0.90f, 0.93f, 1.0f));
-            if (fogTileMat.HasProperty("_EmissionColor"))
-            {
-                fogTileMat.EnableKeyword("_EMISSION");
-                fogTileMat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-                fogTileMat.SetColor("_EmissionColor", new Color(0.16f, 0.18f, 0.26f)); // hafif öz-parıltı
-            }
+            fogTileMat.DisableKeyword("_EMISSION");
+            fogTileMat.SetFloat("_Surface", 1f);   // 0=opaque, 1=transparent
+            fogTileMat.SetFloat("_Blend",   0f);   // 0=alpha blend
+            fogTileMat.SetFloat("_ZWrite",  0f);
+            fogTileMat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            fogTileMat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            fogTileMat.DisableKeyword("_SURFACE_TYPE_OPAQUE");
+            fogTileMat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            fogTileMat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            if (fogTileMat.HasProperty("_BaseColor"))
+            { Color fc = fogTileMat.GetColor("_BaseColor"); fc.a = 1f; fogTileMat.SetColor("_BaseColor", fc); }
             GameObject fogTilePrefab = GetOrCreateFogTilePrefab(fogTileMat);
 
             // ── TilePalette — varsayılan giriş (placeholder hex prism) ────────
@@ -232,17 +240,10 @@ namespace TacticalRPG.Editor
             gridSO.FindProperty("_tilePalette").objectReferenceValue   = palette;
             gridSO.FindProperty("_tileMap").objectReferenceValue       = tileMap;
 
-            // Watchtower konumları
-            var wtProp = gridSO.FindProperty("_watchtowerPositions");
-            wtProp.ClearArray();
-            var wtCoords = new[] { (3, 5), (1, 2), (4, 8) };
-            for (int i = 0; i < wtCoords.Length; i++)
-            {
-                wtProp.arraySize++;
-                var elem = wtProp.GetArrayElementAtIndex(i);
-                elem.FindPropertyRelative("Q").intValue = wtCoords[i].Item1;
-                elem.FindPropertyRelative("R").intValue = wtCoords[i].Item2;
-            }
+            // Watchtower konumları — SABİT poz YOK. Kule = yalnız Tile Painter'da boyanan "kule"
+            // karosu (HexGridManager.SpawnVisual onu CellType.Watchtower yapar). Böylece ışık
+            // göstergesi/istem sadece GERÇEK kule karolarında çıkar, rastgele karolarda değil.
+            gridSO.FindProperty("_watchtowerPositions").ClearArray();
             gridSO.ApplyModifiedProperties();
             gridManager.GenerateGrid();
             EditorUtility.SetDirty(gridVisualsGO);
@@ -310,7 +311,7 @@ namespace TacticalRPG.Editor
             var playerSO = new SerializedObject(playerCtrl);
             playerSO.FindProperty("_gridManager").objectReferenceValue = gridManager;
             playerSO.FindProperty("_fogManager").objectReferenceValue  = fogManager;
-            playerSO.FindProperty("_moveSpeed").floatValue             = 8f;
+            playerSO.FindProperty("_moveSpeed").floatValue             = 4.5f; // orta hızlı yürüyüş
             // Ayağı-orijinde bake edilmiş model → yüzeye SIFIR clearance (feet=surface, uçmaz):
             // PlayerController.SurfaceY'de clearance = _heightOffset - TileHeight = 0 için _heightOffset=TileHeight.
             // Model yoksa (kapsül fallback) eski tuning: TileHeight(0.3)+kapsül yarı-yükseklik(0.45)+boşluk.
@@ -320,6 +321,10 @@ namespace TacticalRPG.Editor
             playerSO.FindProperty("_startCoord").FindPropertyRelative("Q").intValue = 3;
             playerSO.FindProperty("_startCoord").FindPropertyRelative("R").intValue = 4;
             playerSO.ApplyModifiedProperties();
+
+            // Portal ışınlanma toz efekti (Endgame "toz olma") — modeli çocuklarından bulur.
+            if (playerGO.GetComponent<TeleportDustEffect>() == null)
+                playerGO.AddComponent<TeleportDustEffect>();
 
             // ── GameManager (MapInputHandler + ActionPointManager + MapCollapseManager) ──
             GameObject sceneRoot    = GameObject.Find(SceneRootName);
@@ -1741,7 +1746,42 @@ namespace TacticalRPG.Editor
             wtSO.FindProperty("_state").objectReferenceValue  = state;
             wtSO.ApplyModifiedProperties();
 
-            Debug.Log("[3x3] 9 harita + WorldGridManager + TAB minimap + Kule sis-acma kuruldu (snake 3x3).");
+            // ── Portal (teleport) karoları — Tile Painter'a boyanabilir tipler (adaları bağlar).
+            // Aynı id'li ("portalN") 2 karo bir çift; kullanıcı istediği adalara boyar (1↔2, 5↔6 …).
+            TilePaletteSO palette = grid.TilePalette;
+            if (palette != null)
+            {
+                var palSO2   = new SerializedObject(palette);
+                var tilesArr = palSO2.FindProperty("tiles");
+                for (int i = 1; i <= 6; i++)
+                {
+                    string id  = $"portal{i}";
+                    int    idx = -1;
+                    for (int j = 0; j < tilesArr.arraySize; j++)
+                        if (tilesArr.GetArrayElementAtIndex(j).FindPropertyRelative("id").stringValue == id) { idx = j; break; }
+                    if (idx < 0) { tilesArr.arraySize++; idx = tilesArr.arraySize - 1; }
+                    var e = tilesArr.GetArrayElementAtIndex(idx);
+                    e.FindPropertyRelative("id").stringValue              = id;
+                    e.FindPropertyRelative("displayName").stringValue     = $"Portal {i}";
+                    e.FindPropertyRelative("prefab").objectReferenceValue = null; // placeholder tint
+                    e.FindPropertyRelative("isWalkable").boolValue        = true;
+                    e.FindPropertyRelative("editorColor").colorValue      = Color.HSVToRGB((i * 0.16f) % 1f, 0.85f, 0.98f);
+                }
+                palSO2.ApplyModifiedProperties();
+                EditorUtility.SetDirty(palette);
+            }
+
+            // ── TeleportManager — portal çiftleri arası ışınlanma (basınca "geç?" istemi)
+            var tp = host.GetComponent<TeleportManager>();
+            if (tp == null) tp = host.AddComponent<TeleportManager>();
+            var tpSO = new SerializedObject(tp);
+            tpSO.FindProperty("_grid").objectReferenceValue   = grid;
+            tpSO.FindProperty("_world").objectReferenceValue  = wgm;
+            tpSO.FindProperty("_player").objectReferenceValue = player;
+            tpSO.FindProperty("_state").objectReferenceValue  = state;
+            tpSO.ApplyModifiedProperties();
+
+            Debug.Log("[3x3] 9 harita + WorldGrid + minimap + Kule + Portal(teleport) karolari kuruldu.");
         }
 
         private static TileMapSO LoadOrCreateFaceAsset(int n)
@@ -1783,29 +1823,24 @@ namespace TacticalRPG.Editor
             return prefab;
         }
 
-        // Sis kapağı prefabı: karonun üstüne oturan yumuşak 3B bulut öbeği (üst üste binen küreler).
-        // COLLIDER YOK — sis, karo tıklamasını ve yüzey (zemin) ışınını engellememeli.
-        // Hex karodan (~1.9m) biraz geniş → komşu bulutlarla üst üste binip sürekli "bulut denizi"
-        // oluşturur. Whitebox placeholder — kendi bulut modelinle bu prefabı değiştirebilirsin.
+        // Sis örtüsü prefabı: gizli karonun ÜSTÜNDE havada duran yumuşak bulut (üst üste binen küreler).
+        // Hacimli + hafif kabarık → karoyu + alçak ağaçları örter. Rüzgarla hafif salınır, opaklıkla
+        // açılır/kapanır (FogOfWarManager). COLLIDER YOK — karo tıklamasını/zemin ışınını engellemez.
         private static GameObject GetOrCreateFogTilePrefab(Material fogMat)
         {
             string path = $"{PrefabsGridPath}/FogTile.prefab";
 
-            // Küre öbekleri (yerel konum + çap[m]). KOMPAKT + ALÇAK: her bulut kendi hex'ine (~1.6m)
-            // sığar, komşuya taşmaz. (Önceden büyük+yüksekti → izometrik kameradan komşu gizli karonun
-            // bulutu öne sarkıp görünür karoyu örtüyordu. Hafif kabarır ama tepesi alçak.)
+            // Küre öbekleri (yerel konum + çap[m]) — dome şeklinde, hex'i (~1.9m) kaplar.
             var puffs = new (Vector3 pos, float dia)[]
             {
-                (new Vector3( 0.00f, 0.38f,  0.00f), 0.92f),
-                (new Vector3( 0.38f, 0.30f,  0.14f), 0.66f),
-                (new Vector3(-0.38f, 0.31f, -0.12f), 0.68f),
-                (new Vector3( 0.14f, 0.32f,  0.38f), 0.62f),
-                (new Vector3(-0.16f, 0.31f, -0.38f), 0.60f),
-                (new Vector3( 0.32f, 0.26f, -0.32f), 0.52f),
-                (new Vector3(-0.34f, 0.27f,  0.32f), 0.54f),
+                (new Vector3( 0.00f, 0.35f,  0.00f), 1.35f),
+                (new Vector3( 0.60f, 0.20f,  0.30f), 1.00f),
+                (new Vector3(-0.60f, 0.20f, -0.28f), 1.00f),
+                (new Vector3( 0.30f, 0.22f, -0.58f), 0.92f),
+                (new Vector3(-0.32f, 0.22f,  0.58f), 0.92f),
+                (new Vector3( 0.00f, 0.55f,  0.00f), 0.95f),
             };
 
-            // Built-in küre mesh'ini geçici bir primitive'den al (collider'sız çocuklar üretiriz).
             GameObject probe = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             Mesh sphereMesh = probe.GetComponent<MeshFilter>().sharedMesh;
 

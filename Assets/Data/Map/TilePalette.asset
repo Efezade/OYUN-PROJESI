@@ -85,3 +85,39 @@ MonoBehaviour:
     editorColor: {r: 0.24, g: 0.52, b: 0.82, a: 1}
     isWalkable: 0
     surfaceHeightOverride: 0
+  - id: portal1
+    displayName: Portal 1
+    prefab: {fileID: 0}
+    editorColor: {r: 0.98, g: 0.94668, b: 0.14699998, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0
+  - id: portal2
+    displayName: Portal 2
+    prefab: {fileID: 0}
+    editorColor: {r: 0.21364002, g: 0.98, b: 0.14699998, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0
+  - id: portal3
+    displayName: Portal 3
+    prefab: {fileID: 0}
+    editorColor: {r: 0.14699998, g: 0.98, b: 0.88003993, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0
+  - id: portal4
+    displayName: Portal 4
+    prefab: {fileID: 0}
+    editorColor: {r: 0.14699998, g: 0.28028005, b: 0.98, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0
+  - id: portal5
+    displayName: Portal 5
+    prefab: {fileID: 0}
+    editorColor: {r: 0.8133998, g: 0.14699998, b: 0.98, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0
+  - id: portal6
+    displayName: Portal 6
+    prefab: {fileID: 0}
+    editorColor: {r: 0.98, g: 0.14699998, b: 0.3469202, a: 1}
+    isWalkable: 1
+    surfaceHeightOverride: 0

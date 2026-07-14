@@ -22,7 +22,11 @@ namespace TacticalRPG.Core
         [SerializeField] private GameObject _flatTile;
 
         public int  CurrentMap { get; private set; } = 1;
-        public bool IsBusy => _transitioning;
+        public bool IsBusy => _transitioning || _teleporting;
+
+        private bool _teleporting;
+        /// <summary>Portal ışınlanma efekti sürerken girişi kilitle (MapInputHandler IsBusy'e bakar).</summary>
+        public void SetTeleporting(bool b) => _teleporting = b;
 
         /// <summary>Aktif harita adası değişince tetiklenir. WatchtowerManager dinler →
         /// yeni adanın (kalıcı açık mı?) sis durumunu yeniden uygular.</summary>
@@ -61,6 +65,19 @@ namespace TacticalRPG.Core
             }
             if (r < 0 || r > 2 || c < 0 || c > 2) return 0;
             return (2 - r) * 3 + (2 - c) + 1;
+        }
+
+        /// <summary>n. adanın (1-9) TileMap'i (portal eşi taramak için).</summary>
+        public TileMapSO GetMap(int n) =>
+            (n >= 1 && n <= 9 && _maps != null && _maps.Length >= 9) ? _maps[n - 1] : null;
+
+        /// <summary>Portal ile ışınla: hedef adaya geç (gerekirse) ve oyuncuyu hedef karoya koy.</summary>
+        public void TeleportTo(int map, HexCoordinate coord)
+        {
+            if (_transitioning || _player == null) return;
+            if (map < 1 || map > 9) return;
+            if (map != CurrentMap) SwitchToMap(map);   // farklı ada → yükle
+            _player.Initialize(coord);                 // konum + görüş
         }
 
         public void SwitchToMap(int n)
@@ -137,6 +154,14 @@ namespace TacticalRPG.Core
         /// <summary>Geçiş (siyah) karosuysa yönü (0-3), değilse -1.</summary>
         public int IsTransitionCell(HexCoordinate coord) =>
             _transitionDirs.TryGetValue(coord, out int dir) ? dir : -1;
+
+        /// <summary>İki adımlı geçiş: sınır ötesindeki işaretçiye basınca karakter O sınır
+        /// kenarında duruyorsa geçilir. Değilse önce sınıra yürünür (MapInputHandler).</summary>
+        public bool IsPlayerOnEdgeOf(HexCoordinate edgeCoord, HexCoordinate playerCoord)
+        {
+            int dir = IsTransitionCell(edgeCoord);
+            return dir >= 0 && IsOnEdge(playerCoord, dir);
+        }
 
         /// <summary>Siyah geçiş karosuna tıklanınca: Kam oraya yürür → komşu haritaya geçer.</summary>
         public void StartTransition(HexCoordinate coord)
