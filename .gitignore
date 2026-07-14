@@ -112,3 +112,6 @@ handoff.md
 # Unity crash-recovery (gecici kurtarma sahnesi; Unity'de dogrulayip silinebilir)
 /[Aa]ssets/_[Rr]ecovery/
 /[Aa]ssets/_[Rr]ecovery.meta
+
+# Graphify kod grafı (üretilen artefakt; LLM siz yenilenir)
+graphify-out/
