@@ -20,6 +20,10 @@ namespace TacticalRPG.Data
             public Color      editorColor = Color.gray;
             public bool       isWalkable  = true;
 
+            [Tooltip("Bu karo bir SAVAŞ ALANI mı? İşaretliyse oyuncu yakındayken karoya tıklayınca " +
+                     "savaşa girme istemi çıkar (MissionManager: id'ye özel görev ya da varsayılan).")]
+            public bool       canEnterCombat = false;
+
             // Birimin basacağı yüzey yüksekliği (taban üstü). > 0 ise elle belirler;
             // <= 0 (varsayılan) ise HexGridManager hücre merkezinden ışınla otomatik ölçer.
             public float      surfaceHeightOverride = 0f;

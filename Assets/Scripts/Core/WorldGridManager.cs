@@ -32,6 +32,43 @@ namespace TacticalRPG.Core
         public TileMapSO GetMap(int n) =>
             (n >= 1 && n <= 9 && _maps != null && _maps.Length >= 9) ? _maps[n - 1] : null;
 
+        [Header("Sanal 3x3 Yerleşim (çöküş dalgası geometrisi)")]
+        [Tooltip("Adalar sahnede TEK TEK yüklenir (diğerleri hiç görünmez); bu değer yalnız uzak-ada " +
+                 "çöküş dalgasının geliş yönü/mesafesi hesabındaki adalar-arası boşluktur (m).")]
+        [SerializeField] private float _islandGap = 4f;
+
+        /// <summary>Kaynak adadaki (sourceMap) bir YEREL konumun, AKTİF adanın sahne çerçevesindeki
+        /// SANAL konumu. Adalar sahnede aynı origin'e yüklendiği için, 3x3 dizilimdeki gerçek
+        /// yön/mesafe bu ofsetle modellenir — uzak adadaki çöküş dalgası tam bu noktadan yayılır
+        /// ve halka doğru yönden gelip aktif adayı tarar. Yerleşim = eski kenar-geçiş Neighbor
+        /// eşlemesiyle aynı: snake 9 8 7 / 6 5 4 / 3 2 1; +X = grid YUKARI, +Z = grid SOL.</summary>
+        public Vector3 VirtualPositionOnCurrentMap(int sourceMap, Vector3 sourceLocalPos)
+        {
+            if (sourceMap == CurrentMap || sourceMap < 1 || sourceMap > 9) return sourceLocalPos;
+            ComputeIslandPitch(out float pitchX, out float pitchZ);
+            int rs = 2 - (sourceMap  - 1) / 3, cs = 2 - (sourceMap  - 1) % 3;
+            int rc = 2 - (CurrentMap - 1) / 3, cc = 2 - (CurrentMap - 1) % 3;
+            // Satır +1 (grid aşağı) = dünya -X; sütun +1 (grid sağ) = dünya -Z.
+            return sourceLocalPos + new Vector3((rc - rs) * pitchX, 0f, (cc - cs) * pitchZ);
+        }
+
+        // Ada "adımı" = aktif grid'in dünya boyutu + boşluk (9 ada aynı boyutta üretilir).
+        private void ComputeIslandPitch(out float pitchX, out float pitchZ)
+        {
+            float minX = float.MaxValue, maxX = float.MinValue;
+            float minZ = float.MaxValue, maxZ = float.MinValue;
+            if (_grid != null && _grid.Cells != null)
+                foreach (var kv in _grid.Cells)
+                {
+                    Vector3 p = kv.Value.WorldPosition;
+                    if (p.x < minX) minX = p.x;  if (p.x > maxX) maxX = p.x;
+                    if (p.z < minZ) minZ = p.z;  if (p.z > maxZ) maxZ = p.z;
+                }
+            bool ok = maxX > minX;   // grid boşsa makul varsayılan
+            pitchX = (ok ? maxX - minX : 12f) + _islandGap;
+            pitchZ = (ok ? maxZ - minZ : 12f) + _islandGap;
+        }
+
         /// <summary>Portal ile ışınla: hedef adaya geç (gerekirse) ve oyuncuyu hedef karoya koy.</summary>
         public void TeleportTo(int map, HexCoordinate coord)
         {

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using TacticalRPG.Grid;
 using TacticalRPG.Data;
@@ -6,7 +7,10 @@ namespace TacticalRPG.Core
 {
     /// <summary>
     /// Sol tıklama ile hex karosu seçimini algılar ve A* yolu tetikler.
-    /// Gizli (Hidden) karolara tıklanamaz.
+    /// Overworld hareketi İKİ AŞAMALI (XCOM / Desperados 3): 1. tık yolu <see cref="PathPreview"/>
+    /// ile gösterir, aynı karoya 2. tık yürütür. Farklı karo yeni önizleme açar, boşluk iptal eder.
+    /// Menzil (<see cref="_maxMoveRange"/>) yalnız SAVAŞ SİSİ VARKEN uygulanır; sis kule ile
+    /// kalıcı kaldırılmışsa serbest yürüyüş.
     /// </summary>
     public class MapInputHandler : MonoBehaviour
     {
@@ -23,18 +27,33 @@ namespace TacticalRPG.Core
         [SerializeField] private DeploymentManager _deployment;
         [Tooltip("Opsiyonel — Combat state'inde tıklama aktif birim hareket/saldırı olur.")]
         [SerializeField] private TurnManager _turnManager;
-        [Tooltip("Opsiyonel — atanmışsa portal ışınlaması sürerken (IsBusy) tıklama yok sayılır.")]
+        [Tooltip("Opsiyonel — atanmışsa portal ışınlaması sürerken (IsBusy) tıklama yok sayılır + " +
+                 "ada değişince yol önizlemesi temizlenir.")]
         [SerializeField] private WorldGridManager _worldGrid;
+        [Tooltip("Opsiyonel — atanmışsa SAVAŞ SİSİ kalkmış adada (kule ile) menzil sınırı kalkar.")]
+        [SerializeField] private FogOfWarManager _fogManager;
+        [Tooltip("Opsiyonel — atanmışsa tıklanan yol önce çizgiyle gösterilir (ÇİFT TIK = yürü).")]
+        [SerializeField] private PathPreview _preview;
 
         [Header("Raycast")]
         [SerializeField] private LayerMask _clickableLayers = ~0;
         [SerializeField] private float     _rayDistance     = 300f;
 
         [Header("Hareket Menzili")]
-        [Tooltip("Tek tıkla en fazla kaç karo yürünür. 2 = 2 karo uzağa basınca yürür, 3 karo uzağa basınca yürümez.")]
+        [Tooltip("SAVAŞ SİSİ VARKEN tek seferde en fazla kaç karo yürünür. Sis kule ile kalıcı " +
+                 "kaldırılmışsa (FogOfWarManager.IsFullyRevealed) bu sınır UYGULANMAZ — serbest yürüyüş.")]
         [SerializeField] private int _maxMoveRange = 2;
 
         private HexPathfinder _pathfinder;
+
+        // İki aşamalı hareket (XCOM/Desperados): 1. tık = yolu göster, 2. tık (aynı karo) = yürü.
+        private HexCoordinate _pendingCoord;
+        private List<HexCell> _pendingPath;   // menzil dışıysa null → 2. tık yürütmez, iptal eder
+        private bool          _hasPending;
+
+        /// <summary>Savaş sisi kule ile kaldırılmışsa menzil sınırı yok (serbest yürüyüş).</summary>
+        private int EffectiveMoveRange =>
+            (_fogManager != null && _fogManager.IsFullyRevealed) ? int.MaxValue : _maxMoveRange;
 
         private void Awake()
         {
@@ -42,8 +61,24 @@ namespace TacticalRPG.Core
             if (_camera == null) _camera = Camera.main;
         }
 
+        private void OnEnable()
+        {
+            if (_worldGrid != null) _worldGrid.OnMapChanged += ClearPreview;
+        }
+
+        private void OnDisable()
+        {
+            if (_worldGrid != null) _worldGrid.OnMapChanged -= ClearPreview;
+        }
+
         private void Update()
         {
+            // Önizleme geçersizleştiyse temizle (savaşa girildi / karakter yürümeye başladı).
+            // _hasPending false iken bedava — Update'te ağır iş yok.
+            if (_hasPending &&
+                ((_stateManager != null && _stateManager.State != GameState.Overworld) || _player.IsMoving))
+                ClearPreview();
+
             if (!Input.GetMouseButtonDown(0)) return;
 
             // Deployment: tıklama = seçili kartı hex'e yerleştir.
@@ -68,9 +103,9 @@ namespace TacticalRPG.Core
             if (_player.IsMoving) return;
             if (_worldGrid != null && _worldGrid.IsBusy) return;   // portal ışınlaması sürerken giriş yok
 
-            // Boşluğa tıklama → hiçbir şey. (Adalar arası geçiş yalnız PORTAL karosuyla olur —
-            // TeleportManager oyuncu portala basınca devreye girer.)
-            if (!TryGetClickedCoord(out HexCoordinate coord)) return;
+            // Boşluğa tıklama → önizleme varsa iptal. (Adalar arası geçiş yalnız PORTAL karosuyla
+            // olur — TeleportManager oyuncu portala basınca devreye girer.)
+            if (!TryGetClickedCoord(out HexCoordinate coord)) { ClearPreview(); return; }
 
             // 1) Yetenek hazırsa → hedefleme
             if (_caster != null && _caster.HasArmedAbility) { _caster.TryCastAt(coord); return; }
@@ -79,17 +114,52 @@ namespace TacticalRPG.Core
             if (_stateManager != null && _missionManager != null)
             {
                 MissionData mission = _missionManager.GetMissionAt(coord);
-                if (mission != null)
-                {
-                    if (_player.CurrentCoord.DistanceTo(coord) <= _missionManager.EnterRange)
-                    { _stateManager.RequestMission(mission); return; }
-                    // Çok uzak → göreve girme; marker'a doğru yürü (aşağıya düş).
-                }
+                if (mission != null &&
+                    _player.CurrentCoord.DistanceTo(coord) <= _missionManager.EnterRange)
+                { ClearPreview(); _stateManager.RequestMission(mission); return; }
+                // Çok uzak → göreve girme; marker'a doğru yolu göster (aşağıya düş).
             }
 
-            // 3) Aksi halde → hareket. (Sınır karosuna basmak ARTIK geçirmez; sadece oraya yürür →
-            // karakter sınırda durur. Geçiş yalnız sınır ÖTESİNDEKİ işaretçiye basınca olur, yukarıda.)
-            TryMoveTo(coord);
+            // 3) Aksi halde → İKİ AŞAMALI hareket (1. tık yol, 2. tık yürü).
+            HandleMoveClick(coord);
+        }
+
+        // XCOM/Desperados akışı: aynı karoya ikinci tık onaydır; farklı karo yeni önizleme açar.
+        private void HandleMoveClick(HexCoordinate targetCoord)
+        {
+            // İKİNCİ tık (aynı karo) → onay.
+            if (_hasPending && _pendingCoord.Equals(targetCoord))
+            {
+                List<HexCell> path = _pendingPath;   // menzil dışıysa null → sadece iptal
+                ClearPreview();
+                if (path != null) _player.MoveAlongPath(path);
+                return;
+            }
+
+            // İLK tık → yolu hesapla + göster.
+            if (!_gridManager.TryGetCell(targetCoord, out HexCell target) || !target.IsWalkable)
+            { ClearPreview(); return; }
+            // Sisli (Hidden) karoya YÜRÜNEBİLİR — görüş 1, menzil 2: sisin içine girilir.
+            if (!_gridManager.TryGetCell(_player.CurrentCoord, out HexCell start))
+            { ClearPreview(); return; }
+
+            List<HexCell> found = _pathfinder.FindPath(start, target, _gridManager);
+            if (found == null || found.Count < 2) { ClearPreview(); return; }
+
+            // Menzil kapısı yalnız SAVAŞ SİSİ VARKEN; sis kalkmışsa EffectiveMoveRange sınırsız.
+            bool reachable = found.Count - 1 <= EffectiveMoveRange;
+
+            _pendingCoord = targetCoord;
+            _pendingPath  = reachable ? found : null;
+            _hasPending   = true;
+            if (_preview != null) _preview.Show(found, reachable);
+        }
+
+        private void ClearPreview()
+        {
+            _hasPending  = false;
+            _pendingPath = null;
+            if (_preview != null) _preview.Hide();
         }
 
         private bool TryGetClickedCoord(out HexCoordinate coord)
@@ -102,18 +172,5 @@ namespace TacticalRPG.Core
             return true;
         }
 
-        private void TryMoveTo(HexCoordinate targetCoord)
-        {
-            if (!_gridManager.TryGetCell(targetCoord, out HexCell target)) return;
-            if (!target.IsWalkable)                                         return;
-            // Sisli (Hidden) karoya YÜRÜNEBİLİR (görüş 1, hareket 2) — sisin içine 2 karo girilir.
-            if (!_gridManager.TryGetCell(_player.CurrentCoord, out HexCell start)) return;
-
-            var path = _pathfinder.FindPath(start, target, _gridManager);
-            if (path == null) return;
-            // Menzil kapısı: en fazla _maxMoveRange karo. 3+ karo uzağa basınca hiç yürümez.
-            if (path.Count - 1 > _maxMoveRange) return;
-            _player.MoveAlongPath(path);
-        }
     }
 }

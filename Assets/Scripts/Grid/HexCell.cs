@@ -16,6 +16,9 @@ namespace TacticalRPG.Grid
         public bool          IsWalkable    { get; set; } = true;
         public CellType      CellType      { get; set; } = CellType.Normal;
 
+        // Boyalı SAVAŞ karosu (palet canEnterCombat) — MissionManager buradan görev üretir.
+        public bool CanEnterCombat { get; set; }
+
         // Fog durumu — başlangıç değeri Hidden
         public FogState FogState { get; set; } = FogState.Hidden;
 

@@ -155,7 +155,8 @@ namespace TacticalRPG.Grid
 
             if (entry != null)
             {
-                cell.IsWalkable = entry.isWalkable;
+                cell.IsWalkable     = entry.isWalkable;
+                cell.CanEnterCombat = entry.canEnterCombat;   // boyalı savaş alanı karosu
 
                 // Boyanmış "kule" karosu → görev karosu: WatchtowerManager bunun 1 karo yakınında
                 // ADA sisini kalıcı kaldırma istemi gösterir (sabit _watchtowerPositions'a EK).

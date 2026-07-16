@@ -286,6 +286,32 @@ namespace TacticalRPG.Grid
             // kalır). Havadaki opak bulut karoyu görsel olarak örter; bulut solunca karo yumuşak belirir.
         }
 
+        /// <summary>Karonun temel rengini MEVCUT sis durumuna göre yeniden yazar. Harici bir efekt
+        /// (örn. çöküş dalgasının geçici kırmızı karo boyaması — CollapseWaveEffect) kendi MPB
+        /// değişikliğini geri alırken çağırır; böylece karo sis-doğru parlaklığa döner.</summary>
+        public void ReapplyCellBrightness(HexCell cell) =>
+            SetCellBrightness(cell, cell.FogState == FogState.Visible ? _visibleBrightness : _hiddenBrightness);
+
+        /// <summary>Karonun üstündeki BULUT kapağını geçici renklendirir (t=0 → kendi rengi).
+        /// Çöküş dalgası kullanır: sisli karolarda karo görünmez ama bulut görünür — dalga
+        /// cephesi geçerken bulutun kendisi kızarır, yoksa boyama bulutun altında kaybolurdu.</summary>
+        public void TintCloud(HexCoordinate coord, Color tint, float t)
+        {
+            if (!_caps.TryGetValue(coord, out Cap cap) || cap == null || cap.rends == null) return;
+            if (cap.alpha <= 0.01f) return;                    // bulut zaten görünmez
+            _block ??= new MaterialPropertyBlock();
+            Color c = Color.Lerp(cap.baseColor, tint, Mathf.Clamp01(t));
+            c.a = cap.alpha;
+            foreach (var r in cap.rends)
+            {
+                if (r == null || !r.enabled) continue;
+                r.GetPropertyBlock(_block);
+                _block.SetColor(BaseColorId, c);
+                _block.SetColor(ColorId,     c);
+                r.SetPropertyBlock(_block);
+            }
+        }
+
         // Karonun temel rengini parlaklık çarpanıyla _BaseColor'a yazar (materyali bozmadan, MPB).
         private void SetCellBrightness(HexCell cell, float brightness)
         {

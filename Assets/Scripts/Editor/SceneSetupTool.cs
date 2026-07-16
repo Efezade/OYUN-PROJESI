@@ -69,7 +69,7 @@ namespace TacticalRPG.Editor
                 "  • Faz D — Cok-tipli oz + harita toplama + tarifle birim uretme\n\n" +
                 "Ctrl+S ile kaydet, Play'e bas:\n" +
                 "Overworld'de renkli ozleri TOPLA (sag panel, 1 AP) → SavasciRanger URET →\n" +
-                "Sari marker (Q5R5) → Evet → Kam + uretilen birimleri yerlestir → SAVASI BASLAT.",
+                "Boyali SAVAS karosu (deneme11-20) → Evet → Kam + uretilen birimleri yerlestir → SAVASI BASLAT.",
                 "Tamam");
         }
 
@@ -338,6 +338,11 @@ namespace TacticalRPG.Editor
                 gameManagerGO.transform.SetParent(root.transform);
             }
 
+            // PathPreview (XCOM tarzı yol göstergesi) — MapInputHandler ilk tıkta bunu gösterir.
+            var oldPreview = gameManagerGO.GetComponent<PathPreview>();
+            if (oldPreview != null) Object.DestroyImmediate(oldPreview);
+            PathPreview pathPreview = gameManagerGO.AddComponent<PathPreview>();
+
             // MapInputHandler
             var oldInput = gameManagerGO.GetComponent<MapInputHandler>();
             if (oldInput != null) Object.DestroyImmediate(oldInput);
@@ -346,6 +351,9 @@ namespace TacticalRPG.Editor
             inputSO.FindProperty("_gridManager").objectReferenceValue = gridManager;
             inputSO.FindProperty("_player").objectReferenceValue      = playerCtrl;
             inputSO.FindProperty("_rayDistance").floatValue           = 300f;
+            // Sis AÇIKSA (kule ile kaldırılmış) menzil sınırı uygulanmaz → serbest yürüyüş.
+            inputSO.FindProperty("_fogManager").objectReferenceValue  = fogManager;
+            inputSO.FindProperty("_preview").objectReferenceValue     = pathPreview;
             inputSO.ApplyModifiedProperties();
 
             // TimeSlotConfig
@@ -375,6 +383,15 @@ namespace TacticalRPG.Editor
                 AssetDatabase.CreateAsset(collapseConfig, collapseConfigPath);
             }
 
+            // CollapseWaveEffect (kırmızı su-dalgası — göle taş atma) — MapCollapseManager tetikler.
+            var oldWave = gameManagerGO.GetComponent<CollapseWaveEffect>();
+            if (oldWave != null) Object.DestroyImmediate(oldWave);
+            CollapseWaveEffect waveEffect = gameManagerGO.AddComponent<CollapseWaveEffect>();
+            var waveSO = new SerializedObject(waveEffect);
+            waveSO.FindProperty("_grid").objectReferenceValue = gridManager;
+            waveSO.FindProperty("_fog").objectReferenceValue  = fogManager; // boyama geri-alımı sis-doğru olsun
+            waveSO.ApplyModifiedProperties();
+
             // MapCollapseManager
             var oldCollapse = gameManagerGO.GetComponent<MapCollapseManager>();
             if (oldCollapse != null) Object.DestroyImmediate(oldCollapse);
@@ -385,6 +402,7 @@ namespace TacticalRPG.Editor
             collapseSO.FindProperty("_player").objectReferenceValue            = playerCtrl;
             collapseSO.FindProperty("_config").objectReferenceValue            = collapseConfig;
             collapseSO.FindProperty("_collapsedMaterial").objectReferenceValue = collapsedMat;
+            collapseSO.FindProperty("_wave").objectReferenceValue              = waveEffect;
             collapseSO.ApplyModifiedProperties();
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -837,20 +855,17 @@ namespace TacticalRPG.Editor
                 dhudSO.ApplyModifiedProperties();
             }
 
-            // ── MissionManager (1 görev: Q5 R5) ───────────────────────────────
-            var oldMM = gameManagerGO.GetComponent<MissionManager>();
-            if (oldMM != null) Object.DestroyImmediate(oldMM);
-            MissionManager mm = gameManagerGO.AddComponent<MissionManager>();
+            // ── MissionManager — savaş girişi BOYALI savaş karolarından (palet canEnterCombat).
+            // Bileşen KORUNUR (DestroyImmediate yok) → kullanıcının _tileMissions (karo id →
+            // farklı savaş alanı görevi) eşlemeleri TAM KURULUM'da kaybolmaz. Sabit Q5R5 görevi
+            // KALDIRILDI (her adada aynı yerde çıkıyordu); sabit görev gerekirse Inspector'dan.
+            MissionManager mm = gameManagerGO.GetComponent<MissionManager>();
+            if (mm == null) mm = gameManagerGO.AddComponent<MissionManager>();
             var mmSO = new SerializedObject(mm);
-            mmSO.FindProperty("_grid").objectReferenceValue         = gridManager;
-            mmSO.FindProperty("_stateManager").objectReferenceValue = gsm;
-            var missionsProp = mmSO.FindProperty("_missions");
-            missionsProp.ClearArray();
-            missionsProp.arraySize = 1;
-            var elem0 = missionsProp.GetArrayElementAtIndex(0);
-            elem0.FindPropertyRelative("coord").FindPropertyRelative("Q").intValue = 5;
-            elem0.FindPropertyRelative("coord").FindPropertyRelative("R").intValue = 5;
-            elem0.FindPropertyRelative("mission").objectReferenceValue = mission;
+            mmSO.FindProperty("_grid").objectReferenceValue                 = gridManager;
+            mmSO.FindProperty("_stateManager").objectReferenceValue         = gsm;
+            mmSO.FindProperty("_defaultCombatMission").objectReferenceValue = mission;
+            mmSO.FindProperty("_missions").ClearArray();
             mmSO.ApplyModifiedProperties();
 
             // ── OverworldCombatHUD ────────────────────────────────────────────
@@ -884,12 +899,12 @@ namespace TacticalRPG.Editor
             if (!_silentSetup) EditorUtility.DisplayDialog("Faz A — Overworld/Savas Gecisi Hazir",
                 "Kurulanlar:\n" +
                 "  • GameStateManager + MissionManager + OverworldCombatHUD\n" +
-                "  • Savas haritasi (CombatTileMap) + 1 gorev (Goblin Pususu @ Q5 R5)\n" +
-                "  • Q5 R5 hex'inde sari marker\n" +
+                "  • Savas haritasi (CombatTileMap) + varsayilan gorev (Goblin Pususu)\n" +
+                "  • Savas girisi BOYALI savas karolarindan (palet deneme11-20, canEnterCombat)\n" +
                 "  • Savasa girmek artik 1 AP harcar\n" +
                 "  • Faz 3 testi kaldirildi (kukla dusman + buyu arayuzu)\n\n" +
                 "Play'e bas:\n" +
-                "  Sari marker'a (Q5 R5) tikla → 'Evet' → 1 AP gider, savas haritasi acilir.\n" +
+                "  Boyali SAVAS karosuna tikla → 'Evet' → 1 AP gider, savas haritasi acilir.\n" +
                 "  'Geri Don' ile overworld'e don.",
                 "Tamam");
 
@@ -972,7 +987,7 @@ namespace TacticalRPG.Editor
                 "  • Baslangic ozu 20 yapildi (test icin)\n" +
                 "  • MapInputHandler deployment'a baglandi\n\n" +
                 "Play'e bas:\n" +
-                "  1) Sari marker'a (Q5 R5) tikla → 'Evet' → savas haritasi + YERLESTIRME acilir\n" +
+                "  1) Boyali SAVAS karosuna (deneme11-20) tikla → 'Evet' → savas haritasi + YERLESTIRME acilir\n" +
                 "  2) Alt 2 satir mavi pedlerle isaretli (yerlestirme bolgesi)\n" +
                 "  3) Sol panelden kart sec → mavi pede tikla (oz harcanir, birim spawn olur)\n" +
                 "  4) 'Savasi Baslat' → combat. 'Geri Don' → overworld (birimler temizlenir).",
@@ -1072,7 +1087,7 @@ namespace TacticalRPG.Editor
                 "  • Mission1 roster'ina 3 Goblin (Q2R7, Q4R7, Q3R8)\n" +
                 "  • EnemySpawner GameManager'a eklendi + wire\n\n" +
                 "Play'e bas:\n" +
-                "  Sari marker (Q5 R5) → 'Evet' → savas haritasi + YERLESTIRME.\n" +
+                "  Boyali SAVAS karosu → 'Evet' → savas haritasi + YERLESTIRME.\n" +
                 "  Ust bolgede 3 kirmizi Goblin gorunur (deployment sirasinda).\n" +
                 "  'Geri Don' ile dusmanlar temizlenir.\n\n" +
                 "NOT: Tur sistemi + hareket + saldiri Faz C3'te gelecek.",
@@ -1744,14 +1759,26 @@ namespace TacticalRPG.Editor
             wtSO.FindProperty("_state").objectReferenceValue  = state;
             wtSO.ApplyModifiedProperties();
 
+            // ── MapCollapseManager'a ada-bağımsızlık bağla (Faz 1'de kuruldu; _world/_state o an
+            // henüz yoktu). Bu sayede ışınlanma çöküş sayacını SIFIRLAMAZ, ada başına devam eder.
+            var cm = host.GetComponent<MapCollapseManager>();
+            if (cm != null)
+            {
+                var cmSO = new SerializedObject(cm);
+                cmSO.FindProperty("_world").objectReferenceValue = wgm;
+                cmSO.FindProperty("_state").objectReferenceValue = state;
+                cmSO.ApplyModifiedProperties();
+            }
+
             // ── Portal (teleport) karoları — Tile Painter'a boyanabilir tipler (adaları bağlar).
-            // Aynı id'li ("portalN") 2 karo bir çift; kullanıcı istediği adalara boyar (1↔2, 5↔6 …).
+            // portal1..12 (12 çift). Aynı id'li ("portalN") 2 karo bir çift; kullanıcı istediği
+            // adalara boyar (1↔2, 5↔6 …).
             TilePaletteSO palette = grid.TilePalette;
             if (palette != null)
             {
                 var palSO2   = new SerializedObject(palette);
                 var tilesArr = palSO2.FindProperty("tiles");
-                for (int i = 1; i <= 6; i++)
+                for (int i = 1; i <= 12; i++)
                 {
                     string id  = $"portal{i}";
                     int    idx = -1;
@@ -1764,6 +1791,32 @@ namespace TacticalRPG.Editor
                     e.FindPropertyRelative("prefab").objectReferenceValue = null; // placeholder tint
                     e.FindPropertyRelative("isWalkable").boolValue        = true;
                     e.FindPropertyRelative("editorColor").colorValue      = Color.HSVToRGB((i * 0.16f) % 1f, 0.85f, 0.98f);
+                }
+
+                // ── Deneme karoları (20) — savaş alanı testi. YALNIZ YOKSA eklenir: kullanıcının
+                // Inspector ayarları (canEnterCombat açma/kapama, renk, prefab) TAM KURULUM'da
+                // EZİLMEZ. deneme1-10 = normal · deneme11-20 = SAVAŞ ALANI (canEnterCombat ✓,
+                // kırmızı-turuncu tonlar). Asset'ler sonra değişecek (placeholder tint).
+                for (int i = 1; i <= 20; i++)
+                {
+                    string id  = $"deneme{i}";
+                    bool exists = false;
+                    for (int j = 0; j < tilesArr.arraySize; j++)
+                        if (tilesArr.GetArrayElementAtIndex(j).FindPropertyRelative("id").stringValue == id) { exists = true; break; }
+                    if (exists) continue;
+
+                    tilesArr.arraySize++;
+                    var e = tilesArr.GetArrayElementAtIndex(tilesArr.arraySize - 1);
+                    bool combat = i > 10;
+                    e.FindPropertyRelative("id").stringValue              = id;
+                    e.FindPropertyRelative("displayName").stringValue     = combat ? $"Deneme {i} (SAVAS)" : $"Deneme {i}";
+                    e.FindPropertyRelative("prefab").objectReferenceValue = null;
+                    e.FindPropertyRelative("isWalkable").boolValue        = true;
+                    e.FindPropertyRelative("canEnterCombat").boolValue    = combat;
+                    e.FindPropertyRelative("surfaceHeightOverride").floatValue = 0f;
+                    e.FindPropertyRelative("editorColor").colorValue = combat
+                        ? Color.HSVToRGB(((i - 11) * 0.035f) % 1f,        0.75f, 0.95f)  // kırmızı→turuncu
+                        : Color.HSVToRGB((0.45f + (i - 1) * 0.04f) % 1f,  0.55f, 0.90f); // yeşil→mavi
                 }
                 palSO2.ApplyModifiedProperties();
                 EditorUtility.SetDirty(palette);

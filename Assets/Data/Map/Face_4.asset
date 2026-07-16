@@ -15,154 +15,402 @@ MonoBehaviour:
   defaultTileId: default
   assignments:
   - coord:
-      Q: 3
-      R: 3
-    tileId: kopru
+      Q: 9
+      R: 0
+    tileId: mantar
   - coord:
-      Q: 4
-      R: 3
-    tileId: kopru
-  - coord:
-      Q: 3
-      R: 4
-    tileId: kopru
-  - coord:
-      Q: 2
-      R: 5
-    tileId: kopru
-  - coord:
-      Q: 2
-      R: 4
-    tileId: default
-  - coord:
-      Q: 3
-      R: 8
-    tileId: kopru
-  - coord:
-      Q: 3
-      R: 7
-    tileId: kopru
-  - coord:
-      Q: 2
-      R: 7
-    tileId: kopru
-  - coord:
-      Q: 2
-      R: 6
-    tileId: default
-  - coord:
-      Q: 1
-      R: 5
-    tileId: default
-  - coord:
-      Q: 4
-      R: 5
-    tileId: kopru
-  - coord:
-      Q: 4
-      R: 4
-    tileId: kopru
-  - coord:
-      Q: 4
-      R: 2
-    tileId: default
-  - coord:
-      Q: 4
-      R: 1
-    tileId: default
-  - coord:
-      Q: 3
-      R: 1
-    tileId: default
-  - coord:
-      Q: 5
-      R: 5
-    tileId: default
+      Q: 7
+      R: 0
+    tileId: mantar
   - coord:
       Q: 3
       R: 0
-    tileId: default
+    tileId: mantar
   - coord:
-      Q: 5
-      R: 3
-    tileId: default
+      Q: 1
+      R: 0
+    tileId: mantar
   - coord:
-      Q: 5
-      R: 8
-    tileId: kopru
+      Q: 2
+      R: 0
+    tileId: mantar
   - coord:
       Q: 4
-      R: 8
-    tileId: kopru
+      R: 0
+    tileId: mantar
   - coord:
-      Q: 1
-      R: 7
-    tileId: kopru
-  - coord:
-      Q: 1
-      R: 6
-    tileId: kopru
+      Q: 6
+      R: 0
+    tileId: mantar
   - coord:
       Q: 0
-      R: 6
-    tileId: kopru
+      R: 0
+    tileId: mantar
   - coord:
       Q: 5
+      R: 0
+    tileId: mantar
+  - coord:
+      Q: 8
+      R: 0
+    tileId: mantar
+  - coord:
+      Q: 9
+      R: 1
+    tileId: mantar
+  - coord:
+      Q: 8
+      R: 1
+    tileId: mantar
+  - coord:
+      Q: 3
+      R: 1
+    tileId: agac2
+  - coord:
+      Q: 0
+      R: 1
+    tileId: mantar
+  - coord:
+      Q: 1
       R: 2
-    tileId: kopru
+    tileId: mantar
+  - coord:
+      Q: 5
+      R: 1
+    tileId: mantar
+  - coord:
+      Q: 4
+      R: 1
+    tileId: mantar
+  - coord:
+      Q: 7
+      R: 1
+    tileId: mantar
+  - coord:
+      Q: 6
+      R: 1
+    tileId: agac2
+  - coord:
+      Q: 1
+      R: 1
+    tileId: mantar
+  - coord:
+      Q: 2
+      R: 1
+    tileId: agac2
+  - coord:
+      Q: -1
+      R: 2
+    tileId: mantar
+  - coord:
+      Q: 0
+      R: 2
+    tileId: mantar
+  - coord:
+      Q: 2
+      R: 2
+    tileId: agac2
   - coord:
       Q: 3
       R: 2
-    tileId: kopru
+    tileId: mantar
   - coord:
-      Q: 2
+      Q: 4
       R: 2
-    tileId: kopru
+    tileId: mantar
+  - coord:
+      Q: 5
+      R: 2
+    tileId: mantar
+  - coord:
+      Q: 6
+      R: 2
+    tileId: mantar
+  - coord:
+      Q: 7
+      R: 2
+    tileId: mantar
+  - coord:
+      Q: 8
+      R: 2
+    tileId: portal6
+  - coord:
+      Q: 8
+      R: 3
+    tileId: mantar
+  - coord:
+      Q: 7
+      R: 3
+    tileId: agac1
+  - coord:
+      Q: 6
+      R: 3
+    tileId: mantar
+  - coord:
+      Q: 5
+      R: 3
+    tileId: mantar
+  - coord:
+      Q: 4
+      R: 3
+    tileId: kule
+  - coord:
+      Q: 3
+      R: 3
+    tileId: agac3
   - coord:
       Q: 2
-      R: 1
-    tileId: kopru
+      R: 3
+    tileId: agac3
   - coord:
       Q: 1
-      R: 1
-    tileId: kopru
+      R: 3
+    tileId: mantar
   - coord:
-      Q: 1
+      Q: 0
+      R: 3
+    tileId: mantar
+  - coord:
+      Q: -1
+      R: 3
+    tileId: portal10
+  - coord:
+      Q: -1
       R: 4
-    tileId: kopru
+    tileId: mantar
+  - coord:
+      Q: -2
+      R: 4
+    tileId: agac2
   - coord:
       Q: 0
       R: 4
+    tileId: mantar
+  - coord:
+      Q: 1
+      R: 4
+    tileId: agac1
+  - coord:
+      Q: 2
+      R: 4
     tileId: agac3
+  - coord:
+      Q: 3
+      R: 4
+    tileId: agac3
+  - coord:
+      Q: 4
+      R: 4
+    tileId: mantar
+  - coord:
+      Q: 5
+      R: 4
+    tileId: mantar
+  - coord:
+      Q: 6
+      R: 4
+    tileId: agac1
+  - coord:
+      Q: 7
+      R: 4
+    tileId: mantar
+  - coord:
+      Q: 7
+      R: 5
+    tileId: mantar
+  - coord:
+      Q: 6
+      R: 5
+    tileId: mantar
+  - coord:
+      Q: 5
+      R: 5
+    tileId: mantar
+  - coord:
+      Q: 4
+      R: 5
+    tileId: mantar
+  - coord:
+      Q: 3
+      R: 5
+    tileId: mantar
+  - coord:
+      Q: 2
+      R: 5
+    tileId: mantar
+  - coord:
+      Q: 1
+      R: 5
+    tileId: mantar
   - coord:
       Q: 0
       R: 5
-    tileId: agac3
+    tileId: agac1
+  - coord:
+      Q: -1
+      R: 5
+    tileId: mantar
+  - coord:
+      Q: -2
+      R: 5
+    tileId: mantar
+  - coord:
+      Q: -3
+      R: 6
+    tileId: mantar
   - coord:
       Q: -2
       R: 6
+    tileId: mantar
+  - coord:
+      Q: -1
+      R: 6
+    tileId: mantar
+  - coord:
+      Q: 0
+      R: 6
+    tileId: mantar
+  - coord:
+      Q: 1
+      R: 6
+    tileId: mantar
+  - coord:
+      Q: 2
+      R: 6
+    tileId: agac2
+  - coord:
+      Q: 3
+      R: 6
+    tileId: mantar
+  - coord:
+      Q: 4
+      R: 6
+    tileId: mantar
+  - coord:
+      Q: 5
+      R: 6
+    tileId: mantar
+  - coord:
+      Q: 6
+      R: 6
+    tileId: mantar
+  - coord:
+      Q: 6
+      R: 7
+    tileId: mantar
+  - coord:
+      Q: 5
+      R: 7
     tileId: agac3
   - coord:
+      Q: 4
+      R: 7
+    tileId: agac3
+  - coord:
+      Q: 3
+      R: 7
+    tileId: mantar
+  - coord:
+      Q: 2
+      R: 7
+    tileId: mantar
+  - coord:
+      Q: 1
+      R: 7
+    tileId: mantar
+  - coord:
       Q: 0
       R: 7
-    tileId: kopru
+    tileId: agac3
   - coord:
       Q: -1
       R: 7
-    tileId: agac1
+    tileId: agac3
+  - coord:
+      Q: -2
+      R: 7
+    tileId: mantar
+  - coord:
+      Q: -3
+      R: 7
+    tileId: mantar
+  - coord:
+      Q: -4
+      R: 8
+    tileId: mantar
+  - coord:
+      Q: -3
+      R: 8
+    tileId: mantar
+  - coord:
+      Q: -2
+      R: 8
+    tileId: mantar
   - coord:
       Q: -1
       R: 8
-    tileId: agac1
+    tileId: mantar
   - coord:
       Q: 0
       R: 8
-    tileId: agac1
+    tileId: mantar
   - coord:
-      Q: 0
+      Q: 1
+      R: 8
+    tileId: mantar
+  - coord:
+      Q: 2
+      R: 8
+    tileId: mantar
+  - coord:
+      Q: 3
+      R: 8
+    tileId: mantar
+  - coord:
+      Q: 4
+      R: 8
+    tileId: agac3
+  - coord:
+      Q: 5
+      R: 8
+    tileId: mantar
+  - coord:
+      Q: 5
+      R: 9
+    tileId: mantar
+  - coord:
+      Q: 4
+      R: 9
+    tileId: mantar
+  - coord:
+      Q: 2
       R: 9
     tileId: agac1
   - coord:
       Q: 1
-      R: 8
-    tileId: agac1
+      R: 9
+    tileId: mantar
+  - coord:
+      Q: 0
+      R: 9
+    tileId: portal5
+  - coord:
+      Q: -1
+      R: 9
+    tileId: mantar
+  - coord:
+      Q: -2
+      R: 9
+    tileId: mantar
+  - coord:
+      Q: -3
+      R: 9
+    tileId: mantar
+  - coord:
+      Q: -4
+      R: 9
+    tileId: mantar
+  - coord:
+      Q: 3
+      R: 9
+    tileId: cicek
