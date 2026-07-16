@@ -27,8 +27,9 @@ namespace TacticalRPG.Grid
         [Header("Bulut Kapağı (SAYDAMLIKLA açılır/kapanır — yok edilmez)")]
         [Tooltip("Karonun üstüne konan bulut prefabı. Kendi bulut modelinle değiştirebilirsin.")]
         [SerializeField] private GameObject _fogTilePrefab;
-        [Tooltip("Bulutun karo tabanının ne kadar üstünde duracağı (havada dursun diye yüksek).")]
-        [SerializeField] private float _fogLift = 0.45f;
+        [Tooltip("Bulutun karo tabanının ne kadar üstünde duracağı. Puf küreleri origin'in ~0.33m " +
+                 "altına sarkar → bu değerin altında küreler karo yüzeyine gömülür (bulut karoya oturur).")]
+        [SerializeField] private float _fogLift = 0.18f;
         [Tooltip("Gizli karonun bulut opaklığı (1 = gerçek karoyu tamamen örter).")]
         [SerializeField, Range(0f, 1f)] private float _hiddenAlpha = 1f;
         [Tooltip("Opaklık değişim hızı (birim/sn) — DÜŞÜK = daha yumuşak/geçişken belirme.")]

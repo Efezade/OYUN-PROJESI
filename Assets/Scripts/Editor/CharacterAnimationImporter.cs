@@ -217,7 +217,10 @@ namespace TacticalRPG.Editor
             {
                 AnimatorState walkState = sm.AddState("Walk");
                 walkState.motion = walk;
-                walkState.speed  = 0.75f; // yürüyüş temposu (hareket hızıyla orantılı, ayak kayması az)
+                // Yürüyüş temposu. Komşu karo mesafesi = 2*InnerRadius ≈ 1.73m, PlayerController
+                // _moveSpeed 4.5 → karo geçişi ~0.39sn. 0.75'te klibin ancak ~%30'u oynuyordu
+                // (karo başına yarım adım, ayak kayıyordu); 1.5 → karo başına ~1.2 adım.
+                walkState.speed  = 1.5f;
 
                 AnimatorStateTransition toWalk = idleState.AddTransition(walkState);
                 toWalk.hasExitTime = false;

@@ -311,7 +311,7 @@ namespace TacticalRPG.Editor
             var playerSO = new SerializedObject(playerCtrl);
             playerSO.FindProperty("_gridManager").objectReferenceValue = gridManager;
             playerSO.FindProperty("_fogManager").objectReferenceValue  = fogManager;
-            playerSO.FindProperty("_moveSpeed").floatValue             = 4.5f; // orta hızlı yürüyüş
+            playerSO.FindProperty("_moveSpeed").floatValue             = 3.5f; // sakin yürüyüş (Walk klibiyle uyumlu)
             // Ayağı-orijinde bake edilmiş model → yüzeye SIFIR clearance (feet=surface, uçmaz):
             // PlayerController.SurfaceY'de clearance = _heightOffset - TileHeight = 0 için _heightOffset=TileHeight.
             // Model yoksa (kapsül fallback) eski tuning: TileHeight(0.3)+kapsül yarı-yükseklik(0.45)+boşluk.
@@ -1708,8 +1708,6 @@ namespace TacticalRPG.Editor
             var so = new SerializedObject(wgm);
             so.FindProperty("_grid").objectReferenceValue   = grid;
             so.FindProperty("_player").objectReferenceValue = player;
-            so.FindProperty("_flatTile").objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Grid/HexCell.prefab");
             var maps = so.FindProperty("_maps");
             maps.arraySize = 9;
             for (int n = 1; n <= 9; n++)

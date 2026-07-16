@@ -115,3 +115,4 @@ handoff.md
 
 # Graphify kod grafı (üretilen artefakt; LLM siz yenilenir)
 graphify-out/
+graphify-out.meta

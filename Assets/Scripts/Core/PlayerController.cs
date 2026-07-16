@@ -18,7 +18,9 @@ namespace TacticalRPG.Core
         [SerializeField] private FogOfWarManager _fogManager;
 
         [Header("Hareket")]
-        [SerializeField] private float _moveSpeed    = 4.5f;
+        [Tooltip("Yürüme hızı (m/sn). Walk klibinin temposuyla birlikte ayarlanır — hızlanırsa " +
+                 "ayak kayar (CharacterAnimationImporter.walkState.speed).")]
+        [SerializeField] private float _moveSpeed    = 3.5f;
         [Tooltip("Karakterin yüzeye göre dikey ofseti (ayak payı). Ayağı-orijinde bake edilmiş " +
                  "modelde TileHeight (clearance 0 → ayak yüzeye basar); kapsül fallback'inde daha büyük.")]
         [SerializeField] private float _heightOffset = 0.15f;

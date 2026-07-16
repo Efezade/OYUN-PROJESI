@@ -23,7 +23,7 @@ namespace TacticalRPG.Core
         [SerializeField] private DeploymentManager _deployment;
         [Tooltip("Opsiyonel — Combat state'inde tıklama aktif birim hareket/saldırı olur.")]
         [SerializeField] private TurnManager _turnManager;
-        [Tooltip("Opsiyonel — atanmışsa, harita DIŞINA tıklayınca o yöndeki komşu haritaya geçilir (3×3).")]
+        [Tooltip("Opsiyonel — atanmışsa portal ışınlaması sürerken (IsBusy) tıklama yok sayılır.")]
         [SerializeField] private WorldGridManager _worldGrid;
 
         [Header("Raycast")]
@@ -66,29 +66,10 @@ namespace TacticalRPG.Core
             // Diğer savaş/onay durumlarında harita tıklaması işlenmez (akış HUD'larca yönetilir).
             if (_stateManager != null && _stateManager.State != GameState.Overworld) return;
             if (_player.IsMoving) return;
-            if (_worldGrid != null && _worldGrid.IsBusy) return;   // harita geçişi sürerken giriş yok
+            if (_worldGrid != null && _worldGrid.IsBusy) return;   // portal ışınlaması sürerken giriş yok
 
-            // Haritanın DIŞINDAki (sınır ötesi) geçiş işaretçisine tıklandıysa → İKİ ADIMLI geçiş:
-            // karakter O SINIR KENARINDA duruyorsa komşu adaya geç; değilse önce sınıra doğru yürü
-            // (bir daha sınır ötesine basınca geçilir).
-            if (_worldGrid != null)
-            {
-                Ray mray = _camera.ScreenPointToRay(Input.mousePosition);
-                if (Physics.Raycast(mray, out RaycastHit mhit, _rayDistance) &&
-                    mhit.collider.GetComponentInParent<TransitionMarker>() is TransitionMarker tm)
-                {
-                    // Karakter sınır karosuna YETERİNCE YAKINSA (menzil içinde) komşu adaya geç;
-                    // değilse önce sınıra doğru yürü (bir daha basınca geçer). Mesafeyle kontrol —
-                    // oyuncu en dış transition karosunda değil, iç yürünebilir karoda durabilir.
-                    if (_player.CurrentCoord.DistanceTo(tm.EdgeCoord) <= _maxMoveRange)
-                        _worldGrid.StartTransition(tm.EdgeCoord);
-                    else
-                        TryMoveTo(tm.EdgeCoord);
-                    return;
-                }
-            }
-
-            // Boşluğa tıklama → hiçbir şey.
+            // Boşluğa tıklama → hiçbir şey. (Adalar arası geçiş yalnız PORTAL karosuyla olur —
+            // TeleportManager oyuncu portala basınca devreye girer.)
             if (!TryGetClickedCoord(out HexCoordinate coord)) return;
 
             // 1) Yetenek hazırsa → hedefleme
