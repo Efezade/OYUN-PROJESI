@@ -73,7 +73,13 @@ namespace TacticalRPG.Core
             ActiveMission  = mission;
             PendingMission = null;
 
-            if (_apManager != null) _apManager.SpendAP(1); // savaşa girmek 1 AP harcar
+            // Savaşa girmek sabit bedel (varsayılan 3 AP) — TÜM savaş bu kadar sayılır.
+            // Bedel ödendikten SONRA motor dondurulur: savaş boyunca zaman akmaz, gün geçmez.
+            if (_apManager != null)
+            {
+                _apManager.SpendCombatEntryCost();
+                _apManager.SetFrozen(true);
+            }
             if (_player != null) _savedPlayerCoord = _player.CurrentCoord;
 
             if (_grid != null && mission.CombatMap != null)
@@ -88,6 +94,9 @@ namespace TacticalRPG.Core
         {
             if (State != GameState.Combat && State != GameState.Deployment) return;
             ActiveMission = null;
+
+            // Savaş bitti → zaman yeniden akmaya başlar (giriş bedeli zaten ödenmişti).
+            if (_apManager != null) _apManager.SetFrozen(false);
 
             if (_grid != null && _overworldMap != null)
                 _grid.SetTileMap(_overworldMap);         // overworld haritasını geri yükle

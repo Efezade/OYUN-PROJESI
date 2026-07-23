@@ -30,8 +30,12 @@ namespace TacticalRPG.UI
         {
             if (_state == null || _state.State != GameState.Deployment) return;
 
+            // Sanal 1920x1080 ekrana çiz → yerleştirme paneli her çözünürlükte aynı oranda.
+            using var _scale = HudScale.Scaled();
+
             const float w = 320f, h = 480f;
             var rect = new Rect(12f, 80f, w, h);
+            ImguiBlocker.Register(rect);   // panel üstündeki tık hex'e yerleştirme sayılmasın
             GUILayout.BeginArea(rect, GUI.skin.box);
 
             GUILayout.Label("ÖZ DEPOSU");

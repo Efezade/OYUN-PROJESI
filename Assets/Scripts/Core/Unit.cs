@@ -23,7 +23,11 @@ namespace TacticalRPG.Core
 
         [Header("Konum")]
         [SerializeField] private HexCoordinate _coord;
+        [Tooltip("Placeholder KAPSÜL için dikey ofset (kapsülün merkezi yüzeyin bu kadar üstünde).")]
         [SerializeField] private float         _heightOffset = 0.8f;
+        [Tooltip("Gerçek MODEL takılıysa bunun yerine bu kullanılır. TileHeight (0.3) = modelin ayağı " +
+                 "tam karo yüzeyine oturur; kapsül ofseti (0.8) modeli havada bırakırdı.")]
+        [SerializeField] private float         _modelHeightOffset = HexMetrics.TileHeight;
         [SerializeField] private float         _moveSpeed    = 8f;
 
         [Header("Can (yalnızca KARTSIZ birimlerde kullanılır)")]
@@ -51,9 +55,12 @@ namespace TacticalRPG.Core
         private string        _runtimeName; // savaş başı atanan benzersiz isim (örn. "Goblin 2")
 
         // Hasar flaşı (MaterialPropertyBlock → paylaşılan materyali bozmaz; URP _BaseColor).
-        private Renderer              _renderer;
+        // Model takılıysa (CharacterModelBinder) kapsül GİZLİ olduğu için flaş MODELİN
+        // renderer'larına uygulanır — yoksa görünmez bir mesh'i boyardık.
+        private Renderer[]            _renderers;
+        private Color[]               _baseColors;
+        private bool                  _renderersResolved;
         private MaterialPropertyBlock _mpb;
-        private Color                 _baseColor = Color.white;
         private Coroutine             _flashCo;
         private static readonly int   BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int   ColorId     = Shader.PropertyToID("_Color");
@@ -85,24 +92,48 @@ namespace TacticalRPG.Core
 
         public event Action<Unit> OnStatsChanged; // HP veya kalkan değişti
         public event Action<Unit> OnDied;
+        /// <summary>Bu birim bir hedefe saldırdı (animasyon sürücüsü dinler; argüman = hedef).</summary>
+        public event Action<Unit> OnAttackPerformed;
+
+        private CharacterModelBinder _binder;
 
         private void Awake()
         {
             if (_card == null) _currentHP = _maxHP;
-
-            _renderer = GetComponentInChildren<Renderer>();
-            _mpb      = new MaterialPropertyBlock();
-            CacheBaseColor();
+            _mpb    = new MaterialPropertyBlock();
+            _binder = GetComponent<CharacterModelBinder>();
         }
 
-        // Spawner birimi boyadıktan (sharedMaterial) SONRA AddComponent ettiği için Awake'te okunur.
-        private void CacheBaseColor()
+        /// <summary>
+        /// Flaşın boyayacağı renderer'ları ve özgün renklerini bulur. İLK HASARDA çözülür (Awake'te
+        /// DEĞİL): model runtime'da takılabildiği için (CharacterModelBinder.Apply) erken çözersek
+        /// gizlenmiş placeholder kapsülünü yakalarız ve flaş görünmez.
+        /// </summary>
+        private void ResolveRenderers()
         {
-            if (_renderer == null || _renderer.sharedMaterial == null) return;
-            Material m = _renderer.sharedMaterial;
-            _baseColor = m.HasProperty(BaseColorId) ? m.GetColor(BaseColorId)
-                       : m.HasProperty(ColorId)     ? m.GetColor(ColorId)
-                       : m.color;
+            _renderersResolved = true;
+
+            Renderer[] found = _binder != null && _binder.ModelRenderer != null
+                ? _binder.ModelRenderers         // gerçek model (skinned mesh + parçaları)
+                : GetComponentsInChildren<Renderer>(true);
+
+            var list = new List<Renderer>();
+            foreach (var r in found)
+                if (r != null && r.enabled) list.Add(r);   // gizlenmiş kapsülü atla
+
+            _renderers  = list.ToArray();
+            _baseColors = new Color[_renderers.Length];
+            for (int i = 0; i < _renderers.Length; i++)
+                _baseColors[i] = ReadBaseColor(_renderers[i]);
+        }
+
+        private static Color ReadBaseColor(Renderer r)
+        {
+            Material m = r != null ? r.sharedMaterial : null;
+            if (m == null) return Color.white;
+            return m.HasProperty(BaseColorId) ? m.GetColor(BaseColorId)
+                 : m.HasProperty(ColorId)     ? m.GetColor(ColorId)
+                 : m.color;
         }
 
         private void OnEnable()
@@ -172,8 +203,13 @@ namespace TacticalRPG.Core
         }
 
         // Hücrenin yürüme yüzeyine oturmuş dünya pozisyonu (köprü/engebe SurfaceHeight ile).
+        // Model takılıysa ayağı yüzeye oturtan ofset kullanılır; kapsülde merkez ofseti.
         private Vector3 SurfacePosition(HexCell cell) =>
-            cell.WorldPosition + Vector3.up * (_heightOffset + cell.SurfaceHeight - HexMetrics.TileHeight);
+            cell.WorldPosition + Vector3.up * (VerticalOffset + cell.SurfaceHeight - HexMetrics.TileHeight);
+
+        // Model runtime'da takılabildiği için her seferinde sorulur (GetComponent Awake'te önbelleklenir).
+        private float VerticalOffset =>
+            _binder != null && _binder.ModelRenderer != null ? _modelHeightOffset : _heightOffset;
 
         // ── Hareket (TurnManager savaşta çağırır) ─────────────────────────────
 
@@ -212,6 +248,20 @@ namespace TacticalRPG.Core
                 _diedNotified = true;
                 OnDied?.Invoke(this);
             }
+        }
+
+        // ── Saldırı (TurnManager çağırır) ─────────────────────────────────────
+
+        /// <summary>
+        /// Bu birim hedefe vurur: önce <see cref="OnAttackPerformed"/> yayılır (animasyon sürücüsü
+        /// saldırı klibini oynatır + gövdeyi hedefe çevirir), sonra hasar uygulanır. Menzil/tur
+        /// kuralları çağıranın (TurnManager) sorumluluğundadır — burada yalnız etki + olay var.
+        /// </summary>
+        public void PerformAttack(Unit target)
+        {
+            if (target == null || !IsAlive) return;
+            OnAttackPerformed?.Invoke(target);
+            target.TakeDamage(Attack);
         }
 
         // ── Etki API'si (AbilityCaster çağırır) ───────────────────────────────
@@ -254,7 +304,8 @@ namespace TacticalRPG.Core
 
         private void PlayHitFlash()
         {
-            if (_renderer == null || !gameObject.activeInHierarchy) return;
+            if (!_renderersResolved) ResolveRenderers();
+            if (_renderers.Length == 0 || !gameObject.activeInHierarchy) return;
             if (_flashCo != null) StopCoroutine(_flashCo);
             _flashCo = StartCoroutine(HitFlashRoutine());
         }
@@ -266,20 +317,26 @@ namespace TacticalRPG.Core
             {
                 t += Time.deltaTime;
                 float k = Mathf.Clamp01(1f - t / _hitFlashDuration); // 1 (tam kırmızı) → 0 (kendi rengi)
-                ApplyTint(Color.Lerp(_baseColor, _hitFlashColor, k));
+                ApplyTint(k);
                 yield return null;
             }
-            ApplyTint(_baseColor);
+            ApplyTint(0f);
             _flashCo = null;
         }
 
-        private void ApplyTint(Color c)
+        // k=1 → tam flaş rengi, k=0 → her renderer kendi özgün rengine döner.
+        private void ApplyTint(float k)
         {
-            if (_renderer == null) return;
-            _renderer.GetPropertyBlock(_mpb);
-            _mpb.SetColor(BaseColorId, c);
-            _mpb.SetColor(ColorId, c);
-            _renderer.SetPropertyBlock(_mpb);
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                Renderer r = _renderers[i];
+                if (r == null) continue;
+                Color c = Color.Lerp(_baseColors[i], _hitFlashColor, k);
+                r.GetPropertyBlock(_mpb);
+                _mpb.SetColor(BaseColorId, c);
+                _mpb.SetColor(ColorId, c);
+                r.SetPropertyBlock(_mpb);
+            }
         }
 
         public void Heal(int amount)

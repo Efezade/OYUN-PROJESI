@@ -45,6 +45,13 @@ namespace TacticalRPG.Grid
         [SerializeField] private float _windSpeed = 0.7f;
         [SerializeField] private float _windAmount = 0.13f;
 
+        [Header("GECE — karanlıkta görüş daralır")]
+        [Tooltip("Gece görüş menzili çarpanı (0.5 = yarı yarıya). Kule AÇILMAMIŞ adada uygulanır.")]
+        [SerializeField, Range(0.1f, 1f)] private float _nightVisionMultiplier = 0.5f;
+        [Tooltip("Gece TAVANI (karo): kule ile ada açılmış olsa BİLE geceleyin bundan uzaktaki " +
+                 "karolar karanlıkta kalır. Karanlık zorunlu sınır.")]
+        [SerializeField] private float _nightRevealRadius = 3f;
+
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor"); // URP/Lit
         private static readonly int ColorId     = Shader.PropertyToID("_Color");     // Standard yedek
         private MaterialPropertyBlock _block;
@@ -52,6 +59,16 @@ namespace TacticalRPG.Grid
         // Kule ile açılmış ada → dinamik sis (RevealArea) kilitlenir, tüm karolar saydam kalır.
         private bool _fullyRevealed;
         public bool IsFullyRevealed => _fullyRevealed;
+
+        // GECE: kilit devre dışı kalır, görüş _nightRevealRadius ile TAVANLANIR.
+        private bool _nightMode;
+        public bool IsNightMode => _nightMode;
+
+        // UpdateFogAround'a en son verilen konum/menzil — sis kuralı değişince (gece/kule)
+        // oyuncu HAREKET ETMEDEN de yeniden uygulanabilsin diye saklanır.
+        private Vector3 _lastFogPos;
+        private float   _lastFogRadius = 1f;
+        private bool    _hasFogSample;
 
         // Karo başına KALICI bulut kapağı.
         private class Cap
@@ -132,7 +149,21 @@ namespace TacticalRPG.Grid
         /// </summary>
         public void UpdateFogAround(Vector3 worldPos, float visionRadiusTiles)
         {
-            if (_fullyRevealed || _gridManager.Cells == null) return;
+            if (_gridManager.Cells == null) return;
+
+            // Sonraki yeniden-uygulamalar için sakla (gece/kule değişiminde oyuncu dursa bile lazım).
+            _lastFogPos    = worldPos;
+            _lastFogRadius = visionRadiusTiles;
+            _hasFogSample  = true;
+
+            // GÜNDÜZ + kule açık → ada tamamen görünür, dinamik sis kilitli.
+            // GECE ise kilit devre dışı: karanlıkta ada açık olsa bile uzağı göremezsin.
+            if (_fullyRevealed && !_nightMode) return;
+
+            float radius = _nightMode
+                ? (_fullyRevealed ? _nightRevealRadius              // kule açık ama gece → 3 karo tavanı
+                                  : visionRadiusTiles * _nightVisionMultiplier) // kule yok → yarı görüş
+                : visionRadiusTiles;
 
             float spacing = Mathf.Sqrt(3f) * Mathf.Max(0.01f, _gridManager.HexSize); // komşu karo mesafesi
             float band    = Mathf.Max(0.01f, _fogFalloff);
@@ -142,7 +173,7 @@ namespace TacticalRPG.Grid
                 float dx = worldPos.x - cell.WorldPosition.x;
                 float dz = worldPos.z - cell.WorldPosition.z;
                 float d  = Mathf.Sqrt(dx * dx + dz * dz) / spacing;           // karo biriminde mesafe
-                float a  = Mathf.Clamp01((d - visionRadiusTiles) / band) * _hiddenAlpha;
+                float a  = Mathf.Clamp01((d - radius) / band) * _hiddenAlpha;
 
                 if (_caps.TryGetValue(cell.Coordinate, out Cap cap) && cap != null &&
                     !Mathf.Approximately(cap.target, a))
@@ -164,7 +195,33 @@ namespace TacticalRPG.Grid
         public void SetFullReveal(bool revealed)
         {
             _fullyRevealed = revealed;
-            if (revealed) RevealAll();   // hepsi Visible → bulutlar 0'a fade (Update yumuşatır)
+
+            // GECE ise "hepsini aç" YOK — karanlıkta kule bile uzağı göstermez; bunun yerine
+            // gece tavanıyla (_nightRevealRadius) yeniden uygula.
+            if (revealed && !_nightMode) RevealAll();  // hepsi Visible → bulutlar 0'a fade
+            else                         RefreshFromLastPosition();
+        }
+
+        /// <summary>
+        /// GECE modunu aç/kapat. Açıkken görüş yarıya iner (<see cref="_nightVisionMultiplier"/>) ve
+        /// kule ile açılmış adada bile <see cref="_nightRevealRadius"/> karo TAVANI uygulanır —
+        /// karanlıkta uzağı göremezsin. DayNightCycle gündüz↔gece sınırında çağırır.
+        /// </summary>
+        public void SetNightMode(bool night)
+        {
+            if (_nightMode == night) return;
+            _nightMode = night;
+
+            // Gece bitti + kule açık → adanın tam görüşü geri gelir.
+            if (!night && _fullyRevealed) RevealAll();
+            else                          RefreshFromLastPosition();
+        }
+
+        /// <summary>Sis kuralı değiştiğinde (gece/kule) oyuncu HAREKET ETMEDEN de sisi yeniden uygular.
+        /// Henüz hiç örnek alınmadıysa (oyun daha başlamadı) sessizce atlanır.</summary>
+        public void RefreshFromLastPosition()
+        {
+            if (_hasFogSample) UpdateFogAround(_lastFogPos, _lastFogRadius);
         }
 
         /// <summary>Kule aktifleşince adanın bulutlarını yumuşakça saydamlaştırır (epik his — beam/halka

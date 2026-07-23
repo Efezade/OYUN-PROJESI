@@ -91,8 +91,12 @@ namespace TacticalRPG.Core
             if (_player != null && _player.IsMoving) return;
             if (_world != null && _world.IsBusy) return;
 
+            // Sanal 1920x1080 ekrana ciz -> her cozunurlukte ayni oran.
+            using var _scale = HudScale.Scaled();
+
             const float w = 320f, h = 92f;
-            var rect = new Rect((Screen.width - w) * 0.5f, Screen.height - h - 130f, w, h);
+            var rect = new Rect((HudScale.Width - w) * 0.5f, HudScale.Height - h - 130f, w, h);
+            ImguiBlocker.Register(rect);   // istem üstündeki tık haritaya düşmesin (yol önizlemesi açmasın)
             GUILayout.BeginArea(rect, GUI.skin.box);
             GUILayout.Label($"Portal — Ada {_pendingMap}'e geç?");
             GUILayout.FlexibleSpace();

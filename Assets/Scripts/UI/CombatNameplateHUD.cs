@@ -170,6 +170,9 @@ namespace TacticalRPG.UI
             EnsureStyles();
             Unit active = (_turnManager != null && _turnManager.CombatActive) ? _turnManager.CurrentUnit : null;
 
+            // Sanal 1920x1080 ekrana çiz → nameplate yazıları her çözünürlükte aynı oranda.
+            using var _scale = HudScale.Scaled();
+
             var units = _unitManager.Units;
             for (int i = 0; i < units.Count; i++)
             {
@@ -185,8 +188,9 @@ namespace TacticalRPG.UI
                 // ile ayrışıp nameplate sağ-üste kayıyordu. Normalize viewport'u doğrudan IMGUI'nin
                 // tanımı gereği [0..Screen.width]×[0..Screen.height] olan alanıyla çarpmak DPI'dan
                 // bağımsız doğru sonucu verir (ekstra API yok → derleme güvenli).
-                float gx = vp.x * Screen.width;
-                float gy = (1f - vp.y) * Screen.height;
+                // HudScale ölçeği altında çizdiğimiz için SANAL ekran ölçüsüyle çarpılır.
+                float gx = vp.x * HudScale.Width;
+                float gy = (1f - vp.y) * HudScale.Height;
 
                 int shown = u.CurrentHP, pending = 0;
                 if (_tracks.TryGetValue(u, out HpTrack tr)) { shown = tr.shown; pending = tr.timer > 0f ? tr.pending : 0; }

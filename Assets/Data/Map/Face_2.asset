@@ -209,7 +209,7 @@ MonoBehaviour:
   - coord:
       Q: 2
       R: 8
-    tileId: deneme18
+    tileId: mantar
   - coord:
       Q: 2
       R: 9
@@ -341,7 +341,7 @@ MonoBehaviour:
   - coord:
       Q: 1
       R: 4
-    tileId: cicek
+    tileId: deneme13
   - coord:
       Q: 1
       R: 3

@@ -24,16 +24,21 @@ namespace TacticalRPG.UI
             _num   ??= new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter };
             _title ??= new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 16, fontStyle = FontStyle.Bold };
 
+            // Sanal 1920x1080 ekrana ciz -> her cozunurlukte ayni oran.
+            using var _scale = HudScale.Scaled();
+
             int current = _world.CurrentMap;
 
             const float cell = 72f, gap = 8f, pad = 14f;
             float gw = 3f * cell + 2f * gap;
             float gh = 3f * cell + 2f * gap;
-            float x0 = (Screen.width  - gw) * 0.5f;
-            float y0 = (Screen.height - gh) * 0.5f + 10f;
+            float x0 = (HudScale.Width  - gw) * 0.5f;
+            float y0 = (HudScale.Height - gh) * 0.5f + 10f;
 
             // Hafif şeffaf arka plan
-            DrawRect(new Rect(x0 - pad, y0 - pad - 26f, gw + 2f * pad, gh + 2f * pad + 26f), new Color(0f, 0f, 0f, 0.40f));
+            var panel = new Rect(x0 - pad, y0 - pad - 26f, gw + 2f * pad, gh + 2f * pad + 26f);
+            ImguiBlocker.Register(panel);   // minimap açıkken üstüne tıklamak karakteri yürütmesin
+            DrawRect(panel, new Color(0f, 0f, 0f, 0.40f));
 
             // Başlık
             _title.normal.textColor = new Color(0.4f, 0.85f, 1f);

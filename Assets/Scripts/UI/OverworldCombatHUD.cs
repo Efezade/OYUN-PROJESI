@@ -22,11 +22,15 @@ namespace TacticalRPG.UI
         {
             if (_stateManager == null) return;
 
-            switch (_stateManager.State)
+            // Sanal 1920x1080 ekrana çiz → panel her çözünürlükte aynı oranda görünür.
+            using (HudScale.Scaled())
             {
-                case GameState.Overworld:      DrawNearbyMissionPrompt(); break;
-                case GameState.ConfirmMission:  DrawConfirm();             break;
-                case GameState.Combat:          DrawCombat();              break;
+                switch (_stateManager.State)
+                {
+                    case GameState.Overworld:      DrawNearbyMissionPrompt(); break;
+                    case GameState.ConfirmMission:  DrawConfirm();             break;
+                    case GameState.Combat:          DrawCombat();              break;
+                }
             }
         }
 
@@ -39,7 +43,8 @@ namespace TacticalRPG.UI
             if (mission == null) return;
 
             const float w = 360f, h = 76f;
-            var rect = new Rect((Screen.width - w) * 0.5f, 12f, w, h);
+            var rect = new Rect((HudScale.Width - w) * 0.5f, 12f, w, h);
+            ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
             GUILayout.Label($"Gorev yakinda: '{mission.DisplayName}'");
             if (GUILayout.Button("Savasa Gir", GUILayout.Height(34)))
@@ -53,7 +58,8 @@ namespace TacticalRPG.UI
                 ? _stateManager.PendingMission.DisplayName : "Görev";
 
             const float w = 380f, h = 130f;
-            var rect = new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
+            var rect = new Rect((HudScale.Width - w) * 0.5f, (HudScale.Height - h) * 0.5f, w, h);
+            ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
             GUILayout.Label($"'{missionName}' gorevine girmek istiyor musun?");
             GUILayout.FlexibleSpace();
@@ -69,8 +75,10 @@ namespace TacticalRPG.UI
             string missionName = _stateManager.ActiveMission != null
                 ? _stateManager.ActiveMission.DisplayName : "Savas";
 
+            // Üst-ORTA sıra barına (TurnOrderBarHUD) bırakıldı → bu panel sağ üstte.
             const float w = 320f;
-            var rect = new Rect((Screen.width - w) * 0.5f, 12f, w, 74f);
+            var rect = new Rect(HudScale.Width - w - 12f, 12f, w, 74f);
+            ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
             GUILayout.Label($"SAVAS — {missionName}");
             if (GUILayout.Button("Geri Don (Overworld)", GUILayout.Height(30)))

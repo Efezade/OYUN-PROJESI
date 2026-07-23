@@ -357,6 +357,9 @@ namespace TacticalRPG.Core
                 { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold, fontSize = 14 };
             _labelStyle.normal.textColor = _labelColor;
 
+            // Sanal 1920x1080 ekrana çiz → sayaç yazısı her çözünürlükte aynı oranda.
+            using var _scale = HudScale.Scaled();
+
             int ap = _apManager.APRemainingToday;
             foreach (var coord in s.doomed)
             {
@@ -365,7 +368,9 @@ namespace TacticalRPG.Core
                 Vector3 world = cell.WorldPosition + Vector3.up * (cell.SurfaceHeight + 0.5f);
                 Vector3 sp = _camera.WorldToScreenPoint(world);
                 if (sp.z <= 0f) continue;                            // kamera arkası
-                var rect = new Rect(sp.x - 24f, Screen.height - sp.y - 12f, 48f, 24f);
+                // WorldToScreenPoint gerçek PİKSEL verir → ölçekli GUI uzayına çevir.
+                Vector2 g = HudScale.ToGui(sp);
+                var rect = new Rect(g.x - 24f, g.y - 12f, 48f, 24f);
                 GUI.Label(rect, ap.ToString(), _labelStyle);
             }
         }

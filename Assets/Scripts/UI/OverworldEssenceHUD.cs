@@ -27,8 +27,13 @@ namespace TacticalRPG.UI
         {
             if (_state == null || _state.State != GameState.Overworld) return;
 
+            // Sanal 1920x1080 ekrana ciz -> her cozunurlukte ayni oran.
+            using var _scale = HudScale.Scaled();
+
             const float w = 300f;
-            GUILayout.BeginArea(new Rect(Screen.width - w - 12f, 12f, w, 230f), GUI.skin.box);
+            var rect = new Rect(HudScale.Width - w - 12f, 12f, w, 230f);
+            ImguiBlocker.Register(rect);
+            GUILayout.BeginArea(rect, GUI.skin.box);
 
             GUILayout.Label("ÖZ DEPOSU");
             DrawWallet();

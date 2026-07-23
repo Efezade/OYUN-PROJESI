@@ -36,8 +36,12 @@ namespace TacticalRPG.UI
 
         private void OnGUI()
         {
+            // Sanal 1920x1080 ekrana ciz -> her cozunurlukte ayni oran.
+            using var _scale = HudScale.Scaled();
+
             const float w = 380f;
-            var rect = new Rect(Screen.width - w - 12f, 12f, w, 230f);
+            var rect = new Rect(HudScale.Width - w - 12f, 12f, w, 230f);
+            ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
 
             GUILayout.Label("YETENEK TESTI  (Kam)");

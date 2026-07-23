@@ -9,8 +9,10 @@ namespace TacticalRPG.Core
     public class CollapseConfig : ScriptableObject
     {
         [Header("Kıyamet Eşiği")]
-        [Tooltip("Kaçıncı günden itibaren harita çöküşü başlar?")]
-        [SerializeField] private int _collapseStartDay = 4;
+        [Tooltip("Kaçıncı günün başında çökecek karolar İŞARETLENMEYE başlar? İşaretlenen karolar " +
+                 "1 gün sonra silinir (uyarı süresi). 3 → uyarılar 3. günde çıkar, İLK SİLME 4. günün " +
+                 "sabahında olur (3. günün gecesi bittiği anda).")]
+        [SerializeField] private int _collapseStartDay = 3;
 
         [Header("Çöküş Hızı")]
         [Tooltip("Her gün sonu kaç karo silinir?")]

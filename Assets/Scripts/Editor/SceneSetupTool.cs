@@ -39,7 +39,10 @@ namespace TacticalRPG.Editor
                 SetupPhase0();    // kamera, isik, GameManager
                 SetupPhase1();    // grid, fog, oyuncu, AP, kiyamet
                 SetupPhase2();    // karakterler, oz, kam mana
-                SetupDebugHUD();  // debug HUD
+                // SetupDebugHUD() ARTIK ZINCIRDE DEGIL — sol ustteki yazi etiketleri (Gun/AP/Oz/
+                // Mana/Cokus) kaldirildi; zaman bilgisi TimeDialHUD kadraninda. Canvas SceneRoot'un
+                // cocugu oldugu icin Faz 0'in DestroyRoot'u eski HUD'i temizler. Menuden elle
+                // "Debug HUD - Ekle" ile geri getirilebilir (gecici teshis icin).
                 SetupPhaseA();    // overworld<->savas durum makinesi + gorev
                 SetupPhaseB();    // deployment (oz ile birim yerlestirme)
                 SetupPhaseC();    // dusman roster spawn (3 Goblin)
@@ -60,7 +63,7 @@ namespace TacticalRPG.Editor
                 "  • Faz 0 — Kamera, Isik\n" +
                 "  • Faz 1 — Hex Grid, Oyuncu, AP, Kiyamet\n" +
                 "  • Faz 2 — Karakter Sistemi (Kam, Savasci, Ranger)\n" +
-                "  • Debug HUD\n" +
+                "  • Zaman Sayaci (sol ust kadran: 6 dilim = 1 gun, 4 gunduz + 2 gece)\n" +
                 "  • Faz A — Overworld/Savas gecisi + gorev\n" +
                 "  • Faz B — Deployment (oz ile yerlestirme)\n" +
                 "  • Faz C — Dusman spawn (3 Goblin)\n" +
@@ -374,6 +377,51 @@ namespace TacticalRPG.Editor
             apSO.FindProperty("_config").objectReferenceValue = timeConfig;
             apSO.ApplyModifiedProperties();
 
+            // ── Gece/Gündüz görsel döngüsü (DayNightProfile + DayNightCycle) ──
+            // Zaman dilimi ilerleyince güneş/ay açısı, rengi, ortam ışığı ve gökyüzü değişir.
+            // Yalnızca görsel: AP/menzil/sis mantığına dokunmaz.
+            const string dayNightPath = "Assets/Data/Config/DayNightProfile.asset";
+            DayNightProfile dayNightProfile = AssetDatabase.LoadAssetAtPath<DayNightProfile>(dayNightPath);
+            if (dayNightProfile == null)
+            {
+                // YALNIZ-YOKSA oluştur → kullanıcının Inspector'da yaptığı renk ayarları
+                // TAM KURULUM'da EZİLMEZ (savaş karolarındaki palet mantığıyla aynı).
+                dayNightProfile = ScriptableObject.CreateInstance<DayNightProfile>();
+                AssetDatabase.CreateAsset(dayNightProfile, dayNightPath);
+            }
+
+            // Güneş = Faz 0'da kurulan "Directional Light" (isimle bul; sahnedeki başka
+            // ışıkları yanlışlıkla sürmeyelim). Bulunamazsa sahnedeki ilk ışığa düş.
+            Light sunLight = sceneRoot != null
+                ? sceneRoot.transform.Find("Directional Light")?.GetComponent<Light>()
+                : null;
+            if (sunLight == null) sunLight = FindComponentAnywhere<Light>();
+
+            var oldDayNight = gameManagerGO.GetComponent<DayNightCycle>();
+            if (oldDayNight != null) Object.DestroyImmediate(oldDayNight);
+            DayNightCycle dayNight = gameManagerGO.AddComponent<DayNightCycle>();
+            var dayNightSO = new SerializedObject(dayNight);
+            dayNightSO.FindProperty("_apManager").objectReferenceValue = apManager;
+            dayNightSO.FindProperty("_sun").objectReferenceValue       = sunLight;
+            dayNightSO.FindProperty("_camera").objectReferenceValue    = FindComponentAnywhere<Camera>();
+            dayNightSO.FindProperty("_profile").objectReferenceValue   = dayNightProfile;
+            dayNightSO.FindProperty("_fog").objectReferenceValue       = fogManager;
+            dayNightSO.FindProperty("_player").objectReferenceValue    = playerCtrl;
+            dayNightSO.ApplyModifiedProperties();
+
+            if (sunLight == null)
+                Debug.LogWarning("[TacticalRPG] Directional Light bulunamadi — gece/gunduz isigi baglanmadi. Faz 0'i calistir.");
+
+            // ── ZAMAN SAYACI (sol ust dairesel kadran + GUN bandi) ──────────────
+            // 6 dilim = 1 gun; her 3 AP'de bir dilim TAK diye ilerler. 4 dilim gunduz, 2 gece.
+            // (_stateManager Faz A'da baglanir — GameStateManager o an henuz yok.)
+            var oldDial = gameManagerGO.GetComponent<TimeDialHUD>();
+            if (oldDial != null) Object.DestroyImmediate(oldDial);
+            TimeDialHUD timeDialHud = gameManagerGO.AddComponent<TimeDialHUD>();
+            var timeDialSO = new SerializedObject(timeDialHud);
+            timeDialSO.FindProperty("_apManager").objectReferenceValue = apManager;
+            timeDialSO.ApplyModifiedProperties();
+
             // CollapseConfig
             const string collapseConfigPath = "Assets/Data/Config/CollapseConfig.asset";
             CollapseConfig collapseConfig = AssetDatabase.LoadAssetAtPath<CollapseConfig>(collapseConfigPath);
@@ -409,7 +457,7 @@ namespace TacticalRPG.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log("[TacticalRPG] Faz 1 tamamlandi (Grid + Navigasyon + AP + Kiyamet).");
+            Debug.Log("[TacticalRPG] Faz 1 tamamlandi (Grid + Navigasyon + AP + Gece/Gunduz + Kiyamet).");
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -579,7 +627,9 @@ namespace TacticalRPG.Editor
 
             canvasGO.AddComponent<GraphicRaycaster>();
 
-            float yStart = -20f;
+            // Sol ustte artik ZAMAN SAYACI kadrani duruyor (TimeDialHUD, IMGUI) → debug
+            // etiketleri onun ALTINDAN baslar, ustuste binmesinler.
+            float yStart = -200f;
             float yStep  = -48f;
             int   row    = 0;
 
@@ -855,6 +905,16 @@ namespace TacticalRPG.Editor
                 dhudSO.ApplyModifiedProperties();
             }
 
+            // Zaman sayaci kadrani da HUD fazinda kurulur (gsm o an henuz yok) → burada baglanir,
+            // boylece sayac savas/yerlestirme ekranlarinda gizlenir.
+            TimeDialHUD timeDial = FindComponentAnywhere<TimeDialHUD>();
+            if (timeDial != null)
+            {
+                var tdSO = new SerializedObject(timeDial);
+                tdSO.FindProperty("_stateManager").objectReferenceValue = gsm;
+                tdSO.ApplyModifiedProperties();
+            }
+
             // ── MissionManager — savaş girişi BOYALI savaş karolarından (palet canEnterCombat).
             // Bileşen KORUNUR (DestroyImmediate yok) → kullanıcının _tileMissions (karo id →
             // farklı savaş alanı görevi) eşlemeleri TAM KURULUM'da kaybolmaz. Sabit Q5R5 görevi
@@ -1027,9 +1087,14 @@ namespace TacticalRPG.Editor
                 return;
             }
 
-            // ── Düşman sınıfı: Goblin (kartlı düşman, yakın dövüş) ─────────────
+            // ── Düşman sınıfları: Erlik'in üç askeri ───────────────────────────
+            // HER BİRİ AYRI MODEL + AYRI RENK + AYRI STAT → savaşta ve SIRA BARINDA
+            // birbirinden ayırt edilir. Modeller karakter klasörlerinden gelir
+            // (Goblin=Orc, GoblinSaman=Orc_Skull, Yamyam=Tribal) — bağlamayı
+            // CharacterAnimationImporter yapar (klasör adı = ClassName).
             EnsureFolder("Assets/Data");
             EnsureFolder("Assets/Data/Characters");
+
             CharacterClassData goblinData = GetOrCreateCharacterSO(
                 path: "Assets/Data/Characters/Goblin.asset", className: "Goblin",
                 lore: "Erlik'in zayif ama kalabalik askerleri. Yakin dovusur.",
@@ -1039,9 +1104,38 @@ namespace TacticalRPG.Editor
                 atkMult: new[] { 1f, 1.2f,  1.5f },
                 defMult: new[] { 1f, 1.15f, 1.4f },
                 hasMana: false, maxMana: 0,
-                speed: 4, attackRange: 1);
+                speed: 4, attackRange: 1,
+                unitColor: new Color(0.55f, 0.75f, 0.25f));   // Goblin = zehir yesili
 
-            // ── Mission1 roster'ini 3 Goblin ile doldur (üst bölge) ───────────
+            CharacterClassData samanData = GetOrCreateCharacterSO(
+                path: "Assets/Data/Characters/GoblinSaman.asset", className: "GoblinSaman",
+                lore: "Kafatasi maskeli goblin samani. Yavas ama vurusu serttir.",
+                maxHP: 10, attack: 5, defense: 1, moveRange: 2,
+                essenceCosts: new[] { 0, 6, 13 },
+                hpMult:  new[] { 1f, 1.3f,  1.7f },
+                atkMult: new[] { 1f, 1.25f, 1.55f },
+                defMult: new[] { 1f, 1.2f,  1.45f },
+                hasMana: false, maxMana: 0,
+                speed: 3, attackRange: 1,
+                unitColor: new Color(0.70f, 0.30f, 0.85f));   // Saman = mor
+
+            CharacterClassData yamyamData = GetOrCreateCharacterSO(
+                path: "Assets/Data/Characters/Yamyam.asset", className: "Yamyam",
+                lore: "Kabile yamyami. Hizli kosar, once o vurur.",
+                maxHP: 7, attack: 4, defense: 0, moveRange: 4,
+                essenceCosts: new[] { 0, 5, 11 },
+                hpMult:  new[] { 1f, 1.25f, 1.6f },
+                atkMult: new[] { 1f, 1.25f, 1.55f },
+                defMult: new[] { 1f, 1.1f,  1.3f },
+                hasMana: false, maxMana: 0,
+                speed: 7, attackRange: 1,
+                unitColor: new Color(0.95f, 0.50f, 0.15f));   // Yamyam = turuncu
+
+            // Düşman sınıfları YENİ oluştu — model/animatör bağlamayı TEKRAR çalıştır.
+            // (Faz 1/2'deki ilk çağrı sırasında bu asset'ler henüz yoktu, eşleşemezlerdi.)
+            CharacterAnimationImporter.SetupAllCharacters();
+
+            // ── Mission1 roster'i: her biri FARKLI düşman (üst bölge) ─────────
             const string missionPath = "Assets/Data/Missions/Mission1.asset";
             MissionData mission = AssetDatabase.LoadAssetAtPath<MissionData>(missionPath);
             if (mission == null)
@@ -1054,14 +1148,20 @@ namespace TacticalRPG.Editor
             var missionSO  = new SerializedObject(mission);
             var rosterProp = missionSO.FindProperty("_enemyRoster");
             rosterProp.ClearArray();
-            var enemyCoords = new[] { (2, 7), (4, 7), (3, 8) }; // deploy zonundan (R<2) uzak
-            rosterProp.arraySize = enemyCoords.Length;
-            for (int i = 0; i < enemyCoords.Length; i++)
+            // deploy zonundan (R<2) uzak; her hücrede FARKLI düşman türü
+            var enemies = new (int q, int r, CharacterClassData cls)[]
+            {
+                (2, 7, goblinData),
+                (4, 7, samanData),
+                (3, 8, yamyamData),
+            };
+            rosterProp.arraySize = enemies.Length;
+            for (int i = 0; i < enemies.Length; i++)
             {
                 var e = rosterProp.GetArrayElementAtIndex(i);
-                e.FindPropertyRelative("enemyClass").objectReferenceValue              = goblinData;
-                e.FindPropertyRelative("coord").FindPropertyRelative("Q").intValue     = enemyCoords[i].Item1;
-                e.FindPropertyRelative("coord").FindPropertyRelative("R").intValue     = enemyCoords[i].Item2;
+                e.FindPropertyRelative("enemyClass").objectReferenceValue              = enemies[i].cls;
+                e.FindPropertyRelative("coord").FindPropertyRelative("Q").intValue     = enemies[i].q;
+                e.FindPropertyRelative("coord").FindPropertyRelative("R").intValue     = enemies[i].r;
                 e.FindPropertyRelative("level").intValue                               = 1;
             }
             missionSO.ApplyModifiedProperties();
@@ -1083,12 +1183,13 @@ namespace TacticalRPG.Editor
 
             if (!_silentSetup) EditorUtility.DisplayDialog("Faz C — Dusman Spawn Hazir",
                 "Kurulanlar:\n" +
-                "  • Goblin dusman sinifi (Assets/Data/Characters/Goblin.asset)\n" +
-                "  • Mission1 roster'ina 3 Goblin (Q2R7, Q4R7, Q3R8)\n" +
+                "  • 3 FARKLI dusman sinifi: Goblin / GoblinSaman / Yamyam\n" +
+                "    (Assets/Data/Characters/, her biri ayri model + renk + stat)\n" +
+                "  • Mission1 roster'i: Goblin Q2R7, Saman Q4R7, Yamyam Q3R8\n" +
                 "  • EnemySpawner GameManager'a eklendi + wire\n\n" +
                 "Play'e bas:\n" +
                 "  Boyali SAVAS karosu → 'Evet' → savas haritasi + YERLESTIRME.\n" +
-                "  Ust bolgede 3 kirmizi Goblin gorunur (deployment sirasinda).\n" +
+                "  Ust bolgede 3 FARKLI dusman gorunur (deployment sirasinda).\n" +
                 "  'Geri Don' ile dusmanlar temizlenir.\n\n" +
                 "NOT: Tur sistemi + hareket + saldiri Faz C3'te gelecek.",
                 "Tamam");
@@ -1156,6 +1257,15 @@ namespace TacticalRPG.Editor
             hudSO.FindProperty("_turnManager").objectReferenceValue = tm;
             hudSO.ApplyModifiedProperties();
 
+            // ── TurnOrderBarHUD (ust-orta AKSIYON SIRASI bari, For The King tarzi) ──
+            var oldTB = gameManagerGO.GetComponent<TurnOrderBarHUD>();
+            if (oldTB != null) Object.DestroyImmediate(oldTB);
+            TurnOrderBarHUD tb = gameManagerGO.AddComponent<TurnOrderBarHUD>();
+            var tbSO = new SerializedObject(tb);
+            tbSO.FindProperty("_turnManager").objectReferenceValue  = tm;
+            tbSO.FindProperty("_stateManager").objectReferenceValue = gsm;
+            tbSO.ApplyModifiedProperties();
+
             // ── CombatNameplateHUD (birim ustu isim + can bari) ───────────────
             var oldNP = gameManagerGO.GetComponent<CombatNameplateHUD>();
             if (oldNP != null) Object.DestroyImmediate(oldNP);
@@ -1179,10 +1289,11 @@ namespace TacticalRPG.Editor
             if (!_silentSetup) EditorUtility.DisplayDialog("Faz C3 — Tur Sistemi Hazir",
                 "Kurulanlar:\n" +
                 "  • TurnManager (hiza gore initiative) + CombatHUD + CombatHighlighter\n" +
+                "  • TurnOrderBarHUD: UST-ORTADA aksiyon sirasi bari (soldaki = sirasi gelen)\n" +
                 "  • CombatNameplateHUD: her birimin ustunde isim + can bari (dost yesil / dusman kirmizi)\n" +
                 "  • MapInputHandler savas tiklamasina baglandi\n\n" +
                 "Play → marker → Evet → kart yerlestir → SAVASI BASLAT:\n" +
-                "  • Sol ustte sira paneli; aktif birimin ustunde sari top.\n" +
+                "  • Ust ortada SIRA BARI; sol ustte tur paneli; aktif birimin ustunde sari top.\n" +
                 "  • SENIN TURUN: yesil karoya tikla = git, kirmizi dusmana tikla = saldir.\n" +
                 "  • 'Turu Bitir' ile siradakine gec; dusmanlar otomatik oynar.\n" +
                 "  • Tum Goblin olunce ZAFER, tum birimlerin olunce YENILGI.",

@@ -42,6 +42,7 @@ MonoBehaviour:
   _unitModelEuler: {x: 0, y: 0, z: 0}
   _unitModelYOffset: 0
   _unitAnimator: {fileID: 9100000, guid: f45258ad1d60c6f438fd7c9fd3ecf098, type: 2}
+  _portrait: {fileID: 0}
   _hasManaSystem: 1
   _maxMana: 10
   _abilities:

@@ -51,6 +51,11 @@ namespace TacticalRPG.Data
                  "(hareketi CharacterAnimationDriver algılar).")]
         [SerializeField] private RuntimeAnimatorController _unitAnimator;
 
+        [Header("Portre (sıra barı)")]
+        [Tooltip("SIRA BARINDA gösterilecek küçük portre/splash art. BOŞSA sınıf rengi + adın " +
+                 "baş harfleri çizilir — yani portre olmadan da her karakter ayırt edilir.")]
+        [SerializeField] private Sprite _portrait;
+
         [Header("Özel Sistem")]
         [SerializeField] private bool _hasManaSystem;
         [SerializeField] private int  _maxMana;
@@ -78,6 +83,7 @@ namespace TacticalRPG.Data
         public Vector3    UnitModelEuler   => _unitModelEuler;
         public float      UnitModelYOffset => _unitModelYOffset;
         public RuntimeAnimatorController UnitAnimator => _unitAnimator;
+        public Sprite Portrait => _portrait;
 
         // ── Mana ─────────────────────────────────────────────────────────────
         public bool HasManaSystem => _hasManaSystem;

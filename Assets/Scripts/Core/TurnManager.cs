@@ -25,6 +25,9 @@ namespace TacticalRPG.Core
         [Header("Tempo")]
         [Tooltip("Düşman turunda hamleler arası kısa gecikme (oyuncu izleyebilsin).")]
         [SerializeField] private float _enemyActionDelay = 0.45f;
+        [Tooltip("Ölen birim sahneden silinmeden önce ne kadar kalsın (sn) — ölüm animasyonu oynasın. " +
+                 "Ölü birim bu sürede karoyu işgal etmez, hedeflenmez; sadece görseli durur.")]
+        [SerializeField, Min(0f)] private float _deathLingerSeconds = 1.2f;
 
         private readonly List<Unit> _order = new();
         private int  _index;
@@ -39,6 +42,28 @@ namespace TacticalRPG.Core
         public bool         CombatActive    => _combatActive;
         public bool IsPlayerTurn =>
             _combatActive && !_busy && CurrentUnit != null && CurrentUnit.Team == UnitTeam.Player;
+
+        /// <summary>
+        /// Şu andan başlayarak SIRADAKİ birimleri (initiative kuyruğunda ileriye doğru, ölüler
+        /// atlanarak) verilen listeye doldurur. İlk eleman = şu an sırası olan birim.
+        /// Sıra barı (TurnOrderBarHUD) bunu çizer. Çağıran listeyi tekrar kullanır → çöp üretmez.
+        /// Kuyruk tek turdan uzunsa başa sarar (For The King tarzı "sonraki tur" önizlemesi).
+        /// </summary>
+        public void FillUpcoming(List<Unit> buffer, int count)
+        {
+            buffer.Clear();
+            if (!_combatActive || _order.Count == 0 || count <= 0) return;
+
+            // İki tur ilerisine kadar tara → az birim kaldığında bar boş kalmaz, sonraki turun
+            // başı da görünür (For The King'deki sürekli kuyruk hissi).
+            int start = Mathf.Max(0, _index);
+            int scan  = _order.Count * 2;
+            for (int step = 0; step < scan && buffer.Count < count; step++)
+            {
+                Unit u = _order[(start + step) % _order.Count];
+                if (u != null && u.IsAlive) buffer.Add(u);
+            }
+        }
 
         /// <summary>Sıra/durum değişti → HUD ve highlighter yenilensin.</summary>
         public event Action               OnTurnChanged;
@@ -203,7 +228,7 @@ namespace TacticalRPG.Core
             }
 
             CurrentHasActed = true;
-            target.TakeDamage(attacker.Attack);
+            attacker.PerformAttack(target);   // saldırı animasyonu + hasar
             Message($"{attacker.DisplayName} -> {target.DisplayName} ({attacker.Attack} hasar)");
             OnTurnChanged?.Invoke();
 
@@ -247,7 +272,7 @@ namespace TacticalRPG.Core
                 if (_combatActive && enemy.IsAlive && target.IsAlive &&
                     enemy.Coordinate.DistanceTo(target.Coordinate) <= enemy.AttackRange)
                 {
-                    target.TakeDamage(enemy.Attack);
+                    enemy.PerformAttack(target);   // saldırı animasyonu + hasar
                     Message($"{enemy.DisplayName} -> {target.DisplayName} ({enemy.Attack} hasar)");
                     yield return new WaitForSeconds(_enemyActionDelay);
                 }
@@ -373,7 +398,14 @@ namespace TacticalRPG.Core
         {
             if (unit == null) return;
             Message($"{unit.DisplayName} dustu!");
-            Destroy(unit.gameObject); // permadeath — OnDisable UnitManager'dan siler; _order'da null'a düşer
+            // Permadeath — sahneden silinir (OnDisable UnitManager'dan siler; _order'da null'a düşer).
+            // Ölüm ANİMASYONU varsa silme gecikir ki klip oynasın: ölü birim IsAlive=false olduğu için
+            // bu sürede karoyu işgal etmez, hedeflenmez, tur sırasına girmez (UnitManager/AdvanceTurn
+            // hep IsAlive süzer) — yalnız görseli sahnede kalır. Klip yoksa eskisi gibi anında silinir
+            // (yoksa ceset boşuna dikilir).
+            var anim = unit.GetComponent<CharacterAnimationDriver>();
+            float delay = anim != null && anim.HasDeathAnimation ? _deathLingerSeconds : 0f;
+            Destroy(unit.gameObject, delay);
         }
 
         private bool CheckEnd()

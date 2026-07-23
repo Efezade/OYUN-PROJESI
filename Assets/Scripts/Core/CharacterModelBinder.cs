@@ -29,6 +29,12 @@ namespace TacticalRPG.Core
         /// <summary>Takılan modelin ana renderer'ı (Unit hasar-flaşını buna yöneltebilir).</summary>
         public Renderer ModelRenderer { get; private set; }
 
+        /// <summary>
+        /// Takılan modelin TÜM renderer'ları. Hasar flaşı gibi tüm gövdeyi boyaması gereken
+        /// efektler bunu kullanır (karakter FBX'i birden çok parçadan gelebilir: gövde, silah…).
+        /// </summary>
+        public Renderer[] ModelRenderers { get; private set; } = System.Array.Empty<Renderer>();
+
         /// <summary>Takılan modelin Animator'ü (controller atandıysa; CharacterAnimationDriver bulur).</summary>
         public Animator ModelAnimator { get; private set; }
 
@@ -64,7 +70,8 @@ namespace TacticalRPG.Core
             }
 
             t.localPosition = new Vector3(0f, yOffset, 0f);
-            ModelRenderer = _instance.GetComponentInChildren<Renderer>();
+            ModelRenderers = _instance.GetComponentsInChildren<Renderer>(true);
+            ModelRenderer  = ModelRenderers.Length > 0 ? ModelRenderers[0] : null;
 
             // Animasyon: rigli FBX'in Animator'ü kökünde gelir; controller atanırsa çalıştırılır.
             // Konum koddan sürülür (PlayerController/Unit) → root motion kapalı, animasyon yerinde oynar.

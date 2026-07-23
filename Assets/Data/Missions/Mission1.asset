@@ -21,12 +21,12 @@ MonoBehaviour:
       Q: 2
       R: 7
     level: 1
-  - enemyClass: {fileID: 11400000, guid: 8f1f8e98d62ecf3458a89d4a8ef5de74, type: 2}
+  - enemyClass: {fileID: 11400000, guid: 4be6bd9884b6b2c489b3fa3a9a73177d, type: 2}
     coord:
       Q: 4
       R: 7
     level: 1
-  - enemyClass: {fileID: 11400000, guid: 8f1f8e98d62ecf3458a89d4a8ef5de74, type: 2}
+  - enemyClass: {fileID: 11400000, guid: 657252fd86520164b8006de9d3457ff1, type: 2}
     coord:
       Q: 3
       R: 8

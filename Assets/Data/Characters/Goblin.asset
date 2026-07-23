@@ -36,12 +36,13 @@ MonoBehaviour:
   - 1.4
   _deployCost: 3
   _isCommander: 0
-  _unitColor: {r: 0.3, g: 0.6, b: 1, a: 1}
-  _unitModel: {fileID: 0}
+  _unitColor: {r: 0.55, g: 0.75, b: 0.25, a: 1}
+  _unitModel: {fileID: 919132149155446097, guid: 8ab45ba3dbeec2a40806888f80a3fce1, type: 3}
   _unitModelHeight: 1.5
-  _unitModelEuler: {x: 90, y: 0, z: 0}
+  _unitModelEuler: {x: 0, y: 0, z: 0}
   _unitModelYOffset: 0
-  _unitAnimator: {fileID: 0}
+  _unitAnimator: {fileID: 9100000, guid: 0edb79e15146a8148a8d6a81e7334d74, type: 2}
+  _portrait: {fileID: 0}
   _hasManaSystem: 0
   _maxMana: 0
   _abilities: []

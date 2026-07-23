@@ -81,6 +81,11 @@ namespace TacticalRPG.Core
 
             if (!Input.GetMouseButtonDown(0)) return;
 
+            // IMGUI paneli (portal/kule istemi, savaş HUD'u …) üstüne tıklandıysa harita tıklaması
+            // DEĞİLDİR. Update, OnGUI'den önce çalıştığı için aksi halde "Evet, Isinlan" butonuna
+            // basmak panelin arkasındaki karoda yol önizlemesi açıyordu.
+            if (ImguiBlocker.IsPointerOver(Input.mousePosition)) return;
+
             // Deployment: tıklama = seçili kartı hex'e yerleştir.
             if (_stateManager != null && _stateManager.State == GameState.Deployment)
             {

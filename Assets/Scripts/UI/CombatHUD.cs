@@ -37,10 +37,14 @@ namespace TacticalRPG.UI
             if (_state == null || _turnManager == null) return;
             if (_state.State != GameState.Combat) return;
 
-            DrawTurnPanel();
+            // Sanal 1920x1080 ekrana çiz → savaş panelleri her çözünürlükte aynı oranda.
+            using (HudScale.Scaled())
+            {
+                DrawTurnPanel();
 
-            if (_turnManager.Result != CombatResult.Ongoing)
-                DrawResultBanner();
+                if (_turnManager.Result != CombatResult.Ongoing)
+                    DrawResultBanner();
+            }
         }
 
         private void DrawTurnPanel()
@@ -51,7 +55,9 @@ namespace TacticalRPG.UI
             const float w = 320f;
             float h = commanderTurn ? 330f : 176f;
             // Sol-üst (OverworldCombatHUD üst-orta "Geri Don" ile çakışmaz).
-            GUILayout.BeginArea(new Rect(12f, 12f, w, h), GUI.skin.box);
+            var rect = new Rect(12f, 12f, w, h);
+            ImguiBlocker.Register(rect);   // panel üstündeki tık hareket/saldırı sayılmasın
+            GUILayout.BeginArea(rect, GUI.skin.box);
 
             if (cur != null)
             {
@@ -117,7 +123,9 @@ namespace TacticalRPG.UI
         {
             bool won = _turnManager.Result == CombatResult.PlayerWon;
             const float w = 360f, h = 140f;
-            GUILayout.BeginArea(new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h), GUI.skin.box);
+            var rect = new Rect((HudScale.Width - w) * 0.5f, (HudScale.Height - h) * 0.5f, w, h);
+            ImguiBlocker.Register(rect);
+            GUILayout.BeginArea(rect, GUI.skin.box);
             GUILayout.FlexibleSpace();
             GUILayout.Label(won ? "★   Z A F E R   ★" : "Y E N I L G I");
             GUILayout.Label(won ? "Tum dusmanlar yok edildi." : "Komutan (Kam) dustu — sefer sona erdi.");
