@@ -6,7 +6,7 @@ namespace TacticalRPG.UI
     /// <summary>
     /// ZAMAN SAYACI (sol üst) — bir günü 6 dilime bölen dairesel kadran + altında "GÜN N" bandı.
     ///
-    /// Her 3 AP harcandığında bir dilim TAK diye ilerler (yumuşak geçiş YOK — anlık/kesikli).
+    /// Her 9 AP harcandığında bir dilim TAK diye ilerler (yumuşak geçiş YOK — anlık/kesikli).
     /// İlk 4 dilim GÜNDÜZ (sıcak sarı), son 2 dilim GECE (koyu mavi) renginde çizilir; merkezdeki
     /// simge gündüz GÜNEŞ, gece AY olur. Geçmiş dilimler soluk, sıradaki dilimler koyu, içinde
     /// bulunulan dilim parlak + dış halkada işaretçi.

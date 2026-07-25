@@ -13,7 +13,7 @@ using System.Collections.Generic;
 
 namespace TacticalRPG.Editor
 {
-    public static class SceneSetupTool
+    public static partial class SceneSetupTool
     {
         private const string SceneRootName   = "[TacticalRPG_Scene]";
         private const string SystemsRootName = "[TacticalRPG_Systems]";
@@ -50,6 +50,7 @@ namespace TacticalRPG.Editor
                 SetupPhaseC4();   // Kam komutan + savas buyusu + lose=Kam olumu
                 SetupPhaseD();    // cok-tipli oz + harita toplama + tarifle birim uretme
                 SetupWorld3x3(); // Bolum 1 = 9 harita 3x3 snake + kenardan gecis
+                SetupUIShell();  // ana menu gezinme kabugu (KITAP/CANTA/HARITA sekmeleri + ayar)
             }
             finally { _silentSetup = false; }
 
@@ -413,7 +414,7 @@ namespace TacticalRPG.Editor
                 Debug.LogWarning("[TacticalRPG] Directional Light bulunamadi — gece/gunduz isigi baglanmadi. Faz 0'i calistir.");
 
             // ── ZAMAN SAYACI (sol ust dairesel kadran + GUN bandi) ──────────────
-            // 6 dilim = 1 gun; her 3 AP'de bir dilim TAK diye ilerler. 4 dilim gunduz, 2 gece.
+            // 6 dilim = 1 gun; her 9 AP'de bir dilim TAK diye ilerler. 4 dilim gunduz, 2 gece.
             // (_stateManager Faz A'da baglanir — GameStateManager o an henuz yok.)
             var oldDial = gameManagerGO.GetComponent<TimeDialHUD>();
             if (oldDial != null) Object.DestroyImmediate(oldDial);

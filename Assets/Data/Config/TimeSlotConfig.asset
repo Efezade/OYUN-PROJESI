@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TimeSlotConfig
   m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Core.TimeSlotConfig
   _apPerMove: 1
-  _apPerTimeSlot: 3
+  _apPerTimeSlot: 9
   _timeSlotsPerDay: 6
   _slotNames:
   - Sabah

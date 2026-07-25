@@ -27,6 +27,10 @@ namespace TacticalRPG.UI
         {
             if (_state == null || _state.State != GameState.Overworld) return;
 
+            // Tam-ekran menü (KİTAP/ÇANTA/HARİTA) açıkken bu paneli ÇİZME — IMGUI, uGUI menüsünün
+            // üstüne taşardı; ayrıca KİTAP'ın kendi ÖZ DEPOSU'su zaten var (bkz. MenuState).
+            if (MenuState.IsAnyOpen) return;
+
             // Sanal 1920x1080 ekrana ciz -> her cozunurlukte ayni oran.
             using var _scale = HudScale.Scaled();
 

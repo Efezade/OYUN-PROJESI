@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using TacticalRPG.Grid;
 using TacticalRPG.Data;
 
@@ -85,6 +86,12 @@ namespace TacticalRPG.Core
             // DEĞİLDİR. Update, OnGUI'den önce çalıştığı için aksi halde "Evet, Isinlan" butonuna
             // basmak panelin arkasındaki karoda yol önizlemesi açıyordu.
             if (ImguiBlocker.IsPointerOver(Input.mousePosition)) return;
+
+            // uGUI menü kabuğu (KİTAP/ÇANTA/HARİTA paneli veya sekme/ayar düğmesi) üstüne
+            // tıklandıysa harita tıklaması DEĞİLDİR — IMGUI için ImguiBlocker'ın uGUI karşılığı.
+            // Tam-ekran panel açıkken zeminin raycast hedefi tüm ekranı kapladığı için harita
+            // girişi de doğal olarak bloklanır. EventSystem yoksa (henüz kurulmadıysa) atlanır.
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
             // Deployment: tıklama = seçili kartı hex'e yerleştir.
             if (_stateManager != null && _stateManager.State == GameState.Deployment)

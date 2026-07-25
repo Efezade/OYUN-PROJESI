@@ -13,7 +13,7 @@ namespace TacticalRPG.Core
     ///   • Öz toplama = 1 AP (EssenceNodeManager kendi maliyetini harcar).
     ///   • Savaşa girme = 3 AP; TÜM savaş bu 3 AP'ye sayılır. Savaş/yerleştirme sırasında motor
     ///     DONDURULUR (<see cref="SetFrozen"/>) → zaman ilerlemez, gün geçmez.
-    ///   • 3 AP = 1 dilim, 6 dilim = 1 gün (18 AP). İlk 4 dilim gündüz, son 2 dilim gece.
+    ///   • 9 AP = 1 dilim, 6 dilim = 1 gün (54 AP). İlk 4 dilim gündüz, son 2 dilim gece.
     /// </summary>
     public class ActionPointManager : MonoBehaviour
     {
@@ -23,7 +23,7 @@ namespace TacticalRPG.Core
 
         // AP durumu
         public int CurrentAP      { get; private set; }
-        public int MaxAP          => _config != null ? _config.APPerTimeSlot : 3;
+        public int MaxAP          => _config != null ? _config.APPerTimeSlot : 9;
 
         // Zaman durumu
         public int CurrentDay     { get; private set; } = 1;
