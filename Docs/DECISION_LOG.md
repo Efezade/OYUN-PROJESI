@@ -87,7 +87,7 @@ TacticalRPG/
 **ÖZET — nerede kaldık:** Son push `9087edb` (Faz D2, test ✓). Working tree'de **BİRİKMİŞ, HENÜZ COMMIT'LENMEMİŞ** 3 iş var:
 
 1. **DebugHUD UI çakışması fix** (test ✓) — Canvas yalnız Overworld/ConfirmMission'da açık (Combat/Deployment'ta gizli). Değişen: `DebugHUD.cs`, `SceneSetupTool.cs` (_state wiring SetupDebugHUD+SetupPhaseA).
-2. **KARO PIPELINE ÇALIŞIYOR ✓** — temiz re-export yapıldı; **11 karo başarıyla import edildi** (`Assets/Art/Models/Tiles/*.fbx` → `Assets/Prefabs/Grid/Tile_*.prefab`: default, agac1/2/3, cicek, mantar, kum, su, lav, kopru, kule). "Klasörü Tara" boru hattı sağlam. **YENİ KARO EKLEME ADIMLARI → [[reference-tile-pipeline]]** (kullanıcı "nerede kalmıştık / karo nasıl eklerim" deyince BUNU hatırlat: klasör `Assets/Art/Models/Tiles/` → Tile Painter "🔍 Klasörü Tara" → paletten seç → Scene'de boya).
+2. **KARO PIPELINE ÇALIŞIYOR ✓** — temiz re-export yapıldı; **11 karo başarıyla import edildi** (`Assets/Art/Models/Tiles/*.fbx` → `Assets/Prefabs/Grid/Tile_*.prefab`: default, agac1/2/3, cicek, mantar, kum, su, lav, kopru, kule). "Klasörü Tara" boru hattı sağlam. **YENİ KARO EKLEME ADIMLARI → `Docs/TILE_PIPELINE.md` (eski hafıza notu [[reference-tile-pipeline]])** (kullanıcı "nerede kalmıştık / karo nasıl eklerim" deyince BUNU hatırlat: klasör `Assets/Art/Models/Tiles/` → Tile Painter "🔍 Klasörü Tara" → paletten seç → Scene'de boya).
 3. **YENİ: Savaş nameplate'leri** (isim + bölümlü can barı + hasar flaşı/"-N") — KODLANDI 2026-06-25, **Unity'de TEST BEKLİYOR.** Detay aşağıda "Savaş Nameplate".
 
 **DÖNÜŞTE SIRADAKİ İŞLER:**
@@ -157,7 +157,7 @@ Kullanıcı isteği: maptaki karolarda öz olsun, topla, öze göre savaş için
 3. ✅ `GameState.Deployment` + `StartBattle()`; `DeploymentManager` (Core: bölge=alt N satır, mavi ped vurgu, `TryDeployAt`→öz harca→spawn→Bind→PlaceAt, OnStateChanged dinler, Combat'ta birim kalır/overworld'de temizlenir) + `DeploymentHUD` (UI: kart listesi+öz+Savaşı Başlat) + `MapInputHandler` deployment tık yönlendirme.
 4. ✅ SceneSetupTool **Faz B** menüsü (UnitManager geri ekler, DM+DH kurar+wire, başlangıç özü 20).
 
-**SONRA → Faz C (sıradaki iş — TASARIM BELGESİNE GÖRE):** Tasarım kutsal kitabı artık okundu+kaydedildi → bkz [[reference-game-design]] (hikaye+mekanik) ve [[reference-ui-layout]] (6 ekran UI). Faz C planı:
+**SONRA → Faz C (sıradaki iş — TASARIM BELGESİNE GÖRE):** Tasarım kutsal kitabı artık okundu+kaydedildi → bkz `Docs/GAME_DESIGN.md` §5 (eski hafıza notu [[reference-game-design]]) (hikaye+mekanik) ve `Docs/UI_LAYOUT.md` (eski hafıza notu [[reference-ui-layout]]) (6 ekran UI). Faz C planı:
 1. `MissionData`'ya **düşman roster** ekle → savaş haritasına düşman Unit spawn (kartlı/kartsız).
 2. `TurnManager` — **HIZA GÖRE initiative** (XCOM/Banner Saga; "önce oyuncu sonra düşman" DEĞİL). Oyuncu turu: Unit hareketi (PlayerController-benzeri) + yetenek via `AbilityCaster`. Düşman turu: basit AI.
 3. **Kam savaşta ZORUNLU bir birim** + savaş başına kısıtlı Mana havuzu ile büyü. Win: tüm düşman ölünce. Lose: **Kam ölünce TÜM Run kaybedilir** (roguelite reset, sonraki faz).
@@ -170,7 +170,7 @@ Kullanıcı isteği: maptaki karolarda öz olsun, topla, öze göre savaş için
 **Değişmez kararlar:** tek sahne durum-tabanlı (KARAR 1); öz harcayarak deployment (KARAR 2). Detay: "Hedef Oyun Döngüsü" bölümü.
 
 ### Planlanan: Anamap karolarında ÖZ TOPLAMA (kullanıcı notu 2026-06-22 — SAVAŞTAN SONRA, şimdi YAPILMIYOR)
-Kullanıcı isteği (Faz C bitince ele alınacak, muhtemelen öz-ekonomi/Faz D adımı): Overworld'de **köprü gibi özel yapı OLMAYAN her ana harita karosunda** ana karakterden küçük **yuvarlak öz** görselleri durur. Karodayken "topla" komutu → o karonun özleri **1 AP karşılığında** hazineye girer. Özler **çok-tipli + rastgele**: her karoya rastgele sayıda/karışık renk (örn. bir karoda 3 mavi+2 kırmızı+1 turuncu) — **oranları kullanıcı ayarlayacak**. Tasarımla uyumlu (bkz [[reference-game-design]]: Töz haritadan toplanır, elementsel/renkli; mevcut `EssenceManager` tek havuz → çok-tipliye genişleyecek).
+Kullanıcı isteği (Faz C bitince ele alınacak, muhtemelen öz-ekonomi/Faz D adımı): Overworld'de **köprü gibi özel yapı OLMAYAN her ana harita karosunda** ana karakterden küçük **yuvarlak öz** görselleri durur. Karodayken "topla" komutu → o karonun özleri **1 AP karşılığında** hazineye girer. Özler **çok-tipli + rastgele**: her karoya rastgele sayıda/karışık renk (örn. bir karoda 3 mavi+2 kırmızı+1 turuncu) — **oranları kullanıcı ayarlayacak**. Tasarımla uyumlu (bkz `Docs/GAME_DESIGN.md` §5 (eski hafıza notu [[reference-game-design]]): Töz haritadan toplanır, elementsel/renkli; mevcut `EssenceManager` tek havuz → çok-tipliye genişleyecek).
 
 ---
 
@@ -230,3 +230,32 @@ For The King benzeri iki-katmanlı yapı:
 
 **Why:** Oyunun vizyonu: Evrimleşen karakter kartları (3 seviye), Kıyamet Sayacı baskısı, Kam'ın mana/büyü sistemi.  
 **How to apply:** Faz numaralarına göre menü çalıştır. Kod arka planda Claude yazar, UI/görsel Efe yapar.
+
+---
+
+## 2026-07-26 — İki-PC koordinasyonu + UI güzelleştirme + Mağaza + TASK-001 (Watson oturumu)
+
+Bu oturumda Unity tarafı Claude ("Watson") tarafından yapılanlar (henüz commit'lenip push'lanacak):
+
+- **AYARLAR ekranı (uGUI):** MASTER/MÜZİK/SFX + PARLAKLIK slider'ları, KALİTE/TAM EKRAN/VSYNC; PlayerPrefs'e
+  kalıcı. `GameAudio` (arka plan müziği — Python ile üretilmiş telifsiz D-Dorian placeholder WAV) +
+  `DisplaySettings` (parlaklık overlay, kalite) + `SettingsController` (view). Kod: `SceneSetupTool.Settings.cs`.
+- **ÇANTA + HARİTA ekranları:** gerçek içerik — `AbilityCardView` (Kam büyü kartları: AteşTopu/RuhKalkanı/Şifa)
+  + `WorldMapView` (3×3 snake dünya, `WorldGridManager.CurrentMap`'e CANLI vurgu). Kod: `SceneSetupTool.BagMap.cs`.
+- **UI güzelleştirme (game UI.pdf mockup'larına göre):** ortak "parşömen UI kiti" (`SceneSetupTool.UIKit.cs`) —
+  krem kâğıt + mürekkep paleti, yuvarlak 9-slice paneller/madalyonlar. KİTAP=açık kitap (spine+ÖZ DEPOSU şeridi+
+  sınıf kartları+EVRİM yer imi+sayfa no), ÇANTA=valiz (sap+sol sekmeler+noktalı ayraç+POTLAR/KAM KARTLARI),
+  HARİTA=parşömen (PINS paneli+3×3 map pin+pusula). "ÇANTA/HARİTA" yazıları kaldırıldı (şekil kimliği taşıyor).
+- **MAĞAZA (store) sistemi:** palete `magaza` karosu (`isStore`, Tile Painter'dan boyanır, mantar modeli) +
+  5 `ShopItemSO` (Yel Ayağı/Kartal Gözü/Zaman Kumu potları + Sağlam Çizme/Kâhin Pusulası kalıcı) + `StoreManager`
+  (yakınlık+katalog+altın işaret) + `PlayerBuffs` (öz karşılığı etki: anlık AP / geçici-kalıcı hız/menzil,
+  adım ile sayılır) + `StoreHUD` (IMGUI dükkân). Hook'lar: `ActionPointManager.GrantAP`,
+  `PlayerController.SpeedMultiplier`, `MapInputHandler.BonusMoveRange`. Kod: `SceneSetupTool.Store.cs`.
+  Hepsi `TAM KURULUM` zincirine bağlı (SetupStore).
+- **TASK-001 (INBOX):** hafızadaki `reference-game-design/ui-layout/tile-pipeline` notları repoya yedeklendi →
+  `Docs/GAME_DESIGN.md §5` (canonical bölüm 0-4 korunarak EKLENDİ), `Docs/UI_LAYOUT.md` (yeni),
+  `Docs/TILE_PIPELINE.md` (yeni). Bu dosyadaki 3 `[[...]]` referansı dosya yollarına güncellendi.
+  Hafıza notları silinmedi. INBOX_TASKS.md'de `done` işaretlendi.
+
+**Not (Sherlock'a):** GAME_DESIGN.md §5 üzerine YAZILMADI — hikaye/mekanik iskeleti eklendi, senin sistematik
+bölümlerin (0-4) dokunulmadı. Sınıf statları §5'te TASLAK; sayısal denge bölüm 2 senin alanın.

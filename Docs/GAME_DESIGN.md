@@ -65,3 +65,71 @@ Detaylı tarihsel gerekçeler için `Docs/DECISION_LOG.md`.
 ## 4) Bekleyen Sorular (Unity tarafına / kod tarafına yönelik)
 
 *(Kod tarafının netleştirmesi gereken açık noktalar buraya düşer.)*
+
+---
+
+## 5) Hikaye & Mekanik Referansı — "Kutsal Kitap" (Unity/Watson tarafı, hafıza yedeği)
+
+> **TASK-001 (2026-07-26):** Aşağısı Unity tarafı Claude ("Watson") hafızasındaki `reference-game-design`
+> notunun repo yedeğidir — kaynak belge `C:\3D OYUN\Gerekli belgeler\oyun hikaye ve mekanik.docx`.
+> Bölüm 0-4 (bu PC'nin sistematik/sayısal kararları) **canonical**; bu bölüm hikaye/mekanik iskeleti
+> içindir (kapsam ayrımına göre hikaye Unity tarafının alanı). İçerik kaybı olmasın diye ÜSTÜNE
+> YAZILMADAN eklendi. Sınıf statları burada TASLAK'tır; sayısal denge bölüm 2'de kararlaştırılır.
+
+### Hikaye (Türk mitolojisi)
+- **Kayra Han** (Yaratıcı) evrenin kalbine **Ulu Kayın**'ı (Hayat Ağacı) dikti. Ruh döngüsü: dallardan
+  dökül → yaşa → köklerden göğe (huzura) dön.
+- **Erlik Han** (yeraltı/karanlık efendisi) bu döngüye başkaldırdı; unutulmaktan korkup ruhların göğe
+  dönüşünü "israf" gördü. Demir krallığı **Tamag**'ı güçlendirmek için ruhları çalıp saf enerji
+  özütlerine = **Töz**'lere dönüştürdü.
+- Erlik'in ölüm elçileri **Aldacılar** yeryüzünü istila etti. Son **Kam** (Şaman = ana karakter / oyuncu)
+  yuvanın çığlığıyla uyanır.
+
+### Çekirdek döngü (roguelite)
+Overworld keşif → görev düğümüne gir → savaş → ödül seç (draft) → overworld'e dön … ölünce/süre
+bitince/harita çökünce başa sar, **Meta-Özler** ana menüye taşınır → kalıcı kilit açımı.
+
+### Keşif mekanikleri (makro harita)
+- **Savaş Sisi:** Hex harita tamamen karanlık; bastığın yer aydınlanır. **Kule (Watchtower)** yapısına
+  ulaşınca o bölgenin sisi KALICI kalkar.
+- **Kut (AP / Aksiyon Puanı):** ilahi yaşam enerjisi. 1 AP = 1 hex ilerle / Töz topla / savaş alanına gir.
+- **Zaman baskısı:** Her **3 AP → zaman çarkı 1 dilim**. **6 dilim = 1 Gün** (4 Gündüz + 2 Gece).
+- **Dünyanın Çöküşü:** 3. gün sonu → 4. güne devrederken Erlik harita karolarını rastgele silmeye başlar
+  (uçurumlar); çıkışa ulaşmak hayatta kalma olur.
+
+### Ekonomi + karakter evrimi
+- **Töz/Öz** = temel para birimi; haritadan/savaştan toplanır. **Elementsel/renkli**: Kırmızı (Ateş),
+  Mavi (Su) vb. — bunlar eski savaşçıların anılarıdır. (ÖZ DEPOSU UI'da **3 ayrı sayaç** → çok-tipli öz;
+  kod artık çok-tipli EssenceWallet.)
+- **Asker Kartları:** Kitap menüsünde öz harcayarak asker sınıflarını savaşa hazırlarsın.
+- **Evrim (Level 1/2/3):** Öz feda ederek sınıf seviye atlar, ölümcül pasifler kazanır (örn.
+  Rogue → "ekstra 2 hex zıplama" / "kritik").
+- **Kam Skill Tree:** Kam'ın kendi yetenek ağacından pasifler + aktif büyüler (Alev Topu, İyileştirme) öz ile açılır.
+
+### Taktiksel savaş (ritüel)
+- Görev düğümüne (Mezarlık/Tapınak) girince makro harita kapanır, engelli **Battlefield**'a inilir.
+  "Çatışma değil, ata çağırma ritüeli."
+- **Deployment:** Kam ZORUNLU iner. Etrafındaki **mavi grid**lere envanterdeki **Töz harcayarak** asker
+  kartları yerleştirilir (hepsini harca = dev ordu / sakla = Boss'a).
+- **İnisiyatif:** hıza göre tur sırası (XCOM/Banner Saga). Hareket + özel yetenek.
+- **Kam Manası:** savaş başına kısıtlı **Mana Havuzu** (örn. 10) ile Skill Tree büyülerini yağdırır.
+- **Permadeath:** Asker ölürse o savaş için silinir (harcanan öz boşa). **Kam ölürse Run biter.**
+
+### Ganimet + meta-ilerleme
+- **Drafting:** savaş kazanınca **3 ödülden** seç (Pot, ekstra öz, silah…) → overworld.
+- **Roguelite reset:** süre bit / harita çök / Kam öl → başa sar; kazanılan **Meta-Özler** kalıcı.
+- **Kalıcı Diriliş:** ana menü Kitap ekranında meta-öz harcayıp yeni sınıf (Büyücü, Şifacı) / başlangıç
+  avantajı aç.
+
+### Asker sınıfları (TASLAK statlar — sayısal denge bölüm 2'de kararlaştırılacak; isim eşlemesi için tut)
+İsim eşlemesi: **Barbar↔WARRIOR/Savaşçı, Okçu↔RANGER, Büyücü↔MAGE, Rahip↔HEALER/Şifacı, Serseri↔Rogue**
+(kitap UI'da 4 slot: WARRIOR/MAGE/HEALER/RANGER; Serseri muhtemelen kilitli/ekstra sınıf).
+
+| Sınıf | Menzil | Yürü | Can | Hasar | Krit | Aktif / Evrim (taslak) |
+|---|---|---|---|---|---|---|
+| Barbar | 1 | 2+1 | 42 | 6-11 | 15 | 2 vuruş · L1 alan · L2 x2+alan · L3 %25 can çalma+x2+alan |
+| Okçu | 3 | 2+1 | 26 | 3-13 | 18 | üst karo bonusu · L1 5 karodan vur · L2 2 hedef · L3 2 hedef+zehir |
+| Büyücü | 2 | 2+1 | 34 | 7-9 | 12 | 1 tur eylemsizlik · L1 1 karo sektir · L2 portal+vuruş · L3 dondurma |
+| Serseri | 1 (görüş 4) | 3+1 | 24 | 5-7 | 14 | L1 2 karo zıpla+vuruş · L2 yön sıçra · L3 görünmezlik→garanti krit |
+| Rahip | 2 | 1+1 | 46 | 2-4 alan / 6-8 yakın | — | vurduğu hasarın 2× iyileştirme · L1 vuruş→dosta can · L2 bariyer · L3 saldırı engelle |
+

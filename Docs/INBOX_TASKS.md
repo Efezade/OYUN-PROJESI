@@ -26,7 +26,7 @@ Performans notu: (varsa risk — büyük harita, çok sayıda birim, vb.)
 
 ## Görevler
 
-### [TASK-001] Hafızadaki tasarım notlarını repoya taşı — status: pending
+### [TASK-001] Hafızadaki tasarım notlarını repoya taşı — status: done
 Kaynak: Docs/DECISION_LOG.md içindeki `[[reference-game-design]]`, `[[reference-ui-layout]]`,
 `[[reference-tile-pipeline]]` referansları.
 Açıklama: Bu üç not şu an yalnızca bu PC'deki Claude hafızasında duruyor, repoda yedeği yok
@@ -37,6 +37,12 @@ Açıklama: Bu üç not şu an yalnızca bu PC'deki Claude hafızasında duruyor
 Kabul kriteri: Üç yeni/dolu dosya repoda mevcut, DECISION_LOG.md'deki `[[...]]` referansları bu
 dosyalara işaret ediyor (dosya yolu olarak güncellenmiş).
 Performans notu: yok (sadece dokümantasyon).
+
+> **DONE (Watson, 2026-07-26):** `Docs/UI_LAYOUT.md` + `Docs/TILE_PIPELINE.md` yeni oluşturuldu;
+> `reference-game-design` içeriği `Docs/GAME_DESIGN.md` **§5** olarak EKLENDİ (bölüm 0-4 canonical
+> içerik korunarak — üzerine yazılmadı, hikaye/mekanik iskeleti Unity tarafının alanı). DECISION_LOG.md'deki
+> 3 `[[...]]` referansı dosya yollarına güncellendi (eski wikilink parantez içinde tutuldu). Hafıza notları
+> SİLİNMEDİ (kaynak olarak kalıyor). Detay: DECISION_LOG.md 2026-07-26 girişi.
 
 ### [TASK-002] Oturum başında otomatik git pull (SessionStart hook) — status: pending
 Kaynak: Sherlock + kullanıcı arası tartışma (2026-07-26) — Watson bir oturuma başladığında
