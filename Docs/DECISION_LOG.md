@@ -259,3 +259,18 @@ Bu oturumda Unity tarafı Claude ("Watson") tarafından yapılanlar (henüz comm
 
 **Not (Sherlock'a):** GAME_DESIGN.md §5 üzerine YAZILMADI — hikaye/mekanik iskeleti eklendi, senin sistematik
 bölümlerin (0-4) dokunulmadı. Sınıf statları §5'te TASLAK; sayısal denge bölüm 2 senin alanın.
+
+---
+
+## 2026-07-26 — TASK-002: SessionStart auto-pull hook (yeni yalın log formatı denemesi)
+
+**KARAR:** Bu makineye (Watson) SessionStart hook'u kuruldu → oturum başında güvenli `git pull`.
+**NEDEN:** İki-PC akışında Watson elle pull yapmayı unutabilir; INBOX/GAME_DESIGN güncelken çalışmak lazım.
+Güvenli çünkü: tracked commit'siz değişiklik varsa pull ATLANIR (Unity sık sık sahne/.controller kirletir),
+temizse `--ff-only` (asla merge/clobber yok), her zaman exit 0 (oturumu bloke etmez).
+**NEREDE:** `C:\3D OYUN\.claude\settings.local.json` + `.claude/hooks/session-pull.sh` — **OYUN repo'sunun
+DIŞINDA** (makineye özel; Sherlock etkilenmez).
+**DERS:** SessionStart olayı çalışan tur içinde tetiklenemez → script'i iki dalda pipe-test ederek doğruladım
+(temiz/kirli), canlı ateşleme yeni oturumda görülür. `.claude/settings.local.json`'a hook eklerken watcher
+mevcut oturumda görmeyebilir (yeni oturum ya da /hooks gerekir).
+**Commit:** (bu giriş) — INBOX TASK-002 done.

@@ -44,7 +44,7 @@ Performans notu: yok (sadece dokümantasyon).
 > 3 `[[...]]` referansı dosya yollarına güncellendi (eski wikilink parantez içinde tutuldu). Hafıza notları
 > SİLİNMEDİ (kaynak olarak kalıyor). Detay: DECISION_LOG.md 2026-07-26 girişi.
 
-### [TASK-002] Oturum başında otomatik git pull (SessionStart hook) — status: pending
+### [TASK-002] Oturum başında otomatik git pull (SessionStart hook) — status: done
 Kaynak: Sherlock + kullanıcı arası tartışma (2026-07-26) — Watson bir oturuma başladığında
 INBOX_TASKS.md'nin güncel halini görmesi için önce git pull yapması gerekiyor, ama bu şu an
 CLAUDE.md kuralına (bkz §9) bağlı, otomatik değil.
@@ -56,3 +56,10 @@ yardımcı olur).
 Kabul kriteri: Yeni bir Claude Code oturumu açıldığında otomatik olarak git pull çalıştığı
 doğrulanmış (test edilmiş) olsun.
 Performans notu: yok.
+
+> **DONE (Watson, 2026-07-26):** SessionStart hook kuruldu — `C:\3D OYUN\.claude\settings.local.json`
+> (bu makineye özel, OYUN repo'suna DAHİL DEĞİL → Sherlock'un makinesi etkilenmez; o taraf isterse kendi
+> hook'unu kurar). Script `C:\3D OYUN\.claude\hooks\session-pull.sh`: tracked commit'siz değişiklik varsa
+> pull ATLA, temizse `git pull --ff-only`, her zaman exit 0, sonucu additionalContext ile bildirir.
+> **Script iki dalda da test edildi** (temiz→ff-only OK; kirli→ATLANDI; ikisi de geçerli JSON+exit 0).
+> Canlı SessionStart ateşlemesi yeni oturumda doğrulanacak (bu tur içinde tetiklenemez).
