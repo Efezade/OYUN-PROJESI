@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using TacticalRPG.Core;
 using TacticalRPG.Data;
+using TacticalRPG.Grid;
 using TacticalRPG.UI;
 
 namespace TacticalRPG.Editor
