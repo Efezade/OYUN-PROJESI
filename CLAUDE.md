@@ -133,7 +133,22 @@ Assets/
 
 ---
 
-## 9. Bu Projenin Vizyonu
+## 9. Görev Gelen Kutusu (Inbox) Akışı
+
+İkinci bir PC'de (Unity dosyaları olmadan) Efe + Kardelen tasarım/denge kararları tartışıyor;
+bu kararlar `Docs/GAME_DESIGN.md` (tek doğruluk kaynağı) ve `Docs/INBOX_TASKS.md` (görev listesi)
+üzerinden buraya push ediliyor.
+
+- **Oturum başında:** `Docs/INBOX_TASKS.md`'yi oku. `pending` görev varsa işle.
+- **Görev bitince:** `Docs/DECISION_LOG.md`'ye ne yapıldığını yaz, INBOX_TASKS.md'de görevi
+  `done` işaretle (satırı silme — arşiv kalsın).
+- **Belirsiz/çelişkili görev:** `blocked` işaretle + nedenini yaz, sessizce atlamayan.
+- `Docs/GAME_DESIGN.md` ile mevcut kod/ROADMAP arasında çelişki varsa GAME_DESIGN.md önceliklidir;
+  büyük bir çelişkiyse INBOX_TASKS.md'ye not düşüp diğer tarafın netleştirmesini bekle.
+
+---
+
+## 10. Bu Projenin Vizyonu
 
 **For The King + XCOM** ilhamıyla hex-grid tabanlı taktiksel RPG:
 - Sıra tabanlı (turn-based) savaş sistemi
