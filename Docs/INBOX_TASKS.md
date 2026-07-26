@@ -37,3 +37,16 @@ Açıklama: Bu üç not şu an yalnızca bu PC'deki Claude hafızasında duruyor
 Kabul kriteri: Üç yeni/dolu dosya repoda mevcut, DECISION_LOG.md'deki `[[...]]` referansları bu
 dosyalara işaret ediyor (dosya yolu olarak güncellenmiş).
 Performans notu: yok (sadece dokümantasyon).
+
+### [TASK-002] Oturum başında otomatik git pull (SessionStart hook) — status: pending
+Kaynak: Sherlock + kullanıcı arası tartışma (2026-07-26) — Watson bir oturuma başladığında
+INBOX_TASKS.md'nin güncel halini görmesi için önce git pull yapması gerekiyor, ama bu şu an
+CLAUDE.md kuralına (bkz §9) bağlı, otomatik değil.
+Açıklama: Claude Code'un "SessionStart hook" özelliğini kullanarak bu projede (`.claude/settings.json`
+veya proje ayarları) her oturum açılışında otomatik `git pull` çalıştıracak bir hook kur. Böylece
+Watson elle hatırlamadan/istenmeden de repo her zaman güncel olur. Nasıl kurulacağını bilmiyorsan
+"update-config" skill'ini kullanabilirsin (Claude Code kendi settings.json'ını yapılandırma konusunda
+yardımcı olur).
+Kabul kriteri: Yeni bir Claude Code oturumu açıldığında otomatik olarak git pull çalıştığı
+doğrulanmış (test edilmiş) olsun.
+Performans notu: yok.

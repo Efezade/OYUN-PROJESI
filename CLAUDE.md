@@ -137,9 +137,13 @@ Assets/
 
 İkinci bir PC'de (Unity dosyaları olmadan) Efe + Kardelen tasarım/denge kararları tartışıyor;
 bu kararlar `Docs/GAME_DESIGN.md` (tek doğruluk kaynağı) ve `Docs/INBOX_TASKS.md` (görev listesi)
-üzerinden buraya push ediliyor.
+üzerinden buraya push ediliyor. Bu projede o taraftaki Claude oturumuna **Sherlock**, bu tarafa
+(sen, kod/implementasyon tarafı) **Watson** deniyor — dokümanlarda/loglarda bu isimlerle geçebilirsin.
 
-- **Oturum başında:** `Docs/INBOX_TASKS.md`'yi oku. `pending` görev varsa işle.
+- **HER OTURUMUN İLK ADIMI, konu ne olursa olsun:** önce `git pull` çalıştır (Sherlock'un push'ladığı
+  yeni dosyalar/görevler local'de görünmeyebilir), sonra `Docs/INBOX_TASKS.md`'yi oku. Bu adımı
+  atlama — Efe/Kardelen konuyu hatırlatmasa bile varsayılan davranışın bu olsun.
+- `pending` görev varsa işle.
 - **Görev bitince:** `Docs/DECISION_LOG.md`'ye ne yapıldığını yaz, INBOX_TASKS.md'de görevi
   `done` işaretle (satırı silme — arşiv kalsın).
 - **Belirsiz/çelişkili görev:** `blocked` işaretle + nedenini yaz, sessizce atlamayan.
