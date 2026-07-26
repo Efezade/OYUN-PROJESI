@@ -52,9 +52,12 @@ namespace TacticalRPG.Core
         private List<HexCell> _pendingPath;   // menzil dışıysa null → 2. tık yürütmez, iptal eder
         private bool          _hasPending;
 
+        /// <summary>Mağaza "Menzil" iksiri/pusulası buradan tek-tık menzilini artırır (PlayerBuffs yönetir).</summary>
+        public int BonusMoveRange { get; set; }
+
         /// <summary>Savaş sisi kule ile kaldırılmışsa menzil sınırı yok (serbest yürüyüş).</summary>
         private int EffectiveMoveRange =>
-            (_fogManager != null && _fogManager.IsFullyRevealed) ? int.MaxValue : _maxMoveRange;
+            (_fogManager != null && _fogManager.IsFullyRevealed) ? int.MaxValue : _maxMoveRange + BonusMoveRange;
 
         private void Awake()
         {

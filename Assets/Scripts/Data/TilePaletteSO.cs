@@ -24,6 +24,10 @@ namespace TacticalRPG.Data
                      "savaşa girme istemi çıkar (MissionManager: id'ye özel görev ya da varsayılan).")]
             public bool       canEnterCombat = false;
 
+            [Tooltip("Bu karo bir MAĞAZA (store) mı? İşaretliyse oyuncu yakınınca öz harcayıp " +
+                     "item/pot alabileceği dükkân açılır (StoreManager + StoreHUD).")]
+            public bool       isStore = false;
+
             // Birimin basacağı yüzey yüksekliği (taban üstü). > 0 ise elle belirler;
             // <= 0 (varsayılan) ise HexGridManager hücre merkezinden ışınla otomatik ölçer.
             public float      surfaceHeightOverride = 0f;

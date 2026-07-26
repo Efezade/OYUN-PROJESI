@@ -59,9 +59,9 @@ namespace TacticalRPG.Editor
             MenuScreenPanel setPanel  = CreateMenuPanel(canvasGO.transform, "Panel_Settings", MenuScreen.Settings);
 
             PopulateBookScreen(bookPanel.gameObject);                 // GERÇEK içerik
-            AddPlaceholderContent(bagPanel.transform, "ÇANTA");       // iskelet
-            AddPlaceholderContent(mapPanel.transform, "HARİTA");      // iskelet (dekoratif harita sonra)
-            AddPlaceholderContent(setPanel.transform, "AYARLAR");     // iskelet
+            PopulateBagScreen(bagPanel.gameObject);                   // GERÇEK içerik (potlar + Kam kartları)
+            PopulateMapScreen(mapPanel.gameObject);                   // GERÇEK içerik (3x3 snake dünya + pinler)
+            PopulateSettingsScreen(setPanel.gameObject);              // GERÇEK içerik (ses/parlaklık/kalite)
 
             // ── Kalıcı çubuk (panellerden SONRA → üstte çizilir, sekmeler açık panelde de tıklanır)
             GameObject bar = new GameObject("PersistentBar", typeof(RectTransform));
@@ -100,10 +100,12 @@ namespace TacticalRPG.Editor
             if (!_silentSetup)
                 EditorUtility.DisplayDialog(
                     "UI İskeleti + KİTAP Kuruldu",
-                    "Gezinme kabuğu (KİTAP·ÇANTA·HARİTA + ⚙) + KİTAP ekranı içeriği kuruldu:\n\n" +
-                    "  • ÖZ DEPOSU — 3 canlı öz sayacı (EssenceWallet'e bağlı)\n" +
-                    "  • Sınıf roster'ı — WARRIOR/RANGER (portre+evrim maliyeti), HEALER/MAGE kilitli\n\n" +
-                    "Play → KİTAP sekmesine bas. Esc ile kapat. Savaşta kabuk gizlenir.",
+                    "Gezinme kabuğu (KİTAP·ÇANTA·HARİTA + ⚙) + 4 ekranın içeriği kuruldu:\n\n" +
+                    "  • KİTAP — ÖZ DEPOSU (3 canlı sayaç) + sınıf roster'ı (WARRIOR/RANGER gerçek)\n" +
+                    "  • ÇANTA — POTLAR (placeholder) + KAM KARTLARI (AteşTopu/RuhKalkanı/Şifa gerçek)\n" +
+                    "  • HARİTA — 3x3 SNAKE dünya (CurrentMap CANLI vurgu) + HAN/ŞİFACI/MARKET pinleri\n" +
+                    "  • AYARLAR — MASTER/MÜZİK/SFX + PARLAKLIK, KALİTE/TAM EKRAN/VSYNC + telifsiz müzik\n\n" +
+                    "Play → sekmelere bas. Esc ile kapat. Savaşta kabuk gizlenir.",
                     "Tamam");
 
             Debug.Log("[TacticalRPG] Menu UI iskeleti + KİTAP kuruldu (MenuShell_Canvas).");
@@ -117,14 +119,24 @@ namespace TacticalRPG.Editor
         {
             Transform t = panelGO.transform;
 
-            // ── ÖZ DEPOSU başlık + 3 canlı sayaç ──────────────────────────────
-            CreateCenteredLabel(t, "OzDeposuTitle", "ÖZ DEPOSU",
-                new Vector2(0.5f, 1f), new Vector2(0f, -36f), new Vector2(600f, 70f),
-                new Color(0.95f, 0.90f, 0.75f), 46f);
+            // ── Açık KİTAP gövdesi (çerçeveli krem parşömen) ───────────────────
+            RectTransform book = FramedPanel(t, "BookBody", new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -10f), new Vector2(1500f, 780f), 14f);
+            Transform b = book;
 
-            CreateEssenceCounter(t, new Vector2(-260f, -110f), out var amtA, out var nameA, out var swA);
-            CreateEssenceCounter(t, new Vector2(   0f, -110f), out var amtS, out var nameS, out var swS);
-            CreateEssenceCounter(t, new Vector2( 260f, -110f), out var amtT, out var nameT, out var swT);
+            // İki sayfa ayrımı (spine) — orta dikey mürekkep çizgisi
+            Line(b, "Spine", new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(6f, 700f),
+                new Color(FrameDark.r, FrameDark.g, FrameDark.b, 0.55f));
+
+            // ── ÖZ DEPOSU süslü şeridi (üst-orta) + 3 CANLI sayaç ──────────────
+            RectTransform banner = FramedPanel(b, "OzBanner", new Vector2(0.5f, 1f),
+                new Vector2(0f, 42f), new Vector2(640f, 150f), 8f, ParchmentHi, FrameDark);
+            SectionHeader(banner, "OzTitle", "ÖZ DEPOSU", new Vector2(0.5f, 1f),
+                new Vector2(0f, -8f), 360f, 30f);
+
+            CreateEssenceCounter(banner, new Vector2(-190f, -46f), out var amtA, out var nameA, out var swA);
+            CreateEssenceCounter(banner, new Vector2(   0f, -46f), out var amtS, out var nameS, out var swS);
+            CreateEssenceCounter(banner, new Vector2( 190f, -46f), out var amtT, out var nameT, out var swT);
 
             EssenceWallet   wallet = FindComponentAnywhere<EssenceWallet>();
             EssenceConfigSO config = FindEssenceConfig();
@@ -144,41 +156,45 @@ namespace TacticalRPG.Editor
             CharacterClassData warrior = AssetDatabase.LoadAssetAtPath<CharacterClassData>(WarriorClassPath);
             CharacterClassData ranger  = AssetDatabase.LoadAssetAtPath<CharacterClassData>(RangerClassPath);
 
-            CreateClassEntry(t, "WARRIOR", warrior, new Vector2(-470f,  110f));
-            CreateClassEntry(t, "HEALER",  null,    new Vector2(-470f, -170f)); // henüz yok → kilitli
-            CreateClassEntry(t, "MAGE",    null,    new Vector2( 470f,  110f)); // henüz yok → kilitli
-            CreateClassEntry(t, "RANGER",  ranger,  new Vector2( 470f, -170f));
+            CreateClassEntry(b, "WARRIOR", warrior, new Vector2(-372f,  128f));
+            CreateClassEntry(b, "HEALER",  null,    new Vector2(-372f, -112f)); // henüz yok → kilitli
+            CreateClassEntry(b, "MAGE",    null,    new Vector2( 372f,  128f)); // henüz yok → kilitli
+            CreateClassEntry(b, "RANGER",  ranger,  new Vector2( 372f, -112f));
 
-            // ── Sağ kenar evrim paneli (placeholder — etkileşim sonra) ────────
-            Image evo = CreateImage(t, "EvoPanel", new Vector2(1f, 0.5f), new Vector2(-30f, 0f),
-                new Vector2(150f, 520f), new Color(0.16f, 0.13f, 0.10f, 0.85f), false);
-            CreateCenteredLabel(evo.transform, "EvoLabel", "LEVEL\nEVRİM\n———\n+ ?",
-                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(140f, 320f),
-                new Color(0.85f, 0.80f, 0.65f), 28f);
+            // ── Sağ kenar EVRİM yer imi (dışa taşan sekme — placeholder) ───────
+            RectTransform evo = FramedPanel(b, "EvoBookmark", new Vector2(1f, 0.5f),
+                new Vector2(122f, 120f), new Vector2(150f, 300f), 8f, ParchmentLo, FrameDark);
+            CreateCenteredLabel(evo, "EvoLabel", "LEVEL\nEVRİM\nÖRG\n———\n+4",
+                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(130f, 260f), Ink, 26f);
+
+            // Sayfa numaraları (kitap alt köşeleri)
+            CreateCenteredLabel(b, "PageL", "1", new Vector2(0f, 0f), new Vector2(70f, 44f), new Vector2(60f, 50f), InkSoft, 34f);
+            CreateCenteredLabel(b, "PageR", "2", new Vector2(1f, 0f), new Vector2(-70f, 44f), new Vector2(60f, 50f), InkSoft, 34f);
 
             CreateCenteredLabel(t, "BookHint",
                 "ÖZ DEPOSU canlı · evrim/kart etkileşimi sonraki adım · Kapat: Esc",
-                new Vector2(0.5f, 0f), new Vector2(0f, 28f), new Vector2(1300f, 40f),
-                new Color(0.60f, 0.55f, 0.48f), 24f);
+                new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(1300f, 40f),
+                new Color(0.62f, 0.57f, 0.48f), 24f);
         }
 
-        /// <summary>Bir öz sayacı widget'ı (renk kutusu + miktar + ad). Etiket ref'lerini out ile döner.</summary>
-        private static void CreateEssenceCounter(Transform parent, Vector2 anchoredPos,
+        /// <summary>Bir öz madalyonu (renkli daire + üstünde miktar + altında ad). Ref'leri out ile döner.</summary>
+        private static void CreateEssenceCounter(Transform parent, Vector2 pos,
             out TextMeshProUGUI amount, out TextMeshProUGUI nameLabel, out Image swatch)
         {
             GameObject c = new GameObject("Counter", typeof(RectTransform));
             c.transform.SetParent(parent, false);
             var rt = c.GetComponent<RectTransform>();
-            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 1f);
-            rt.anchoredPosition = anchoredPos;
-            rt.sizeDelta = new Vector2(220f, 90f);
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = new Vector2(150f, 100f);
 
-            swatch    = CreateImage(c.transform, "Swatch", new Vector2(0f, 0.5f), new Vector2(0f, 0f),
-                new Vector2(46f, 46f), Color.white, false);
-            amount    = CreateCenteredLabel(c.transform, "Amount", "0", new Vector2(0f, 0.5f),
-                new Vector2(64f, 12f), new Vector2(150f, 50f), Color.white, 40f);
-            nameLabel = CreateCenteredLabel(c.transform, "Name", "", new Vector2(0f, 0.5f),
-                new Vector2(64f, -26f), new Vector2(150f, 32f), new Color(0.80f, 0.75f, 0.65f), 22f);
+            // mürekkep halka + renkli öz madalyonu (renk EssenceStorageView'den gelir)
+            Circle(c.transform, "Ring", new Vector2(0.5f, 1f), new Vector2(0f, 4f), 62f, FrameDark);
+            swatch    = Circle(c.transform, "Swatch", new Vector2(0.5f, 1f), new Vector2(0f, 0f), 54f, Color.white);
+            amount    = CreateCenteredLabel(c.transform, "Amount", "0", new Vector2(0.5f, 1f),
+                new Vector2(0f, -14f), new Vector2(70f, 44f), Ink, 30f);
+            nameLabel = CreateCenteredLabel(c.transform, "Name", "", new Vector2(0.5f, 1f),
+                new Vector2(0f, -62f), new Vector2(150f, 30f), InkSoft, 20f);
         }
 
         private static void WireEssenceCounter(SerializedProperty el, EssenceType type,
@@ -190,42 +206,43 @@ namespace TacticalRPG.Editor
             el.FindPropertyRelative("swatch").objectReferenceValue      = swatch;
         }
 
-        /// <summary>Bir sınıf bölümü: başlık + portre kutusu + evrim maliyeti + (data null → kilitli).</summary>
+        /// <summary>Bir sınıf bölümü (parşömen kart): başlık şeridi + portre çerçevesi + evrim maliyeti +
+        /// dekoratif kart yuva sırası + (data null → KİLİTLİ kaplaması). ClassBookEntry bağlanır.</summary>
         private static void CreateClassEntry(Transform parent, string header, CharacterClassData data, Vector2 anchoredPos)
         {
-            GameObject box = new GameObject("Class_" + header, typeof(RectTransform), typeof(Image));
-            box.transform.SetParent(parent, false);
-            var rt = box.GetComponent<RectTransform>();
-            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = anchoredPos;
-            rt.sizeDelta = new Vector2(560f, 240f);
-            Image boxBg = box.GetComponent<Image>();
-            boxBg.color         = new Color(0.16f, 0.13f, 0.10f, 0.55f);
-            boxBg.raycastTarget = false;
+            RectTransform box = FramedPanel(parent, "Class_" + header, new Vector2(0.5f, 0.5f),
+                anchoredPos, new Vector2(660f, 210f), 6f, ParchmentLo, FrameDark);
 
-            CreateCenteredLabel(box.transform, "Header", header,
-                new Vector2(0.5f, 1f), new Vector2(0f, -8f), new Vector2(520f, 46f),
-                new Color(0.95f, 0.90f, 0.75f), 34f);
+            SectionHeader(box, "Header", header, new Vector2(0.5f, 1f), new Vector2(0f, -6f), 300f, 28f);
 
-            Image portrait = CreateImage(box.transform, "Portrait", new Vector2(0f, 0.5f),
-                new Vector2(30f, -14f), new Vector2(150f, 150f), Color.gray, false);
+            // Portre çerçevesi (mürekkep kenar + iç portre görseli ClassBookEntry'nin boyadığı)
+            RectTransform pf = FramedPanel(box, "PortraitFrame", new Vector2(0f, 0.5f),
+                new Vector2(22f, -14f), new Vector2(132f, 132f), 5f, Parchment, FrameDark);
+            Image portrait = CreateImage(pf, "Portrait", new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(120f, 120f), Color.gray, false);
+            var prt = portrait.rectTransform; prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0.5f);
 
-            TextMeshProUGUI cost = CreateCenteredLabel(box.transform, "Cost", "",
-                new Vector2(0f, 0.5f), new Vector2(210f, -14f), new Vector2(330f, 130f),
-                new Color(0.85f, 0.82f, 0.70f), 26f);
+            // Dekoratif kart yuvaları (mockup: portre yanında bir sıra boş kart)
+            for (int i = 0; i < 3; i++)
+                Sliced(box, "Slot" + i, new Vector2(0f, 0.5f),
+                    new Vector2(176f + i * 116f, 20f), new Vector2(104f, 124f), Parchment);
+
+            TextMeshProUGUI cost = CreateCenteredLabel(box, "Cost", "",
+                new Vector2(0f, 0.5f), new Vector2(176f, -72f), new Vector2(400f, 40f), InkSoft, 24f);
 
             // Kilitli kaplaması (data null → aktif)
             GameObject overlay = new GameObject("LockedOverlay", typeof(RectTransform), typeof(Image));
-            overlay.transform.SetParent(box.transform, false);
+            overlay.transform.SetParent(box, false);
             StretchFull(overlay.GetComponent<RectTransform>());
             Image ovImg = overlay.GetComponent<Image>();
-            ovImg.color         = new Color(0.05f, 0.04f, 0.03f, 0.78f);
+            ovImg.sprite        = RoundSprite; ovImg.type = Image.Type.Sliced;
+            ovImg.color         = new Color(0.14f, 0.11f, 0.07f, 0.82f);
             ovImg.raycastTarget = false;
-            CreateCenteredLabel(overlay.transform, "LockLabel", "🔒 KİLİTLİ",
+            CreateCenteredLabel(overlay.transform, "LockLabel", "KİLİTLİ",
                 new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(420f, 60f),
-                new Color(0.70f, 0.65f, 0.55f), 30f);
+                new Color(0.82f, 0.75f, 0.60f), 32f);
 
-            ClassBookEntry entry = box.AddComponent<ClassBookEntry>();
+            ClassBookEntry entry = box.gameObject.AddComponent<ClassBookEntry>();
             var eso = new SerializedObject(entry);
             eso.FindProperty("_data").objectReferenceValue          = data;
             eso.FindProperty("_portrait").objectReferenceValue      = portrait;
@@ -264,7 +281,7 @@ namespace TacticalRPG.Editor
             StretchFull(go.GetComponent<RectTransform>());
 
             Image bg = go.GetComponent<Image>();
-            bg.color         = new Color(0.10f, 0.08f, 0.06f, 0.97f);
+            bg.color         = new Color(0.07f, 0.055f, 0.04f, 0.94f); // sıcak koyu backdrop (parşömen öne çıksın)
             bg.raycastTarget = true; // tüm ekranı kaplar → tıklama sızmaz
 
             MenuScreenPanel panel = go.AddComponent<MenuScreenPanel>();
@@ -274,18 +291,6 @@ namespace TacticalRPG.Editor
 
             go.SetActive(false);
             return panel;
-        }
-
-        /// <summary>Jenerik iskelet içeriği (başlık + ipucu) — henüz doldurulmamış paneller için.</summary>
-        private static void AddPlaceholderContent(Transform panel, string title)
-        {
-            CreateCenteredLabel(panel, "Title", title,
-                new Vector2(0.5f, 1f), new Vector2(0f, -90f), new Vector2(1000f, 130f),
-                new Color(0.95f, 0.90f, 0.75f), 72f);
-            CreateCenteredLabel(panel, "Hint",
-                "İskelet — içerik yakında.\n(Kapat: Esc veya aynı sekmeye tekrar bas)",
-                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1300f, 220f),
-                new Color(0.70f, 0.65f, 0.55f), 38f);
         }
 
         private static Image CreateImage(Transform parent, string name,

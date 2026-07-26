@@ -124,6 +124,15 @@ namespace TacticalRPG.Core
             OnAPChanged?.Invoke(CurrentAP, MaxAP);
         }
 
+        /// <summary>Mevcut dilime BONUS AP ekler (mağaza "Zaman Kumu" iksiri gibi). MaxAP'yi aşabilir —
+        /// harcayınca dilim ilerlemesi normal SpendAP mantığıyla işler. Zaman İLERLETMEZ.</summary>
+        public void GrantAP(int amount)
+        {
+            if (amount <= 0) return;
+            CurrentAP += amount;
+            OnAPChanged?.Invoke(CurrentAP, MaxAP);
+        }
+
         private void AdvanceTime()
         {
             int  slotsPerDay = _config != null ? _config.TimeSlotsPerDay : 6;

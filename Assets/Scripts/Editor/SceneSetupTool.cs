@@ -51,6 +51,7 @@ namespace TacticalRPG.Editor
                 SetupPhaseD();    // cok-tipli oz + harita toplama + tarifle birim uretme
                 SetupWorld3x3(); // Bolum 1 = 9 harita 3x3 snake + kenardan gecis
                 SetupUIShell();  // ana menu gezinme kabugu (KITAP/CANTA/HARITA sekmeleri + ayar)
+                SetupStore();    // magaza karosu + oz ile item/pot satin alma (StoreManager/PlayerBuffs/StoreHUD)
             }
             finally { _silentSetup = false; }
 

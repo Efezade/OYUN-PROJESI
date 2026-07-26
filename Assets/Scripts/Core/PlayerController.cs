@@ -36,6 +36,10 @@ namespace TacticalRPG.Core
         public HexCoordinate CurrentCoord { get; private set; }
         public bool          IsMoving     { get; private set; }
 
+        /// <summary>Yürüme hızı çarpanı (mağaza "Hızlı Yürüme" iksiri/çizmeleri buradan artırır).
+        /// PlayerBuffs yönetir; 1 = normal.</summary>
+        public float SpeedMultiplier { get; set; } = 1f;
+
         // Faz 1.4 AP/Zaman motoru bu event'i dinleyecek
         public event Action<HexCoordinate> OnMoved;
 
@@ -97,7 +101,7 @@ namespace TacticalRPG.Core
                 while (HorizontalSqrDistance(transform.position, targetXZ) > 0.0001f)
                 {
                     Vector3 curXZ  = new Vector3(transform.position.x, 0f, transform.position.z);
-                    Vector3 nextXZ = Vector3.MoveTowards(curXZ, targetXZ, _moveSpeed * Time.deltaTime);
+                    Vector3 nextXZ = Vector3.MoveTowards(curXZ, targetXZ, _moveSpeed * Mathf.Max(0.1f, SpeedMultiplier) * Time.deltaTime);
 
                     float k = span > 0.0001f ? 1f - Vector3.Distance(nextXZ, targetXZ) / span : 1f;
                     float y = Mathf.Lerp(fromY, toY, Mathf.Clamp01(k));

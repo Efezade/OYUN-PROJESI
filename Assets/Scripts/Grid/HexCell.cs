@@ -19,6 +19,9 @@ namespace TacticalRPG.Grid
         // Boyalı SAVAŞ karosu (palet canEnterCombat) — MissionManager buradan görev üretir.
         public bool CanEnterCombat { get; set; }
 
+        // Boyalı MAĞAZA karosu (palet isStore) — StoreManager yakınlık dükkânını buradan açar.
+        public bool IsStore { get; set; }
+
         // Fog durumu — başlangıç değeri Hidden
         public FogState FogState { get; set; } = FogState.Hidden;
 
