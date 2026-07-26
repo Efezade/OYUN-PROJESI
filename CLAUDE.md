@@ -150,6 +150,19 @@ bu kararlar `Docs/GAME_DESIGN.md` (tek doğruluk kaynağı) ve `Docs/INBOX_TASKS
 - `Docs/GAME_DESIGN.md` ile mevcut kod/ROADMAP arasında çelişki varsa GAME_DESIGN.md önceliklidir;
   büyük bir çelişkiyse INBOX_TASKS.md'ye not düşüp diğer tarafın netleştirmesini bekle.
 
+**Dosya sahipliği (çakışmayı önlemek için, 2026-07-26 kararlaştırıldı):**
+- `Docs/DECISION_LOG.md` — **Watson-sahipli.** Sherlock sadece okur, yazmaz. Yalın, ters-kronolojik,
+  sadece aktif kararlar + "Tuzaklar/Dersler" bölümü. Tamamlanmış faz detayları
+  `Docs/DECISION_LOG_ARCHIVE.md`'ye taşınır. Bayat "güncel durum/son push" bloğu tutulmaz —
+  o bilginin canlı kaynağı Watson'ın kendi hafızası.
+- `Docs/INBOX_TASKS.md` — **append-only.** Sherlock yeni görevleri sona ekler; Watson yalnız
+  ilgili görevin status/DONE notunu günceller, başka görevlere dokunmaz.
+- `Docs/GAME_DESIGN.md` — **Sherlock-sahipli.** Watson normalde sadece okur; yalnız INBOX'tan
+  açıkça görevlendirilirse (TASK-001'deki gibi) yazar, canonical bölümlerin üzerine yazmaz.
+- `ROADMAP.md` = ileriye dönük plan · `Docs/DECISION_LOG.md` = geriye dönük NEDEN+ders ·
+  `Docs/GAME_DESIGN.md` = canonical sayılar. Yeni içerik yazarken bu ayrımı koru, üçünde aynı
+  şeyi tekrar anlatma.
+
 ---
 
 ## 10. Bu Projenin Vizyonu

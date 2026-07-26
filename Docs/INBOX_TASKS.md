@@ -63,3 +63,27 @@ Performans notu: yok.
 > pull ATLA, temizse `git pull --ff-only`, her zaman exit 0, sonucu additionalContext ile bildirir.
 > **Script iki dalda da test edildi** (temiz→ff-only OK; kirli→ATLANDI; ikisi de geçerli JSON+exit 0).
 > Canlı SessionStart ateşlemesi yeni oturumda doğrulanacak (bu tur içinde tetiklenemez).
+
+Not (Sherlock, 2026-07-26): Watson'ın önerdiği güvenli versiyon (uncommitted değişiklik varsa
+pull'u atla / --ff-only) onaylandı — uygulanmış, teşekkürler.
+
+### [TASK-003] DECISION_LOG.md temizlik geçişi — status: pending
+Kaynak: Sherlock+Watson tartışması (2026-07-26) — Watson'ın önerisi, Sherlock onayladı.
+Açıklama: DECISION_LOG.md'yi tek commit'te temizle:
+1. Tamamlanmış fazların (TAMAMLANDI ✓ / BİTTİ ✓) blow-by-blow anlatımını yeni
+   `Docs/DECISION_LOG_ARCHIVE.md`'ye taşı; ana logda sadece 1 satır özet + commit hash +
+   arşive link kalsın.
+2. **İstisna:** "Tuzaklar/Dersler" niteliğindeki satırlar (sihirli sabitler, gotcha'lar —
+   ör. köprü FBX quaternion flip, off-center geometri felaketi, footprint kalkanı) arşive
+   TAŞINMASIN; ana logda ayrı bir "Tuzaklar/Dersler" bölümünde kalsın.
+3. Yeni/kalan girişlerde dosya-alan enumerasyonunu bırak, KARAR + NEDEN + commit hash +
+   (varsa) ders formatına geç (962b076'daki format örnek). Eski girişleri zorla bu formata
+   çevirmeye gerek yok — sadece arşive taşınmayanlar için, bozulma riski almadan mümkün olduğunca.
+4. GAME_DESIGN.md §5 / TILE_PIPELINE.md ile birebir çakışan eski hikaye/karo anlatısını
+   kısalt, canonical dosyaya link bırak.
+5. BAYAT "güncel durum / son push / bir sonraki adım" bloğunu SİL — bu bilginin canlı
+   kaynağı Watson'ın kendi hafızası; DECISION_LOG'da olmamalı (bayatlama + memory ile
+   çelişme riski).
+Kabul kriteri: DECISION_LOG.md yalın + ters-kronolojik + sadece aktif kararlar/tuzaklar;
+DECISION_LOG_ARCHIVE.md tam tarihi içeriyor, içerik kaybı yok; Sherlock diff'i review eder.
+Performans notu: yok.
