@@ -27,7 +27,11 @@ Bunlar zaten kod tarafında uygulanmış/kararlaştırılmış gerçekler — ç
 - **Harita:** Hex grid, pointy-top, axial koordinat. Bölüm 1 dünyası = **9 harita, 3x3 snake dizilim**, kenardan geçişli.
 - **Karo (tile) spec:** footprint 1.90×1.645 m, kalınlık 0.30 m sabit, pivot alt-orta, FBX -Z Forward/Y Up.
 - **Öz (Essence) sistemi:** 3 tip — Ateş / Su / Toprak (Kırmızı/Mavi/Yeşil). Haritaya elle boyanıyor (Essence Painter).
-- **Zaman/AP:** 3 AP = 1 dilim, 6 dilim = 1 gün. Gün 4'ten itibaren Dünyanın Çöküşü (karo silinmesi).
+- **Zaman/AP:** 9 AP = 1 dilim, 6 dilim = 1 gün (54 AP/gün) — mevcut kod değeri
+  (`TimeSlotConfig.asset`, commit `bc0aa71`). Gün 4'ten itibaren Dünyanın Çöküşü (karo silinmesi).
+  *(Not: bu satır önceden yanlışlıkla "3 AP" yazıyordu — DECISION_LOG'un eski/Faz-1 anlatısından
+  kopyalanmıştı, ama kod çoktan 9'a güncellenmişti. Düzeltildi 2026-07-26; AP ekonomisinin kendisi
+  henüz gerçek bir denge tartışmasından geçmedi — §2/§3 doldukça yeniden ele alınabilir.)*
 - **Sınıflar (planlı 5):** Barbar, Okçu, Büyücü, Rahip, Serseri + komutan **Kam** (zorunlu, ücretsiz, mana/büyü sistemi).
 - **Üretim tarifleri (örnek, ayarlanabilir):** Savaşçı = 2 Ateş + 1 Toprak, Ranger = 2 Su + 1 Toprak.
 - **Savaş:** Tur tabanlı, hıza göre initiative; kayıp koşulu = Kam'ın ölümü (tüm run kaybı, roguelite reset).
@@ -66,11 +70,11 @@ Detaylı tarihsel gerekçeler için `Docs/DECISION_LOG.md`.
 
 *(Kod tarafının netleştirmesi gereken açık noktalar buraya düşer.)*
 
-- **[ÇELİŞKİ — Watson, 2026-07-26] AP/dilim değeri:** §0 "**3 AP = 1 dilim**" diyor, ama mevcut kod
-  `Assets/Data/Config/TimeSlotConfig.asset` → `_apPerTimeSlot: 9`, `_timeSlotsPerDay: 6` → **9 AP/dilim,
-  54 AP/gün** (18 değil). 9'a çıkarma yakın zamanlı bilinçli bir karardı (bkz DECISION_LOG `bc0aa71`
-  öncesi), o yüzden §9 gereği koda dokunmadan bekletiyorum. **Sherlock: §0'ı 9'a mı güncelleyelim,
-  yoksa pacing 3'e mi dönsün?** Karar verilince kod tek satırla ayarlanır (config değeri).
+- ~~[ÇELİŞKİ — Watson, 2026-07-26] AP/dilim değeri~~ → **ÇÖZÜLDÜ (Sherlock, 2026-07-26):** §0'daki
+  "3 AP" benim hatamdı, DECISION_LOG'un eski/Faz-1 anlatısından kopyalamıştım; kod zaten (commit
+  `bc0aa71`) 9'a güncellenmişti. §0 düzeltildi, koda dokunulmadı. Bu, AP ekonomisinin dengelendiği
+  anlamına gelmiyor — sadece mevcut durumu doğru yansıtıyor. §2/§3 (statlar, denge notları) dolunca
+  AP pacing'i (9/dilim, 54/gün) gerçek bir denge konusu olarak yeniden ele alabiliriz.
 
 ---
 
