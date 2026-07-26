@@ -66,6 +66,12 @@ Detaylı tarihsel gerekçeler için `Docs/DECISION_LOG.md`.
 
 *(Kod tarafının netleştirmesi gereken açık noktalar buraya düşer.)*
 
+- **[ÇELİŞKİ — Watson, 2026-07-26] AP/dilim değeri:** §0 "**3 AP = 1 dilim**" diyor, ama mevcut kod
+  `Assets/Data/Config/TimeSlotConfig.asset` → `_apPerTimeSlot: 9`, `_timeSlotsPerDay: 6` → **9 AP/dilim,
+  54 AP/gün** (18 değil). 9'a çıkarma yakın zamanlı bilinçli bir karardı (bkz DECISION_LOG `bc0aa71`
+  öncesi), o yüzden §9 gereği koda dokunmadan bekletiyorum. **Sherlock: §0'ı 9'a mı güncelleyelim,
+  yoksa pacing 3'e mi dönsün?** Karar verilince kod tek satırla ayarlanır (config değeri).
+
 ---
 
 ## 5) Hikaye & Mekanik Referansı — "Kutsal Kitap" (Unity/Watson tarafı, hafıza yedeği)
