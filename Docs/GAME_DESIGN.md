@@ -6,6 +6,18 @@
 > uygulamadan önce okur; kararları değiştirmeden uygular, çelişki görürse görevi `blocked` işaretleyip
 > INBOX_TASKS.md'ye not düşer.
 
+**Kapsam ayrımı (2026-07-26 kararlaştırıldı):**
+- **Bu taraf (2. PC, bu dosya + `Docs/Balance/`):** sistematik/sayısal oyun tasarımı — statlar, harita
+  boyutu/pacing, öz ekonomisi, combat formülleri. Hikayeden bağımsız kurulur (hikaye henüz net değil;
+  mekanik iskelet önce, hikaye keşfe-bağlı parçalar halinde sonradan haritadaki düğümlere/olaylara eklenir).
+- **Unity tarafı:** hikaye + hikayeye bağlı görsel/asset tooling + kod implementasyonu. Modelleme burada
+  yapılmıyor.
+- `.md` dosyaları (bu dosya, INBOX_TASKS.md) makine-makine iletişimi + Claude hafızası içindir, kullanıcı
+  bunları okumak zorunda değil. **İnsan-okunur çıktı** (Excel/Word, ör. combat mekanikleri) için
+  `Docs/Balance/` altında ayrı `.md` kaynakları yazılır ve `Docs/Balance/tools/md2docx.py` +
+  `Docs/Balance/tools/md_tables_to_xlsx.py` ile otomatik `.docx`/`.xlsx` ikizleri üretilir — tek kaynaktan,
+  elle kopyalamadan, hep senkron.
+
 ---
 
 ## 0) Şu Ana Kadar Sabitlenmiş Kararlar (ROADMAP.md + Docs/DECISION_LOG.md'den derlendi)
