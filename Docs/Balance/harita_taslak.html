@@ -1,0 +1,422 @@
+<title>Harita Taslağı — 22×25 Engelli Bölge</title>
+<style>
+  :root {
+    --paper: #e8dcb8;
+    --paper-deep: #d3c299;
+    --paper-line: #b8a06a;
+    --ink: #362415;
+    --ink-soft: #6b5636;
+    --accent: #8c2f2a;
+    --gold: #96701f;
+    --shadow: rgba(54, 36, 21, 0.18);
+
+    --t-plain: #c9b77e;
+    --t-forest: #4b6b3a;
+    --t-rock: #7c7166;
+    --t-river: #3e6b85;
+    --t-bridge: #a9764a;
+    --t-grid: rgba(54, 36, 21, 0.25);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #221a10;
+      --paper-deep: #150f09;
+      --paper-line: #4a3c22;
+      --ink: #e9dbb6;
+      --ink-soft: #b7a57c;
+      --accent: #e07354;
+      --gold: #d9ae55;
+      --shadow: rgba(0, 0, 0, 0.45);
+
+      --t-plain: #4a4126;
+      --t-forest: #2e4321;
+      --t-rock: #4b463f;
+      --t-river: #234456;
+      --t-bridge: #5b3f26;
+      --t-grid: rgba(233, 219, 182, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #221a10; --paper-deep: #150f09; --paper-line: #4a3c22;
+    --ink: #e9dbb6; --ink-soft: #b7a57c; --accent: #e07354; --gold: #d9ae55;
+    --shadow: rgba(0, 0, 0, 0.45);
+    --t-plain: #4a4126; --t-forest: #2e4321; --t-rock: #4b463f;
+    --t-river: #234456; --t-bridge: #5b3f26; --t-grid: rgba(233, 219, 182, 0.12);
+  }
+  :root[data-theme="light"] {
+    --paper: #e8dcb8; --paper-deep: #d3c299; --paper-line: #b8a06a;
+    --ink: #362415; --ink-soft: #6b5636; --accent: #8c2f2a; --gold: #96701f;
+    --shadow: rgba(54, 36, 21, 0.18);
+    --t-plain: #c9b77e; --t-forest: #4b6b3a; --t-rock: #7c7166;
+    --t-river: #3e6b85; --t-bridge: #a9764a; --t-grid: rgba(54, 36, 21, 0.25);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper-deep);
+    color: var(--ink);
+    font-family: "Segoe UI", ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
+    padding: clamp(16px, 3vw, 40px);
+  }
+  .display {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  }
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  header.masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-bottom: 1px solid var(--paper-line);
+    padding-bottom: 16px;
+  }
+  header.masthead .eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  header.masthead h1 {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    margin: 0;
+    text-wrap: balance;
+    font-weight: 600;
+  }
+  header.masthead p {
+    margin: 2px 0 0;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    line-height: 1.5;
+    font-size: 0.95rem;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(260px, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    border-radius: 6px;
+    box-shadow: 0 2px 10px var(--shadow);
+    padding: 16px 18px;
+  }
+  .card h2 {
+    font-family: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 12px;
+    font-weight: 600;
+  }
+
+  .map-scroll {
+    overflow-x: auto;
+    border-radius: 4px;
+  }
+  canvas#hexmap {
+    display: block;
+    max-width: 100%;
+  }
+
+  .legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .legend-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+  }
+  .swatch {
+    width: 15px; height: 15px; border-radius: 3px; flex-shrink: 0;
+    border: 1px solid var(--shadow);
+  }
+  .icon-dot {
+    width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #fff; border: 1px solid var(--shadow);
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.85rem;
+    padding: 5px 0;
+    border-bottom: 1px dashed var(--paper-line);
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row .label { color: var(--ink-soft); }
+  .stat-row .val { font-weight: 600; }
+
+  table.simtable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+  table.simtable th, table.simtable td {
+    text-align: right;
+    padding: 5px 6px;
+  }
+  table.simtable th:first-child, table.simtable td:first-child { text-align: left; }
+  table.simtable thead th {
+    color: var(--ink-soft);
+    font-weight: 600;
+    border-bottom: 1px solid var(--paper-line);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  table.simtable tbody tr:not(:last-child) td { border-bottom: 1px dashed var(--paper-line); }
+  .highlight-cell { color: var(--accent); font-weight: 700; }
+
+  .note {
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
+  }
+  .note strong { color: var(--ink); }
+
+  ::selection { background: var(--accent); color: var(--paper); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Harita / Öz Dengesi — Taslak Görsel · seed 7, engel hedefi %20</div>
+    <h1 class="display">22×25 Bölge — Engebe + Node Yerleşimi Taslağı</h1>
+    <p>Simülasyondan üretilmiş bir örnek: orman/kaya blokları + dolanan bir nehir (2 köprü geçişi),
+    3 zorunlu görev (★), 6 zindan (⚔) ve 30 öz (●) yerleşimi. Sayılar taslak — revize edilebilir.</p>
+  </header>
+
+  <div class="layout">
+    <div class="card">
+      <h2>Harita</h2>
+      <div class="map-scroll">
+        <canvas id="hexmap"></canvas>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="card">
+        <h2>Gösterge</h2>
+        <div class="legend">
+          <div class="legend-group">
+            <div class="legend-row"><span class="swatch" style="background:var(--t-plain)"></span>Düz / Ova</div>
+            <div class="legend-row"><span class="swatch" style="background:var(--t-forest)"></span>Sık Orman (engel)</div>
+            <div class="legend-row"><span class="swatch" style="background:var(--t-rock)"></span>Kayalık (engel)</div>
+            <div class="legend-row"><span class="swatch" style="background:var(--t-river)"></span>Nehir (engel)</div>
+            <div class="legend-row"><span class="swatch" style="background:var(--t-bridge)"></span>Köprü (geçit)</div>
+          </div>
+          <div class="legend-group" style="margin-top:6px; padding-top:8px; border-top:1px dashed var(--paper-line);">
+            <div class="legend-row"><span class="icon-dot" style="background:var(--accent)">★</span>Zorunlu görev</div>
+            <div class="legend-row"><span class="icon-dot" style="background:#5c3a1f">⚔</span>Zindan / savaş</div>
+            <div class="legend-row"><span class="icon-dot" style="background:var(--gold)">●</span>Öz</div>
+            <div class="legend-row"><span class="icon-dot" style="background:#2b2b2b">▲</span>Başlangıç</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Terrain Dağılımı</h2>
+        <div id="terrainStats"></div>
+      </div>
+
+      <div class="card">
+        <h2>Node Sayıları</h2>
+        <div id="nodeStats"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Simülasyon Karşılaştırması — açık grid vs. engelli harita</h2>
+    <div class="map-scroll">
+      <table class="simtable mono">
+        <thead>
+          <tr><th>Engel %</th><th>Gün</th><th>Greedy (açık)</th><th>Gap% (açık)</th><th>Greedy (engelli)</th><th>Gap% (engelli)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="display">%10</td><td>8</td><td>109</td><td>42.9%</td><td>139</td><td class="highlight-cell">24.9%</td></tr>
+          <tr><td class="display">%10</td><td>10</td><td>121</td><td>37.3%</td><td>146</td><td class="highlight-cell">22.8%</td></tr>
+          <tr><td class="display">%10</td><td>12</td><td>121</td><td>37.3%</td><td>161</td><td class="highlight-cell">14.8%</td></tr>
+          <tr><td class="display">%20</td><td>8</td><td>109</td><td>42.9%</td><td>134</td><td class="highlight-cell">23.4%</td></tr>
+          <tr><td class="display">%20</td><td>10</td><td>121</td><td>37.3%</td><td>152</td><td class="highlight-cell">13.6%</td></tr>
+          <tr><td class="display">%20</td><td>12</td><td>121</td><td>37.3%</td><td>155</td><td class="highlight-cell">11.9%</td></tr>
+          <tr><td class="display">%30</td><td>8</td><td>109</td><td>42.9%</td><td>117</td><td class="highlight-cell">30.4%</td></tr>
+          <tr><td class="display">%30</td><td>10</td><td>121</td><td>37.3%</td><td>124</td><td class="highlight-cell">32.2%</td></tr>
+          <tr><td class="display">%30</td><td>12</td><td>121</td><td>37.3%</td><td>128</td><td class="highlight-cell">30.1%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note" style="margin-top:12px;">
+      <strong>Beklenmedik bulgu:</strong> %10-20 engel yoğunluğu gap%'i düşürüyor — dar koridorlar greedy oyuncuyu
+      zaten en verimli rotaya kanalize ediyor, rota SEÇİMİ daha az önemli hale geliyor. %30'da gap tekrar yükseliyor
+      ama bu kez bütçeye tüm içerik sığmadığı için (planned değeri de düşüyor). Zorunlu (★) node'lar her senaryoda
+      greedy dahil 3/3 tamamlandı — hikaye ilerlemesi engelden etkilenmiyor.
+    </p>
+  </div>
+</div>
+
+<script>
+const DATA = {"w":22,"h":25,"start":[11,12],"terrain":[[0,0,"plain"],[0,1,"plain"],[0,2,"plain"],[0,3,"plain"],[0,4,"plain"],[0,5,"plain"],[0,6,"plain"],[0,7,"plain"],[0,8,"plain"],[0,9,"plain"],[0,10,"river"],[0,11,"plain"],[0,12,"plain"],[0,13,"plain"],[0,14,"plain"],[0,15,"plain"],[0,16,"plain"],[0,17,"plain"],[0,18,"plain"],[0,19,"plain"],[0,20,"plain"],[0,21,"plain"],[0,22,"plain"],[0,23,"plain"],[0,24,"plain"],[1,0,"plain"],[1,1,"plain"],[1,2,"plain"],[1,3,"plain"],[1,4,"plain"],[1,5,"plain"],[1,6,"plain"],[1,7,"plain"],[1,8,"plain"],[1,9,"river"],[1,10,"river"],[1,11,"plain"],[1,12,"forest"],[1,13,"plain"],[1,14,"plain"],[1,15,"plain"],[1,16,"plain"],[1,17,"plain"],[1,18,"plain"],[1,19,"plain"],[1,20,"plain"],[1,21,"plain"],[1,22,"plain"],[1,23,"plain"],[1,24,"plain"],[2,0,"plain"],[2,1,"plain"],[2,2,"plain"],[2,3,"plain"],[2,4,"plain"],[2,5,"plain"],[2,6,"plain"],[2,7,"plain"],[2,8,"plain"],[2,9,"plain"],[2,10,"river"],[2,11,"forest"],[2,12,"forest"],[2,13,"forest"],[2,14,"forest"],[2,15,"plain"],[2,16,"plain"],[2,17,"plain"],[2,18,"plain"],[2,19,"plain"],[2,20,"plain"],[2,21,"plain"],[2,22,"plain"],[2,23,"plain"],[2,24,"plain"],[3,0,"plain"],[3,1,"plain"],[3,2,"rock"],[3,3,"rock"],[3,4,"rock"],[3,5,"rock"],[3,6,"plain"],[3,7,"plain"],[3,8,"plain"],[3,9,"plain"],[3,10,"river"],[3,11,"forest"],[3,12,"forest"],[3,13,"forest"],[3,14,"forest"],[3,15,"plain"],[3,16,"plain"],[3,17,"plain"],[3,18,"plain"],[3,19,"plain"],[3,20,"plain"],[3,21,"plain"],[3,22,"plain"],[3,23,"plain"],[3,24,"plain"],[4,0,"plain"],[4,1,"plain"],[4,2,"rock"],[4,3,"rock"],[4,4,"rock"],[4,5,"rock"],[4,6,"plain"],[4,7,"plain"],[4,8,"plain"],[4,9,"river"],[4,10,"river"],[4,11,"forest"],[4,12,"forest"],[4,13,"forest"],[4,14,"plain"],[4,15,"plain"],[4,16,"plain"],[4,17,"plain"],[4,18,"plain"],[4,19,"plain"],[4,20,"plain"],[4,21,"plain"],[4,22,"plain"],[4,23,"plain"],[4,24,"plain"],[5,0,"plain"],[5,1,"rock"],[5,2,"rock"],[5,3,"rock"],[5,4,"rock"],[5,5,"rock"],[5,6,"plain"],[5,7,"plain"],[5,8,"plain"],[5,9,"river"],[5,10,"forest"],[5,11,"forest"],[5,12,"forest"],[5,13,"forest"],[5,14,"plain"],[5,15,"plain"],[5,16,"plain"],[5,17,"plain"],[5,18,"plain"],[5,19,"plain"],[5,20,"plain"],[5,21,"plain"],[5,22,"plain"],[5,23,"plain"],[5,24,"plain"],[6,0,"plain"],[6,1,"plain"],[6,2,"rock"],[6,3,"rock"],[6,4,"rock"],[6,5,"plain"],[6,6,"plain"],[6,7,"plain"],[6,8,"river"],[6,9,"forest"],[6,10,"forest"],[6,11,"forest"],[6,12,"forest"],[6,13,"forest"],[6,14,"plain"],[6,15,"plain"],[6,16,"plain"],[6,17,"plain"],[6,18,"plain"],[6,19,"plain"],[6,20,"plain"],[6,21,"plain"],[6,22,"plain"],[6,23,"plain"],[6,24,"plain"],[7,0,"plain"],[7,1,"plain"],[7,2,"rock"],[7,3,"rock"],[7,4,"plain"],[7,5,"plain"],[7,6,"plain"],[7,7,"plain"],[7,8,"bridge"],[7,9,"forest"],[7,10,"forest"],[7,11,"forest"],[7,12,"forest"],[7,13,"plain"],[7,14,"plain"],[7,15,"plain"],[7,16,"plain"],[7,17,"plain"],[7,18,"plain"],[7,19,"plain"],[7,20,"plain"],[7,21,"plain"],[7,22,"plain"],[7,23,"plain"],[7,24,"plain"],[8,0,"plain"],[8,1,"plain"],[8,2,"plain"],[8,3,"plain"],[8,4,"plain"],[8,5,"plain"],[8,6,"plain"],[8,7,"plain"],[8,8,"river"],[8,9,"river"],[8,10,"river"],[8,11,"forest"],[8,12,"plain"],[8,13,"plain"],[8,14,"plain"],[8,15,"plain"],[8,16,"plain"],[8,17,"plain"],[8,18,"plain"],[8,19,"plain"],[8,20,"plain"],[8,21,"plain"],[8,22,"plain"],[8,23,"plain"],[8,24,"plain"],[9,0,"plain"],[9,1,"plain"],[9,2,"plain"],[9,3,"plain"],[9,4,"plain"],[9,5,"plain"],[9,6,"plain"],[9,7,"plain"],[9,8,"plain"],[9,9,"plain"],[9,10,"river"],[9,11,"plain"],[9,12,"plain"],[9,13,"plain"],[9,14,"plain"],[9,15,"plain"],[9,16,"plain"],[9,17,"plain"],[9,18,"plain"],[9,19,"plain"],[9,20,"plain"],[9,21,"plain"],[9,22,"plain"],[9,23,"plain"],[9,24,"plain"],[10,0,"plain"],[10,1,"plain"],[10,2,"plain"],[10,3,"plain"],[10,4,"plain"],[10,5,"plain"],[10,6,"plain"],[10,7,"plain"],[10,8,"plain"],[10,9,"river"],[10,10,"plain"],[10,11,"plain"],[10,12,"plain"],[10,13,"plain"],[10,14,"plain"],[10,15,"plain"],[10,16,"plain"],[10,17,"plain"],[10,18,"plain"],[10,19,"plain"],[10,20,"plain"],[10,21,"plain"],[10,22,"plain"],[10,23,"plain"],[10,24,"plain"],[11,0,"plain"],[11,1,"plain"],[11,2,"plain"],[11,3,"plain"],[11,4,"plain"],[11,5,"plain"],[11,6,"plain"],[11,7,"plain"],[11,8,"plain"],[11,9,"river"],[11,10,"river"],[11,11,"plain"],[11,12,"plain"],[11,13,"plain"],[11,14,"plain"],[11,15,"plain"],[11,16,"plain"],[11,17,"plain"],[11,18,"plain"],[11,19,"plain"],[11,20,"plain"],[11,21,"plain"],[11,22,"plain"],[11,23,"plain"],[11,24,"plain"],[12,0,"plain"],[12,1,"plain"],[12,2,"plain"],[12,3,"plain"],[12,4,"plain"],[12,5,"plain"],[12,6,"plain"],[12,7,"plain"],[12,8,"plain"],[12,9,"plain"],[12,10,"river"],[12,11,"plain"],[12,12,"plain"],[12,13,"plain"],[12,14,"plain"],[12,15,"plain"],[12,16,"plain"],[12,17,"plain"],[12,18,"plain"],[12,19,"plain"],[12,20,"plain"],[12,21,"plain"],[12,22,"plain"],[12,23,"plain"],[12,24,"plain"],[13,0,"plain"],[13,1,"plain"],[13,2,"plain"],[13,3,"plain"],[13,4,"plain"],[13,5,"plain"],[13,6,"plain"],[13,7,"plain"],[13,8,"plain"],[13,9,"plain"],[13,10,"bridge"],[13,11,"plain"],[13,12,"plain"],[13,13,"plain"],[13,14,"plain"],[13,15,"plain"],[13,16,"plain"],[13,17,"plain"],[13,18,"plain"],[13,19,"plain"],[13,20,"plain"],[13,21,"plain"],[13,22,"plain"],[13,23,"plain"],[13,24,"plain"],[14,0,"plain"],[14,1,"plain"],[14,2,"plain"],[14,3,"plain"],[14,4,"forest"],[14,5,"plain"],[14,6,"plain"],[14,7,"plain"],[14,8,"plain"],[14,9,"river"],[14,10,"plain"],[14,11,"plain"],[14,12,"plain"],[14,13,"plain"],[14,14,"plain"],[14,15,"plain"],[14,16,"plain"],[14,17,"plain"],[14,18,"plain"],[14,19,"plain"],[14,20,"plain"],[14,21,"plain"],[14,22,"plain"],[14,23,"plain"],[14,24,"plain"],[15,0,"plain"],[15,1,"plain"],[15,2,"plain"],[15,3,"forest"],[15,4,"forest"],[15,5,"forest"],[15,6,"forest"],[15,7,"plain"],[15,8,"rock"],[15,9,"river"],[15,10,"river"],[15,11,"plain"],[15,12,"plain"],[15,13,"plain"],[15,14,"plain"],[15,15,"plain"],[15,16,"plain"],[15,17,"plain"],[15,18,"plain"],[15,19,"plain"],[15,20,"plain"],[15,21,"plain"],[15,22,"plain"],[15,23,"plain"],[15,24,"plain"],[16,0,"plain"],[16,1,"plain"],[16,2,"forest"],[16,3,"forest"],[16,4,"forest"],[16,5,"plain"],[16,6,"rock"],[16,7,"rock"],[16,8,"rock"],[16,9,"rock"],[16,10,"river"],[16,11,"plain"],[16,12,"plain"],[16,13,"plain"],[16,14,"plain"],[16,15,"plain"],[16,16,"plain"],[16,17,"plain"],[16,18,"plain"],[16,19,"plain"],[16,20,"plain"],[16,21,"plain"],[16,22,"plain"],[16,23,"plain"],[16,24,"plain"],[17,0,"forest"],[17,1,"forest"],[17,2,"forest"],[17,3,"forest"],[17,4,"rock"],[17,5,"rock"],[17,6,"plain"],[17,7,"rock"],[17,8,"rock"],[17,9,"river"],[17,10,"plain"],[17,11,"plain"],[17,12,"plain"],[17,13,"plain"],[17,14,"plain"],[17,15,"plain"],[17,16,"plain"],[17,17,"plain"],[17,18,"plain"],[17,19,"plain"],[17,20,"plain"],[17,21,"plain"],[17,22,"plain"],[17,23,"plain"],[17,24,"plain"],[18,0,"forest"],[18,1,"forest"],[18,2,"forest"],[18,3,"forest"],[18,4,"rock"],[18,5,"rock"],[18,6,"rock"],[18,7,"rock"],[18,8,"rock"],[18,9,"river"],[18,10,"plain"],[18,11,"plain"],[18,12,"plain"],[18,13,"plain"],[18,14,"plain"],[18,15,"plain"],[18,16,"plain"],[18,17,"plain"],[18,18,"plain"],[18,19,"plain"],[18,20,"plain"],[18,21,"plain"],[18,22,"plain"],[18,23,"plain"],[18,24,"plain"],[19,0,"forest"],[19,1,"forest"],[19,2,"forest"],[19,3,"forest"],[19,4,"plain"],[19,5,"rock"],[19,6,"rock"],[19,7,"river"],[19,8,"river"],[19,9,"plain"],[19,10,"plain"],[19,11,"plain"],[19,12,"plain"],[19,13,"plain"],[19,14,"plain"],[19,15,"plain"],[19,16,"plain"],[19,17,"plain"],[19,18,"plain"],[19,19,"plain"],[19,20,"plain"],[19,21,"plain"],[19,22,"plain"],[19,23,"plain"],[19,24,"plain"],[20,0,"forest"],[20,1,"forest"],[20,2,"forest"],[20,3,"plain"],[20,4,"rock"],[20,5,"rock"],[20,6,"rock"],[20,7,"river"],[20,8,"plain"],[20,9,"plain"],[20,10,"plain"],[20,11,"plain"],[20,12,"plain"],[20,13,"plain"],[20,14,"plain"],[20,15,"plain"],[20,16,"plain"],[20,17,"plain"],[20,18,"plain"],[20,19,"plain"],[20,20,"plain"],[20,21,"plain"],[20,22,"plain"],[20,23,"plain"],[20,24,"plain"],[21,0,"plain"],[21,1,"plain"],[21,2,"plain"],[21,3,"rock"],[21,4,"rock"],[21,5,"rock"],[21,6,"rock"],[21,7,"river"],[21,8,"plain"],[21,9,"plain"],[21,10,"plain"],[21,11,"plain"],[21,12,"plain"],[21,13,"plain"],[21,14,"plain"],[21,15,"plain"],[21,16,"plain"],[21,17,"plain"],[21,18,"plain"],[21,19,"plain"],[21,20,"plain"],[21,21,"plain"],[21,22,"plain"],[21,23,"plain"],[21,24,"plain"]],"nodes":[{"q":11,"r":4,"type":"mandatory","value":20,"ap_cost":5,"mandatory":true},{"q":19,"r":17,"type":"mandatory","value":20,"ap_cost":5,"mandatory":true},{"q":4,"r":18,"type":"mandatory","value":20,"ap_cost":5,"mandatory":true},{"q":8,"r":4,"type":"dungeon","value":8,"ap_cost":5,"mandatory":false},{"q":13,"r":18,"type":"dungeon","value":10,"ap_cost":5,"mandatory":false},{"q":7,"r":14,"type":"dungeon","value":12,"ap_cost":4,"mandatory":false},{"q":4,"r":14,"type":"dungeon","value":13,"ap_cost":3,"mandatory":false},{"q":13,"r":16,"type":"dungeon","value":9,"ap_cost":4,"mandatory":false},{"q":10,"r":15,"type":"dungeon","value":11,"ap_cost":3,"mandatory":false},{"q":9,"r":11,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":3,"r":19,"type":"essence","value":2,"ap_cost":1,"mandatory":false},{"q":12,"r":13,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":21,"r":18,"type":"essence","value":2,"ap_cost":1,"mandatory":false},{"q":15,"r":24,"type":"essence","value":3,"ap_cost":1,"mandatory":false},{"q":0,"r":4,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":11,"r":15,"type":"essence","value":3,"ap_cost":1,"mandatory":false},{"q":21,"r":8,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":9,"r":3,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":4,"r":8,"type":"essence","value":3,"ap_cost":1,"mandatory":false},{"q":18,"r":19,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":18,"r":22,"type":"essence","value":2,"ap_cost":1,"mandatory":false},{"q":11,"r":21,"type":"essence","value":2,"ap_cost":1,"mandatory":false},{"q":5,"r":21,"type":"essence","value":2,"ap_cost":1,"mandatory":false},{"q":2,"r":19,"type":"essence","value":2,"ap_cost":1,"mandatory":false},{"q":2,"r":5,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":10,"r":14,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":8,"r":0,"type":"essence","value":3,"ap_cost":1,"mandatory":false},{"q":9,"r":14,"type":"essence","value":2,"ap_cost":1,"mandatory":false},{"q":1,"r":21,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":3,"r":9,"type":"essence","value":3,"ap_cost":1,"mandatory":false},{"q":14,"r":21,"type":"essence","value":3,"ap_cost":1,"mandatory":false},{"q":9,"r":5,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":4,"r":15,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":6,"r":24,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":9,"r":24,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":10,"r":10,"type":"essence","value":2,"ap_cost":1,"mandatory":false},{"q":6,"r":17,"type":"essence","value":2,"ap_cost":1,"mandatory":false},{"q":16,"r":21,"type":"essence","value":1,"ap_cost":1,"mandatory":false},{"q":11,"r":2,"type":"essence","value":3,"ap_cost":1,"mandatory":false}]};
+
+const TERRAIN_COLOR = {
+  plain: 'var(--t-plain)', forest: 'var(--t-forest)', rock: 'var(--t-rock)',
+  river: 'var(--t-river)', bridge: 'var(--t-bridge)'
+};
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name.replace('var(', '').replace(')', '')).trim();
+
+function resolveColor(v) {
+  if (v.startsWith('var(')) return cssVar(v);
+  return v;
+}
+
+const SIZE = 15; // hex "radius" px
+function axialToPixel(q, r) {
+  const x = SIZE * Math.sqrt(3) * (q + r / 2);
+  const y = SIZE * 1.5 * r;
+  return [x, y];
+}
+
+function hexCorners(cx, cy, size) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const angleDeg = 60 * i - 30;
+    const angleRad = Math.PI / 180 * angleDeg;
+    pts.push([cx + size * Math.cos(angleRad), cy + size * Math.sin(angleRad)]);
+  }
+  return pts;
+}
+
+function draw() {
+  const canvas = document.getElementById('hexmap');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+
+  const maxX = SIZE * Math.sqrt(3) * (DATA.w + DATA.h / 2) + SIZE * 2;
+  const maxY = SIZE * 1.5 * DATA.h + SIZE * 2;
+  canvas.width = maxX * dpr;
+  canvas.height = maxY * dpr;
+  canvas.style.width = maxX + 'px';
+  canvas.style.height = maxY + 'px';
+  ctx.scale(dpr, dpr);
+
+  const gridColor = cssVar('var(--t-grid)');
+
+  for (const [q, r, t] of DATA.terrain) {
+    const [x, y] = axialToPixel(q, r);
+    const cx = x + SIZE * 1.2, cy = y + SIZE * 1.2;
+    const pts = hexCorners(cx, cy, SIZE * 0.97);
+    ctx.beginPath();
+    pts.forEach(([px, py], i) => i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py));
+    ctx.closePath();
+    ctx.fillStyle = resolveColor(TERRAIN_COLOR[t] || TERRAIN_COLOR.plain);
+    ctx.fill();
+    ctx.lineWidth = 0.6;
+    ctx.strokeStyle = gridColor;
+    ctx.stroke();
+  }
+
+  const iconStyle = {
+    mandatory: { fill: cssVar('var(--accent)'), glyph: '★' },
+    dungeon: { fill: '#5c3a1f', glyph: '⚔' },
+    essence: { fill: cssVar('var(--gold)'), glyph: '●' },
+  };
+
+  for (const n of DATA.nodes) {
+    const [x, y] = axialToPixel(n.q, n.r);
+    const cx = x + SIZE * 1.2, cy = y + SIZE * 1.2;
+    const style = iconStyle[n.type];
+    const r = n.type === 'essence' ? SIZE * 0.28 : SIZE * 0.42;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = style.fill;
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.stroke();
+    if (n.type !== 'essence') {
+      ctx.fillStyle = '#fff';
+      ctx.font = `${SIZE * 0.55}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(style.glyph, cx, cy + 0.5);
+    }
+  }
+
+  // baslangic
+  const [sx, sy] = axialToPixel(DATA.start[0], DATA.start[1]);
+  const scx = sx + SIZE * 1.2, scy = sy + SIZE * 1.2;
+  ctx.beginPath();
+  ctx.moveTo(scx, scy - SIZE * 0.55);
+  ctx.lineTo(scx - SIZE * 0.5, scy + SIZE * 0.4);
+  ctx.lineTo(scx + SIZE * 0.5, scy + SIZE * 0.4);
+  ctx.closePath();
+  ctx.fillStyle = '#2b2b2b';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function renderStats() {
+  const counts = {};
+  for (const [, , t] of DATA.terrain) counts[t] = (counts[t] || 0) + 1;
+  const total = DATA.terrain.length;
+  const labels = { plain: 'Düz/Ova', forest: 'Orman', rock: 'Kaya', river: 'Nehir', bridge: 'Köprü' };
+  const walkable = total - (counts.forest || 0) - (counts.rock || 0) - (counts.river || 0);
+
+  const terrainEl = document.getElementById('terrainStats');
+  let html = `<div class="stat-row"><span class="label">Toplam hex</span><span class="val mono">${total}</span></div>`;
+  html += `<div class="stat-row"><span class="label">Yürünür</span><span class="val mono">${walkable} (%${(100*walkable/total).toFixed(1)})</span></div>`;
+  for (const key of ['plain', 'forest', 'rock', 'river', 'bridge']) {
+    if (!counts[key]) continue;
+    html += `<div class="stat-row"><span class="label">${labels[key]}</span><span class="val mono">${counts[key]} (%${(100*counts[key]/total).toFixed(1)})</span></div>`;
+  }
+  terrainEl.innerHTML = html;
+
+  const nodeCounts = {};
+  for (const n of DATA.nodes) nodeCounts[n.type] = (nodeCounts[n.type] || 0) + 1;
+  const nodeLabels = { mandatory: 'Zorunlu görev ★', dungeon: 'Zindan/savaş ⚔', essence: 'Öz ●' };
+  const nodeEl = document.getElementById('nodeStats');
+  let nhtml = '';
+  for (const key of ['mandatory', 'dungeon', 'essence']) {
+    if (!nodeCounts[key]) continue;
+    nhtml += `<div class="stat-row"><span class="label">${nodeLabels[key]}</span><span class="val mono">${nodeCounts[key]}</span></div>`;
+  }
+  nodeEl.innerHTML = nhtml;
+}
+
+draw();
+renderStats();
+window.addEventListener('resize', draw);
+new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+</script>

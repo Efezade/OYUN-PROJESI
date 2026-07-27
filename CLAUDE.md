@@ -143,9 +143,16 @@ bu kararlar `Docs/GAME_DESIGN.md` (tek doğruluk kaynağı) ve `Docs/INBOX_TASKS
 - **HER OTURUMUN İLK ADIMI, konu ne olursa olsun:** önce `git pull` çalıştır (Sherlock'un push'ladığı
   yeni dosyalar/görevler local'de görünmeyebilir), sonra `Docs/INBOX_TASKS.md`'yi oku. Bu adımı
   atlama — Efe/Kardelen konuyu hatırlatmasa bile varsayılan davranışın bu olsun.
-- `pending` görev varsa işle.
-- **Görev bitince:** `Docs/DECISION_LOG.md`'ye ne yapıldığını yaz, INBOX_TASKS.md'de görevi
-  `done` işaretle (satırı silme — arşiv kalsın).
+- **TEK SEFERDE SADECE BİR `pending` GÖREV işle (2026-07-27 kararlaştırıldı).** Birden fazla
+  `pending` görev varsa hepsini art arda/aynı oturumda bitirmeye ÇALIŞMA — birini bitir, açıkla, DUR.
+- **Görev bitince:** `Docs/DECISION_LOG.md`'ye ne yapıldığını (nasıl/neden dahil) yaz, INBOX_TASKS.md'de
+  görevi `done` DEĞİL **`awaiting_review`** işaretle + kısa bir özet not düş (satırı silme — arşiv
+  kalsın). `done`'a çevirme yetkisi Watson'da değil — Efe/Kardelen (Sherlock tarafı) inceleyip onaylar.
+- **`awaiting_review` durumunda bekleyen bir görev varken YENİ bir `pending` göreve BAŞLAMA** — bu,
+  canlı bir onay bağlantımız olmadığı için (iki ayrı PC/oturum) dosya-tabanlı bir "onay kapısı"dır.
+  Sherlock bir sonraki taraf-geçişinde inceler: onaylarsa `done`'a çevirir (ya da "doğru, devam"
+  notu düşer), sorun bulursa `blocked` + nedenini yazar. Ancak öyle işaretlenmiş bir görev varsa
+  önce ONU düzelt, başka pending'e geçme.
 - **Belirsiz/çelişkili görev:** `blocked` işaretle + nedenini yaz, sessizce atlamayan.
 - `Docs/GAME_DESIGN.md` ile mevcut kod/ROADMAP arasında çelişki varsa GAME_DESIGN.md önceliklidir;
   büyük bir çelişkiyse INBOX_TASKS.md'ye not düşüp diğer tarafın netleştirmesini bekle.

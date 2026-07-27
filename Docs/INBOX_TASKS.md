@@ -15,12 +15,17 @@
 ## Format
 
 ```
-### [TASK-ID] Kısa başlık — status: pending|in_progress|blocked|done
+### [TASK-ID] Kısa başlık — status: pending|in_progress|awaiting_review|blocked|done
 Kaynak: (GAME_DESIGN.md ilgili bölüm / tartışma tarihi)
 Açıklama: ...
 Kabul kriteri: ...
 Performans notu: (varsa risk — büyük harita, çok sayıda birim, vb.)
 ```
+
+**Durum akışı (2026-07-27):** `pending` → Watson işler → **`awaiting_review`** (Watson `done`'a
+kendi çeviremez — ne yaptığını açıklar, DURUR) → Sherlock inceler → `done` (onaylandı) ya da
+`blocked` (sorun var, neden yazılır, Watson düzeltir). Watson, `awaiting_review`'da bekleyen bir
+görev varken YENİ bir `pending` görevi BAŞLATMAZ — tek seferde tek görev.
 
 ---
 
@@ -87,3 +92,19 @@ Açıklama: DECISION_LOG.md'yi tek commit'te temizle:
 Kabul kriteri: DECISION_LOG.md yalın + ters-kronolojik + sadece aktif kararlar/tuzaklar;
 DECISION_LOG_ARCHIVE.md tam tarihi içeriyor, içerik kaybı yok; Sherlock diff'i review eder.
 Performans notu: yok.
+
+### [TASK-004] "9 harita/3x3 dünya" yanlış varsayımı — HARİTA ekranı gözden geçirilmeli — status: pending
+Kaynak: Sherlock+kullanıcı tartışması (2026-07-27), bkz `Docs/Balance/HARITA_DENGE_DURUM.md`.
+Açıklama: GAME_DESIGN.md §0'da duran "Bölüm 1 dünyası = 9 harita, 3x3 snake dizilim" bilgisi
+YANLIŞ/hiç kararlaştırılmamış (§0'da düzeltildi, bkz oradaki not). Doğru yapı: **1 bölüm = 1 harita**,
+toplam **8 bölüm**, her biri kendi temalı elementiyle (bölüm1=taş+doğa, bölüm2~ateş/volkanik,
+bölüm3~teknoloji, vb. — bkz GAME_DESIGN.md §3). Ancak DECISION_LOG'daki 2026-07-26 girişine göre
+Watson tam da bu yanlış varsayıma dayanarak bir **"HARİTA" ekranı (`WorldMapView`,
+`WorldGridManager.CurrentMap`, 3×3 pin+pusula)** kurmuş olabilir. Bu gerçek kod, gerçek bir tasarım
+kararı değil, muhtemelen bir belirsizlik/iletişim kopukluğu üzerine inşa edilmiş.
+Kabul kriteri: Watson önce bu ekranın gerçekten "9 harita/3x3" varsayımına mı dayandığını kontrol
+etsin (kod inceleme). Öyleyse: ya (a) ekranı "8 bölüm ilerleme/seçim" gösterecek şekilde basitleştirsin
+(3x3 grid yerine 8'lik bir liste/yol), ya da (b) mevcut 3x3 UI'ı görsel olarak koruyup sadece
+"bölüm içi alt-konum" gibi başka bir anlama evriltmek mantıklı mı diye Sherlock'a sorup netleşsin.
+Kendi başına büyük bir yeniden yazım kararı almasın, belirsizse `blocked` işaretleyip sorsun.
+Performans notu: yok (UI/yapı değişikliği, sistem değil).

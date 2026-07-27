@@ -24,7 +24,11 @@
 
 Bunlar zaten kod tarafında uygulanmış/kararlaştırılmış gerçekler — çelişkiye düşmemek için referans:
 
-- **Harita:** Hex grid, pointy-top, axial koordinat. Bölüm 1 dünyası = **9 harita, 3x3 snake dizilim**, kenardan geçişli.
+- **Harita:** Hex grid, pointy-top, axial koordinat. ~~Bölüm 1 dünyası = 9 harita, 3x3 snake dizilim~~
+  → **YANLIŞ/GEÇERSİZ (Sherlock, 2026-07-27):** böyle bir mekanik hiç kararlaştırılmadı. Doğrusu:
+  **1 bölüm = 1 harita**, toplam **8 bölüm** (her biri kendi temalı elementiyle — bkz §3). Watson'ın
+  yakın zamanda kurduğu 3×3 "HARİTA" ekranı (`WorldMapView`/`WorldGridManager.CurrentMap`, bkz
+  DECISION_LOG 2026-07-26) bu yanlış varsayıma dayanıyor olabilir — bkz INBOX_TASKS.md yeni görev.
 - **Karo (tile) spec:** footprint 1.90×1.645 m, kalınlık 0.30 m sabit, pivot alt-orta, FBX -Z Forward/Y Up.
 - **Öz (Essence) sistemi:** 3 tip — Ateş / Su / Toprak (Kırmızı/Mavi/Yeşil). Haritaya elle boyanıyor (Essence Painter).
 - **Zaman/AP:** 9 AP = 1 dilim, 6 dilim = 1 gün (54 AP/gün) — mevcut kod değeri
@@ -34,7 +38,10 @@ Bunlar zaten kod tarafında uygulanmış/kararlaştırılmış gerçekler — ç
   henüz gerçek bir denge tartışmasından geçmedi — §2/§3 doldukça yeniden ele alınabilir.)*
 - **Sınıflar (planlı 5):** Barbar, Okçu, Büyücü, Rahip, Serseri + komutan **Kam** (zorunlu, ücretsiz, mana/büyü sistemi).
 - **Üretim tarifleri (örnek, ayarlanabilir):** Savaşçı = 2 Ateş + 1 Toprak, Ranger = 2 Su + 1 Toprak.
-- **Savaş:** Tur tabanlı, hıza göre initiative; kayıp koşulu = Kam'ın ölümü (tüm run kaybı, roguelite reset).
+- **Savaş:** Tur tabanlı, hıza göre initiative; kayıp koşulu = Kam'ın ölümü. ~~(tüm run kaybı,
+  roguelite reset)~~ → **DÜZELTİLDİ (Sherlock, 2026-07-27):** ceza tüm run'ın DEĞİL, sadece o
+  bölümün (=o harita) baştan başlaması — bkz §3. Diğer kayıp koşulları (süre/collapse) için de aynı
+  kapsam geçerli, Kam ölümü ayrıca ağırlaştırılmıyor.
 
 Detaylı tarihsel gerekçeler için `Docs/DECISION_LOG.md`.
 
@@ -64,6 +71,81 @@ Detaylı tarihsel gerekçeler için `Docs/DECISION_LOG.md`.
 
 *(Tartıştıkça buraya kısa gerekçeli kararlar eklenir; format: **Karar** — Neden — Tarih)*
 
+**Karar:** Bölüm 1 açılış haritası 22×25 hex, ~%20 engel (sık orman/dağ/göl/nehir+köprü geçit). Öz,
+ayrı bir "node" değil, **karonun kendisi** — 6 yürünür alt-tip: ova (öz yok), taşlık ova (1 taş),
+bol taşlık ova (2 taş), az ağaçlı ova (1 doğa), orman (2 doğa), nadir yüksek orman (3 doğa, nadir).
+Öz **TEK SEFERLİK** — toplanan karo tükenir. — Neden: terrain'den organik türeyen ekonomi, ayrı
+saçılmış node'lardan daha doğal; `Docs/Balance/tools/harita_terrain_v2.py` + `harita_map1_sim.py`
+ile simüle edildi. — 2026-07-27.
+
+**Karar:** Haritayı bitirmek için **~70 öz harcanması** hedefleniyor; mevcut terrain ağırlıklarıyla
+erişilebilir arz ~295 (taş 79 + doğa 216, ~4.2× tampon). Fazlalık BİLİNÇLİ — oyuncu her yere
+gidemez/gitmek istemeyebilir (savaşa AP ayırmak, engelli bölgeler vb.). Taş/doğa dengesi de KASITLI
+EŞİTSİZ — üretim tarifleri zaten dengeli olmayacak. — 2026-07-27.
+
+**Karar:** Bölüm 1'in özleri (**taş + doğa**) SADECE bu bölüme özel — ileriki bölümler kendi temalı
+elementini getirecek (örn. bölüm 2 ~ ateş/volkanik, bölüm 3 ~ teknoloji; toplam **8 bölüm**, her biri
+farklı element/tema). Kodda şu an duran Ateş/Su/Toprak enum'u sadece bir DENEMEYDİ, iptal edildi —
+bkz §4 (Watson bilgilendirilmeli). — 2026-07-27.
+
+**Karar:** Zindan/encounter zorluğu girmeden ÖNCE oyuncuya gösterilir (şeffaf risk) — ama ödül
+değişkenliği yüksek olabilir, çok iyi de çok değersiz de çıkabilir. İlke: **riski bil, ödülü bilme.**
+— 2026-07-27.
+
+**Karar (taslak, sayılar netleşmedi):** Gün 10'dan itibaren hem zindan/encounter maliyeti kademeli
+artar hem de harita karoları kademeli silinmeye başlar (örn. gün10:10, gün14:60 karo silinmiş —
+placeholder sayılar). Gün 14'te sert kesim (harita ilerlenemez hale gelir). Silinecek karolar
+görsel olarak ÖNCEDEN çatlar/telegraph edilir — **sessiz silinme YOK** (oyuncu göremediği bir şeyi
+"haksızca" kaybetmemeli). — 2026-07-27.
+
+**Karar:** Kayıp kapsamı = **sadece o bölüm/harita** baştan başlar (tüm 8-bölümlük run DEĞİL).
+Güvende kalan: kalıcı roster (üretilmiş birimler+seviyeleri), Meta-Öz, Meta-Öz ile açılan kalıcılar
+— zaten "harcanan öz kalıcı birime dönüşür" kuralı bunu doğal olarak sağlıyor, ayrı bir "banka"
+mekaniği gerekmiyor. Riskte kalan: o bölümdeki harcanmamış ham öz + keşif ilerlemesi. Kam ölümü
+ayrıca ağırlaştırılmıyor, aynı kural geçerli. — Neden: "tüm ilerlemeni kaybet" çok acımasız, "hiçbir
+şey kaybetme" anlamsız; ortada, ergonomik bir ceza. — 2026-07-27.
+
+**Karar:** Bir bölüm/harita başarısız olup TEKRAR başlatıldığında, harita **YENİDEN PROSEDÜREL
+ÜRETİLMELİ** (yeni seed) — aynı layout tekrar yüklenirse oyuncu haritayı ezbere bilir, tüm rota/
+keşif gerilimi (bkz simülasyon gap%) anlamsızlaşır. Bu oturumun simülasyon araçları zaten
+`seed`parametresiyle prosedürel kuruldu (`harita_terrain_v2.generate_terrain(w,h,seed,...)`) — yani
+alt yapı buna hazır, gerçek oyunda da terrain/node üretimi hazır-elle-çizili tek bir harita yerine
+aynı yöntemle (seed'e göre) kurulmalı. Netleşmesi gereken: İLK deneme de mi prosedürel, yoksa
+sadece BAŞARISIZLIK SONRASI retry mi yeniden üretiliyor (ilkinde elle yerleştirilmiş özel içerik —
+boss, zorunlu görev konumları — olabilir)? — 2026-07-27.
+
+**Karar:** Retry'de prosedürel üretim (yukarıdaki karar), **sabit 10 haritalık bir havuzdan seçim**
+olarak uygulanacak — sonsuz/tam rastgele üretim değil. Sebep: 300 rastgele seed tarandığında
+**medyan gap %0** çıktı (ortalama %3.1) — yani rastgele üretilen haritaların büyük çoğunluğu
+"kolayca tam toplanabilir", gerçek rota-bulmacası nadir (~%3-5 seed'de). Bu yüzden 300 aday içinden
+adalet/oynanabilirlik filtresini geçen (parçalanmamış, 70-öz hedefine gün 10-12'de ulaşılabilir,
+zorunlu görevler erişilebilir) en yüksek gap'li **10 seed elle seçildi** — maliyeti yok, "kafa yorma"
+hedefine rastgele seçimden çok daha tutarlı hizmet ediyor. Seçim script'i:
+`Docs/Balance/tools/harita_seed_secimi.py`. **Havuz (gap12'ye göre yüksekten düşüğe):**
+
+| Sıra | Seed | Bağlantı% | Öz Arzı | Gün8 Öz | Gap12% |
+|---|---|---|---|---|---|
+| 1 | 89 | 74.4% | 256 | 65 | 23.1 |
+| 2 | 7 | 78.9% | 295 | 69 | 18.9 |
+| 3 | 20 | 79.3% | 302 | 45 | 18.3 |
+| 4 | 108 | 75.1% | 277 | 82 | 17.4 |
+| 5 | 219 | 72.2% | 279 | 86 | 16.8 |
+| 6 | 64 | 78.9% | 272 | 79 | 16.6 |
+| 7 | 173 | 79.5% | 245 | 90 | 15.9 |
+| 8 | 283 | 74.7% | 273 | 63 | 14.9 |
+| 9 | 141 | 76.0% | 262 | 44 | 14.4 |
+| 10 | 286 | 76.4% | 268 | 67 | 14.3 |
+
+Retry'de bu 10 seed'den biri (rastgele veya sırayla) seçilir; hangi yöntemin kullanılacağı
+(rastgele/sırayla/son oynanandan farklı) Watson'ın implementasyon tercihi olabilir. — 2026-07-27.
+
+**Karar (fikir aşamasında):** Mevcut §5'teki **Meta-Öz** kavramı, bölümler arası ekonomi sürekliliği
+sorusuna çözüm olarak kullanılabilir: roster/ilerleme kalıcı, o bölümün HAM özü (taş/doğa) o bölümde
+kalır/taşınmaz (zaten bir sonraki bölümde tematik olarak anlamsız olurdu). Bölüm sonunda kalan ham
+özün küçük bir kısmı Meta-Öz'e çevrilebilir; Meta-Öz ile market'te genel/oyunu bozmayan QoL yükseltmeleri
+alınabilir (örn. "günde 2 karo ışınlanma"). NOT: bu tarz kalıcı yükseltmeler sonraki bölümlerin AP/
+hareket ekonomisini değiştirir — o bölümleri dengelerken hesaba katılmalı. — 2026-07-27.
+
 ---
 
 ## 4) Bekleyen Sorular (Unity tarafına / kod tarafına yönelik)
@@ -75,6 +157,26 @@ Detaylı tarihsel gerekçeler için `Docs/DECISION_LOG.md`.
   `bc0aa71`) 9'a güncellenmişti. §0 düzeltildi, koda dokunulmadı. Bu, AP ekonomisinin dengelendiği
   anlamına gelmiyor — sadece mevcut durumu doğru yansıtıyor. §2/§3 (statlar, denge notları) dolunca
   AP pacing'i (9/dilim, 54/gün) gerçek bir denge konusu olarak yeniden ele alabiliriz.
+
+- **[AÇIK — Sherlock, 2026-07-27] "Bölüm" ile "harita" ilişkisi net değil.** §0'da "Bölüm 1 dünyası
+  = 9 harita, 3x3 snake dizilim" yazıyor — yani 1 bölüm birden fazla haritadan oluşuyor. Ama bu
+  oturumda tartışılan "8 bölüm, her biri kendi temalı elementiyle" fikri bazen "1 bölüm = 1 harita"
+  gibi kullanıldı (bkz `Docs/Balance/HARITA_DENGE_DURUM.md`). Netleşmesi gereken: 8 bölümün her biri
+  kendi 9-haritalık 3x3 snake dünyasına mı sahip (toplam 8×9=72 harita), yoksa yapı basitleşip
+  "bölüm"="harita" mı oldu? Harita-1 için kalibre ettiğimiz sayıların (70 öz hedefi, 22×25 boyut,
+  gün14 collapse) hangi ÖLÇEKTE geçerli olduğu buna bağlı.
+
+- **[AÇIK — Sherlock, 2026-07-27] Roguelite reset kapsamı net değil.** §5: "süre bit / harita çök /
+  Kam öl → başa sar, Meta-Özler kalıcı" — bu "başa sar" TÜM RUN'ın sıfırlanması mı (muhtemelen
+  bölüm 1'in başına), yoksa sadece o anki haritanın tekrarı mı? Harita-1 için tasarladığımız "gün 14
+  collapse" cezasının ağırlığı bu cevaba göre çok değişir (bu haritayı tekrar et vs. tüm ilerlemeni
+  kaybet) — ayrıca ilk haritalarda daha AFFEDİCİ bir ceza olması önerildi (oyuncu sistemleri henüz
+  öğreniyor), bu da hangi reset-kapsamının seçildiğine bağlı olarak ayarlanmalı.
+
+- **[BİLGİ — Sherlock, 2026-07-27] Watson'ın kodundaki Ateş/Su/Toprak öz sistemi ARTIK GEÇERSİZ.**
+  Bölüm 1 özleri Taş+Doğa; ileriki bölümler kendi temalı elementini getirecek (toplam 8 bölüm, her
+  biri farklı element/tema — bkz §3). Watson'a görev yazılırken bu eski varsayımla karışmasın diye
+  açıkça belirtilmeli.
 
 ---
 
