@@ -89,15 +89,20 @@ paneli yayınlandı (artifact). Sürekli güncellenebilir, en son taksonomiyle (
    değiştirilmesi istendi (GAME_DESIGN.md §0'a işlendi). Watson TASK-003/004'ten sonra sırayla bu
    üçünü işleyecek, her birinde `awaiting_review`'da durup onay bekleyecek.
 
-## Paralel/arka plan durumu
-- Watson'daki **TASK-003** (DECISION_LOG.md temizlik geçişi) `Docs/INBOX_TASKS.md`'de hâlâ
-  **pending** (2026-07-27 itibariyle kontrol edildi, değişmemiş).
+## Paralel/arka plan durumu (2026-07-27 sonu itibariyle güncel)
+- INBOX_TASKS.md'de sırayla **pending**: TASK-003 (DECISION_LOG temizliği), TASK-004 (9-harita/3x3
+  UI kontrolü), TASK-005/006/007 (bölüm-1 harita sistemi — terrain+AP ekonomisi / node sistemi /
+  collapse+retry). Watson'a bunları sırayla işlemesi için prompt verildi.
+- **Yeni iş akışı kuralı aktif (CLAUDE.md §9):** Watson tek seferde tek `pending` görevi işler,
+  bitirince `done` değil `awaiting_review` yazıp DURUR — Sherlock/kullanıcı onaylayana kadar
+  sıradaki göreve geçmez. Yani her oturumda muhtemelen SADECE BİR görev ilerlemiş olacak.
 - Dosya sahipliği kuralı aktif: DECISION_LOG.md=Watson, INBOX_TASKS.md=append-only,
   GAME_DESIGN.md=Sherlock (bkz CLAUDE.md §9).
-- Watson'a henüz somut bir implementasyon görevi YAZILMADI — önce yukarıdaki açık soruların
-  (özellikle #1, #2) netleşmesi bekleniyor, sonra INBOX_TASKS.md'ye düşürülecek.
+- Son commit: `53c0451` (push'landı, origin/main ile senkron).
 
 ## Devam etmek için ilk adım
-Yeni oturumda: `git pull` yap (Watson TASK-004'ü işlemiş olabilir), sonra "Açık sorular"
-bölümündeki **1. maddeden** (harita retry'de prosedürel yeniden üretim — ilk deneme de mi,
-sadece retry mi) devam et.
+Yeni oturumda: `git pull` yap, sonra `Docs/INBOX_TASKS.md`'yi oku — muhtemelen 1 görev
+`awaiting_review` durumda bekliyor olacak, ONU İNCELE (Watson'ın DECISION_LOG.md'ye yazdığı
+açıklamayla birlikte) ve `done`/`blocked` olarak işaretle. Hiçbir görev `awaiting_review`'da
+değilse, "Açık sorular" bölümündeki maddelerden (encounter/zindan sayıları, seviye sistemi,
+collapse'ın kesin sayıları — muhtemelen artık gerçek playtest verisiyle netleşiyor olacak) devam et.
