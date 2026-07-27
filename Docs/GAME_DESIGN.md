@@ -30,12 +30,18 @@ Bunlar zaten kod tarafında uygulanmış/kararlaştırılmış gerçekler — ç
   yakın zamanda kurduğu 3×3 "HARİTA" ekranı (`WorldMapView`/`WorldGridManager.CurrentMap`, bkz
   DECISION_LOG 2026-07-26) bu yanlış varsayıma dayanıyor olabilir — bkz INBOX_TASKS.md yeni görev.
 - **Karo (tile) spec:** footprint 1.90×1.645 m, kalınlık 0.30 m sabit, pivot alt-orta, FBX -Z Forward/Y Up.
-- **Öz (Essence) sistemi:** 3 tip — Ateş / Su / Toprak (Kırmızı/Mavi/Yeşil). Haritaya elle boyanıyor (Essence Painter).
-- **Zaman/AP:** 9 AP = 1 dilim, 6 dilim = 1 gün (54 AP/gün) — mevcut kod değeri
-  (`TimeSlotConfig.asset`, commit `bc0aa71`). Gün 4'ten itibaren Dünyanın Çöküşü (karo silinmesi).
-  *(Not: bu satır önceden yanlışlıkla "3 AP" yazıyordu — DECISION_LOG'un eski/Faz-1 anlatısından
-  kopyalanmıştı, ama kod çoktan 9'a güncellenmişti. Düzeltildi 2026-07-26; AP ekonomisinin kendisi
-  henüz gerçek bir denge tartışmasından geçmedi — §2/§3 doldukça yeniden ele alınabilir.)*
+- **Öz (Essence) sistemi:** ~~3 tip — Ateş / Su / Toprak~~ → **GEÇERSİZ (Sherlock, 2026-07-27):**
+  sadece bir denemeydi. Bölüm 1 özleri **Taş + Doğa** (terrain'in kendisinden türer, ayrı boyama
+  yok) — bkz §3. İleriki bölümler kendi temalı elementini getirecek.
+- **Zaman/AP:** ~~9 AP = 1 dilim, 6 dilim = 1 gün (54 AP/gün)~~ → **DEĞİŞTİ (Sherlock, 2026-07-27):**
+  bölüm 1 için **24 AP/gün**'e güncellendi — bu oturumun TÜM denge simülasyonu (öz hedefi, collapse
+  zamanlaması, 10-seed havuzu) 24 AP/gün varsayımıyla yapıldı, `TimeSlotConfig.asset` buna göre
+  güncellenmeli (bkz INBOX_TASKS.md TASK-005). Eski 54 değeri hiçbir zaman gerçek bir denge
+  tartışmasından geçmemişti (bkz eski not aşağıda) — bilinçli bir değişiklik, hata değil. Gün 4'ten
+  itibaren Dünyanın Çöküşü fikri de netleşti: **gün 10'dan itibaren** kademeli karo silinmesi/
+  zorlaşma, **gün 14'te sert kesim** — bkz §3, TASK-007.
+  *(Eski not: "3 AP" yazan versiyon DECISION_LOG'un eski/Faz-1 anlatısından kopyalanmıştı, kod
+  9'a güncellenmişti; şimdi 24'e değişti.)*
 - **Sınıflar (planlı 5):** Barbar, Okçu, Büyücü, Rahip, Serseri + komutan **Kam** (zorunlu, ücretsiz, mana/büyü sistemi).
 - **Üretim tarifleri (örnek, ayarlanabilir):** Savaşçı = 2 Ateş + 1 Toprak, Ranger = 2 Su + 1 Toprak.
 - **Savaş:** Tur tabanlı, hıza göre initiative; kayıp koşulu = Kam'ın ölümü. ~~(tüm run kaybı,

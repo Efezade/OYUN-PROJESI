@@ -80,10 +80,14 @@ paneli yayınlandı (artifact). Sürekli güncellenebilir, en son taksonomiyle (
 4. **Gözetleme kulesi** maliyeti/haritada kaç adet olacağı belirsiz.
 5. Portal + gece mistik marketi **ileriki bölümlere ertelenmesi öneriliyor** (Watson tarafı önerisi,
    kullanıcı koşullu kabul etti) — kesinleşmedi.
-6. **Watson'a implementasyon görevi henüz YAZILMADI** — yukarıdakiler netleşmeden yazmak riskli
-   (tekrar hesaplama ihtimali yüksek). Yazılınca CLAUDE.md §9'daki YENİ kural geçerli: Watson tek
-   seferde tek `pending` görev işler, bitirince `awaiting_review` yazıp durur, Sherlock onaylayınca
-   `done`'a geçer — hepsini art arda yapmaz.
+6. ~~Watson'a implementasyon görevi henüz YAZILMADI~~ → **YAZILDI (2026-07-27):** kullanıcı kalan
+   detayları (encounter/zindan sayıları, seviye sistemi, collapse'ın kesin sayıları) kendi oynayıp
+   netleştirmenin daha verimli olacağına karar verdi — teorileştirmeye devam etmek yerine **TASK-005/
+   006/007** olarak INBOX_TASKS.md'ye yazıldı (terrain+AP ekonomisi / node sistemi / collapse+retry),
+   commit+push edildi (`7004f23` sonrası). Ayrıca fark edilen önemli bir uyumsuzluk düzeltildi: bu
+   oturumun TÜM hesapları 24 AP/gün varsayıyordu ama kodda 54 AP/gün vardı — TASK-005'te 24'e
+   değiştirilmesi istendi (GAME_DESIGN.md §0'a işlendi). Watson TASK-003/004'ten sonra sırayla bu
+   üçünü işleyecek, her birinde `awaiting_review`'da durup onay bekleyecek.
 
 ## Paralel/arka plan durumu
 - Watson'daki **TASK-003** (DECISION_LOG.md temizlik geçişi) `Docs/INBOX_TASKS.md`'de hâlâ

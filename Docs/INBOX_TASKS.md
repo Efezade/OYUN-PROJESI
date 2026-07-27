@@ -108,3 +108,68 @@ etsin (kod inceleme). Öyleyse: ya (a) ekranı "8 bölüm ilerleme/seçim" göst
 "bölüm içi alt-konum" gibi başka bir anlama evriltmek mantıklı mı diye Sherlock'a sorup netleşsin.
 Kendi başına büyük bir yeniden yazım kararı almasın, belirsizse `blocked` işaretleyip sorsun.
 Performans notu: yok (UI/yapı değişikliği, sistem değil).
+
+### [TASK-005] Bölüm 1 harita üretim altyapısı + AP ekonomisi güncellemesi — status: pending
+Kaynak: Sherlock oturumu 2026-07-27, `Docs/Balance/HARITA_DENGE_DURUM.md` + GAME_DESIGN.md §0/§3.
+Açıklama: TASK-003/004'ten SONRA sırada (tek seferde tek görev kuralı, bkz §9).
+1. **AP ekonomisi:** `TimeSlotConfig.asset`'i 54 AP/gün'den **24 AP/gün**'e güncelle (GAME_DESIGN.md
+   §0'da gerekçesi var — bu oturumun tüm balance hesabı 24 AP/gün varsayımıyla yapıldı). Bilinçli
+   bir değişiklik, hata değil.
+2. **Prosedürel terrain üretici** kur (22×25 hex, bölüm 1): 6 yürünür alt-tip — ova(öz yok),
+   taşlık ova(1 taş), bol taşlık ova(2 taş), az ağaçlı ova(1 doğa), orman(2 doğa), nadir yüksek
+   orman(3 doğa, nadir) — + 4 engel tipi: sık orman, dağ, göl, nehir (birkaç köprü geçişli).
+   Öz **TEK SEFERLİK** (toplanan karo tükenir, öz artık ayrı bir görsel node değil, karonun kendisi).
+   **Referans algoritma hazır:** `Docs/Balance/tools/harita_terrain_v2.py` (Python) — ağırlıklı
+   rastgele alt-tip ataması, blob-tabanlı engel üretimi (sık orman/dağ/göl), nehir yol algoritması,
+   bağlantılı-bileşen kontrolü (`largest_connected_component`). Aynı mantığı C#/Unity'ye port et,
+   yeniden icat etmene gerek yok.
+3. **Sabit 10-seed havuzu** kullan (GAME_DESIGN.md §3'teki tablo: seed 89,7,20,108,219,64,173,283,
+   141,286 — gap'e göre yüksekten düşüğe sıralı). Harita her açılışta/retry'de bu havuzdan bir seed
+   seçilir (rastgele ya da sırayla — implementasyon tercihi, ama son oynanandan farklı olması iyi
+   olur). Sonsuz/tam rastgele ÜRETME — bu 10 seed dışına çıkma (adalet/oynanabilirlik için elle
+   doğrulandılar, bkz `harita_seed_secimi.py`).
+Kabul kriteri: 10 seed'in her biri Unity'de açılabiliyor; terrain dağılımı (yürünür%, tip başına
+sayı) Python referansıyla aynı seed için eşleşiyor; öz toplanınca karo tükeniyor; AP/gün=24 olarak
+çalışıyor.
+Performans notu: 550 karo + BFS tabanlı bağlantı kontrolü, küçük ölçekli, risk düşük.
+
+### [TASK-006] Zorunlu görev/zindan/encounter/market/kule node sistemi — status: pending
+Kaynak: aynı oturum, `Docs/Balance/tools/harita_map1_sim.py` (node değer/maliyet tabloları).
+Açıklama: TASK-005 BİTMEDEN başlanmaz (terrain altyapısı gerekli). "Ova" karoları üzerine:
+- **3× zorunlu harita-kurtarma görevi** — sabit konum, sis'ten BAĞIMSIZ hep görünür (haritada pin
+  gibi), değer/maliyet ~20 değer / 5 AP. Bu üçü tamamlanmadan bölüm bitmiyor.
+- **6× zindan** — yan görev, zorluk DEĞİŞKEN ama aşırı uçlarda değil (kesin sayı sonradan
+  playtest'le netleşecek, şimdilik ~8-15 değer / 3-6 AP aralığı taslak). **Girmeden ÖNCE zorluk
+  göstergesi GÖRÜNÜR olmalı** (örn. ikon/seviye), ama **ödül GİZLİ ve yüksek varyanslı** (çok iyi
+  ya da çok değersiz çıkabilir) — "riski bil, ödülü bilme" ilkesi.
+- **8× encounter** — zindana benzer ama hafif/tekrar edilebilir savaş, düşük maliyet (~3-6 değer /
+  1-2 AP taslak).
+- **1-2× gündüz marketi** — sabit konum, SADECE gündüz dilimlerinde açık.
+- **1-2× gözetleme kulesi** — kullanınca çevresindeki **5x5 alanın sisi KALICI açılır** (sis zaten
+  hiç geri kapanmıyor, bu sadece erken açma). Düşük AP maliyeti.
+- **1× ana boss** — **KONUMDAN BAĞIMSIZ**, haritanın herhangi bir yerinden (menü/eylem ile)
+  girilebilir, rota/harita pozisyonuyla ilgisi yok.
+- **YOK bu bölümde:** portal, gece mistik marketi — ileriki bölümlere ertelendi (GAME_DESIGN.md §3).
+Kabul kriteri: her node tipi doğru sayıda ve doğru davranışla çalışıyor; zindan/encounter'a
+girmeden önce zorluk görünüyor, ödül girene kadar gizli; boss her yerden erişilebiliyor; zorunlu
+3 görev sis'ten bağımsız görünüyor.
+Performans notu: yok.
+
+### [TASK-007] Zaman baskısı — collapse/zorlaşma + bölüm-scope kayıp/retry — status: pending
+Kaynak: aynı oturum. Açıklama: TASK-005/006'dan SONRA. Sayılar TASLAK — kullanıcı playtest'le
+ayarlayacak, ilk geçiş için aşağıdaki değerlerle başla:
+1. **Gün 10'dan itibaren:** zindan/encounter maliyeti kademeli artar (taslak: ×2 çarpan gün 10+).
+2. **Gün 10'dan itibaren:** harita karoları kademeli silinir (taslak: gün10'da 10, gün14'te
+   kümülatif 60 karo). **Silinecek karo ÖNCEDEN görsel olarak çatlar/telegraph edilir — SESSİZ
+   SİLİNME YOK** (oyuncu göremediği bir şeyi haksızca kaybetmemeli). Zorunlu görev karoları asla
+   silinmez.
+3. **Gün 14'te sert kesim:** harita ilerlenemez hale gelir / bölüm kaybedilir.
+4. **Kayıp kapsamı (Kam ölümü DAHİL hepsi aynı kural):** SADECE o bölüm/harita baştan başlar
+   (10-seed havuzundan farklı bir seed ile, bkz TASK-005) — TÜM RUN sıfırlanmaz. Güvende kalan:
+   kalıcı roster (üretilmiş birimler+seviyeleri), Meta-Öz, Meta-Öz ile açılan kalıcılar (zaten
+   "harcanan öz kalıcı birime dönüşür" kuralı bunu doğal sağlıyor). Riskte kalan: o bölümdeki
+   harcanmamış ham öz (taş/doğa) + keşif ilerlemesi.
+Kabul kriteri: gün 14 sonrası ilerleme donuyor/bölüm kaybediliyor; retry farklı bir seed ile
+başlıyor; roster/Meta-Öz korunuyor; harcanmamış öz kayboluyor; silinecek karolar en az 1-2 gün
+önceden görsel uyarı veriyor.
+Performans notu: yok.
