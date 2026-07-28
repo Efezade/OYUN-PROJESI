@@ -152,6 +152,31 @@ namespace TacticalRPG.Editor
 
             EnsureEssenceStyles();
 
+            // ── TASK-006: harita dugumleri (zorunlu gorev / zindan / encounter / market / kule / boss)
+            NodeConfigSO nodeConfig = EnsureNodeConfig();
+            var nodes = host.GetComponent<ChapterNodeManager>();
+            if (nodes == null) nodes = host.AddComponent<ChapterNodeManager>();
+            var nSO = new SerializedObject(nodes);
+            nSO.FindProperty("_grid").objectReferenceValue     = grid;
+            nSO.FindProperty("_map").objectReferenceValue      = gen;
+            nSO.FindProperty("_config").objectReferenceValue   = nodeConfig;
+            nSO.FindProperty("_ap").objectReferenceValue       = FindComponentAnywhere<ActionPointManager>();
+            nSO.FindProperty("_wallet").objectReferenceValue   = FindComponentAnywhere<EssenceWallet>();
+            nSO.FindProperty("_player").objectReferenceValue   = player;
+            nSO.FindProperty("_fog").objectReferenceValue      = FindComponentAnywhere<FogOfWarManager>();
+            nSO.FindProperty("_state").objectReferenceValue    = state;
+            nSO.FindProperty("_missions").objectReferenceValue = FindComponentAnywhere<MissionManager>();
+            nSO.ApplyModifiedProperties();
+
+            var nodeHud = host.GetComponent<TacticalRPG.UI.ChapterNodeHUD>();
+            if (nodeHud == null) nodeHud = host.AddComponent<TacticalRPG.UI.ChapterNodeHUD>();
+            var nhSO = new SerializedObject(nodeHud);
+            nhSO.FindProperty("_state").objectReferenceValue  = state;
+            nhSO.FindProperty("_nodes").objectReferenceValue  = nodes;
+            nhSO.FindProperty("_player").objectReferenceValue = player;
+            nhSO.FindProperty("_ap").objectReferenceValue     = FindComponentAnywhere<ActionPointManager>();
+            nhSO.ApplyModifiedProperties();
+
             // ── WatchtowerManager — kule ile haritanin sisini KALICI kaldirma
             var fog = FindComponentAnywhere<FogOfWarManager>();
             var wt  = host.GetComponent<WatchtowerManager>();
@@ -226,6 +251,22 @@ namespace TacticalRPG.Editor
             palSO.ApplyModifiedProperties();
             EditorUtility.SetDirty(palette);
             if (added > 0) Debug.Log($"[Bolum] Palete {added} terrain karosu eklendi.");
+        }
+
+        /// <summary>NodeConfig.asset'i yükler; YOKSA varsayılanlarla oluşturur (varsa DOKUNMAZ —
+        /// playtest'te elle ayarlanan sayılar TAM KURULUM'da ezilmesin).</summary>
+        private static NodeConfigSO EnsureNodeConfig()
+        {
+            const string path = "Assets/Data/Config/NodeConfig.asset";
+            var cfg = AssetDatabase.LoadAssetAtPath<NodeConfigSO>(path);
+            if (cfg != null) return cfg;
+
+            EnsureFolder("Assets/Data/Config");
+            cfg = ScriptableObject.CreateInstance<NodeConfigSO>();
+            AssetDatabase.CreateAsset(cfg, path);   // alan varsayilanlari = INBOX TASK-006 taslak sayilari
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+            return cfg;
         }
 
         /// <summary>EssenceConfig'e bölüm 1'in öz türlerini (Taş, Doğa) ekler — YALNIZ YOKSA.

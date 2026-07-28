@@ -175,6 +175,9 @@ namespace TacticalRPG.Grid
                 float d  = Mathf.Sqrt(dx * dx + dz * dz) / spacing;           // karo biriminde mesafe
                 float a  = Mathf.Clamp01((d - radius) / band) * _hiddenAlpha;
 
+                // Gözetleme kulesiyle KALICI açılmış alan: sis bir daha kapanmaz (TASK-006).
+                if (_permanentReveals.Count > 0 && _permanentReveals.Contains(cell.Coordinate)) a = 0f;
+
                 if (_caps.TryGetValue(cell.Coordinate, out Cap cap) && cap != null &&
                     !Mathf.Approximately(cap.target, a))
                 {
@@ -227,6 +230,27 @@ namespace TacticalRPG.Grid
         /// <summary>Kule aktifleşince adanın bulutlarını yumuşakça saydamlaştırır (epik his — beam/halka
         /// WatchtowerManager'da). Saydamlık geçişi _fadeSpeed ile animasyonlu olduğu için SetFullReveal yeter.</summary>
         public void RevealAllAnimated(float duration) => SetFullReveal(true);
+
+        // ── Kalıcı açılan alanlar (gözetleme kulesi — TASK-006) ─────────────
+        // Sis bu projede DİNAMİK (her adımda oyuncu mesafesine göre yeniden hesaplanır), o yüzden
+        // "kalıcı açık" bir küme olarak tutulup UpdateFogAround'da muaf tutuluyor.
+        private readonly HashSet<HexCoordinate> _permanentReveals = new();
+
+        /// <summary>Merkez etrafındaki <paramref name="radius"/> yarıçaplı alanı KALICI açar —
+        /// oyuncu uzaklaşsa da sis geri kapanmaz. (Hex'te "5×5 alan" ≈ yarıçap 2 → 19 karo.)</summary>
+        public void RevealAreaPermanent(HexCoordinate center, int radius)
+        {
+            if (_gridManager == null || _gridManager.Cells == null) return;
+            foreach (var cell in _gridManager.Cells.Values)
+                if (center.DistanceTo(cell.Coordinate) <= radius)
+                    _permanentReveals.Add(cell.Coordinate);
+            RefreshFromLastPosition();
+        }
+
+        public bool IsPermanentlyRevealed(HexCoordinate coord) => _permanentReveals.Contains(coord);
+
+        /// <summary>Yeni harita üretilince kalıcı açıklıklar sıfırlanır.</summary>
+        public void ClearPermanentReveals() => _permanentReveals.Clear();
 
         public FogState GetFogState(HexCoordinate coord) =>
             _gridManager.TryGetCell(coord, out HexCell c) ? c.FogState : FogState.Hidden;

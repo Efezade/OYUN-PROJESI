@@ -16,15 +16,20 @@ MonoBehaviour:
   - type: 0
     displayName: Ates
     color: {r: 0.9, g: 0.25, b: 0.2, a: 1}
-    spawnWeight: 1
+    prefab: {fileID: 0}
   - type: 1
     displayName: Su
     color: {r: 0.25, g: 0.5, b: 0.95, a: 1}
-    spawnWeight: 1
+    prefab: {fileID: 0}
   - type: 2
     displayName: Toprak
     color: {r: 0.35, g: 0.75, b: 0.35, a: 1}
-    spawnWeight: 1
-  _tileChance: 0.55
-  _minPerTile: 1
-  _maxPerTile: 4
+    prefab: {fileID: 0}
+  - type: 3
+    displayName: "Ta\u015F"
+    color: {r: 0.62, g: 0.6, b: 0.56, a: 1}
+    prefab: {fileID: 0}
+  - type: 4
+    displayName: "Do\u011Fa"
+    color: {r: 0.36, g: 0.62, b: 0.32, a: 1}
+    prefab: {fileID: 0}

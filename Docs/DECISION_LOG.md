@@ -16,6 +16,46 @@
 
 ---
 
+## 2026-07-28 — TASK-006: harita düğümleri (zorunlu görev / zindan / encounter / market / kule / boss)
+
+**KARAR:** Düğümler ayrı bir katman (`Core/ChapterNodeManager` + `Data/NodeConfigSO` + `UI/ChapterNodeHUD`),
+terrain üreticisinden bağımsız — harita üretilince (`OnMapGenerated`) "ova" karolarına yerleşir.
+Sayılar/aralıklar SO'dan gelir (taslak: 3 zorunlu · 6 zindan · 8 encounter · 2 market · 2 kule · 1 boss).
+
+**"Riski bil, ödülü bilme" nasıl uygulandı:** düğümün `Value`'su var ama `RewardKnown` bayrağı
+zindan/encounter'da **false** başlar → HUD ödül yerine "? (girmeden bilinmez)" yazar; zorluk ise
+AP maliyetinden türetilip ★ ile GÖSTERİLİR. Girildikten sonra `RewardKnown` true olur.
+Ödülü "gizli" tutmak için değeri sonradan üretmedim — **üretim anında belirlenip saklanıyor**, böylece
+kaydetme/yükleme geldiğinde de tutarlı kalır.
+
+**KARAR (sis'ten bağımsız zorunlu görev):** Sis bu projede DİNAMİK (her adımda oyuncu mesafesinden
+yeniden hesaplanıyor), o yüzden "hep görünür" bir işaret sis sisteminden muaf tutulmalıydı. Zorunlu
+görev işaretleri bulut yüksekliğinin ÜSTÜNE konuluyor ve görünürlük kontrolünden muaf; diğerleri
+`FogOfWarManager.IsKnown` ile açılıyor.
+
+**KARAR (kule 5×5):** `FogOfWarManager`'a `RevealAreaPermanent(center, radius)` + kalıcı açıklık kümesi
+eklendi; `UpdateFogAround` bu karoları muaf tutuyor. Hex'te "5×5 alan" ≈ yarıçap 2 (19 karo) olarak
+yorumlandı, yarıçap SO'dan ayarlanabilir.
+
+**KARAR (boss konumsuz):** Boss havuzdan karo ALMAZ, haritada işareti YOKTUR; HUD'da her zaman duran
+bir düğmeyle girilir — rota/konumla ilişkisi yok (görev metni birebir bunu istiyordu).
+
+**SAPMA (bilinçli, Python sim'inden):** `harita_map1_sim.build_nodes`'un "ova havuzu" sırası Python'un
+KÜME sıralamasından geliyor — dile bağlı, C#'a taşınamaz. Havuz burada (q, r) sırasına göre kurulup
+karılıyor: aynı seed'de hep aynı yerleşim, ama sim'le birebir aynı koordinatlar değil. Sayılar ve
+değer/maliyet aralıkları aynı olduğu için denge etkilenmiyor.
+
+**AÇIK — Sherlock'a:** (1) düğüm ödülünün öz TÜRÜ (taş mı doğa mı) kararlaştırılmadı, şimdilik doğa
+veriliyor; (2) zorluk şu an yalnız GÖSTERGE — gerçek düşman gücünü değiştirmiyor (düğüm-başına roster
+yok); (3) market düğümü ile mevcut `magaza` KAROSU (StoreManager) iki ayrı şey, birleştirilmeli mi?
+
+**COMMIT:** (bu giriş)
+**DERS:** "Hep görünür olsun" gibi bir istek, sistemin dinamik mi statik mi olduğuna bakmadan
+karşılanamaz — buradaki sis her karede yeniden hesaplandığı için "görünür yap" değil "hesaptan muaf
+tut" gerekiyordu.
+
+---
+
 ## 2026-07-28 — TASK-005: prosedürel terrain + 24 AP/gün + 10-seed havuzu
 
 **KARAR (RNG):** Python'ın `random`'ı (Mersenne Twister + CPython'ın çekim algoritmaları) C#'a

@@ -190,7 +190,7 @@ Performans notu: yok (UI/yapı değişikliği, sistem değil).
 > taş+doğa özü) **TASK-005'in işi** — o yapılmadan oyun büyük ölçüde eski görünmeye devam eder.
 > TASK-004'ün kapsamı ekran + dünya modeliydi, terrain değil.
 
-### [TASK-005] Bölüm 1 harita üretim altyapısı + AP ekonomisi güncellemesi — status: awaiting_review
+### [TASK-005] Bölüm 1 harita üretim altyapısı + AP ekonomisi güncellemesi — status: done
 Kaynak: Sherlock oturumu 2026-07-27, `Docs/Balance/HARITA_DENGE_DURUM.md` + GAME_DESIGN.md §0/§3.
 Açıklama: TASK-003/004'ten SONRA sırada (tek seferde tek görev kuralı, bkz §9).
 1. **AP ekonomisi:** `TimeSlotConfig.asset`'i 54 AP/gün'den **24 AP/gün**'e güncelle (GAME_DESIGN.md
@@ -251,7 +251,7 @@ Performans notu: 550 karo + BFS tabanlı bağlantı kontrolü, küçük ölçekl
 > "Unity'de açılabiliyor" kısmını senin doğrulaman gerekiyor: **TAM KURULUM → Play.**
 > Detay: DECISION_LOG.md 2026-07-28 TASK-005 girişi.
 
-### [TASK-006] Zorunlu görev/zindan/encounter/market/kule node sistemi — status: pending
+### [TASK-006] Zorunlu görev/zindan/encounter/market/kule node sistemi — status: awaiting_review
 Kaynak: aynı oturum, `Docs/Balance/tools/harita_map1_sim.py` (node değer/maliyet tabloları).
 Açıklama: TASK-005 BİTMEDEN başlanmaz (terrain altyapısı gerekli). "Ova" karoları üzerine:
 - **3× zorunlu harita-kurtarma görevi** — sabit konum, sis'ten BAĞIMSIZ hep görünür (haritada pin
@@ -272,6 +272,37 @@ Kabul kriteri: her node tipi doğru sayıda ve doğru davranışla çalışıyor
 girmeden önce zorluk görünüyor, ödül girene kadar gizli; boss her yerden erişilebiliyor; zorunlu
 3 görev sis'ten bağımsız görünüyor.
 Performans notu: yok.
+
+> **AWAITING_REVIEW (Watson, 2026-07-28):** Altı düğüm tipinin hepsi kuruldu — sayılar/aralıklar
+> `Assets/Data/Config/NodeConfig.asset`'ten (taslak olduğu için Inspector'dan ayarlanabilir,
+> TAM KURULUM ezmez).
+>
+> | Node | Sayı | Davranış |
+> |---|---|---|
+> | Zorunlu görev | 3 | **Sis'ten bağımsız hep görünür** (işaret bulutun üstünde), 20 değer / 5 AP |
+> | Zindan | 6 | **Zorluk ★ ile GÖRÜNÜR, ödül "?" GİZLİ** — girince açılır. 8-15 değer / 3-6 AP |
+> | Encounter | 8 | Aynı gizlilik kuralı, hafif: 3-6 değer / 1-2 AP |
+> | Gündüz marketi | 2 | Gece dilimlerinde KAPALI ("gündüz tekrar gel") |
+> | Gözetleme kulesi | 2 | Çevreyi **KALICI** açar (yarıçap 2 ≈ 5×5, 19 karo), 1 AP |
+> | Ana boss | 1 | **Konumsuz** — haritada işareti yok, HUD'daki düğmeyle her yerden girilir |
+>
+> Zindan/encounter/boss/zorunlu görev savaşa yönlendiriliyor; **ödül savaştan DÖNÜNCE** veriliyor.
+>
+> **⚠ SENİN KARARIN GEREKEN 3 ŞEY (uydurmadım):**
+> 1. **Düğüm ödülünün öz TÜRÜ** belirtilmemiş — şimdilik hepsi *doğa* veriyor. Taş mı, karışık mı?
+> 2. **Zorluk şu an sadece GÖSTERGE** — ★ sayısı AP maliyetinden türüyor, gerçek düşman gücünü
+>    DEĞİŞTİRMİYOR (düğüm başına düşman roster'ı yok). Kabul kriteri "zorluk görünsün" diyordu, o
+>    sağlandı; ama "zor zindan gerçekten zor olsun" istiyorsan bu ayrı bir görev.
+> 3. **Market düğümü** ile mevcut **`magaza` KAROSU** (StoreManager/StoreHUD, TASK öncesi kurulmuştu)
+>    şu an iki ayrı şey. Birleştirilsin mi, yoksa market düğümü karo boyamanın yerini mi alsın?
+>
+> **SAPMA (bilinçli):** `harita_map1_sim.build_nodes`'un ova-havuzu sırası Python'un küme sıralamasından
+> geliyor, C#'a taşınamaz. Havuz (q,r) sırasına göre kurulup karılıyor → aynı seed'de hep aynı yerleşim,
+> ama sim'le birebir aynı koordinatlar değil. Sayılar ve değer/AP aralıkları aynı, denge etkilenmiyor.
+>
+> **DOĞRULAMA:** İki assembly de hatasız derlendi (exit=0). **Unity'de Play'e basılmadı** — düğüm
+> işaretlerinin görünümü, sis davranışı ve savaş dönüşü TEST EDİLMEDİ. TAM KURULUM → Play ile bak.
+> Detay: DECISION_LOG.md 2026-07-28 TASK-006 girişi.
 
 ### [TASK-007] Zaman baskısı — collapse/zorlaşma + bölüm-scope kayıp/retry — status: pending
 Kaynak: aynı oturum. Açıklama: TASK-005/006'dan SONRA. Sayılar TASLAK — kullanıcı playtest'le
