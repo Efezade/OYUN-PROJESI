@@ -112,6 +112,46 @@ namespace TacticalRPG.Editor
             // Savas karolari (deneme11-20) — ada yapisindan bagimsiz, cekirdek oynanis.
             EnsureCombatTestTiles(grid);
 
+            // ── TASK-005: prosedurel terrain (22x25, 10-seed havuzu) ─────────
+            TerrainConfigSO terrainConfig = EnsureTerrainConfig();
+            EnsureTerrainPaletteEntries(grid);
+
+            // Grid boyutunu terrain config'e esitle (22x25) — uretilen harita tam otursun.
+            var gridSO = new SerializedObject(grid);
+            gridSO.FindProperty("_width").intValue  = terrainConfig.Width;
+            gridSO.FindProperty("_height").intValue = terrainConfig.Height;
+            gridSO.ApplyModifiedProperties();
+
+            var gen = host.GetComponent<ChapterMapGenerator>();
+            if (gen == null) gen = host.AddComponent<ChapterMapGenerator>();
+            var genSO = new SerializedObject(gen);
+            genSO.FindProperty("_grid").objectReferenceValue   = grid;
+            genSO.FindProperty("_config").objectReferenceValue = terrainConfig;
+            genSO.FindProperty("_wallet").objectReferenceValue = FindComponentAnywhere<EssenceWallet>();
+            genSO.FindProperty("_ap").objectReferenceValue     = FindComponentAnywhere<ActionPointManager>();
+            genSO.FindProperty("_player").objectReferenceValue = player;
+            genSO.ApplyModifiedProperties();
+
+            // Oz toplama artik KARONUN KENDISINDEN → HUD'i uretici ile besle + OZ DEPOSU'nda
+            // bolum 1'in gercek ozlerini (Tas + Doga) goster.
+            var essHud = FindComponentAnywhere<TacticalRPG.UI.OverworldEssenceHUD>();
+            if (essHud != null)
+            {
+                var hudSO = new SerializedObject(essHud);
+                var prop  = hudSO.FindProperty("_terrain");
+                if (prop != null) prop.objectReferenceValue = gen;
+                var shown = hudSO.FindProperty("_shownTypes");
+                if (shown != null)
+                {
+                    shown.arraySize = 2;
+                    shown.GetArrayElementAtIndex(0).enumValueIndex = (int)EssenceType.Tas;
+                    shown.GetArrayElementAtIndex(1).enumValueIndex = (int)EssenceType.Doga;
+                }
+                hudSO.ApplyModifiedProperties();
+            }
+
+            EnsureEssenceStyles();
+
             // ── WatchtowerManager — kule ile haritanin sisini KALICI kaldirma
             var fog = FindComponentAnywhere<FogOfWarManager>();
             var wt  = host.GetComponent<WatchtowerManager>();
@@ -137,6 +177,106 @@ namespace TacticalRPG.Editor
             EditorUtility.SetDirty(host);
             Debug.Log("[Bolum] Tek haritali dunya kuruldu (1 bolum = 1 harita). " +
                       "9 adali dunya ALTERNATIF menusunde duruyor, silinmedi.");
+        }
+
+        /// <summary>Prosedürel terrain'in 11 karo tipini palete ekler — YALNIZ YOKSA
+        /// (kullanıcının atadığı prefab/renk TAM KURULUM'da EZİLMEZ).
+        /// "kopru" zaten palette var (köprü FBX'i) → dokunulmaz, nehrin geçidi olarak kullanılır.</summary>
+        private static void EnsureTerrainPaletteEntries(HexGridManager grid)
+        {
+            TilePaletteSO palette = grid != null ? grid.TilePalette : null;
+            if (palette == null) return;
+
+            // id, görünen ad, yürünür mü, editör rengi, yüzey yüksekliği
+            var defs = new (string id, string name, bool walkable, Color color, float height)[]
+            {
+                (TerrainGenerator.OvaId,              "Ova",                 true,  new Color(0.62f, 0.70f, 0.42f), 0f),
+                (TerrainGenerator.TaslikOvaId,        "Taşlık Ova (1 taş)",  true,  new Color(0.66f, 0.64f, 0.58f), 0f),
+                (TerrainGenerator.BolTaslikOvaId,     "Bol Taşlık (2 taş)",  true,  new Color(0.55f, 0.53f, 0.50f), 0f),
+                (TerrainGenerator.AzAgacliOvaId,      "Az Ağaçlı (1 doğa)",  true,  new Color(0.45f, 0.62f, 0.35f), 0f),
+                (TerrainGenerator.OrmanId,            "Orman (2 doğa)",      true,  new Color(0.28f, 0.50f, 0.26f), 0f),
+                (TerrainGenerator.NadirYuksekOrmanId, "Yüksek Orman (3)",    true,  new Color(0.18f, 0.38f, 0.20f), 0f),
+                (TerrainGenerator.SikOrmanId,         "Sık Orman (engel)",   false, new Color(0.10f, 0.24f, 0.13f), 0f),
+                (TerrainGenerator.DagId,              "Dağ (engel)",         false, new Color(0.45f, 0.42f, 0.40f), 0f),
+                (TerrainGenerator.GolId,             "Göl (engel)",          false, new Color(0.20f, 0.42f, 0.66f), 0f),
+                (TerrainGenerator.NehirId,            "Nehir (engel)",       false, new Color(0.26f, 0.54f, 0.78f), 0f),
+            };
+
+            var palSO    = new SerializedObject(palette);
+            var tilesArr = palSO.FindProperty("tiles");
+            int added = 0;
+            foreach (var d in defs)
+            {
+                bool exists = false;
+                for (int j = 0; j < tilesArr.arraySize; j++)
+                    if (tilesArr.GetArrayElementAtIndex(j).FindPropertyRelative("id").stringValue == d.id) { exists = true; break; }
+                if (exists) continue;
+
+                tilesArr.arraySize++;
+                var e = tilesArr.GetArrayElementAtIndex(tilesArr.arraySize - 1);
+                e.FindPropertyRelative("id").stringValue                   = d.id;
+                e.FindPropertyRelative("displayName").stringValue          = d.name;
+                e.FindPropertyRelative("prefab").objectReferenceValue      = null;  // placeholder tint
+                e.FindPropertyRelative("isWalkable").boolValue             = d.walkable;
+                e.FindPropertyRelative("canEnterCombat").boolValue         = false;
+                e.FindPropertyRelative("surfaceHeightOverride").floatValue = d.height;
+                e.FindPropertyRelative("editorColor").colorValue           = d.color;
+                added++;
+            }
+            palSO.ApplyModifiedProperties();
+            EditorUtility.SetDirty(palette);
+            if (added > 0) Debug.Log($"[Bolum] Palete {added} terrain karosu eklendi.");
+        }
+
+        /// <summary>EssenceConfig'e bölüm 1'in öz türlerini (Taş, Doğa) ekler — YALNIZ YOKSA.
+        /// Eski Ateş/Su/Toprak girişlerine DOKUNULMAZ (silinmez).</summary>
+        private static void EnsureEssenceStyles()
+        {
+            var cfg = AssetDatabase.LoadAssetAtPath<EssenceConfigSO>("Assets/Data/Config/EssenceConfig.asset");
+            if (cfg == null) return;
+
+            var so  = new SerializedObject(cfg);
+            var arr = so.FindProperty("_types");
+            if (arr == null) return;
+
+            var wanted = new (EssenceType type, string name, Color color)[]
+            {
+                (EssenceType.Tas,  "Taş",  new Color(0.62f, 0.60f, 0.56f)),
+                (EssenceType.Doga, "Doğa", new Color(0.36f, 0.62f, 0.32f)),
+            };
+
+            foreach (var w in wanted)
+            {
+                bool exists = false;
+                for (int i = 0; i < arr.arraySize; i++)
+                    if (arr.GetArrayElementAtIndex(i).FindPropertyRelative("type").enumValueIndex == (int)w.type)
+                    { exists = true; break; }
+                if (exists) continue;
+
+                arr.arraySize++;
+                var e = arr.GetArrayElementAtIndex(arr.arraySize - 1);
+                e.FindPropertyRelative("type").enumValueIndex     = (int)w.type;
+                e.FindPropertyRelative("displayName").stringValue = w.name;
+                e.FindPropertyRelative("color").colorValue        = w.color;
+                e.FindPropertyRelative("prefab").objectReferenceValue = null;
+            }
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(cfg);
+        }
+
+        /// <summary>TerrainConfig.asset'i yükler; YOKSA varsayılanlarla oluşturur (varsa DOKUNMAZ).</summary>
+        private static TerrainConfigSO EnsureTerrainConfig()
+        {
+            const string path = "Assets/Data/Config/TerrainConfig.asset";
+            var cfg = AssetDatabase.LoadAssetAtPath<TerrainConfigSO>(path);
+            if (cfg != null) return cfg;
+
+            EnsureFolder("Assets/Data/Config");
+            cfg = ScriptableObject.CreateInstance<TerrainConfigSO>();
+            AssetDatabase.CreateAsset(cfg, path);   // alan varsayilanlari zaten GAME_DESIGN §3 degerleri
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+            return cfg;
         }
 
         /// <summary>ChapterConfig.asset'i yükler; YOKSA varsayılan 8 bölümle oluşturur.

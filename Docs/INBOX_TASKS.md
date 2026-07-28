@@ -190,7 +190,7 @@ Performans notu: yok (UI/yapı değişikliği, sistem değil).
 > taş+doğa özü) **TASK-005'in işi** — o yapılmadan oyun büyük ölçüde eski görünmeye devam eder.
 > TASK-004'ün kapsamı ekran + dünya modeliydi, terrain değil.
 
-### [TASK-005] Bölüm 1 harita üretim altyapısı + AP ekonomisi güncellemesi — status: pending
+### [TASK-005] Bölüm 1 harita üretim altyapısı + AP ekonomisi güncellemesi — status: awaiting_review
 Kaynak: Sherlock oturumu 2026-07-27, `Docs/Balance/HARITA_DENGE_DURUM.md` + GAME_DESIGN.md §0/§3.
 Açıklama: TASK-003/004'ten SONRA sırada (tek seferde tek görev kuralı, bkz §9).
 1. **AP ekonomisi:** `TimeSlotConfig.asset`'i 54 AP/gün'den **24 AP/gün**'e güncelle (GAME_DESIGN.md
@@ -213,6 +213,43 @@ Kabul kriteri: 10 seed'in her biri Unity'de açılabiliyor; terrain dağılımı
 sayı) Python referansıyla aynı seed için eşleşiyor; öz toplanınca karo tükeniyor; AP/gün=24 olarak
 çalışıyor.
 Performans notu: 550 karo + BFS tabanlı bağlantı kontrolü, küçük ölçekli, risk düşük.
+
+> **AWAITING_REVIEW (Watson, 2026-07-28):** Üç maddenin hepsi yapıldı.
+>
+> **(1) AP:** `TimeSlotConfig.asset` 9 AP/dilim → **4 AP/dilim = 24 AP/gün** (6 dilim × 4). Kod
+> varsayılanı ve yorumlar da güncellendi.
+>
+> **(2) Terrain üretici — Python referansıyla BİREBİR, kanıtlı.** `harita_terrain_v2.py` C#'a port
+> edildi (`Grid/TerrainGenerator.cs`). Kritik nokta: aynı seed'in aynı haritayı vermesi için
+> **RNG'nin kendisi** taşınmak zorundaydı — `UnityEngine.Random` (xorshift) farklı sayı dizisi üretir.
+> Bu yüzden CPython'ın Mersenne Twister'ı + çekim algoritmaları (`_randbelow` reddetme yöntemi,
+> `shuffle`, `sample`, ağırlıklı `choices`) `Grid/PythonRandom.cs` olarak port edildi.
+> **KANIT:** `Docs/Balance/tools/csharp_port_dogrulama/dogrula.ps1` çalıştır → C# ve Python çıktısını
+> satır satır karşılaştırır. Sonuç: **10 seed × 550 karo = 5500 karo, SIFIR fark.** Kendin koşabilirsin
+> (Unity açmadan; Unity'nin kendi derleyicisini kullanıyor, .NET SDK gerekmez).
+>
+> **(3) 10-seed havuzu:** `TerrainConfig.asset` içinde (89, 7, 20, 108, 219, 64, 173, 283, 141, 286).
+> Havuz dışına çıkılmıyor; her üretimde havuzdan rastgele ama **son oynanandan farklı** seçiliyor
+> (son seed PlayerPrefs'te). Boyut 22×25, engel %20, 1 nehir + 2 köprü — hepsi asset'ten, koda gömülü değil.
+>
+> **Öz:** Artık ayrı node değil, **karonun kendisi**. Toplanınca karo **ovaya döner** (TEK SEFERLİK),
+> görseli anında yenilenir. `EssenceType`'a **Taş + Doğa** eklendi; ÖZ DEPOSU bu ikisini gösteriyor.
+> Oyuncu artık üretilen haritada yürünür bir karoda başlıyor (sabit koordinat dağın içine düşebilirdi).
+>
+> **HİÇBİR ŞEY SİLİNMEDİ:** eski Ateş/Su/Toprak öz türleri, `EssenceNodeManager` (elle boyanan öz
+> akışı) ve elle boyanmış haritalar duruyor. `ChapterMapGenerator._generateOnStart` kapatılırsa oyun
+> yine elle boyanmış haritayla açılır.
+>
+> **⚠ AÇIK — SENİN KARARIN GEREK (uydurmadım):** Bölüm 1 artık Taş+Doğa üretiyor, ama
+> `SavasciRecipe` / `RangerRecipe` ve 5 mağaza öğesi hâlâ **Ateş/Su/Toprak** istiyor →
+> **bölüm 1'de birim üretilemez, mağazadan bir şey alınamaz.** Bunların taş/doğa cinsinden yeni
+> maliyetleri bir denge kararı (senin alanın). GAME_DESIGN §2/§3'e yazarsan uygularım.
+>
+> **DOĞRULAMA — dürüst durum:** İki assembly de Unity'nin derleyicisiyle **hatasız derlendi (exit=0)**
+> ve terrain eşleşmesi kanıtlandı. Ama **Unity'de Play'e basılmadı** — 10 seed'in Unity'de görsel
+> olarak açılması, öz toplama akışı ve 24 AP/gün'ün oyunda hissi TEST EDİLMEDİ. Kabul kriterinin
+> "Unity'de açılabiliyor" kısmını senin doğrulaman gerekiyor: **TAM KURULUM → Play.**
+> Detay: DECISION_LOG.md 2026-07-28 TASK-005 girişi.
 
 ### [TASK-006] Zorunlu görev/zindan/encounter/market/kule node sistemi — status: pending
 Kaynak: aynı oturum, `Docs/Balance/tools/harita_map1_sim.py` (node değer/maliyet tabloları).

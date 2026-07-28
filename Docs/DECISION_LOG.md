@@ -16,6 +16,44 @@
 
 ---
 
+## 2026-07-28 — TASK-005: prosedürel terrain + 24 AP/gün + 10-seed havuzu
+
+**KARAR (RNG):** Python'ın `random`'ı (Mersenne Twister + CPython'ın çekim algoritmaları) C#'a
+**birebir port edildi** → `Grid/PythonRandom.cs`.
+**NEDEN:** Kabul kriteri "aynı seed → Python referansıyla AYNI terrain". `UnityEngine.Random`
+(xorshift) ya da `System.Random` bunu asla veremez — farklı sayı dizisi, farklı harita. 10 seed denge
+tarafında elle doğrulandığı için (adalet/oynanabilirlik) haritaların birebir aynı çıkması şart.
+Port kapsamı: `random()`, `getrandbits`, `_randbelow` (modulo değil, **reddetme** — dizi ilerlemesi
+buna bağlı), `randint`, `randrange`, `choice`, `shuffle`, `sample` (iki dallı), `choices` (kümülatif
+ağırlık + `bisect_right`).
+
+**KARAR (üretici):** `Grid/TerrainGenerator.cs` = `harita_terrain_v2.py`'nin birebir portu — nehir
+(köprü geçitli) → sık orman/dağ/göl blobları → kalan alana ağırlıklı alt-tip dağıtımı. İkisi de
+**UnityEngine'e bağımsız** yazıldı ki Unity'siz doğrulanabilsinler.
+
+**DOĞRULAMA (kanıtlı):** `Docs/Balance/tools/csharp_port_dogrulama/dogrula.ps1` — Unity'nin kendi
+Roslyn'i ile portu konsol programına derler, 10 seed × 22×25 üretir, aynı seti Python'dan üretir,
+satır satır karşılaştırır. Sonuç: **5500 karo, SIFIR fark.** Tekrar çalıştırılabilir.
+
+**KARAR (AP):** `TimeSlotConfig` 9 AP/dilim → **4 AP/dilim = 24 AP/gün** (asset + kod varsayılanı).
+**NEDEN:** Bölüm 1'in TÜM denge simülasyonu 24 AP/gün varsayımıyla yapıldı (GAME_DESIGN §0).
+
+**KARAR (öz):** Öz artık ayrı node değil, **karonun kendisi**; toplanınca karo ovaya döner (TEK
+SEFERLİK). `EssenceType`'a **Taş + Doğa** eklendi — eski Ateş/Su/Toprak **silinmedi** (mevcut
+tarifler/mağaza fiyatları onları kullanıyor, kaldırmak onları bozardı).
+
+**AÇIK — Sherlock'a:** Bölüm 1 artık Taş+Doğa üretiyor ama `SavasciRecipe`/`RangerRecipe` ve 5
+mağaza öğesi hâlâ Ateş/Su/Toprak istiyor → **bölüm 1'de birim üretilemez / mağazadan alınamaz.**
+Yeni maliyetler denge kararı (Sherlock'un alanı), uydurmadım. GAME_DESIGN §2/§3'te taş/doğa
+cinsinden tarif+fiyat verilmesi gerekiyor.
+
+**COMMIT:** (bu giriş)
+**DERS:** "Referans algoritmayla aynı sonucu ver" denince asıl iş algoritma değil **RNG'nin
+kendisi**; ağırlıkları `float` tutmak bile (0.55f ≠ 0.55) eşleşmeyi bozar — bu yüzden config'te
+`double` kullanıldı.
+
+---
+
 ## 2026-07-28 — TASK-004: HARİTA ekranı 3×3 dünyadan 8 bölümlük yola geçti
 
 **BULGU (kod incelemesi):** Evet, HARİTA ekranı gerçekten "9 harita / 3×3 snake" varsayımına dayanıyordu —
