@@ -16,6 +16,37 @@
 
 ---
 
+## 2026-07-28 — Kule karosu gerçek modeliyle + sis kalıcı açılıyor (kullanıcı isteği)
+
+**İSTEK:** (1) kule karolarında kule asset'i görünsün, (2) karakterin geçtiği her yerin sisi kalıcı kalksın.
+
+**BULGU (1):** Kule modeli zaten vardı — `Tile_kule.prefab` palette'teki `kule` girişine bağlıydı.
+Eksik olan şuydu: **prosedürel harita hiç `kule` karosu üretmiyordu**, gözetleme kulesi düğümleri beyaz
+küre işareti olarak çiziliyordu.
+**KARAR:** Kule düğümünün karosu yerleşimden sonra gerçek `kule` karosuna çevriliyor
+(`ChapterMapGenerator.SetTile`) → palette'teki model render ediliyor, ayrı işaret nesnesi kaldırıldı.
+`kule` karosu YÜRÜNEMEZ olduğu için kule artık **komşu karodan** kullanılıyor
+(`ChapterNodeManager.NodeForPlayer`) — eski `WatchtowerManager` de böyle çalışıyordu.
+
+**ÇAKIŞMA ÇÖZÜLDÜ:** Eski `WatchtowerManager` de `kule` karolarını yakalıyor ve **TÜM haritanın**
+sisini açıyor. Prosedürel harita artık kule karosu ürettiği için iki sistem aynı karoda çakışacaktı ve
+eskisi yeni 5×5 kuralını anlamsız kılardı. → Eski bileşen **bölüm kurulumundan çıkarıldı**; SİLİNMEDİ,
+ALTERNATİF 9 adalı dünyada (`SetupWorld3x3`) kurulmaya devam ediyor — orada ada-başına açma anlamlı.
+
+**KARAR (2):** `FogOfWarManager`'a `_permanentExploration` (varsayılan AÇIK): bir kez tam görünür olan
+karo `_permanentReveals`'a girer ve bir daha sislenmez.
+**NEDEN:** Sis bu projede dinamikti (arkanda kapanıyordu), ama **GAME_DESIGN §3 zaten tersini
+varsayıyor**: kule tanımında "sis zaten hiç geri kapanmıyor, bu sadece erken açma" yazıyor. Yani bu
+değişiklik kodu canonical tasarımla hizalıyor, ona aykırı değil.
+**YAN ETKİ (bilinçli):** Gece görüşü daralması artık keşfedilmiş alanı karartmıyor — keşfedilen yer
+gece de açık kalır. İstenmezse `_permanentExploration` Inspector'dan kapatılır, eski davranış döner.
+
+**COMMIT:** (bu giriş)
+**DERS:** "X yok" şikâyetinin sebebi asset'in eksikliği olmayabilir — burada model ve palet bağı
+hazırdı, üretici o karoyu hiç yerleştirmiyordu. Önce zincirin hangi halkasının kopuk olduğuna bak.
+
+---
+
 ## 2026-07-28 — Tarifler + mağaza fiyatları taş/doğa'ya çevrildi (görev dışı, kullanıcı talimatı)
 
 **SORUN:** TASK-005 bölüm 1 özlerini taş+doğa yapmıştı, ama üretim tarifleri ve 5 mağaza öğesi hâlâ

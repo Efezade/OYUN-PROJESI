@@ -144,6 +144,12 @@ namespace TacticalRPG.Core
             Take(pool, ref idx, _config.WatchtowerCount, MapNodeType.Watchtower,
                  () => 0, () => _config.WatchtowerAP, rnd);
 
+            // Gözetleme kulesi karolarını GERÇEK "kule" karosuna çevir → palette'teki kule modeli
+            // (Tile_kule.prefab) render edilir; ayrı bir işaret küresine gerek kalmaz.
+            // "kule" karosu YÜRÜNEMEZ olduğu için kule KOMŞU karodan kullanılır (bkz NodeForPlayer).
+            foreach (var n in _nodes)
+                if (n.Type == MapNodeType.Watchtower) _map.SetTile(n.Coord, WatchtowerTileId);
+
             // Boss: KONUMDAN BAĞIMSIZ — havuzdan karo almaz, haritada işareti yoktur.
             Boss = new MapNode { Type = MapNodeType.Boss, APCost = _config.BossAP, Value = 0 };
 
@@ -173,9 +179,26 @@ namespace TacticalRPG.Core
 
         // ── Sorgular ─────────────────────────────────────────────────────────
 
+        /// <summary>Palette'teki gözetleme kulesi karosunun id'si (kule modeli bu girişe bağlı).</summary>
+        public const string WatchtowerTileId = "kule";
+
         public MapNode NodeAt(HexCoordinate c)
         {
             foreach (var n in _nodes) if (n.Coord.Equals(c)) return n;
+            return null;
+        }
+
+        /// <summary>Oyuncunun ŞU AN kullanabileceği düğüm: bastığı karodaki düğüm; yoksa 1 karo
+        /// yanındaki gözetleme kulesi. Kule karosu yürünemez olduğu için (üstünde bir yapı var)
+        /// kuleye komşu karodan çıkılır — eski WatchtowerManager de böyle çalışıyordu.</summary>
+        public MapNode NodeForPlayer(HexCoordinate c)
+        {
+            MapNode here = NodeAt(c);
+            if (here != null) return here;
+
+            foreach (var n in _nodes)
+                if (n.Type == MapNodeType.Watchtower && !n.Completed && c.DistanceTo(n.Coord) <= 1)
+                    return n;
             return null;
         }
 
@@ -344,6 +367,8 @@ namespace TacticalRPG.Core
             foreach (var n in _nodes)
             {
                 if (n.Type == MapNodeType.Boss) continue;           // konumsuz
+                // Kulenin İŞARETİ YOK — karonun kendisi kule modeli (yukarıda SetTile ile boyandı).
+                if (n.Type == MapNodeType.Watchtower) continue;
                 if (!_grid.TryGetCell(n.Coord, out HexCell cell)) continue;
 
                 var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);

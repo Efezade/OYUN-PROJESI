@@ -49,7 +49,8 @@ namespace TacticalRPG.UI
 
         private void DrawNodeHere()
         {
-            ChapterNodeManager.MapNode n = _nodes.NodeAt(_player.CurrentCoord);
+            // Kule karosu yürünemez → yanındaki karodan kullanılır (NodeForPlayer bunu kapsar).
+            ChapterNodeManager.MapNode n = _nodes.NodeForPlayer(_player.CurrentCoord);
             if (n == null) { GUILayout.Label("Bu karoda düğüm yok."); return; }
 
             if (n.Completed) { GUILayout.Label($"{TitleOf(n.Type)} — TAMAMLANDI ({n.Value} öz)"); return; }
@@ -60,6 +61,9 @@ namespace TacticalRPG.UI
             if (!string.IsNullOrEmpty(diff)) GUILayout.Label($"Zorluk: {diff}");     // GÖRÜNÜR
             GUILayout.Label($"Ödül:   {_nodes.RewardLabel(n)}");                     // GİZLİ olabilir
             if (n.APCost > 0) GUILayout.Label($"Maliyet: {n.APCost} AP");
+
+            if (n.Type == MapNodeType.Watchtower && !n.Coord.Equals(_player.CurrentCoord))
+                GUILayout.Label("(yanındaki kule)");
 
             GUI.enabled = _nodes.CanEnter(n);
             if (GUILayout.Button(EnterLabel(n.Type), GUILayout.Height(28))) _nodes.Enter(n);

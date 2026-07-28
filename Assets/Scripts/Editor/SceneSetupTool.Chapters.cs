@@ -217,17 +217,14 @@ namespace TacticalRPG.Editor
             nhSO.FindProperty("_ap").objectReferenceValue     = FindComponentAnywhere<ActionPointManager>();
             nhSO.ApplyModifiedProperties();
 
-            // ── WatchtowerManager — kule ile haritanin sisini KALICI kaldirma
             var fog = FindComponentAnywhere<FogOfWarManager>();
-            var wt  = host.GetComponent<WatchtowerManager>();
-            if (wt == null) wt = host.AddComponent<WatchtowerManager>();
-            var wtSO = new SerializedObject(wt);
-            wtSO.FindProperty("_grid").objectReferenceValue   = grid;
-            wtSO.FindProperty("_player").objectReferenceValue = player;
-            wtSO.FindProperty("_fog").objectReferenceValue    = fog;
-            wtSO.FindProperty("_world").objectReferenceValue  = null;   // ada yoneticisi YOK (tek harita)
-            wtSO.FindProperty("_state").objectReferenceValue  = state;
-            wtSO.ApplyModifiedProperties();
+
+            // NOT (2026-07-28): ESKI WatchtowerManager bu kuruluma DAHIL DEGIL.
+            // Sebep: o bilesen "kule" karosuna yaklasinca TUM haritanin sisini aciyor. Prosedurel
+            // harita artik kule karolarini DUGUM olarak yerlestiriyor ve dugum sistemi 5x5'lik
+            // KALICI acma yapiyor (TASK-006) — ikisi ayni karoda catisir, eskisi yenisini
+            // anlamsiz kilardi. Kod SILINMEDI: ALTERNATIF 9 adali dunyada (SetupWorld3x3) hala
+            // kuruluyor ve orada ada-basina acma davranisi anlamli.
 
             // ── MapCollapseManager — durum baglantisi (_world null: tek harita = "Ada 1")
             var cm = host.GetComponent<MapCollapseManager>();

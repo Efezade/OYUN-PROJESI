@@ -175,7 +175,12 @@ namespace TacticalRPG.Grid
                 float d  = Mathf.Sqrt(dx * dx + dz * dz) / spacing;           // karo biriminde mesafe
                 float a  = Mathf.Clamp01((d - radius) / band) * _hiddenAlpha;
 
-                // Gözetleme kulesiyle KALICI açılmış alan: sis bir daha kapanmaz (TASK-006).
+                // KEŞİF KALICI: oyuncunun bir kez GÖRDÜĞÜ karo bir daha sislenmez — arkasında iz
+                // kapanmaz (kullanıcı isteği 2026-07-28). GAME_DESIGN §3 zaten bunu varsayıyordu:
+                // "sis zaten hiç geri kapanmıyor, kule sadece erken açma".
+                if (_permanentExploration && a <= 0.001f) _permanentReveals.Add(cell.Coordinate);
+
+                // Kalıcı açılmış alan (keşif izi + gözetleme kulesi): sis bir daha kapanmaz.
                 if (_permanentReveals.Count > 0 && _permanentReveals.Contains(cell.Coordinate)) a = 0f;
 
                 if (_caps.TryGetValue(cell.Coordinate, out Cap cap) && cap != null &&
@@ -235,6 +240,11 @@ namespace TacticalRPG.Grid
         // Sis bu projede DİNAMİK (her adımda oyuncu mesafesine göre yeniden hesaplanır), o yüzden
         // "kalıcı açık" bir küme olarak tutulup UpdateFogAround'da muaf tutuluyor.
         private readonly HashSet<HexCoordinate> _permanentReveals = new();
+
+        [Tooltip("Oyuncunun bir kez GÖRDÜĞÜ karo kalıcı açık kalsın mı? Açıkken keşfedilen alan bir " +
+                 "daha sislenmez (iz kapanmaz) — GAME_DESIGN §3'ün varsaydığı davranış. Kapatılırsa " +
+                 "eski dinamik sis geri gelir (arkanda kapanır).")]
+        [SerializeField] private bool _permanentExploration = true;
 
         /// <summary>Merkez etrafındaki <paramref name="radius"/> yarıçaplı alanı KALICI açar —
         /// oyuncu uzaklaşsa da sis geri kapanmaz. (Hex'te "5×5 alan" ≈ yarıçap 2 → 19 karo.)</summary>

@@ -109,6 +109,17 @@ namespace TacticalRPG.Core
         /// <summary>Bu karonun terrain tipi (yoksa null).</summary>
         public string TerrainIdAt(HexCoordinate c) => InRange(c) ? _terrain[c.Q, c.R] : null;
 
+        /// <summary>Karonun tipini değiştir (hem terrain hem runtime TileMap hem görsel).
+        /// Düğüm yerleşimi kullanır: ör. gözetleme kulesi karosunu gerçek "kule" karosuna çevirmek —
+        /// böylece palette'teki kule modeli render edilir, ayrı bir işaret nesnesi gerekmez.</summary>
+        public void SetTile(HexCoordinate c, string tileId)
+        {
+            if (!InRange(c) || string.IsNullOrEmpty(tileId)) return;
+            _terrain[c.Q, c.R] = tileId;
+            if (_runtimeMap != null) _runtimeMap.SetTileId(c, tileId);
+            if (_grid != null) _grid.RegenerateCellVisual(c);   // IsWalkable de palete göre senkronlanır
+        }
+
         /// <summary>Bu karoda toplanabilir öz var mı?</summary>
         public bool HasEssenceAt(HexCoordinate c)
         {
