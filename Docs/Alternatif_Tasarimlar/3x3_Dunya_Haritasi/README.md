@@ -53,10 +53,21 @@ Adalar sahnede **tek tek** yüklenir (aynı origin'e), aralarındaki geçiş **y
 
 ## Geri yükleme
 
-Boyamalar bozulur/kaybolursa: `Data/` içindeki `.asset` + `.meta` dosyalarını `Assets/Data/Map/`
-üzerine kopyala (`.meta`'ları da al — GUID'ler korunsun, sahnedeki referanslar kopmasın), sonra
-Unity'de `Assets → Reimport`. Kod tarafı için: `git show 3dafb5f:Assets/Scripts/Core/WorldGridManager.cs`
-(diğer dosyalar için de aynı kalıp).
+### Oyunu 9 adalı dünyaya geri döndürmek — TEK TIK
+Unity menüsü: **`TacticalRPG → ALTERNATIF - 9 Harita 3x3 Dunyayi Geri Yukle`**
+Bu, `WorldGridManager` (9 harita) + portal karoları + `TeleportManager` + kule bağlantılarını
+sahneye geri kurar. Kod ve asset'ler zaten yerinde olduğu için başka bir şey gerekmez.
+
+> Tek haritalı (1 bölüm = 1 harita) kuruluma dönmek için: **TAM KURULUM** (ya da
+> `TacticalRPG → Bolum - Tek Haritali Dunya Kur`).
+>
+> Not: HARİTA ekranı ve TAB şeridi her iki durumda da **bölüm ilerlemesini** gösterir (ada göstergesi
+> değil). Dünya çalışır, sadece o iki UI bölüm-tabanlıdır. Eski ada-göstergeli hâlleri:
+> `git show 3dafb5f:Assets/Scripts/UI/WorldMapView.cs` ve `.../MinimapHUD.cs`.
+
+### Boyamalar bozulur/kaybolursa
+`Data/` içindeki `.asset` + `.meta` dosyalarını `Assets/Data/Map/` üzerine kopyala (`.meta`'ları da al —
+GUID'ler korunsun, sahnedeki referanslar kopmasın), sonra Unity'de `Assets → Reimport`.
 
 ## Neden alternatife düştü
 

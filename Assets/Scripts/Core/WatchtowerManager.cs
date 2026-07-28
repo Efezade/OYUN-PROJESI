@@ -188,7 +188,10 @@ namespace TacticalRPG.Core
             var rect = new Rect((HudScale.Width - w) * 0.5f, HudScale.Height - h - 24f, w, h);
             ImguiBlocker.Register(rect);   // istem üstündeki tık haritaya düşmesin
             GUILayout.BeginArea(rect, GUI.skin.box);
-            GUILayout.Label($"Kule yakinda — Ada {CurrentMap} sisini KALICI kaldir?");
+            // _world YOKSA tek haritali (bolum) dunya → "Ada N" demek anlamsiz, harita de.
+            GUILayout.Label(_world != null
+                ? $"Kule yakinda — Ada {CurrentMap} sisini KALICI kaldir?"
+                : "Kule yakinda — haritanin sisini KALICI kaldir?");
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Sisi Kaldir", GUILayout.Height(34))) Activate();

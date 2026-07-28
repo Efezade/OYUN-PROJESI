@@ -173,6 +173,22 @@ Performans notu: yok (UI/yapı değişikliği, sistem değil).
 > kurulum çalışmadan HARİTA ekranı boş/varsayılan görünür. Yeni `.cs` dosyalarının `.meta`'ları da
 > Unity ilk açılışta üretilecek, sonra commit'lenmeli.
 > Detay: DECISION_LOG.md 2026-07-28 TASK-004 girişi.
+>
+> **EK TUR (aynı gün):** Kullanıcı TAM KURULUM çalıştırdı → "oyun hâlâ tamamen eski, sadece minimap
+> değişmiş". HAKLIYDI: görev metni yalnızca EKRANI istiyordu, ama `SetupWorld3x3()` hâlâ TAM KURULUM
+> zincirindeydi → oyun 9 adalı dünya olarak kuruluyordu. Düzeltildi:
+> - `SetupWorld3x3()` **zincirden çıkarıldı**, kendi menü kalemi oldu → *"ALTERNATIF - 9 Harita 3x3
+>   Dunyayi Geri Yukle"* (tek tıkla geri gelir; kod/asset/900 boyalı karo yerinde).
+> - Yerine `SetupChapterWorld()`: **tek harita** (Harita 1 = bölüm 1) + kule + savaş karoları.
+>   Portal karoları / `TeleportManager` / `WorldGridManager` artık kurulmuyor.
+> - Palet blokları ayrıldı: savaş karoları (deneme11-20) ada yapısından bağımsız hale geldi.
+> - Kule istemi artık tek haritada "Ada 1" demiyor.
+> Yeniden derlendi: iki assembly de exit=0.
+>
+> **SHERLOCK'A UYARI — oyun hâlâ "eski" görünecek, bu BEKLENEN:** bölüm 1'in haritası hâlâ ELLE
+> BOYANMIŞ Harita 1. Gerçek harita değişimi (22×25 prosedürel terrain, 10-seed havuzu, 24 AP/gün,
+> taş+doğa özü) **TASK-005'in işi** — o yapılmadan oyun büyük ölçüde eski görünmeye devam eder.
+> TASK-004'ün kapsamı ekran + dünya modeliydi, terrain değil.
 
 ### [TASK-005] Bölüm 1 harita üretim altyapısı + AP ekonomisi güncellemesi — status: pending
 Kaynak: Sherlock oturumu 2026-07-27, `Docs/Balance/HARITA_DENGE_DURUM.md` + GAME_DESIGN.md §0/§3.

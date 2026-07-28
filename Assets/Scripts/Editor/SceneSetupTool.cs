@@ -49,9 +49,11 @@ namespace TacticalRPG.Editor
                 SetupPhaseC3();   // tur sistemi (initiative + hareket + saldiri + AI)
                 SetupPhaseC4();   // Kam komutan + savas buyusu + lose=Kam olumu
                 SetupPhaseD();    // cok-tipli oz + harita toplama + tarifle birim uretme
-                SetupWorld3x3(); // ALTERNATIF dunya: 9 harita + portal agi (bkz Docs/Alternatif_Tasarimlar/)
-                SetupChapters(); // 8 bolum ilerlemesi (1 bolum = 1 harita) — UIShell'den ONCE olmali
-                SetupUIShell();  // ana menu gezinme kabugu (KITAP/CANTA/HARITA sekmeleri + ayar)
+                // TASK-004: 9 adali 3x3 dunya ZINCIRDEN CIKARILDI (silinmedi — menuden geri gelir:
+                // "ALTERNATIF - 9 Harita 3x3 Dunyayi Geri Yukle"). Yururlukteki tasarim: 1 bolum = 1 harita.
+                SetupChapterWorld(); // tek haritali dunya + kule + savas karolari (portal/ada YOK)
+                SetupChapters();     // 8 bolum ilerlemesi — UIShell'den ONCE olmali
+                SetupUIShell();      // ana menu gezinme kabugu (KITAP/CANTA/HARITA sekmeleri + ayar)
                 SetupStore();    // magaza karosu + oz ile item/pot satin alma (StoreManager/PlayerBuffs/StoreHUD)
             }
             finally { _silentSetup = false; }
@@ -72,7 +74,10 @@ namespace TacticalRPG.Editor
                 "  • Faz C — Dusman spawn (3 Goblin)\n" +
                 "  • Faz C3 — Tur sistemi (initiative + hareket + saldiri + AI)\n" +
                 "  • Faz C4 — Kam komutan + savas buyusu + lose=Kam olumu\n" +
-                "  • Faz D — Cok-tipli oz + harita toplama + tarifle birim uretme\n\n" +
+                "  • Faz D — Cok-tipli oz + harita toplama + tarifle birim uretme\n" +
+                "  • BOLUM — 1 bolum = 1 harita (TEK harita; 9 adali 3x3 dunya ARTIK ZINCIRDE DEGIL,\n" +
+                "    silinmedi: menu 'ALTERNATIF - 9 Harita 3x3 Dunyayi Geri Yukle')\n" +
+                "  • HARITA ekrani + TAB = 8 bolumluk ilerleme\n\n" +
                 "Ctrl+S ile kaydet, Play'e bas:\n" +
                 "Overworld'de renkli ozleri TOPLA (sag panel, 1 AP) → SavasciRanger URET →\n" +
                 "Boyali SAVAS karosu (deneme11-20) → Evet → Kam + uretilen birimleri yerlestir → SAVASI BASLAT.",
@@ -1818,10 +1823,13 @@ namespace TacticalRPG.Editor
         private static T GetOrAddVolumeOverride<T>(VolumeProfile profile) where T : VolumeComponent
             => profile.TryGet<T>(out T comp) ? comp : profile.Add<T>(true);
 
-        // ── BÖLÜM 1 = 9 HARİTA 3x3 SNAKE (eski küp konsepti TERK EDİLDİ) ────
-        // 9 harita (Harita1=TileMap.asset, 2-9=Face_N.asset) + WorldGridManager.
-        // Kenardan yürüyünce komşu harita yüklenir (MapInputHandler).
-        private static void SetupWorld3x3()
+        // ── ALTERNATİF DÜNYA: 9 HARİTA 3x3 SNAKE + PORTAL ───────────────────
+        // TASK-004 (2026-07-28) ile TAM KURULUM zincirinden ÇIKARILDI — yürürlükteki tasarım
+        // "1 bölüm = 1 harita" (bkz SetupChapterWorld). SİLİNMEDİ: bu menüden tek tıkla geri gelir.
+        // Kod, 9 harita asset'i ve ~900 boyalı karo yerinde duruyor.
+        // Ayrıntı + geri yükleme: Docs/Alternatif_Tasarimlar/3x3_Dunya_Haritasi/README.md
+        [MenuItem("TacticalRPG/ALTERNATIF - 9 Harita 3x3 Dunyayi Geri Yukle", false, 25)]
+        public static void SetupWorld3x3()
         {
             var grid   = FindComponentAnywhere<HexGridManager>();
             var player = FindComponentAnywhere<PlayerController>();
@@ -1884,54 +1892,8 @@ namespace TacticalRPG.Editor
             // ── Portal (teleport) karoları — Tile Painter'a boyanabilir tipler (adaları bağlar).
             // portal1..12 (12 çift). Aynı id'li ("portalN") 2 karo bir çift; kullanıcı istediği
             // adalara boyar (1↔2, 5↔6 …).
-            TilePaletteSO palette = grid.TilePalette;
-            if (palette != null)
-            {
-                var palSO2   = new SerializedObject(palette);
-                var tilesArr = palSO2.FindProperty("tiles");
-                for (int i = 1; i <= 12; i++)
-                {
-                    string id  = $"portal{i}";
-                    int    idx = -1;
-                    for (int j = 0; j < tilesArr.arraySize; j++)
-                        if (tilesArr.GetArrayElementAtIndex(j).FindPropertyRelative("id").stringValue == id) { idx = j; break; }
-                    if (idx < 0) { tilesArr.arraySize++; idx = tilesArr.arraySize - 1; }
-                    var e = tilesArr.GetArrayElementAtIndex(idx);
-                    e.FindPropertyRelative("id").stringValue              = id;
-                    e.FindPropertyRelative("displayName").stringValue     = $"Portal {i}";
-                    e.FindPropertyRelative("prefab").objectReferenceValue = null; // placeholder tint
-                    e.FindPropertyRelative("isWalkable").boolValue        = true;
-                    e.FindPropertyRelative("editorColor").colorValue      = Color.HSVToRGB((i * 0.16f) % 1f, 0.85f, 0.98f);
-                }
-
-                // ── Deneme karoları (20) — savaş alanı testi. YALNIZ YOKSA eklenir: kullanıcının
-                // Inspector ayarları (canEnterCombat açma/kapama, renk, prefab) TAM KURULUM'da
-                // EZİLMEZ. deneme1-10 = normal · deneme11-20 = SAVAŞ ALANI (canEnterCombat ✓,
-                // kırmızı-turuncu tonlar). Asset'ler sonra değişecek (placeholder tint).
-                for (int i = 1; i <= 20; i++)
-                {
-                    string id  = $"deneme{i}";
-                    bool exists = false;
-                    for (int j = 0; j < tilesArr.arraySize; j++)
-                        if (tilesArr.GetArrayElementAtIndex(j).FindPropertyRelative("id").stringValue == id) { exists = true; break; }
-                    if (exists) continue;
-
-                    tilesArr.arraySize++;
-                    var e = tilesArr.GetArrayElementAtIndex(tilesArr.arraySize - 1);
-                    bool combat = i > 10;
-                    e.FindPropertyRelative("id").stringValue              = id;
-                    e.FindPropertyRelative("displayName").stringValue     = combat ? $"Deneme {i} (SAVAS)" : $"Deneme {i}";
-                    e.FindPropertyRelative("prefab").objectReferenceValue = null;
-                    e.FindPropertyRelative("isWalkable").boolValue        = true;
-                    e.FindPropertyRelative("canEnterCombat").boolValue    = combat;
-                    e.FindPropertyRelative("surfaceHeightOverride").floatValue = 0f;
-                    e.FindPropertyRelative("editorColor").colorValue = combat
-                        ? Color.HSVToRGB(((i - 11) * 0.035f) % 1f,        0.75f, 0.95f)  // kırmızı→turuncu
-                        : Color.HSVToRGB((0.45f + (i - 1) * 0.04f) % 1f,  0.55f, 0.90f); // yeşil→mavi
-                }
-                palSO2.ApplyModifiedProperties();
-                EditorUtility.SetDirty(palette);
-            }
+            EnsurePortalPaletteEntries(grid);
+            EnsureCombatTestTiles(grid);
 
             // ── TeleportManager — portal çiftleri arası ışınlanma (basınca "geç?" istemi)
             var tp = host.GetComponent<TeleportManager>();
@@ -1943,7 +1905,78 @@ namespace TacticalRPG.Editor
             tpSO.FindProperty("_state").objectReferenceValue  = state;
             tpSO.ApplyModifiedProperties();
 
-            Debug.Log("[3x3] 9 harita + WorldGrid + minimap + Kule + Portal(teleport) karolari kuruldu.");
+            Debug.Log("[3x3-ALT] ALTERNATIF 9 adali dunya geri kuruldu (WorldGrid + Kule + Portal/teleport). " +
+                      "Tek haritali (bolum) kuruluma donmek icin: TAM KURULUM.");
+
+            if (!_silentSetup)
+                EditorUtility.DisplayDialog("Alternatif Dunya Geri Yuklendi",
+                    "9 harita 3x3 snake dunya + portal isinlanmasi geri kuruldu.\n\n" +
+                    "NOT: HARITA ekrani ve TAB seridi BOLUM ilerlemesini gostermeye devam eder\n" +
+                    "(ada gostergesi degil) — dunya calisir, sadece o iki UI bolum-tabanlidir.\n\n" +
+                    "Tek haritali (1 bolum = 1 harita) kuruluma donmek icin TAM KURULUM calistir.",
+                    "Tamam");
+        }
+
+        /// <summary>Portal karo tipleri (portal1-12) — ALTERNATİF 9 adalı dünyanın adalar-arası geçidi.
+        /// Aynı id'li 2 karo bir çift. Tek haritalı (bölüm) kurulumda EKLENMEZ.</summary>
+        private static void EnsurePortalPaletteEntries(HexGridManager grid)
+        {
+            TilePaletteSO palette = grid != null ? grid.TilePalette : null;
+            if (palette == null) return;
+
+            var palSO    = new SerializedObject(palette);
+            var tilesArr = palSO.FindProperty("tiles");
+            for (int i = 1; i <= 12; i++)
+            {
+                string id  = $"portal{i}";
+                int    idx = -1;
+                for (int j = 0; j < tilesArr.arraySize; j++)
+                    if (tilesArr.GetArrayElementAtIndex(j).FindPropertyRelative("id").stringValue == id) { idx = j; break; }
+                if (idx < 0) { tilesArr.arraySize++; idx = tilesArr.arraySize - 1; }
+                var e = tilesArr.GetArrayElementAtIndex(idx);
+                e.FindPropertyRelative("id").stringValue              = id;
+                e.FindPropertyRelative("displayName").stringValue     = $"Portal {i}";
+                e.FindPropertyRelative("prefab").objectReferenceValue = null; // placeholder tint
+                e.FindPropertyRelative("isWalkable").boolValue        = true;
+                e.FindPropertyRelative("editorColor").colorValue      = Color.HSVToRGB((i * 0.16f) % 1f, 0.85f, 0.98f);
+            }
+            palSO.ApplyModifiedProperties();
+            EditorUtility.SetDirty(palette);
+        }
+
+        /// <summary>Deneme karoları (20) — savaş alanı testi; ada yapısından BAĞIMSIZ, çekirdek oynanış.
+        /// YALNIZ YOKSA eklenir: kullanıcının Inspector ayarları (canEnterCombat, renk, prefab) EZİLMEZ.
+        /// deneme1-10 = normal · deneme11-20 = SAVAŞ ALANI (canEnterCombat ✓, kırmızı-turuncu tonlar).</summary>
+        private static void EnsureCombatTestTiles(HexGridManager grid)
+        {
+            TilePaletteSO palette = grid != null ? grid.TilePalette : null;
+            if (palette == null) return;
+
+            var palSO    = new SerializedObject(palette);
+            var tilesArr = palSO.FindProperty("tiles");
+            for (int i = 1; i <= 20; i++)
+            {
+                string id  = $"deneme{i}";
+                bool exists = false;
+                for (int j = 0; j < tilesArr.arraySize; j++)
+                    if (tilesArr.GetArrayElementAtIndex(j).FindPropertyRelative("id").stringValue == id) { exists = true; break; }
+                if (exists) continue;
+
+                tilesArr.arraySize++;
+                var e = tilesArr.GetArrayElementAtIndex(tilesArr.arraySize - 1);
+                bool combat = i > 10;
+                e.FindPropertyRelative("id").stringValue              = id;
+                e.FindPropertyRelative("displayName").stringValue     = combat ? $"Deneme {i} (SAVAS)" : $"Deneme {i}";
+                e.FindPropertyRelative("prefab").objectReferenceValue = null;
+                e.FindPropertyRelative("isWalkable").boolValue        = true;
+                e.FindPropertyRelative("canEnterCombat").boolValue    = combat;
+                e.FindPropertyRelative("surfaceHeightOverride").floatValue = 0f;
+                e.FindPropertyRelative("editorColor").colorValue = combat
+                    ? Color.HSVToRGB(((i - 11) * 0.035f) % 1f,        0.75f, 0.95f)  // kırmızı→turuncu
+                    : Color.HSVToRGB((0.45f + (i - 1) * 0.04f) % 1f,  0.55f, 0.90f); // yeşil→mavi
+            }
+            palSO.ApplyModifiedProperties();
+            EditorUtility.SetDirty(palette);
         }
 
         private static TileMapSO LoadOrCreateFaceAsset(int n)

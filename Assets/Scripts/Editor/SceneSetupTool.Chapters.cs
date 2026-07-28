@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using TacticalRPG.Core;
 using TacticalRPG.Data;
+using TacticalRPG.Grid;
 
 namespace TacticalRPG.Editor
 {
@@ -77,6 +78,65 @@ namespace TacticalRPG.Editor
                     "• GameManager -> ChapterProgress (ilerlemenin tek kaynagi)\n" +
                     "• TAB: 8 bolumluk ilerleme seridi\n\n" +
                     "HARITA ekranindaki 8'lik yol icin 'UI - Menu Iskeleti Kur' calistir.", "Tamam");
+        }
+
+        /// <summary>
+        /// **Bölüm dünyası (yürürlükteki tasarım): 1 bölüm = 1 harita.** TAM KURULUM zincirinde
+        /// eski <c>SetupWorld3x3</c>'ün YERİNE geçer.
+        ///
+        /// Kurar: gözetleme kulesi (kule karosu), çöküş yöneticisinin durum bağlantısı, savaş karoları
+        /// (deneme11-20). KURMAZ: <c>WorldGridManager</c> (9 ada), portal karoları, <c>TeleportManager</c>
+        /// — bunlar ALTERNATİF dünyaya ait (menü: "ALTERNATIF - 9 Harita 3x3 Dunyayi Geri Yukle").
+        ///
+        /// Tüketiciler (<c>MapInputHandler</c>, <c>StoreManager</c>, <c>WatchtowerManager</c>,
+        /// <c>MapCollapseManager</c>) <c>_world</c> alanını OPSİYONEL tutar (null-guard'lı) → ada
+        /// yöneticisi olmadan sorunsuz çalışır, tek harita "Ada 1" sayılır.
+        /// </summary>
+        [MenuItem("TacticalRPG/Bolum - Tek Haritali Dunya Kur (1 bolum = 1 harita)", false, 25)]
+        public static void SetupChapterWorld()
+        {
+            var grid   = FindComponentAnywhere<HexGridManager>();
+            var player = FindComponentAnywhere<PlayerController>();
+            var state  = FindComponentAnywhere<GameStateManager>();
+            GameObject host = state != null ? state.gameObject : GameObject.Find("GameManager");
+            if (grid == null || host == null)
+            {
+                if (!_silentSetup)
+                    EditorUtility.DisplayDialog("Bolum Dunyasi",
+                        "Grid ya da GameManager bulunamadi! Once TAM KURULUM (Faz 0-2) calistir.", "Tamam");
+                return;
+            }
+
+            if (grid.GridRoot != null) grid.GridRoot.gameObject.SetActive(true); // grid gizli kalmasin
+
+            // Savas karolari (deneme11-20) — ada yapisindan bagimsiz, cekirdek oynanis.
+            EnsureCombatTestTiles(grid);
+
+            // ── WatchtowerManager — kule ile haritanin sisini KALICI kaldirma
+            var fog = FindComponentAnywhere<FogOfWarManager>();
+            var wt  = host.GetComponent<WatchtowerManager>();
+            if (wt == null) wt = host.AddComponent<WatchtowerManager>();
+            var wtSO = new SerializedObject(wt);
+            wtSO.FindProperty("_grid").objectReferenceValue   = grid;
+            wtSO.FindProperty("_player").objectReferenceValue = player;
+            wtSO.FindProperty("_fog").objectReferenceValue    = fog;
+            wtSO.FindProperty("_world").objectReferenceValue  = null;   // ada yoneticisi YOK (tek harita)
+            wtSO.FindProperty("_state").objectReferenceValue  = state;
+            wtSO.ApplyModifiedProperties();
+
+            // ── MapCollapseManager — durum baglantisi (_world null: tek harita = "Ada 1")
+            var cm = host.GetComponent<MapCollapseManager>();
+            if (cm != null)
+            {
+                var cmSO = new SerializedObject(cm);
+                cmSO.FindProperty("_world").objectReferenceValue = null;
+                cmSO.FindProperty("_state").objectReferenceValue = state;
+                cmSO.ApplyModifiedProperties();
+            }
+
+            EditorUtility.SetDirty(host);
+            Debug.Log("[Bolum] Tek haritali dunya kuruldu (1 bolum = 1 harita). " +
+                      "9 adali dunya ALTERNATIF menusunde duruyor, silinmedi.");
         }
 
         /// <summary>ChapterConfig.asset'i yükler; YOKSA varsayılan 8 bölümle oluşturur.

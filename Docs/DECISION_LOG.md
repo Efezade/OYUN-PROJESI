@@ -41,10 +41,27 @@ event-driven) + `SetupChapters()` (TAM KURULUM'da UIShell'den ÖNCE). `WorldMapV
 **NE DEĞİŞMEDİ (bilinçli):** bölüm pinleri tıklanabilir değil — bölüm haritasını üreten/yükleyen sistem
 henüz yok (TASK-005). Çalışmayan düğme koymaktansa salt-okunur bırakıldı.
 
+**EK TUR (aynı gün, kullanıcı geri bildirimi):** İlk teslimden sonra kullanıcı Unity'de TAM KURULUM
+çalıştırıp "oyun hâlâ tamamen eski, sadece minimap değişmiş" dedi — **haklıydı.** Görev metni yalnızca
+ekranı istiyordu, ben de ekranı yaptım; ama `SetupWorld3x3()` TAM KURULUM zincirinde durduğu için
+oyunun kendisi hâlâ 9 adalı dünyaydı. Kullanıcı kuralı netleştirdi: *"görev dosyasına tamamen güven,
+ne diyorsa yap; silinmesi gereken şeyi alternatif olarak stokla, oyun ekranından kaldırabilirsin ama
+kodunu/asset'ini silme — sonra kolay geri getirebileyim."*
+→ `SetupWorld3x3()` **zincirden çıkarıldı** (silinmedi: kendi menü kalemi oldu, tek tıkla geri gelir);
+yerine `SetupChapterWorld()` geldi — tek harita + kule + savaş karoları, portal/ada YOK. Paletteki
+portal ve savaş karosu blokları iki ayrı yardımcıya bölündü (`EnsurePortalPaletteEntries` /
+`EnsureCombatTestTiles`) ki savaş karoları ada yapısına bağlı kalmasın.
+**Bu güvenliydi çünkü** tüketicilerin hepsi (`MapInputHandler`, `StoreManager`, `WatchtowerManager`,
+`MapCollapseManager`) `_world` alanını zaten OPSİYONEL/null-guard'lı tutuyordu; `TeleportManager`
+guard'sız ama artık sahneye hiç eklenmiyor (Faz 0 `DestroyRoot` ile GameManager sıfırdan kuruluyor).
+
 **COMMIT:** (bu giriş)
 **DERS:** "Bir ekranı düzelt" görünen iş, dokunulmamış bir alt sistemin ucu olabilir — koda bakmadan
 kapsam tahmin etme. Ve tek doğruluk kaynağı sayılan belge kendi içinde çelişebilir (§0 ↔ §4);
 uygulamadan önce ikisini de oku.
+**DERS 2 (daha önemli):** Bir UI'ı yeni tasarıma çevirmek, OYUNU yeni tasarıma çevirmez. Kurulum
+zinciri (`FullSetup`) neyi kuruyorsa oyun odur — bir tasarım kararı uygulanırken **zincire de bak**,
+yoksa "kod doğru ama oyun eski" durumu çıkar. Kullanıcı için ölçüt Play'de gördüğüdür, dosyalar değil.
 **DOĞRULAMA:** Unity'nin kendi Roslyn'i (`DotNetSdkRoslyn/csc.dll`) ile iki assembly de derlendi
 (exit=0). **Unity'de ÇALIŞTIRILMADI/görsel doğrulanmadı.**
 
