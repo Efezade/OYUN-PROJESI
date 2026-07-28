@@ -247,7 +247,7 @@ namespace TacticalRPG.Grid
         [SerializeField] private bool _permanentExploration = true;
 
         /// <summary>Merkez etrafındaki <paramref name="radius"/> yarıçaplı alanı KALICI açar —
-        /// oyuncu uzaklaşsa da sis geri kapanmaz. (Hex'te "5×5 alan" ≈ yarıçap 2 → 19 karo.)</summary>
+        /// oyuncu uzaklaşsa da sis geri kapanmaz. ÇAP = 2×yarıçap+1 (yarıçap 4 → 9 karo çapı, 61 karo).</summary>
         public void RevealAreaPermanent(HexCoordinate center, int radius)
         {
             if (_gridManager == null || _gridManager.Cells == null) return;

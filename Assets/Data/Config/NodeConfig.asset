@@ -22,7 +22,7 @@ MonoBehaviour:
   _encounterValue: {x: 3, y: 6}
   _encounterAP: {x: 1, y: 2}
   _marketCount: 2
-  _watchtowerCount: 2
-  _watchtowerRadius: 2
+  _watchtowerCount: 3
+  _watchtowerRadius: 4
   _watchtowerAP: 1
   _bossAP: 5

@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -375,7 +375,7 @@ MonoBehaviour:
     surfaceHeightOverride: 0
   - id: ova
     displayName: Ova
-    prefab: {fileID: 0}
+    prefab: {fileID: 8968978067696730621, guid: 5e9457159260cd845874fea1158c0658, type: 3}
     editorColor: {r: 0.62, g: 0.7, b: 0.42, a: 1}
     isWalkable: 1
     canEnterCombat: 0
@@ -383,63 +383,63 @@ MonoBehaviour:
     surfaceHeightOverride: 0
   - id: taslik_ova
     displayName: "Ta\u015Fl\u0131k Ova (1 ta\u015F)"
-    prefab: {fileID: 0}
+    prefab: {fileID: 1149049114536681281, guid: 35f643a60cdf176478dab533220a6f93, type: 3}
     editorColor: {r: 0.66, g: 0.64, b: 0.58, a: 1}
     isWalkable: 1
     canEnterCombat: 0
     isStore: 0
-    surfaceHeightOverride: 0
+    surfaceHeightOverride: 0.3
   - id: bol_taslik_ova
     displayName: "Bol Ta\u015Fl\u0131k (2 ta\u015F)"
-    prefab: {fileID: 0}
+    prefab: {fileID: 5222019127117741770, guid: fa3de7096f2e3924ea13cd0c22efb203, type: 3}
     editorColor: {r: 0.55, g: 0.53, b: 0.5, a: 1}
     isWalkable: 1
     canEnterCombat: 0
     isStore: 0
-    surfaceHeightOverride: 0
+    surfaceHeightOverride: 0.3
   - id: az_agacli_ova
     displayName: "Az A\u011Fa\xE7l\u0131 (1 do\u011Fa)"
-    prefab: {fileID: 0}
+    prefab: {fileID: 4838299069624766153, guid: 36ad959f8730b3a4f8af78931975ded9, type: 3}
     editorColor: {r: 0.45, g: 0.62, b: 0.35, a: 1}
     isWalkable: 1
     canEnterCombat: 0
     isStore: 0
-    surfaceHeightOverride: 0
+    surfaceHeightOverride: 0.3
   - id: orman
     displayName: "Orman (2 do\u011Fa)"
-    prefab: {fileID: 0}
+    prefab: {fileID: 155864130603136039, guid: 2908f9a3158ccfb42afac21486c10e59, type: 3}
     editorColor: {r: 0.28, g: 0.5, b: 0.26, a: 1}
     isWalkable: 1
     canEnterCombat: 0
     isStore: 0
-    surfaceHeightOverride: 0
+    surfaceHeightOverride: 0.3
   - id: nadir_yuksek_orman
     displayName: "Y\xFCksek Orman (3)"
-    prefab: {fileID: 0}
+    prefab: {fileID: 2999539568372860915, guid: c3d7cc97fadb87c4489e9bd52ca572ac, type: 3}
     editorColor: {r: 0.18, g: 0.38, b: 0.2, a: 1}
     isWalkable: 1
     canEnterCombat: 0
     isStore: 0
-    surfaceHeightOverride: 0
+    surfaceHeightOverride: 0.3
   - id: sik_orman
     displayName: "S\u0131k Orman (engel)"
-    prefab: {fileID: 0}
+    prefab: {fileID: 8027992664086267741, guid: b943c5e0cd1366046888355750545b76, type: 3}
     editorColor: {r: 0.1, g: 0.24, b: 0.13, a: 1}
     isWalkable: 0
     canEnterCombat: 0
     isStore: 0
-    surfaceHeightOverride: 0
+    surfaceHeightOverride: 0.3
   - id: dag
     displayName: "Da\u011F (engel)"
-    prefab: {fileID: 0}
+    prefab: {fileID: 1460924945989658241, guid: 650ca1ad29d4bce4eb46dd1362a7535b, type: 3}
     editorColor: {r: 0.45, g: 0.42, b: 0.4, a: 1}
     isWalkable: 0
     canEnterCombat: 0
     isStore: 0
-    surfaceHeightOverride: 0
+    surfaceHeightOverride: 0.3
   - id: gol
     displayName: "G\xF6l (engel)"
-    prefab: {fileID: 0}
+    prefab: {fileID: 5348334762194260780, guid: 9aae77a7d4fc2ad42b3b0b33ccb46ed4, type: 3}
     editorColor: {r: 0.2, g: 0.42, b: 0.66, a: 1}
     isWalkable: 0
     canEnterCombat: 0
@@ -447,7 +447,7 @@ MonoBehaviour:
     surfaceHeightOverride: 0
   - id: nehir
     displayName: Nehir (engel)
-    prefab: {fileID: 0}
+    prefab: {fileID: 5348334762194260780, guid: 9aae77a7d4fc2ad42b3b0b33ccb46ed4, type: 3}
     editorColor: {r: 0.26, g: 0.54, b: 0.78, a: 1}
     isWalkable: 0
     canEnterCombat: 0

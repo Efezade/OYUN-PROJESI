@@ -51,9 +51,11 @@ namespace TacticalRPG.Data
         [SerializeField, Min(0)] private int _marketCount = 2;
 
         [Header("Gözetleme kulesi")]
-        [SerializeField, Min(0)] private int _watchtowerCount = 2;
-        [Tooltip("Kaç karo yarıçapındaki alan KALICI açılır. Hex'te \"5×5 alan\" ≈ yarıçap 2 (19 karo).")]
-        [SerializeField, Min(1)] private int _watchtowerRadius = 2;
+        [Tooltip("Haritaya RASTGELE yerleşen kule sayısı (kullanıcı kararı 2026-07-28: 3).")]
+        [SerializeField, Min(0)] private int _watchtowerCount = 3;
+        [Tooltip("Kaç karo YARIÇAPINDAKİ alan KALICI açılır. ÇAP = 2×yarıçap+1 → yarıçap 4 = " +
+                 "9 karo çapında alan (61 karo). Kullanıcı kararı 2026-07-28.")]
+        [SerializeField, Min(1)] private int _watchtowerRadius = 4;
         [SerializeField, Min(0)] private int _watchtowerAP     = 1;
 
         [Header("Ana boss (konumdan bağımsız)")]
