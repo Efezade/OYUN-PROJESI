@@ -47,6 +47,9 @@ namespace TacticalRPG.Core
         [SerializeField] private FogOfWarManager      _fog;
         [SerializeField] private GameStateManager     _state;
         [SerializeField] private MissionManager       _missions;
+        [Tooltip("Market düğümü BU dükkânı açar (kullanıcı kararı 2026-07-28: market düğümü ile " +
+                 "boyalı 'magaza' karosu aynı dükkândır).")]
+        [SerializeField] private StoreManager         _store;
 
         [Header("İşaretler (whitebox — gerçek görsel gelince prefab atanır)")]
         [Tooltip("Zorunlu görev işareti bu yüksekliğe konur — sis bulutunun ÜSTÜNDE kalsın diye " +
@@ -87,6 +90,7 @@ namespace TacticalRPG.Core
             if (_map    != null) _map.OnMapGenerated   += Rebuild;
             if (_state  != null) _state.OnStateChanged += HandleStateChanged;
             if (_player != null) _player.OnMoved       += RefreshMarkerVisibility;
+            if (_ap     != null) _ap.OnTimeAdvanced    += HandleTimeAdvanced;
         }
 
         private void OnDisable()
@@ -94,6 +98,7 @@ namespace TacticalRPG.Core
             if (_map    != null) _map.OnMapGenerated   -= Rebuild;
             if (_state  != null) _state.OnStateChanged -= HandleStateChanged;
             if (_player != null) _player.OnMoved       -= RefreshMarkerVisibility;
+            if (_ap     != null) _ap.OnTimeAdvanced    -= HandleTimeAdvanced;
         }
 
         // ── Yerleşim ─────────────────────────────────────────────────────────
@@ -141,6 +146,7 @@ namespace TacticalRPG.Core
             Boss = new MapNode { Type = MapNodeType.Boss, APCost = _config.BossAP, Value = 0 };
 
             BuildMarkers();
+            PublishMarketNodes();
             OnNodesChanged?.Invoke();
             Debug.Log($"[Node] Yerlesim tamam — zorunlu {_config.MandatoryCount}, zindan {_config.ZindanCount}, " +
                       $"encounter {_config.EncounterCount}, market {_config.MarketCount}, " +
@@ -214,7 +220,9 @@ namespace TacticalRPG.Core
                     return true;
 
                 case MapNodeType.Market:
-                    // Dükkânın kendisi StoreManager/StoreHUD'da; burada sadece kapı açılır.
+                    // Dükkân zaten StoreManager/StoreHUD'da; market düğümü onu açar (karo ile AYNI
+                    // dükkân). Düğüm TÜKENMEZ — markete tekrar tekrar girilebilir.
+                    PublishMarketNodes();
                     OnNodesChanged?.Invoke();
                     return true;
 
@@ -237,6 +245,23 @@ namespace TacticalRPG.Core
                     return true;
             }
             return false;
+        }
+
+        /// <summary>Market düğümlerinin karolarını dükkâna bildir + gündüz/gece durumunu geçir.</summary>
+        private void PublishMarketNodes()
+        {
+            if (_store == null) return;
+            var coords = new List<HexCoordinate>();
+            foreach (var n in _nodes)
+                if (n.Type == MapNodeType.Market) coords.Add(n.Coord);
+            _store.SetNodeStores(coords, IsMarketOpen());
+        }
+
+        /// <summary>Zaman ilerleyince (gündüz↔gece) market düğümlerinin açıklığı güncellenir.</summary>
+        private void HandleTimeAdvanced(int day, int slot, string slotName)
+        {
+            if (_store != null) _store.SetNodeStoresOpen(IsMarketOpen());
+            OnNodesChanged?.Invoke();
         }
 
         private void HandleStateChanged(GameState s)

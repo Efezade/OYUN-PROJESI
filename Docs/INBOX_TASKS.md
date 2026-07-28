@@ -303,6 +303,16 @@ Performans notu: yok.
 > **DOĞRULAMA:** İki assembly de hatasız derlendi (exit=0). **Unity'de Play'e basılmadı** — düğüm
 > işaretlerinin görünümü, sis davranışı ve savaş dönüşü TEST EDİLMEDİ. TAM KURULUM → Play ile bak.
 > Detay: DECISION_LOG.md 2026-07-28 TASK-006 girişi.
+>
+> **3 AÇIK SORU CEVAPLANDI (kullanıcı, 2026-07-28):**
+> 1. Düğüm ödülü **doğa olarak kalsın** → kod zaten öyle, değişiklik yok.
+> 2. Zorluk **şimdilik sadece gösterge kalsın** → değişiklik yok. ("zor zindan gerçekten zor olsun"
+>    ileride ayrı bir görev olarak yazılabilir.)
+> 3. **Market düğümü ile boyalı `magaza` karosu BİRLEŞTİ** → uygulandı. `StoreManager` artık market
+>    düğümlerinin karolarını da tanıyor (`SetNodeStores`); market düğümüne yaklaşınca **mevcut 5 eşyalı
+>    dükkân** açılıyor. Gece kapalı (zaman ilerleyince `OnTimeAdvanced` ile güncelleniyor), gündüz açık.
+>    Elle boyanan `magaza` karosu **aynen çalışmaya devam ediyor** — iki yol da geçerli.
+>    Market düğümü TÜKENMEZ, tekrar tekrar girilebilir.
 
 ### [TASK-007] Zaman baskısı — collapse/zorlaşma + bölüm-scope kayıp/retry — status: pending
 Kaynak: aynı oturum. Açıklama: TASK-005/006'dan SONRA. Sayılar TASLAK — kullanıcı playtest'le

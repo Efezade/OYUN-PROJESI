@@ -116,6 +116,17 @@ namespace TacticalRPG.Editor
             hso.FindProperty("_config").objectReferenceValue       = config;
             hso.ApplyModifiedProperties();
 
+            // ── 7) Market DÜĞÜMÜ ↔ dükkân bağı (kullanıcı karari 2026-07-28: ikisi AYNI dukkan)
+            // StoreManager bu adimda olustugu icin geri-baglama BURADA yapilir; SetupChapters daha
+            // once calisiyor ve o an StoreManager henuz yok.
+            var nodeMgr = FindComponentAnywhere<ChapterNodeManager>();
+            if (nodeMgr != null)
+            {
+                var nmSO = new SerializedObject(nodeMgr);
+                var prop = nmSO.FindProperty("_store");
+                if (prop != null) { prop.objectReferenceValue = store; nmSO.ApplyModifiedProperties(); }
+            }
+
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             AssetDatabase.SaveAssets();
 

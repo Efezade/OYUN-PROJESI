@@ -45,9 +45,15 @@ KÜME sıralamasından geliyor — dile bağlı, C#'a taşınamaz. Havuz burada 
 karılıyor: aynı seed'de hep aynı yerleşim, ama sim'le birebir aynı koordinatlar değil. Sayılar ve
 değer/maliyet aralıkları aynı olduğu için denge etkilenmiyor.
 
-**AÇIK — Sherlock'a:** (1) düğüm ödülünün öz TÜRÜ (taş mı doğa mı) kararlaştırılmadı, şimdilik doğa
-veriliyor; (2) zorluk şu an yalnız GÖSTERGE — gerçek düşman gücünü değiştirmiyor (düğüm-başına roster
-yok); (3) market düğümü ile mevcut `magaza` KAROSU (StoreManager) iki ayrı şey, birleştirilmeli mi?
+**AÇIK SORULAR — CEVAPLANDI (kullanıcı, aynı gün):**
+(1) Düğüm ödülü **doğa kalsın** → kod zaten öyleydi, değişiklik yok.
+(2) Zorluk **şimdilik sadece gösterge kalsın** → değişiklik yok; "zor zindan gerçekten zor olsun"
+ileriye bırakıldı (ayrı görev).
+(3) **Market düğümü ile boyalı `magaza` karosu BİRLEŞTİ.** `StoreManager.SetNodeStores` ile düğüm
+karoları da "dükkân yakını" sayılıyor → market düğümüne yaklaşınca mevcut 5 eşyalı dükkân açılıyor;
+gece kapalı (`OnTimeAdvanced` ile güncelleniyor). Boyama yolu bozulmadan duruyor — iki yol da geçerli.
+**Kurulum tuzağı:** `SetupStore` zincirde `SetupChapters`'tan SONRA çalıştığı için düğüm→dükkân
+bağı SetupStore'un sonunda GERİ-BAĞLANIYOR; ileri yönde bağlamak null bırakırdı.
 
 **COMMIT:** (bu giriş)
 **DERS:** "Hep görünür olsun" gibi bir istek, sistemin dinamik mi statik mi olduğuna bakmadan

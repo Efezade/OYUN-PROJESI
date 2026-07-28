@@ -166,6 +166,7 @@ namespace TacticalRPG.Editor
             nSO.FindProperty("_fog").objectReferenceValue      = FindComponentAnywhere<FogOfWarManager>();
             nSO.FindProperty("_state").objectReferenceValue    = state;
             nSO.FindProperty("_missions").objectReferenceValue = FindComponentAnywhere<MissionManager>();
+            nSO.FindProperty("_store").objectReferenceValue    = FindComponentAnywhere<StoreManager>();
             nSO.ApplyModifiedProperties();
 
             var nodeHud = host.GetComponent<TacticalRPG.UI.ChapterNodeHUD>();

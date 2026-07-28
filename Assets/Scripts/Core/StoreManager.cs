@@ -52,9 +52,31 @@ namespace TacticalRPG.Core
 
         private void Start() => RebuildMarkersDeferred();
 
-        /// <summary>Oyuncu bir mağaza karosunun <see cref="_openRange"/> menzilinde mi?</summary>
+        // ── Market DÜĞÜMLERİ (TASK-006) ─────────────────────────────────────
+        // Kullanıcı kararı (2026-07-28): market düğümü ile boyalı "magaza" karosu AYNI dükkânı açar.
+        // ChapterNodeManager düğüm karolarını buraya bildirir; boyama yolu aynen çalışmaya devam eder.
+        private readonly List<HexCoordinate> _nodeStoreCoords = new();
+        private bool _nodeStoresOpen = true;   // gündüz açık / gece kapalı
+
+        /// <summary>Market düğümlerinin karolarını bildir (ChapterNodeManager çağırır).</summary>
+        public void SetNodeStores(IEnumerable<HexCoordinate> coords, bool open)
+        {
+            _nodeStoreCoords.Clear();
+            if (coords != null) _nodeStoreCoords.AddRange(coords);
+            _nodeStoresOpen = open;
+        }
+
+        /// <summary>Gündüz/gece geçişinde market düğümlerinin açık/kapalı durumunu güncelle.</summary>
+        public void SetNodeStoresOpen(bool open) => _nodeStoresOpen = open;
+
+        /// <summary>Oyuncu bir mağaza karosunun ya da AÇIK bir market düğümünün
+        /// <see cref="_openRange"/> menzilinde mi?</summary>
         public bool IsPlayerNearStore(HexCoordinate from)
         {
+            if (_nodeStoresOpen)
+                foreach (var c in _nodeStoreCoords)
+                    if (from.DistanceTo(c) <= _openRange) return true;
+
             if (_grid == null || _grid.Cells == null) return false;
             foreach (var cell in _grid.Cells.Values)
                 if (cell.IsStore && from.DistanceTo(cell.Coordinate) <= _openRange)
