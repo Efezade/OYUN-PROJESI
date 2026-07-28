@@ -49,7 +49,8 @@ namespace TacticalRPG.Editor
                 SetupPhaseC3();   // tur sistemi (initiative + hareket + saldiri + AI)
                 SetupPhaseC4();   // Kam komutan + savas buyusu + lose=Kam olumu
                 SetupPhaseD();    // cok-tipli oz + harita toplama + tarifle birim uretme
-                SetupWorld3x3(); // Bolum 1 = 9 harita 3x3 snake + kenardan gecis
+                SetupWorld3x3(); // ALTERNATIF dunya: 9 harita + portal agi (bkz Docs/Alternatif_Tasarimlar/)
+                SetupChapters(); // 8 bolum ilerlemesi (1 bolum = 1 harita) — UIShell'den ONCE olmali
                 SetupUIShell();  // ana menu gezinme kabugu (KITAP/CANTA/HARITA sekmeleri + ayar)
                 SetupStore();    // magaza karosu + oz ile item/pot satin alma (StoreManager/PlayerBuffs/StoreHUD)
             }
@@ -1853,12 +1854,9 @@ namespace TacticalRPG.Editor
 
             if (grid.GridRoot != null) grid.GridRoot.gameObject.SetActive(true); // grid gizli kalmasin
 
-            // TAB minimap (3x3 snake; aktif harita parlar).
-            var mm = host.GetComponent<TacticalRPG.UI.MinimapHUD>();
-            if (mm == null) mm = host.AddComponent<TacticalRPG.UI.MinimapHUD>();
-            var mmSO = new SerializedObject(mm);
-            mmSO.FindProperty("_world").objectReferenceValue = wgm;
-            mmSO.ApplyModifiedProperties();
+            // NOT (TASK-004, 2026-07-28): TAB minimap ARTIK BURADA KURULMUYOR — 3x3 ada minimap'i
+            // yerine 8 BOLUMLUK ilerleme seridi geldi, kurulumu SetupChapters()'a tasindi.
+            // Eski 3x3 minimap: git show 3dafb5f:Assets/Scripts/UI/MinimapHUD.cs
 
             // ── WatchtowerManager — kule ile ada sisini KALICI kaldırma (yakınlık istemi + epik efekt)
             var fog = FindComponentAnywhere<FogOfWarManager>();

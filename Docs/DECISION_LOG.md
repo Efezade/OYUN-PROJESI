@@ -16,6 +16,40 @@
 
 ---
 
+## 2026-07-28 — TASK-004: HARİTA ekranı 3×3 dünyadan 8 bölümlük yola geçti
+
+**BULGU (kod incelemesi):** Evet, HARİTA ekranı gerçekten "9 harita / 3×3 snake" varsayımına dayanıyordu —
+ama görevin öngördüğünden **çok daha geniş** bir bağımlılık ağının görünen ucuydu: `WorldGridManager`
+(`_maps[9]`, snake matematiği, `VirtualPositionOnCurrentMap`), `TeleportManager` (portal eşini 1-9 tarar),
+`MapCollapseManager` (uzak-ada çöküş dalgasının yönü 3×3 yerleşimden türer), `WatchtowerManager`
+(ada-başına sis hafızası), `MinimapHUD`, `SetupWorld3x3`, `TilePainterWindow` — **artı ~900 elle boyanmış
+karo** (9 harita × ~100, 12 portal çifti, ada başına kule + savaş karosu).
+
+**ÇELİŞKİ:** `GAME_DESIGN.md` kendi içinde tutarsızdı — §0 "1 bölüm = 1 harita, 3×3 GEÇERSİZ" diyor,
+§4 aynı tarihte "bölüm-harita ilişkisi hâlâ AÇIK: 8×9=72 mi, bölüm=harita mı?" diye soruyor. Görev
+"belirsizse blocked" diyordu; kullanıcı oturumda hazır olduğu için doğrudan soruldu.
+
+**KARAR (kullanıcı, 2026-07-28): A — bölüm = harita.** HARİTA ekranı 8 bölümlük ilerleme yoluna
+dönüştü. 3×3 dünya SİLİNMEDİ, **alternatif tasarım** olarak saklandı; üzerine gidilmeyecek.
+**NEDEN:** §0'a uymak + kullanıcının açık talimatı ("şu ankinin üzerine gitmiycez, alternatif olarak tut").
+
+**NE DEĞİŞTİ:** yeni `ChapterConfigSO` (8 bölüm verisi) + `ChapterProgress` (ilerlemenin tek kaynağı,
+event-driven) + `SetupChapters()` (TAM KURULUM'da UIShell'den ÖNCE). `WorldMapView` 9 ada vurgusundan
+8 bölümlük yol göstergesine (tamamlandı/şu an/kilitli), `MinimapHUD` 3×3 ada minimap'inden 8 bölüm
+şeridine geçti. **Portal/kule/çöküş/9-harita kodu HİÇ ELLENMEDİ** — alternatif dünya çalışır durumda.
+
+**NE DEĞİŞMEDİ (bilinçli):** bölüm pinleri tıklanabilir değil — bölüm haritasını üreten/yükleyen sistem
+henüz yok (TASK-005). Çalışmayan düğme koymaktansa salt-okunur bırakıldı.
+
+**COMMIT:** (bu giriş)
+**DERS:** "Bir ekranı düzelt" görünen iş, dokunulmamış bir alt sistemin ucu olabilir — koda bakmadan
+kapsam tahmin etme. Ve tek doğruluk kaynağı sayılan belge kendi içinde çelişebilir (§0 ↔ §4);
+uygulamadan önce ikisini de oku.
+**DOĞRULAMA:** Unity'nin kendi Roslyn'i (`DotNetSdkRoslyn/csc.dll`) ile iki assembly de derlendi
+(exit=0). **Unity'de ÇALIŞTIRILMADI/görsel doğrulanmadı.**
+
+---
+
 ## 2026-07-28 — TASK-003: DECISION_LOG temizliği
 
 **KARAR:** Bu dosya yalın "aktif kararlar + tuzaklar" logu oldu; tüm blow-by-blow tarih

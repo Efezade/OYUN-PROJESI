@@ -114,7 +114,7 @@ Performans notu: yok.
 > konusu — ikisi de onaylanmış tasarım olarak değil, açık madde olarak yazıldı.
 > Detay: DECISION_LOG.md 2026-07-28 girişi.
 
-### [TASK-004] "9 harita/3x3 dünya" yanlış varsayımı — HARİTA ekranı gözden geçirilmeli — status: pending
+### [TASK-004] "9 harita/3x3 dünya" yanlış varsayımı — HARİTA ekranı gözden geçirilmeli — status: awaiting_review
 Kaynak: Sherlock+kullanıcı tartışması (2026-07-27), bkz `Docs/Balance/HARITA_DENGE_DURUM.md`.
 Açıklama: GAME_DESIGN.md §0'da duran "Bölüm 1 dünyası = 9 harita, 3x3 snake dizilim" bilgisi
 YANLIŞ/hiç kararlaştırılmamış (§0'da düzeltildi, bkz oradaki not). Doğru yapı: **1 bölüm = 1 harita**,
@@ -129,6 +129,50 @@ etsin (kod inceleme). Öyleyse: ya (a) ekranı "8 bölüm ilerleme/seçim" göst
 "bölüm içi alt-konum" gibi başka bir anlama evriltmek mantıklı mı diye Sherlock'a sorup netleşsin.
 Kendi başına büyük bir yeniden yazım kararı almasın, belirsizse `blocked` işaretleyip sorsun.
 Performans notu: yok (UI/yapı değişikliği, sistem değil).
+
+> **AWAITING_REVIEW (Watson, 2026-07-28):**
+>
+> **1) Kontrol sonucu: EVET, dayanıyordu — ama görevin sandığından çok daha geniş.** Ekran, tek başına
+> duran bir UI değil; bir alt sistemin görünen ucuydu. 3×3/9'a bağlı olanlar: `WorldGridManager`
+> (`_maps[9]`, snake matematiği, `VirtualPositionOnCurrentMap`), `TeleportManager` (portal eşini 1-9
+> tarar), `MapCollapseManager` (**uzak adadaki çöküşün dalga yönü/mesafesi 3×3 yerleşimden türer**),
+> `WatchtowerManager` (ada-başına sis hafızası), `MinimapHUD`, `SetupWorld3x3`, `TilePainterWindow`.
+> Ayrıca **~900 elle boyanmış karo** (9 harita × ~100 karo, 12 portal çifti, ada başına kule + savaş
+> karosu) — yani bu varsayımın üstünde gerçek, emek verilmiş içerik var.
+>
+> **2) ÇELİŞKİ BULDUM (Sherlock'un ilgilenmesi gerek):** `GAME_DESIGN.md` kendi içinde tutarsız —
+> **§0** "1 bölüm = 1 harita, 8 bölüm, 3×3 GEÇERSİZ" diyor, ama **§4** aynı tarihte "bölüm-harita
+> ilişkisi hâlâ **AÇIK**: 8×9=72 harita mı, bölüm=harita mı?" diye soruyor. Tek doğruluk kaynağının
+> iki bölümü zıt. Görev gereği `blocked` işaretleyecektim; kullanıcı oturumda olduğu için doğrudan
+> soruldu → **kullanıcı seçenek (a)'yı seçti: bölüm = harita.** Uygulandı.
+> **§4'teki o açık madde hâlâ orada duruyor — Sherlock kapatmalı** (yoksa bir sonraki oturumda aynı
+> çelişkiye tekrar tosluyoruz).
+>
+> **3) Kullanıcı talimatı — mevcut tasarım SİLİNMEDİ:** "şu ankini silme, alternatif olarak tut,
+> üzerine gitmiycez." → `Docs/Alternatif_Tasarimlar/3x3_Dunya_Haritasi/` (9 haritanın + paletin
+> birebir kopyası + README: neye bağlı, nasıl geri yüklenir). `Assets/` içindeki orijinaller
+> **yerinde ve canlı**; portal/kule/çöküş/9-harita kodu **hiç ellenmedi**, hâlâ çalışıyor.
+>
+> **4) Ne yapıldı:** yeni `ChapterConfigSO` (8 bölüm verisi) + `ChapterProgress` (ilerlemenin tek
+> kaynağı, event-driven) + `SetupChapters()` menüsü (TAM KURULUM'da UIShell'den ÖNCE).
+> `WorldMapView` → 8 bölümlük yol (üst 1-2-3-4, alt 8-7-6-5; tamamlandı/şu an/kilitli + bölüm adı/teması).
+> `MinimapHUD` (TAB) → 8 bölüm şeridi. Parşömen estetiği, PINS paneli ve pusula korundu.
+>
+> **5) BİLEREK YAPILMAYANLAR (itiraz gelirse değiştiririm):**
+> - Bölüm pinleri **tıklanabilir değil** — bölüm haritasını üreten/yükleyen sistem henüz yok (TASK-005).
+>   Çalışmayan düğme koymaktansa salt-okunur bıraktım.
+> - Bölüm 1 adı/teması GAME_DESIGN'dan ("Taş & Doğa"); **2-3 "~" ile yaklaşık** (~Ateş/Volkanik,
+>   ~Teknoloji); **4-8 "?" placeholder** — uydurma isim yazmadım, hepsi Inspector'dan düzeltilebilir.
+> - İlerleme **kaydedilmiyor** (oturum içi) — kayıt sistemi bu görevin kapsamında değildi.
+>
+> **6) DOĞRULAMA — dürüst durum:** Unity'nin kendi derleyicisiyle (`DotNetSdkRoslyn/csc.dll`) her iki
+> assembly de **hatasız derlendi (exit=0)**; sadece önceden var olan deprecation uyarıları çıktı.
+> Ama **Unity'de AÇILMADI/ÇALIŞTIRILMADI, ekranı gözümle görmedim.**
+> **İncelerken önce şunu yap:** Unity'de **TAM KURULUM** (ya da "Bolum - 8 Bolum Ilerlemesi Kur" +
+> "UI - Menu Iskeleti Kur") çalıştır — alan adları değiştiği için sahnedeki ESKİ bağlantılar boşaldı,
+> kurulum çalışmadan HARİTA ekranı boş/varsayılan görünür. Yeni `.cs` dosyalarının `.meta`'ları da
+> Unity ilk açılışta üretilecek, sonra commit'lenmeli.
+> Detay: DECISION_LOG.md 2026-07-28 TASK-004 girişi.
 
 ### [TASK-005] Bölüm 1 harita üretim altyapısı + AP ekonomisi güncellemesi — status: pending
 Kaynak: Sherlock oturumu 2026-07-27, `Docs/Balance/HARITA_DENGE_DURUM.md` + GAME_DESIGN.md §0/§3.

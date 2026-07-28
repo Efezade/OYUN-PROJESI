@@ -60,7 +60,7 @@ namespace TacticalRPG.Editor
 
             PopulateBookScreen(bookPanel.gameObject);                 // GERÇEK içerik
             PopulateBagScreen(bagPanel.gameObject);                   // GERÇEK içerik (potlar + Kam kartları)
-            PopulateMapScreen(mapPanel.gameObject);                   // GERÇEK içerik (3x3 snake dünya + pinler)
+            PopulateMapScreen(mapPanel.gameObject);                   // GERÇEK içerik (8 bölümlük yol + pinler)
             PopulateSettingsScreen(setPanel.gameObject);              // GERÇEK içerik (ses/parlaklık/kalite)
 
             // ── Kalıcı çubuk (panellerden SONRA → üstte çizilir, sekmeler açık panelde de tıklanır)
@@ -103,7 +103,7 @@ namespace TacticalRPG.Editor
                     "Gezinme kabuğu (KİTAP·ÇANTA·HARİTA + ⚙) + 4 ekranın içeriği kuruldu:\n\n" +
                     "  • KİTAP — ÖZ DEPOSU (3 canlı sayaç) + sınıf roster'ı (WARRIOR/RANGER gerçek)\n" +
                     "  • ÇANTA — POTLAR (placeholder) + KAM KARTLARI (AteşTopu/RuhKalkanı/Şifa gerçek)\n" +
-                    "  • HARİTA — 3x3 SNAKE dünya (CurrentMap CANLI vurgu) + HAN/ŞİFACI/MARKET pinleri\n" +
+                    "  • HARİTA — 8 BÖLÜMLÜK ilerleme yolu (bulunulan bölüm CANLI) + HAN/ŞİFACI/MARKET pinleri\n" +
                     "  • AYARLAR — MASTER/MÜZİK/SFX + PARLAKLIK, KALİTE/TAM EKRAN/VSYNC + telifsiz müzik\n\n" +
                     "Play → sekmelere bas. Esc ile kapat. Savaşta kabuk gizlenir.",
                     "Tamam");

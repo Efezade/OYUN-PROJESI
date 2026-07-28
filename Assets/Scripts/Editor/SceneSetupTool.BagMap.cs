@@ -15,8 +15,10 @@ namespace TacticalRPG.Editor
     ///
     ///  • ÇANTA — sap + sol dikey sekmeler + iki sütun (POTLAR | KAM KARTLARI, noktalı ayraç). Kartlar
     ///    gerçek <see cref="KamAbilityData"/> asset'lerine <see cref="AbilityCardView"/> ile bağlı.
-    ///  • HARİTA — çerçeveli harita + sol PINS paneli (HAN/ŞİFACI/MARKET) + 3×3 SNAKE düğümleri (map pin
-    ///    olarak, <see cref="WorldMapView"/> ile <see cref="WorldGridManager.CurrentMap"/>'e CANLI) + pusula.
+    ///  • HARİTA — çerçeveli harita + sol PINS paneli (HAN/ŞİFACI/MARKET) + **8 bölümlük ilerleme yolu**
+    ///    (map pin olarak, <see cref="WorldMapView"/> ile <see cref="ChapterProgress"/>'e CANLI) + pusula.
+    ///    1 bölüm = 1 harita (GAME_DESIGN.md §0). Eski 3×3 snake dünya: TASK-004 ile alternatife alındı,
+    ///    bkz <c>Docs/Alternatif_Tasarimlar/3x3_Dunya_Haritasi/</c>.
     /// </summary>
     public static partial class SceneSetupTool
     {
@@ -156,46 +158,91 @@ namespace TacticalRPG.Editor
                     new Vector2(110f, y), new Vector2(190f, 40f), Ink, 26f);
             }
 
-            // ── 3×3 SNAKE dünya (9 8 7 / 6 5 4 / 3 2 1), map pin olarak, CANLI vurgu ──
-            const float gap = 156f, gridCx = 160f, gridCy = 0f, node = 120f;
-            Image[] nodeBgs = new Image[9]; // index 0 = Harita1 … 8 = Harita9
-            for (int m = 1; m <= 9; m++)
+            // ── 8 BÖLÜMLÜK İLERLEME YOLU (1 bölüm = 1 harita, GAME_DESIGN.md §0) ─
+            // Yılan yol: üst sıra 1-2-3-4 (soldan sağa), sağdan aşağı, alt sıra 5-6-7-8 (sağdan sola).
+            // (Eski 3×3 snake dünya buradaydı — TASK-004 ile alternatife alındı, bkz
+            //  Docs/Alternatif_Tasarimlar/3x3_Dunya_Haritasi/.)
+            TextMeshProUGUI title = CreateCenteredLabel(map, "ChapterTitle", "Bölüm 1",
+                new Vector2(0.5f, 0.5f), new Vector2(160f, 282f), new Vector2(900f, 52f), Ink, 34f);
+
+            const float node = 110f;
+            var nodeBgs    = new Image[ChapterCount];
+            var nodeLabels = new TextMeshProUGUI[ChapterCount];
+            for (int c = 1; c <= ChapterCount; c++)
+                nodeBgs[c - 1] = CreateChapterNode(map, c, ChapterNodePos(c), node, out nodeLabels[c - 1]);
+
+            // Düğümleri bağlayan yol parçaları: index 0 = 1→2 … 6 = 7→8
+            var connectors = new Image[ChapterCount - 1];
+            for (int c = 1; c < ChapterCount; c++)
             {
-                int col = 2 - (m - 1) % 3;   // snake: 9 8 7 / 6 5 4 / 3 2 1
-                int row = 2 - (m - 1) / 3;
-                float x = gridCx + (col - 1) * gap;
-                float y = gridCy + (1 - row) * gap;
-                nodeBgs[m - 1] = CreateMapNode(map, m, new Vector2(x, y), node);
+                Vector2 a = ChapterNodePos(c), b = ChapterNodePos(c + 1);
+                Vector2 mid = (a + b) * 0.5f;
+                bool horizontal = Mathf.Abs(a.y - b.y) < 0.5f;
+                Vector2 size = horizontal
+                    ? new Vector2(Mathf.Abs(b.x - a.x) - node, 7f)
+                    : new Vector2(7f, Mathf.Abs(b.y - a.y) - node);
+                connectors[c - 1] = Line(map, $"Path_{c}_{c + 1}", new Vector2(0.5f, 0.5f), mid, size, InkSoft);
+                connectors[c - 1].transform.SetAsFirstSibling();   // yol, düğümlerin ALTINDA kalsın
             }
 
             // ── Pusula (sağ alt) ───────────────────────────────────────────────
-            CreateCompass(map, new Vector2(500f, -230f), 150f);
+            CreateCompass(map, new Vector2(500f, -250f), 140f);
 
             WorldMapView view = panelGO.AddComponent<WorldMapView>();
-            WorldGridManager world = FindComponentAnywhere<WorldGridManager>();
+            ChapterProgress progress = FindComponentAnywhere<ChapterProgress>();
+            if (progress == null)
+                Debug.LogWarning("[HARİTA] Sahnede ChapterProgress yok — ekran boş/varsayılan görünür. " +
+                                 "Once 'TacticalRPG → Bolum - 8 Bolum Ilerlemesi Kur' calistir (ya da TAM KURULUM).");
             var vso = new SerializedObject(view);
-            vso.FindProperty("_world").objectReferenceValue = world;
-            SerializedProperty arr = vso.FindProperty("_nodeBackgrounds");
-            arr.arraySize = 9;
-            for (int i = 0; i < 9; i++)
-                arr.GetArrayElementAtIndex(i).objectReferenceValue = nodeBgs[i];
+            vso.FindProperty("_progress").objectReferenceValue    = progress;
+            vso.FindProperty("_titleLabel").objectReferenceValue  = title;
+            FillObjectArray(vso, "_nodeBackgrounds", nodeBgs);
+            FillObjectArray(vso, "_nodeLabels",      nodeLabels);
+            FillObjectArray(vso, "_connectors",      connectors);
             vso.ApplyModifiedProperties();
 
             CreateCenteredLabel(t, "MapHint",
-                "3x3 SNAKE dünya — bulunulan ada CANLI vurgulanır · hizmet pinleri yakında · Kapat: Esc",
+                "8 bölüm — her bölüm kendi haritası ve temalı elementi · bulunduğun bölüm CANLI · Kapat: Esc",
                 new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(1400f, 40f),
                 new Color(0.62f, 0.57f, 0.48f), 24f);
         }
 
-        /// <summary>Bir dünya düğümü = daire "map pin" + numara. WorldMapView zemini boyar (aktif=altın).</summary>
-        private static Image CreateMapNode(Transform parent, int mapNumber, Vector2 pos, float size)
+        /// <summary>Toplam bölüm sayısı (GAME_DESIGN.md §3). UI yerleşimi bu sayıya göre kurulur.</summary>
+        private const int ChapterCount = 8;
+
+        /// <summary>Bölüm düğümünün HARİTA gövdesindeki yeri — yılan yol: üst 1-2-3-4, alt 8-7-6-5.</summary>
+        private static Vector2 ChapterNodePos(int chapter)
         {
-            Circle(parent, "NodeRing_" + mapNumber, new Vector2(0.5f, 0.5f), pos, size + 10f, FrameDark);
-            Image bg = Circle(parent, "Node_" + mapNumber, new Vector2(0.5f, 0.5f), pos, size,
+            const float cx = 160f, gapX = 240f, topY = 130f, botY = -60f;
+            int   col = chapter <= 4 ? chapter - 1 : 8 - chapter;   // alt sıra sağdan sola
+            float x   = cx + (col - 1.5f) * gapX;
+            return new Vector2(x, chapter <= 4 ? topY : botY);
+        }
+
+        /// <summary>Bir bölüm düğümü = daire "map pin" + numara + altında durum yazısı.
+        /// Renkleri/yazıları <see cref="WorldMapView"/> canlı olarak günceller.</summary>
+        private static Image CreateChapterNode(Transform parent, int chapter, Vector2 pos, float size,
+                                               out TextMeshProUGUI stateLabel)
+        {
+            Circle(parent, "NodeRing_" + chapter, new Vector2(0.5f, 0.5f), pos, size + 10f, FrameDark);
+            Image bg = Circle(parent, "Node_" + chapter, new Vector2(0.5f, 0.5f), pos, size,
                 new Color(0.83f, 0.75f, 0.58f, 1f));
-            CreateCenteredLabel(bg.transform, "Num", mapNumber.ToString(),
-                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size, size), Ink, 50f);
+            CreateCenteredLabel(bg.transform, "Num", chapter.ToString(),
+                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size, size), Ink, 46f);
+            stateLabel = CreateCenteredLabel(parent, "State_" + chapter, "",
+                new Vector2(0.5f, 0.5f), new Vector2(pos.x, pos.y - size * 0.5f - 24f),
+                new Vector2(190f, 30f), InkSoft, 20f);
             return bg;
+        }
+
+        /// <summary>SerializedObject dizisini verilen Unity nesneleriyle doldurur (boyut dahil).</summary>
+        private static void FillObjectArray(SerializedObject so, string propertyPath, UnityEngine.Object[] values)
+        {
+            SerializedProperty arr = so.FindProperty(propertyPath);
+            if (arr == null) return;
+            arr.arraySize = values.Length;
+            for (int i = 0; i < values.Length; i++)
+                arr.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
         }
 
         private static void CreateCompass(Transform parent, Vector2 pos, float diam)
