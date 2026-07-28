@@ -21,7 +21,7 @@ MonoBehaviour:
   - coord:
       Q: 4
       R: 6
-    tileId: mantar
+    tileId: cicek
   - coord:
       Q: 8
       R: 1
@@ -165,11 +165,11 @@ MonoBehaviour:
   - coord:
       Q: 3
       R: 8
-    tileId: agac3
+    tileId: cicek
   - coord:
       Q: 3
       R: 7
-    tileId: agac3
+    tileId: cicek
   - coord:
       Q: 0
       R: 8
@@ -373,7 +373,7 @@ MonoBehaviour:
   - coord:
       Q: 5
       R: 5
-    tileId: mantar
+    tileId: cicek
   - coord:
       Q: 5
       R: 6

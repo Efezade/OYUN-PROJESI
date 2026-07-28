@@ -19,6 +19,7 @@ MonoBehaviour:
     editorColor: {r: 0.55, g: 0.55, b: 0.55, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: kopru
     displayName: "K\xF6pr\xFC"
@@ -26,6 +27,7 @@ MonoBehaviour:
     editorColor: {r: 0.55, g: 0.45, b: 0.35, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: barbarkarakteri
     displayName: barbarkarakteri
@@ -33,6 +35,7 @@ MonoBehaviour:
     editorColor: {r: 0.85, g: 0.425, b: 0.7366668, a: 1}
     isWalkable: 0
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: agac1
     displayName: "A\u011Fa\xE7 1"
@@ -40,6 +43,7 @@ MonoBehaviour:
     editorColor: {r: 0.2, g: 0.45, b: 0.22, a: 1}
     isWalkable: 0
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0.3
   - id: agac2
     displayName: "A\u011Fa\xE7 2"
@@ -47,6 +51,7 @@ MonoBehaviour:
     editorColor: {r: 0.22, g: 0.5, b: 0.24, a: 1}
     isWalkable: 0
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0.3
   - id: agac3
     displayName: "A\u011Fa\xE7 3"
@@ -54,6 +59,7 @@ MonoBehaviour:
     editorColor: {r: 0.18, g: 0.4, b: 0.2, a: 1}
     isWalkable: 0
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0.3
   - id: cicek
     displayName: "\xC7i\xE7ek"
@@ -61,6 +67,7 @@ MonoBehaviour:
     editorColor: {r: 0.72, g: 0.55, b: 0.8, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0.3
   - id: kule
     displayName: Kule
@@ -68,6 +75,7 @@ MonoBehaviour:
     editorColor: {r: 0.5, g: 0.48, b: 0.46, a: 1}
     isWalkable: 0
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0.3
   - id: kum
     displayName: Kum
@@ -75,6 +83,7 @@ MonoBehaviour:
     editorColor: {r: 0.84, g: 0.76, b: 0.5, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: lav
     displayName: Lav
@@ -82,6 +91,7 @@ MonoBehaviour:
     editorColor: {r: 0.82, g: 0.28, b: 0.12, a: 1}
     isWalkable: 0
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: mantar
     displayName: Mantar
@@ -89,6 +99,7 @@ MonoBehaviour:
     editorColor: {r: 0.78, g: 0.46, b: 0.4, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0.3
   - id: su
     displayName: Su
@@ -96,6 +107,7 @@ MonoBehaviour:
     editorColor: {r: 0.24, g: 0.52, b: 0.82, a: 1}
     isWalkable: 0
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: portal1
     displayName: Portal 1
@@ -103,6 +115,7 @@ MonoBehaviour:
     editorColor: {r: 0.98, g: 0.94668, b: 0.14699998, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: portal2
     displayName: Portal 2
@@ -110,6 +123,7 @@ MonoBehaviour:
     editorColor: {r: 0.21364002, g: 0.98, b: 0.14699998, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: portal3
     displayName: Portal 3
@@ -117,6 +131,7 @@ MonoBehaviour:
     editorColor: {r: 0.14699998, g: 0.98, b: 0.88003993, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: portal4
     displayName: Portal 4
@@ -124,6 +139,7 @@ MonoBehaviour:
     editorColor: {r: 0.14699998, g: 0.28028005, b: 0.98, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: portal5
     displayName: Portal 5
@@ -131,6 +147,7 @@ MonoBehaviour:
     editorColor: {r: 0.8133998, g: 0.14699998, b: 0.98, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: portal6
     displayName: Portal 6
@@ -138,6 +155,7 @@ MonoBehaviour:
     editorColor: {r: 0.98, g: 0.14699998, b: 0.3469202, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: portal7
     displayName: Portal 7
@@ -145,6 +163,7 @@ MonoBehaviour:
     editorColor: {r: 0.98, g: 0.7467599, b: 0.14699998, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: portal8
     displayName: Portal 8
@@ -152,6 +171,7 @@ MonoBehaviour:
     editorColor: {r: 0.41356012, g: 0.98, b: 0.14699998, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: portal9
     displayName: Portal 9
@@ -159,6 +179,7 @@ MonoBehaviour:
     editorColor: {r: 0.14699998, g: 0.98, b: 0.6801199, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: portal10
     displayName: Portal 10
@@ -166,6 +187,7 @@ MonoBehaviour:
     editorColor: {r: 0.14699998, g: 0.48020008, b: 0.98, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: portal11
     displayName: Portal 11
@@ -173,6 +195,7 @@ MonoBehaviour:
     editorColor: {r: 0.61348, g: 0.14699998, b: 0.98, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: portal12
     displayName: Portal 12
@@ -180,6 +203,7 @@ MonoBehaviour:
     editorColor: {r: 0.98, g: 0.14699998, b: 0.5468404, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme1
     displayName: Deneme 1
@@ -187,6 +211,7 @@ MonoBehaviour:
     editorColor: {r: 0.40499997, g: 0.9, b: 0.7514999, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme2
     displayName: Deneme 2
@@ -194,6 +219,7 @@ MonoBehaviour:
     editorColor: {r: 0.40499997, g: 0.9, b: 0.8702999, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme3
     displayName: Deneme 3
@@ -201,6 +227,7 @@ MonoBehaviour:
     editorColor: {r: 0.40499997, g: 0.81090003, b: 0.9, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme4
     displayName: Deneme 4
@@ -208,6 +235,7 @@ MonoBehaviour:
     editorColor: {r: 0.40499997, g: 0.6920999, b: 0.9, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme5
     displayName: Deneme 5
@@ -215,6 +243,7 @@ MonoBehaviour:
     editorColor: {r: 0.40499997, g: 0.57329994, b: 0.9, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme6
     displayName: Deneme 6
@@ -222,6 +251,7 @@ MonoBehaviour:
     editorColor: {r: 0.40499997, g: 0.45450005, b: 0.9, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme7
     displayName: Deneme 7
@@ -229,6 +259,7 @@ MonoBehaviour:
     editorColor: {r: 0.4742999, g: 0.40499997, b: 0.9, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme8
     displayName: Deneme 8
@@ -236,6 +267,7 @@ MonoBehaviour:
     editorColor: {r: 0.5930998, g: 0.40499997, b: 0.9, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme9
     displayName: Deneme 9
@@ -243,6 +275,7 @@ MonoBehaviour:
     editorColor: {r: 0.71189994, g: 0.40499997, b: 0.9, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme10
     displayName: Deneme 10
@@ -250,6 +283,7 @@ MonoBehaviour:
     editorColor: {r: 0.83070004, g: 0.40499997, b: 0.9, a: 1}
     isWalkable: 1
     canEnterCombat: 0
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme11
     displayName: Deneme 11 (SAVAS)
@@ -257,6 +291,7 @@ MonoBehaviour:
     editorColor: {r: 0.95, g: 0.2375, b: 0.2375, a: 1}
     isWalkable: 1
     canEnterCombat: 1
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme12
     displayName: Deneme 12 (SAVAS)
@@ -264,6 +299,7 @@ MonoBehaviour:
     editorColor: {r: 0.95, g: 0.38712502, b: 0.2375, a: 1}
     isWalkable: 1
     canEnterCombat: 1
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme13
     displayName: Deneme 13 (SAVAS)
@@ -271,6 +307,7 @@ MonoBehaviour:
     editorColor: {r: 0.95, g: 0.53675, b: 0.2375, a: 1}
     isWalkable: 1
     canEnterCombat: 1
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme14
     displayName: Deneme 14 (SAVAS)
@@ -278,6 +315,7 @@ MonoBehaviour:
     editorColor: {r: 0.95, g: 0.68637496, b: 0.2375, a: 1}
     isWalkable: 1
     canEnterCombat: 1
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme15
     displayName: Deneme 15 (SAVAS)
@@ -285,6 +323,7 @@ MonoBehaviour:
     editorColor: {r: 0.95, g: 0.836, b: 0.2375, a: 1}
     isWalkable: 1
     canEnterCombat: 1
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme16
     displayName: Deneme 16 (SAVAS)
@@ -292,6 +331,7 @@ MonoBehaviour:
     editorColor: {r: 0.914375, g: 0.95, b: 0.2375, a: 1}
     isWalkable: 1
     canEnterCombat: 1
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme17
     displayName: Deneme 17 (SAVAS)
@@ -299,6 +339,7 @@ MonoBehaviour:
     editorColor: {r: 0.76475, g: 0.95, b: 0.2375, a: 1}
     isWalkable: 1
     canEnterCombat: 1
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme18
     displayName: Deneme 18 (SAVAS)
@@ -306,6 +347,7 @@ MonoBehaviour:
     editorColor: {r: 0.615125, g: 0.95, b: 0.2375, a: 1}
     isWalkable: 1
     canEnterCombat: 1
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme19
     displayName: Deneme 19 (SAVAS)
@@ -313,6 +355,7 @@ MonoBehaviour:
     editorColor: {r: 0.46549994, g: 0.95, b: 0.2375, a: 1}
     isWalkable: 1
     canEnterCombat: 1
+    isStore: 0
     surfaceHeightOverride: 0
   - id: deneme20
     displayName: Deneme 20 (SAVAS)
@@ -320,4 +363,13 @@ MonoBehaviour:
     editorColor: {r: 0.315875, g: 0.95, b: 0.2375, a: 1}
     isWalkable: 1
     canEnterCombat: 1
+    isStore: 0
+    surfaceHeightOverride: 0
+  - id: magaza
+    displayName: "Ma\u011Faza"
+    prefab: {fileID: 919132149155446097, guid: 31459a87a3299a44baad21a9de4b38a1, type: 3}
+    editorColor: {r: 1, g: 0.82, b: 0.2, a: 1}
+    isWalkable: 0
+    canEnterCombat: 0
+    isStore: 1
     surfaceHeightOverride: 0
