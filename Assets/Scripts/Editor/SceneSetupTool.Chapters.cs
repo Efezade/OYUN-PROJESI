@@ -274,6 +274,9 @@ namespace TacticalRPG.Editor
                     if (tilesArr.GetArrayElementAtIndex(j).FindPropertyRelative("id").stringValue == d.id) { exists = true; break; }
                 if (exists) continue;
 
+                // DIKKAT: arraySize++ Unity'de SON ELEMANI KOPYALAR. Bu yuzden HER alan acikca
+                // yazilmali — ozellikle isStore. (Bir kez atlandi: yeni terrain karolari "magaza"
+                // girisinden isStore=1 miras aldi, harita boyunca her karoda dukkan aciliyordu.)
                 tilesArr.arraySize++;
                 var e = tilesArr.GetArrayElementAtIndex(tilesArr.arraySize - 1);
                 e.FindPropertyRelative("id").stringValue                   = d.id;
@@ -281,6 +284,7 @@ namespace TacticalRPG.Editor
                 e.FindPropertyRelative("prefab").objectReferenceValue      = null;  // placeholder tint
                 e.FindPropertyRelative("isWalkable").boolValue             = d.walkable;
                 e.FindPropertyRelative("canEnterCombat").boolValue         = false;
+                e.FindPropertyRelative("isStore").boolValue                = false;
                 e.FindPropertyRelative("surfaceHeightOverride").floatValue = d.height;
                 e.FindPropertyRelative("editorColor").colorValue           = d.color;
                 added++;

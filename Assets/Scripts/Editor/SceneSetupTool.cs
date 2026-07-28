@@ -1955,6 +1955,8 @@ namespace TacticalRPG.Editor
                 e.FindPropertyRelative("displayName").stringValue     = $"Portal {i}";
                 e.FindPropertyRelative("prefab").objectReferenceValue = null; // placeholder tint
                 e.FindPropertyRelative("isWalkable").boolValue        = true;
+                e.FindPropertyRelative("canEnterCombat").boolValue    = false;
+                e.FindPropertyRelative("isStore").boolValue           = false;  // arraySize++ son elemani kopyalar
                 e.FindPropertyRelative("editorColor").colorValue      = Color.HSVToRGB((i * 0.16f) % 1f, 0.85f, 0.98f);
             }
             palSO.ApplyModifiedProperties();
@@ -1987,6 +1989,7 @@ namespace TacticalRPG.Editor
                 e.FindPropertyRelative("prefab").objectReferenceValue = null;
                 e.FindPropertyRelative("isWalkable").boolValue        = true;
                 e.FindPropertyRelative("canEnterCombat").boolValue    = combat;
+                e.FindPropertyRelative("isStore").boolValue           = false;  // arraySize++ son elemani kopyalar
                 e.FindPropertyRelative("surfaceHeightOverride").floatValue = 0f;
                 e.FindPropertyRelative("editorColor").colorValue = combat
                     ? Color.HSVToRGB(((i - 11) * 0.035f) % 1f,        0.75f, 0.95f)  // kırmızı→turuncu
