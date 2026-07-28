@@ -72,7 +72,7 @@ Performans notu: yok.
 Not (Sherlock, 2026-07-26): Watson'ın önerdiği güvenli versiyon (uncommitted değişiklik varsa
 pull'u atla / --ff-only) onaylandı — uygulanmış, teşekkürler.
 
-### [TASK-003] DECISION_LOG.md temizlik geçişi — status: pending
+### [TASK-003] DECISION_LOG.md temizlik geçişi — status: awaiting_review
 Kaynak: Sherlock+Watson tartışması (2026-07-26) — Watson'ın önerisi, Sherlock onayladı.
 Açıklama: DECISION_LOG.md'yi tek commit'te temizle:
 1. Tamamlanmış fazların (TAMAMLANDI ✓ / BİTTİ ✓) blow-by-blow anlatımını yeni
@@ -92,6 +92,27 @@ Açıklama: DECISION_LOG.md'yi tek commit'te temizle:
 Kabul kriteri: DECISION_LOG.md yalın + ters-kronolojik + sadece aktif kararlar/tuzaklar;
 DECISION_LOG_ARCHIVE.md tam tarihi içeriyor, içerik kaybı yok; Sherlock diff'i review eder.
 Performans notu: yok.
+
+> **AWAITING_REVIEW (Watson, 2026-07-28):** 5 maddenin hepsi yapıldı.
+> `Docs/DECISION_LOG_ARCHIVE.md` yeni oluşturuldu = **eski dosyanın gövdesi birebir** (sadece başlık
+> bloğu değişti) → içerik kaybı sıfır, `git show HEAD~1:Docs/DECISION_LOG.md` ile karşılaştırılabilir.
+> Ana log 38 KB → ~13 KB, ters-kronolojik: girişler (2026-07-28 → 2026-07-26) + "Yürürlükteki kararlar"
+> tablosu + **Tuzaklar/Dersler** (arşive taşınmadı: 262-birimlik FBX felaketi, footprint kalkanı,
+> köprü quaternion flip, `_BaseColor`, execution order, yüzey enterpolasyonu, CS0246→menü kaybı vb.) +
+> tamamlanmış fazların tek-satır+hash tablosu (arşive link).
+> **(5) BAYAT BLOK:** ana logdan silindi, arşivde "BAYAT — 2026-06-25 fotoğrafı, geçerli değil" başlığı
+> altında tarihsel kayıt olarak duruyor (silinmesi istenmişti, ama "içerik kaybı yok" kriteriyle
+> çelişmesin diye arşivde tutuldu — istenmiyorsa arşivden de silerim, söyle yeter).
+> **(4)** GAME_DESIGN §5 / TILE_PIPELINE.md ile çakışan hikaye+karo anlatısı ana logdan çıkarıldı,
+> yerine link kaldı.
+>
+> **DİKKAT — incelemede bakılacak bulgu:** Ana log 2026-06-25'te kesiliyormuş; **2026-06-27 → 2026-07-25
+> arası hiç loglanmamış** (KÜP→9-harita geçişi, sis yeniden yazımı, portal, XCOM iki-tık hareket,
+> gece/gündüz AP döngüsü, uGUI menü/KİTAP). Bu boşluğu "2026-07 — commit'lerden türetilmiş özet"
+> bölümüyle kapattım; **kaynak yalnızca commit mesajları**, uydurma bilgi eklemedim. O bölümde iki
+> yer ⚠ ile işaretli: (a) koddaki 54 AP/gün TASK-005'te 24'e çekilecek, (b) 3×3 dünya yapısı TASK-004'ün
+> konusu — ikisi de onaylanmış tasarım olarak değil, açık madde olarak yazıldı.
+> Detay: DECISION_LOG.md 2026-07-28 girişi.
 
 ### [TASK-004] "9 harita/3x3 dünya" yanlış varsayımı — HARİTA ekranı gözden geçirilmeli — status: pending
 Kaynak: Sherlock+kullanıcı tartışması (2026-07-27), bkz `Docs/Balance/HARITA_DENGE_DURUM.md`.
