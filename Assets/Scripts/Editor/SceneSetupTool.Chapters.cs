@@ -115,6 +115,7 @@ namespace TacticalRPG.Editor
             // ── TASK-005: prosedurel terrain (22x25, 10-seed havuzu) ─────────
             TerrainConfigSO terrainConfig = EnsureTerrainConfig();
             EnsureTerrainPaletteEntries(grid);
+            AssignTerrainTileModels(force: false);   // her terrain karosunun 3B modeli olsun
 
             // Grid boyutunu terrain config'e esitle (22x25) — uretilen harita tam otursun.
             var gridSO = new SerializedObject(grid);
