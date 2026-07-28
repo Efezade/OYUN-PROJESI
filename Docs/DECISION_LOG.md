@@ -16,6 +16,26 @@
 
 ---
 
+## 2026-07-28 — Kamera karakteri takip ediyor (kullanıcı isteği)
+
+**SORUN:** Kamera sabitti (Faz 0'da 10×10 grid merkezine göre elle konumlanmış). Harita TASK-005 ile
+**22×25**'e büyüyünce karakter haritanın üst kısmında ekran dışına çıkıyordu.
+**KARAR:** Yeni `CameraFollow` (Assets/Scripts/Input/) — Faz 0'da kameraya eklenir, Faz 1'de oyuncuya
+bağlanır. Konum `hedef − forward × mesafe` ile hesaplanıyor: **kamera açısına hiç dokunulmaz**, hedef
+her rotasyonda ekranın tam ortasında kalır, izometrik görünüm (30°/45°, ortografik) korunur.
+`LateUpdate` + `SmoothDamp` (oyuncu hareket ettikten SONRA otur → titreme yok). Savaşta oyuncu
+GameObject'i gizlendiği için hedef pasifken kamera olduğu yerde durur.
+
+**TUZAK (bu bölümü okumadan `Input/` altına sınıf ekleme):** Sınıfı önce `namespace TacticalRPG.Input`
+içine koydum → `TacticalRPG.*` altındaki HER dosyada `Input.GetKeyDown(...)` bu namespace'e çözüldü,
+`UnityEngine.Input` gölgelendi ve **9 dosya birden derlenmedi** (AbilityCaster, MapInputHandler,
+MenuNavigator, MinimapHUD…). Çözüm: dosya `Input/` klasöründe kalsın (CLAUDE.md §4), ama namespace
+`TacticalRPG.Core` olsun — projedeki diğer sahne bileşenleriyle aynı (bkz `MapInputHandler`).
+
+**COMMIT:** (bu giriş)
+
+---
+
 ## 2026-07-28 — Kule karosu gerçek modeliyle + sis kalıcı açılıyor (kullanıcı isteği)
 
 **İSTEK:** (1) kule karolarında kule asset'i görünsün, (2) karakterin geçtiği her yerin sisi kalıcı kalksın.
@@ -394,6 +414,10 @@ Tarihsel gerekçeleri arşivde; burada sadece **hâlâ geçerli olan** hüküm v
 - Sis bulutu yüksekliği `_fogLift`: 0.45 izometrik kamerada komşu karoları örtüyordu → **0.18**.
 
 **Editor / kurulum**
+- **`namespace TacticalRPG.Input` YASAK.** Böyle bir namespace açılırsa `TacticalRPG.*` altındaki her
+  dosyada `Input.GetKeyDown(...)` ona çözülür, `UnityEngine.Input` gölgelenir ve proje derlenmez
+  (bir kez denendi: 9 dosya birden kırıldı). `Input/` klasörüne sınıf eklerken namespace
+  `TacticalRPG.Core` olmalı.
 - **Tek CS0246 tüm editor assembly'sini düşürür** → `TacticalRPG` menüsü komple kaybolur (`d44b780`).
   Menü yoksa önce Console'a bak.
 - **TAM KURULUM kullanıcı verisini KORUR:** `EssenceConfig`, `EssenceMap`, palet girişleri ve boyalı

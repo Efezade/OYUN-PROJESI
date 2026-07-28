@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
@@ -128,6 +128,10 @@ namespace TacticalRPG.Editor
             urpData.requiresDepthTexture = false;
 
             cameraGO.AddComponent<AudioListener>();
+
+            // Kamera KARAKTERI TAKIP EDER (harita 22x25'e buyudu, sabit kamera yetmiyordu).
+            // Hedef Faz 1'de oyuncu olusunca baglanir; aci/ortho ayarlarina dokunmaz.
+            cameraGO.AddComponent<CameraFollow>();
 
             // Işık
             GameObject lightGO = new GameObject("Directional Light");
@@ -332,6 +336,16 @@ namespace TacticalRPG.Editor
             playerSO.FindProperty("_startCoord").FindPropertyRelative("Q").intValue = 3;
             playerSO.FindProperty("_startCoord").FindPropertyRelative("R").intValue = 4;
             playerSO.ApplyModifiedProperties();
+
+            // Kamerayi oyuncuya bagla — karakter haritanin kenarina gidince ekrandan cikmasin.
+            var camFollow = FindComponentAnywhere<CameraFollow>();
+            if (camFollow != null)
+            {
+                var cfSO = new SerializedObject(camFollow);
+                cfSO.FindProperty("_target").objectReferenceValue = playerGO.transform;
+                cfSO.ApplyModifiedProperties();
+                camFollow.SnapToTarget();   // editorde de dogru cerceveyle gorunsun
+            }
 
             // Portal ışınlanma toz efekti (Endgame "toz olma") — modeli çocuklarından bulur.
             if (playerGO.GetComponent<TeleportDustEffect>() == null)
