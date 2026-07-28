@@ -1475,12 +1475,15 @@ namespace TacticalRPG.Editor
             CharacterClassData rangerData = AssetDatabase.LoadAssetAtPath<CharacterClassData>(
                 "Assets/Data/Characters/Ranger.asset");
 
+            // Bolum 1 ozleri TAS + DOGA (GAME_DESIGN §3; eski Ates/Su/Toprak gecersiz).
+            // Fiyatlama ilkesi (kullanici karari 2026-07-28): haritada tas 79 / doga 216 → DOGA ana
+            // yakit, TAS kit ve "kapi". TASLAK sayilar, playtest'le ayarlanacak.
             UnitRecipe savasciRecipe = MakeRecipe(
                 "Assets/Data/Recipes/SavasciRecipe.asset", "Savasci", warriorData,
-                new[] { new EssenceAmount(EssenceType.Ates, 2), new EssenceAmount(EssenceType.Toprak, 1) });
+                new[] { new EssenceAmount(EssenceType.Tas, 2), new EssenceAmount(EssenceType.Doga, 3) });
             UnitRecipe rangerRecipe = MakeRecipe(
                 "Assets/Data/Recipes/RangerRecipe.asset", "Ranger", rangerData,
-                new[] { new EssenceAmount(EssenceType.Su, 2), new EssenceAmount(EssenceType.Toprak, 1) });
+                new[] { new EssenceAmount(EssenceType.Tas, 1), new EssenceAmount(EssenceType.Doga, 4) });
 
             // ── 3) EssenceNodeManager (harita öz node'ları + topla) ───────────
             var oldEN = gameManagerGO.GetComponent<EssenceNodeManager>();

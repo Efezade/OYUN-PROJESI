@@ -16,6 +16,35 @@
 
 ---
 
+## 2026-07-28 — Tarifler + mağaza fiyatları taş/doğa'ya çevrildi (görev dışı, kullanıcı talimatı)
+
+**SORUN:** TASK-005 bölüm 1 özlerini taş+doğa yapmıştı, ama üretim tarifleri ve 5 mağaza öğesi hâlâ
+Ateş/Su/Toprak istiyordu → **oyun fiilen kırıktı**: bölüm 1'de birim üretilemiyor, alışveriş
+yapılamıyordu (başlangıç 4/4/4 stok bitince kazanma yolu yok). İki kez INBOX'ta bayraklandı,
+gelen kutusunda karşılık gelen bir görev açılmadı.
+
+**KARAR (kullanıcı, sorulunca):** "Taş değerli, doğa yakıt". **NEDEN:** GAME_DESIGN §3'teki
+erişilebilir arz taş 79 / doğa 216 (≈1:2.7) — doğayı akan para, taşı kıt "kapı" yapmak hem bu orana
+uyuyor hem de taşlık bölgelere gitmeyi anlamlı kılıyor.
+
+| | Taş | Doğa |
+|---|---|---|
+| Savaşçı | 2 | 3 |
+| Ranger | 1 | 4 |
+| Yel Ayağı / Kartal Gözü (pot) | — | 3 |
+| Zaman Kumu (pot) | 2 | — |
+| Sağlam Çizme / Kâhin Pusulası (kalıcı) | 4 | 3 |
+
+Hem kurulum kodunda hem de 7 asset dosyasında güncellendi (TAM KURULUM beklemeden çalışsın diye).
+
+**SAYILAR TASLAK.** Denge Sherlock'un alanı — bunlar "oyun çalışsın" diye konmuş, playtest'le
+ayarlanacak makul başlangıç değerleri. **Sherlock bunları GAME_DESIGN §2/§3'e canonical olarak
+yazmalı**, yoksa bir sonraki oturumda kaynak belirsiz kalır.
+
+**COMMIT:** (bu giriş)
+
+---
+
 ## 2026-07-28 — TASK-007: zaman baskısı + bölüm-kapsamlı kayıp/retry
 
 **KARAR:** Çöküş sistemi SIFIRDAN yazılmadı — `MapCollapseManager` zaten 1-gün-önceden işaretleme +

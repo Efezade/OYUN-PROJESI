@@ -41,29 +41,32 @@ namespace TacticalRPG.Editor
             EnsureFolder(ShopFolder);
             List<ShopItemSO> catalog = new()
             {
+                // Bolum 1 ozleri TAS + DOGA (GAME_DESIGN §3). Fiyatlama ilkesi (kullanici karari
+                // 2026-07-28): doga bol (216) → potlarin yakiti; tas kit (79) → kalici esyanin "kapisi".
+                // TASLAK sayilar, playtest'le ayarlanacak.
                 EnsureShopItem("YelAyagi",      "yel_ayagi",     "Yel Ayağı İksiri",
                     "Bir süre haritada daha hızlı yürürsün (x2 hız, 6 adım).",
-                    new[] { new EssenceAmount(EssenceType.Su, 3) },
+                    new[] { new EssenceAmount(EssenceType.Doga, 3) },
                     ShopEffectKind.MoveSpeed, 100, permanent: false, durationMoves: 6),
 
                 EnsureShopItem("KartalGozu",    "kartal_gozu",   "Kartal Gözü İksiri",
                     "Bir süre tek tıkla daha uzağa yürü (+2 menzil, 6 adım).",
-                    new[] { new EssenceAmount(EssenceType.Ates, 3) },
+                    new[] { new EssenceAmount(EssenceType.Doga, 3) },
                     ShopEffectKind.MoveRange, 2, permanent: false, durationMoves: 6),
 
                 EnsureShopItem("ZamanKumu",     "zaman_kumu",    "Zaman Kumu",
                     "Anında +5 AP kazan (bu dilim).",
-                    new[] { new EssenceAmount(EssenceType.Toprak, 4) },
+                    new[] { new EssenceAmount(EssenceType.Tas, 2) },
                     ShopEffectKind.BonusAPNow, 5, permanent: false, durationMoves: 0),
 
                 EnsureShopItem("SaglamCizme",   "saglam_cizme",  "Sağlam Çizmeler",
                     "KALICI: yürüme hızın kalıcı olarak +%25 artar.",
-                    new[] { new EssenceAmount(EssenceType.Su, 6), new EssenceAmount(EssenceType.Toprak, 4) },
+                    new[] { new EssenceAmount(EssenceType.Tas, 4), new EssenceAmount(EssenceType.Doga, 3) },
                     ShopEffectKind.MoveSpeed, 25, permanent: true, durationMoves: 0),
 
                 EnsureShopItem("KahinPusulasi", "kahin_pusulasi", "Kâhin Pusulası",
                     "KALICI: tek tık hareket menzilin kalıcı olarak +1 artar.",
-                    new[] { new EssenceAmount(EssenceType.Ates, 6), new EssenceAmount(EssenceType.Toprak, 4) },
+                    new[] { new EssenceAmount(EssenceType.Tas, 4), new EssenceAmount(EssenceType.Doga, 3) },
                     ShopEffectKind.MoveRange, 1, permanent: true, durationMoves: 0),
             };
 

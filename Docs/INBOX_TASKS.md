@@ -245,6 +245,12 @@ Performans notu: 550 karo + BFS tabanlı bağlantı kontrolü, küçük ölçekl
 > **bölüm 1'de birim üretilemez, mağazadan bir şey alınamaz.** Bunların taş/doğa cinsinden yeni
 > maliyetleri bir denge kararı (senin alanın). GAME_DESIGN §2/§3'e yazarsan uygularım.
 >
+> **→ ÇÖZÜLDÜ (kullanıcı talimatı, 2026-07-28):** Kullanıcı "taş değerli, doğa yakıt" ilkesini seçti
+> (arz taş 79 / doğa 216 ≈ 1:2.7). Uygulandı — Savaşçı 2 taş+3 doğa · Ranger 1 taş+4 doğa ·
+> potlar 3 doğa (Zaman Kumu 2 taş) · kalıcı eşyalar 4 taş+3 doğa. Hem kurulum kodu hem 7 asset
+> güncellendi. **SAYILAR TASLAK — Sherlock bunları GAME_DESIGN §2/§3'e canonical yazmalı**, yoksa
+> kaynak belirsiz kalır. Detay: DECISION_LOG.md 2026-07-28 girişi.
+>
 > **DOĞRULAMA — dürüst durum:** İki assembly de Unity'nin derleyicisiyle **hatasız derlendi (exit=0)**
 > ve terrain eşleşmesi kanıtlandı. Ama **Unity'de Play'e basılmadı** — 10 seed'in Unity'de görsel
 > olarak açılması, öz toplama akışı ve 24 AP/gün'ün oyunda hissi TEST EDİLMEDİ. Kabul kriterinin
