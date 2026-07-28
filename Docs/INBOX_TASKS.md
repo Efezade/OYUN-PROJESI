@@ -251,7 +251,7 @@ Performans notu: 550 karo + BFS tabanlı bağlantı kontrolü, küçük ölçekl
 > "Unity'de açılabiliyor" kısmını senin doğrulaman gerekiyor: **TAM KURULUM → Play.**
 > Detay: DECISION_LOG.md 2026-07-28 TASK-005 girişi.
 
-### [TASK-006] Zorunlu görev/zindan/encounter/market/kule node sistemi — status: awaiting_review
+### [TASK-006] Zorunlu görev/zindan/encounter/market/kule node sistemi — status: done
 Kaynak: aynı oturum, `Docs/Balance/tools/harita_map1_sim.py` (node değer/maliyet tabloları).
 Açıklama: TASK-005 BİTMEDEN başlanmaz (terrain altyapısı gerekli). "Ova" karoları üzerine:
 - **3× zorunlu harita-kurtarma görevi** — sabit konum, sis'ten BAĞIMSIZ hep görünür (haritada pin
@@ -314,7 +314,7 @@ Performans notu: yok.
 >    Elle boyanan `magaza` karosu **aynen çalışmaya devam ediyor** — iki yol da geçerli.
 >    Market düğümü TÜKENMEZ, tekrar tekrar girilebilir.
 
-### [TASK-007] Zaman baskısı — collapse/zorlaşma + bölüm-scope kayıp/retry — status: pending
+### [TASK-007] Zaman baskısı — collapse/zorlaşma + bölüm-scope kayıp/retry — status: awaiting_review
 Kaynak: aynı oturum. Açıklama: TASK-005/006'dan SONRA. Sayılar TASLAK — kullanıcı playtest'le
 ayarlayacak, ilk geçiş için aşağıdaki değerlerle başla:
 1. **Gün 10'dan itibaren:** zindan/encounter maliyeti kademeli artar (taslak: ×2 çarpan gün 10+).
@@ -332,3 +332,42 @@ Kabul kriteri: gün 14 sonrası ilerleme donuyor/bölüm kaybediliyor; retry far
 başlıyor; roster/Meta-Öz korunuyor; harcanmamış öz kayboluyor; silinecek karolar en az 1-2 gün
 önceden görsel uyarı veriyor.
 Performans notu: yok.
+
+> **AWAITING_REVIEW (Watson, 2026-07-28):** Dört maddenin hepsi yapıldı.
+>
+> **(1) Maliyet artışı:** Gün 10'dan itibaren zindan/encounter AP maliyeti **×2**
+> (`NodeConfig.asset` → `LateCostFromDay=10`, `LateCostMultiplier=2`). HUD'da "zindanlar pahalı (×2)"
+> uyarısı çıkıyor. Zorunlu görev/market/kule etkilenmiyor.
+>
+> **(2) Karo silme:** `CollapseConfig.asset` → başlangıç **gün 10**, gün başına **10 + her gün +1**,
+> tavan 20. Yani gün10=10, 11=11, 12=12, 13=13, 14=14 → **kümülatif tam 60** (taslakla birebir).
+> **Telegraph zaten vardı ve korundu:** karo bir gün ÖNCEDEN işaretlenir, kırmızı çerçeve + kalan-AP
+> etiketi + kızıl dalga + yıldırım ile açıklanır, ancak ERTESİ gün silinir. Sessiz silinme yok.
+> **Zorunlu görev karoları artık ASLA silinmiyor** (`MapCollapseManager.SetProtectedTiles`) — yoksa
+> bölüm bitirilemez hale gelebilirdi. Kule ve portal muafiyeti zaten vardı.
+>
+> **(3) Sert kesim:** Gün 14 bitince bölüm kaybediliyor. **Önemli düzeltme:** ilk yazdığımda AP'yi
+> dondurmuştum, ama bu hareketi engellemek yerine BEDAVA yapıyordu (AP harcanmıyor). Gerçek engel
+> `MapInputHandler`'a kondu: bölüm kaybedildiyse harita tıklamaları kilitleniyor, sadece
+> "YENİDEN BAŞLA" düğmesi çalışıyor.
+>
+> **(4) Kayıp kapsamı:** Üç yol da (süre doldu / Kam düştü / elle) **aynı kural** —
+> `ChapterRunManager`. Yeniden başlatınca: ham öz (taş+doğa) sıfırlanır · gün sayacı 1'e döner ·
+> harita **10-seed havuzundan farklı bir seed** ile yeniden üretilir · düğümler/sis/çöküş sıfırlanır.
+> **Roster'a hiç dokunulmuyor** (`PartyManager` bu akışta hiç çağrılmıyor). Kayıp ekranı neyin
+> korunduğunu/kaybolduğunu AÇIKÇA yazıyor.
+>
+> **⚠ BİLMEN GEREKENLER:**
+> 1. **Meta-Öz kodda HİÇ YOK** — projede `Meta` diye bir şey aramadım bulamadım, hiç yazılmamış.
+>    "Meta-Öz korunuyor" kriteri bu yüzden boşlukta doğru: korunacak bir şey yok. Meta-Öz gerçekten
+>    istenen bir sistemse ayrı bir görev gerekiyor.
+> 2. **Uyarı süresi tam 1 gün** (kriter "en az 1-2 gün" diyordu). Mevcut sistemin tasarımı bu:
+>    işaretle → ertesi gün sil. 2 güne çıkarmak istersen söyle, `MapCollapseManager`'da işaretleme
+>    ile silme arasına bir gün daha koyarım.
+> 3. Sayılar TASLAK olduğu için hepsi `CollapseConfig.asset` / `NodeConfig.asset`'ten ayarlanabilir,
+>    TAM KURULUM ezmez.
+>
+> **DOĞRULAMA:** İki assembly de hatasız derlendi (exit=0). **Unity'de Play'e basılmadı** — gün 14'e
+> kadar oynayıp kesimi, çatlama uyarısını ve retry'ı GÖRMEDİM. Test için `CollapseConfig`'te
+> `_hardCutDay`'i geçici 2-3 yapıp hızlıca deneyebilirsin.
+> Detay: DECISION_LOG.md 2026-07-28 TASK-007 girişi.

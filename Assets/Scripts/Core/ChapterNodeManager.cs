@@ -50,6 +50,8 @@ namespace TacticalRPG.Core
         [Tooltip("Market düğümü BU dükkânı açar (kullanıcı kararı 2026-07-28: market düğümü ile " +
                  "boyalı 'magaza' karosu aynı dükkândır).")]
         [SerializeField] private StoreManager         _store;
+        [Tooltip("Zorunlu görev karolarının çöküşten muaf tutulması için (TASK-007).")]
+        [SerializeField] private MapCollapseManager   _collapse;
 
         [Header("İşaretler (whitebox — gerçek görsel gelince prefab atanır)")]
         [Tooltip("Zorunlu görev işareti bu yüksekliğe konur — sis bulutunun ÜSTÜNDE kalsın diye " +
@@ -147,6 +149,7 @@ namespace TacticalRPG.Core
 
             BuildMarkers();
             PublishMarketNodes();
+            PublishProtectedTiles();
             OnNodesChanged?.Invoke();
             Debug.Log($"[Node] Yerlesim tamam — zorunlu {_config.MandatoryCount}, zindan {_config.ZindanCount}, " +
                       $"encounter {_config.EncounterCount}, market {_config.MarketCount}, " +
@@ -195,11 +198,26 @@ namespace TacticalRPG.Core
         /// <summary>Market yalnız GÜNDÜZ dilimlerinde açık (gece mistik marketi bu bölümde YOK).</summary>
         public bool IsMarketOpen() => _ap == null || !_ap.IsNight;
 
+        /// <summary>Düğümün ŞU ANKİ AP maliyeti. Gün <see cref="NodeConfigSO.LateCostFromDay"/>'den
+        /// itibaren zindan/encounter maliyeti çarpanla artar (TASK-007: zaman baskısı).</summary>
+        public int EffectiveAPCost(MapNode n)
+        {
+            if (n == null) return 0;
+            bool risky = n.Type == MapNodeType.Zindan || n.Type == MapNodeType.Encounter;
+            if (!risky || _config == null || _ap == null) return n.APCost;
+            return _ap.CurrentDay >= _config.LateCostFromDay
+                ? n.APCost * _config.LateCostMultiplier
+                : n.APCost;
+        }
+
+        /// <summary>Maliyet artışı yürürlükte mi? (HUD "pahalılaştı" uyarısı için)</summary>
+        public bool LateCostActive => _config != null && _ap != null && _ap.CurrentDay >= _config.LateCostFromDay;
+
         public bool CanEnter(MapNode n)
         {
             if (n == null || n.Completed) return false;
             if (n.Type == MapNodeType.Market) return IsMarketOpen();
-            return _ap == null || _ap.CurrentAP >= n.APCost;
+            return _ap == null || _ap.CurrentAP >= EffectiveAPCost(n);
         }
 
         // ── Eylemler ─────────────────────────────────────────────────────────
@@ -210,7 +228,8 @@ namespace TacticalRPG.Core
         public bool Enter(MapNode n)
         {
             if (!CanEnter(n)) return false;
-            if (_ap != null && n.APCost > 0) _ap.SpendAP(n.APCost);
+            int cost = EffectiveAPCost(n);
+            if (_ap != null && cost > 0) _ap.SpendAP(cost);
 
             switch (n.Type)
             {
@@ -255,6 +274,17 @@ namespace TacticalRPG.Core
             foreach (var n in _nodes)
                 if (n.Type == MapNodeType.Market) coords.Add(n.Coord);
             _store.SetNodeStores(coords, IsMarketOpen());
+        }
+
+        /// <summary>ZORUNLU görev karolarını çöküşten muaf tut (TASK-007) — silinirlerse bölüm
+        /// bitirilemez hale gelirdi.</summary>
+        private void PublishProtectedTiles()
+        {
+            if (_collapse == null) return;
+            var coords = new List<HexCoordinate>();
+            foreach (var n in _nodes)
+                if (n.Type == MapNodeType.Mandatory) coords.Add(n.Coord);
+            _collapse.SetProtectedTiles(coords);
         }
 
         /// <summary>Zaman ilerleyince (gündüz↔gece) market düğümlerinin açıklığı güncellenir.</summary>

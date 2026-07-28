@@ -25,6 +25,12 @@ namespace TacticalRPG.Core
         [Tooltip("Bir günde silinebilecek maksimum karo sayısı")]
         [SerializeField] private int _maxRemovalPerDay = 10;
 
+        [Header("Sert Kesim (TASK-007)")]
+        [Tooltip("Bölümün SON oynanabilir günü. Bu gün bittiğinde harita ilerlenemez hale gelir ve " +
+                 "BÖLÜM KAYBEDİLİR (tüm run değil — sadece o harita baştan başlar). GAME_DESIGN §3: gün 14.")]
+        [SerializeField] private int _hardCutDay = 14;
+
+        public int HardCutDay            => _hardCutDay;
         public int CollapseStartDay      => _collapseStartDay;
         public int TilesRemovedPerDay    => _tilesRemovedPerDay;
         public int RemovalAcceleration   => _removalAcceleration;

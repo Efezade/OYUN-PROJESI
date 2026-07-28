@@ -48,6 +48,18 @@ namespace TacticalRPG.Core
         [SerializeField] private float _shakeDuration  = 0.7f;
         [SerializeField] private float _shakeMagnitude = 0.12f;
 
+        // ── Çöküşten MUAF karolar (TASK-007) ────────────────────────────────
+        // Zorunlu görev karoları buraya girer (ChapterNodeManager bildirir): bunlar silinirse bölüm
+        // bitirilemez hale gelirdi. Kule ve portal muafiyeti ayrıca PickDoomed içinde.
+        private readonly HashSet<HexCoordinate> _protectedTiles = new();
+
+        /// <summary>Çöküşten muaf karoları bildir (zorunlu görevler). Her yeni haritada yenilenir.</summary>
+        public void SetProtectedTiles(IEnumerable<HexCoordinate> coords)
+        {
+            _protectedTiles.Clear();
+            if (coords != null) foreach (var c in coords) _protectedTiles.Add(c);
+        }
+
         public int  TotalRemovedTiles { get; private set; }
         public bool IsCollapseActive  { get; private set; }
         public event Action<int, int> OnTileCollapsed;
@@ -219,6 +231,8 @@ namespace TacticalRPG.Core
                 if (s.doomed.Contains(cell.Coordinate))      continue;
                 if (s.collapsed.Contains(cell.Coordinate))   continue;
                 if (alsoExclude != null && alsoExclude.Contains(cell.Coordinate)) continue;
+                // ZORUNLU GÖREV karoları asla silinmez (TASK-007) — bölüm bitirilemez hale gelmesin.
+                if (_protectedTiles.Contains(cell.Coordinate)) continue;
                 // Portal karoları kıyametten MUAF — adalar arası tek geçiş yolu yok olmasın.
                 string id = tileMap != null ? tileMap.GetTileId(cell.Coordinate) : null;
                 if (id != null && id.StartsWith("portal", StringComparison.Ordinal)) continue;

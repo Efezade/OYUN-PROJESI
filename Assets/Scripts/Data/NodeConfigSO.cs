@@ -59,6 +59,15 @@ namespace TacticalRPG.Data
         [Header("Ana boss (konumdan bağımsız)")]
         [SerializeField, Min(0)] private int _bossAP = 5;
 
+        [Header("Zaman baskısı (TASK-007)")]
+        [Tooltip("Bu GÜNDEN İTİBAREN zindan/encounter AP maliyeti çarpanla artar (GAME_DESIGN §3: gün 10).")]
+        [SerializeField, Min(1)] private int _lateCostFromDay = 10;
+        [Tooltip("Geç oyunda zindan/encounter maliyet çarpanı (TASLAK: ×2).")]
+        [SerializeField, Min(1)] private int _lateCostMultiplier = 2;
+
+        public int LateCostFromDay    => _lateCostFromDay;
+        public int LateCostMultiplier => _lateCostMultiplier;
+
         public int MandatoryCount => _mandatoryCount;
         public int MandatoryValue => _mandatoryValue;
         public int MandatoryAP    => _mandatoryAP;

@@ -92,6 +92,19 @@ namespace TacticalRPG.Core
         /// </summary>
         public void SetFrozen(bool frozen) => IsFrozen = frozen;
 
+        /// <summary>Zaman motorunu 1. günün başına sarar — BÖLÜM yeniden başlarken (TASK-007).
+        /// Tüm run'ı sıfırlamaz; yalnız o haritanın gün/dilim/AP sayacını sıfırlar.</summary>
+        public void ResetTime()
+        {
+            CurrentDay  = 1;
+            CurrentSlot = 0;
+            TotalMoves  = 0;
+            IsFrozen    = false;
+            CurrentAP   = MaxAP;
+            OnAPChanged?.Invoke(CurrentAP, MaxAP);
+            OnTimeAdvanced?.Invoke(CurrentDay, CurrentSlot, GetCurrentSlotName());
+        }
+
         /// <summary>Savaşa giriş bedelini (varsayılan 3 AP) harcar. GameStateManager çağırır.</summary>
         public void SpendCombatEntryCost() => SpendAP(CombatAPCost, force: true);
 

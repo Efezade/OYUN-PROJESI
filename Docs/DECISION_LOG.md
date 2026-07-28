@@ -16,6 +16,34 @@
 
 ---
 
+## 2026-07-28 — TASK-007: zaman baskısı + bölüm-kapsamlı kayıp/retry
+
+**KARAR:** Çöküş sistemi SIFIRDAN yazılmadı — `MapCollapseManager` zaten 1-gün-önceden işaretleme +
+kırmızı çerçeve + dalga + yıldırım telegraph'ına sahipti; yalnız **yeniden ayarlandı** (gün 10 başlar,
+10 + günde +1 → gün 14'te kümülatif tam 60) ve **zorunlu görev karoları muaf** edildi
+(`SetProtectedTiles`). **NEDEN:** çalışan ve cilalı bir sistemi yeniden yazmak saf risk; görev
+"gün 10'dan itibaren" diyordu, mekanik değil parametre farkıydı.
+
+**KARAR:** Bölüm kaybı tek bir yerde toplandı (`ChapterRunManager`) — süre dolması, Kam'ın ölümü ve
+elle çağrı AYNI yola girer. **NEDEN:** görev metni "Kam ölümü DAHİL hepsi aynı kural" diyor; üç ayrı
+yerde ayrı ceza mantığı olsaydı ilerideki değişiklikte biri unutulurdu.
+
+**DÜZELTME (kendi hatam, uygulamadan önce yakalandı):** Sert kesimi önce `ActionPointManager.SetFrozen(true)`
+ile yapmıştım — ama dondurulan motor AP HARCAMAZ, yani hareketi engellemek yerine **bedava** yapıyordu,
+istenenin tam tersi. Gerçek engel `MapInputHandler`'a kondu: `ChapterLost` iken harita tıklaması işlenmez.
+**DERS:** "dondur" demek her sistemde "durdur" demek değil — AP motoru için donmak "sayacı işletme"
+demekti, "oyuncuyu durdur" değil.
+
+**COMMIT:** (bu giriş)
+
+**AÇIK — Sherlock'a:**
+1. **Meta-Öz kodda HİÇ YOK** (projede hiç yazılmamış). "Meta-Öz korunuyor" kriteri bu yüzden boşlukta
+   doğru — korunacak bir şey yok. Gerçekten istenen bir sistemse ayrı görev gerekiyor.
+2. Uyarı süresi **tam 1 gün** (kriter "1-2 gün" diyordu). Mevcut tasarım işaretle→ertesi gün sil.
+   2 güne çıkarmak isteniyorsa işaretleme ile silme arasına bir gün daha eklenmeli.
+
+---
+
 ## 2026-07-28 — TASK-006: harita düğümleri (zorunlu görev / zindan / encounter / market / kule / boss)
 
 **KARAR:** Düğümler ayrı bir katman (`Core/ChapterNodeManager` + `Data/NodeConfigSO` + `UI/ChapterNodeHUD`),

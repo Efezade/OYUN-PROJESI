@@ -31,6 +31,9 @@ namespace TacticalRPG.Core
         [Tooltip("Opsiyonel — atanmışsa portal ışınlaması sürerken (IsBusy) tıklama yok sayılır + " +
                  "ada değişince yol önizlemesi temizlenir.")]
         [SerializeField] private WorldGridManager _worldGrid;
+
+        [Tooltip("Opsiyonel — atanmışsa bölüm kaybedilince (sert kesim) harita tıklamaları kilitlenir.")]
+        [SerializeField] private ChapterRunManager _run;
         [Tooltip("Opsiyonel — atanmışsa SAVAŞ SİSİ kalkmış adada (kule ile) menzil sınırı kalkar.")]
         [SerializeField] private FogOfWarManager _fogManager;
         [Tooltip("Opsiyonel — atanmışsa tıklanan yol önce çizgiyle gösterilir (ÇİFT TIK = yürü).")]
@@ -117,6 +120,9 @@ namespace TacticalRPG.Core
             if (_stateManager != null && _stateManager.State != GameState.Overworld) return;
             if (_player.IsMoving) return;
             if (_worldGrid != null && _worldGrid.IsBusy) return;   // portal ışınlaması sürerken giriş yok
+            // SERT KESİM (TASK-007): bölüm kaybedildiyse harita ARTIK İLERLENEMEZ — yalnız
+            // "Yeniden Başla" düğmesi çalışır (ChapterRunHUD).
+            if (_run != null && _run.ChapterLost) return;
 
             // Boşluğa tıklama → önizleme varsa iptal. (Adalar arası geçiş yalnız PORTAL karosuyla
             // olur — TeleportManager oyuncu portala basınca devreye girer.)

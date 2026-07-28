@@ -37,6 +37,16 @@ namespace TacticalRPG.Core
             OnChanged?.Invoke();
         }
 
+        /// <summary>Belirtilen türlerdeki HAM özü sıfırlar — bölüm kaybedilince harcanmamış öz
+        /// kaybolur (TASK-007). Roster ve kalıcı ilerleme bundan ETKİLENMEZ: harcanan öz zaten
+        /// kalıcı birime dönüştüğü için "banka" mekaniği gerekmiyor.</summary>
+        public void ClearTypes(params EssenceType[] types)
+        {
+            if (types == null || types.Length == 0) return;
+            foreach (var t in types) _amounts[(int)t] = 0;
+            OnChanged?.Invoke();
+        }
+
         public void Gain(EssenceType t, int amount)
         {
             if (amount <= 0) return;

@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e57f93406df673940ae40082ccd95429, type: 3}
   m_Name: CollapseConfig
   m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Core.CollapseConfig
-  _collapseStartDay: 3
-  _tilesRemovedPerDay: 2
+  _collapseStartDay: 10
+  _tilesRemovedPerDay: 10
   _removalAcceleration: 1
-  _maxRemovalPerDay: 10
+  _maxRemovalPerDay: 20
+  _hardCutDay: 14

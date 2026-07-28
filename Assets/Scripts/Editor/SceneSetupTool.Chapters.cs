@@ -169,6 +169,45 @@ namespace TacticalRPG.Editor
             nSO.FindProperty("_store").objectReferenceValue    = FindComponentAnywhere<StoreManager>();
             nSO.ApplyModifiedProperties();
 
+            // ── TASK-007: zaman baskisi + bolum kaybi/retry ──────────────────
+            var collapseMgr = host.GetComponent<MapCollapseManager>();
+            nSO = new SerializedObject(nodes);
+            nSO.FindProperty("_collapse").objectReferenceValue = collapseMgr;
+            nSO.ApplyModifiedProperties();
+
+            CollapseConfig collapseCfg =
+                AssetDatabase.LoadAssetAtPath<CollapseConfig>("Assets/Data/Config/CollapseConfig.asset");
+
+            var run = host.GetComponent<ChapterRunManager>();
+            if (run == null) run = host.AddComponent<ChapterRunManager>();
+            var rSO = new SerializedObject(run);
+            rSO.FindProperty("_ap").objectReferenceValue             = FindComponentAnywhere<ActionPointManager>();
+            rSO.FindProperty("_collapseConfig").objectReferenceValue = collapseCfg;
+            rSO.FindProperty("_map").objectReferenceValue            = gen;
+            rSO.FindProperty("_wallet").objectReferenceValue         = FindComponentAnywhere<EssenceWallet>();
+            rSO.FindProperty("_turns").objectReferenceValue          = FindComponentAnywhere<TurnManager>();
+            rSO.FindProperty("_state").objectReferenceValue          = state;
+            rSO.ApplyModifiedProperties();
+
+            // Sert kesimde harita tiklamalarini kilitle.
+            var mapInput = FindComponentAnywhere<MapInputHandler>();
+            if (mapInput != null)
+            {
+                var miSO = new SerializedObject(mapInput);
+                var runProp = miSO.FindProperty("_run");
+                if (runProp != null) { runProp.objectReferenceValue = run; miSO.ApplyModifiedProperties(); }
+            }
+
+            var runHud = host.GetComponent<TacticalRPG.UI.ChapterRunHUD>();
+            if (runHud == null) runHud = host.AddComponent<TacticalRPG.UI.ChapterRunHUD>();
+            var rhSO = new SerializedObject(runHud);
+            rhSO.FindProperty("_run").objectReferenceValue            = run;
+            rhSO.FindProperty("_nodes").objectReferenceValue          = nodes;
+            rhSO.FindProperty("_ap").objectReferenceValue             = FindComponentAnywhere<ActionPointManager>();
+            rhSO.FindProperty("_collapseConfig").objectReferenceValue = collapseCfg;
+            rhSO.FindProperty("_state").objectReferenceValue          = state;
+            rhSO.ApplyModifiedProperties();
+
             var nodeHud = host.GetComponent<TacticalRPG.UI.ChapterNodeHUD>();
             if (nodeHud == null) nodeHud = host.AddComponent<TacticalRPG.UI.ChapterNodeHUD>();
             var nhSO = new SerializedObject(nodeHud);
