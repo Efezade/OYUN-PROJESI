@@ -53,42 +53,6 @@ private GameObject player = GameObject.Find("Player");
 
 ---
 
-## 4. Klasör Yapısı
-
-```
-Assets/
-├── Scripts/
-│   ├── Core/           ← GameManager, TurnManager, EventBus
-│   ├── Grid/           ← HexGrid, HexCell, PathFinder
-│   ├── Units/          ← Unit, UnitStats, UnitAnimator
-│   ├── Combat/         ← CombatSystem, AbilitySystem, DamageCalculator
-│   ├── AI/             ← EnemyAI, BehaviourTree
-│   ├── UI/             ← HUD, TurnUI, UnitInfoPanel
-│   ├── Input/          ← InputManager, CameraController
-│   └── Data/           ← ScriptableObject tanım sınıfları
-├── Data/               ← ScriptableObject asset dosyaları (.asset)
-│   ├── Units/
-│   ├── Abilities/
-│   └── Events/
-├── Prefabs/
-│   ├── Units/
-│   ├── Grid/
-│   └── UI/
-├── Art/
-│   ├── Textures/
-│   ├── Materials/
-│   └── Models/
-├── Audio/
-│   ├── Music/
-│   └── SFX/
-└── Scenes/
-    ├── MainMenu.unity
-    ├── GameScene.unity
-    └── _Test.unity
-```
-
----
-
 ## 5. Adlandırma Kuralları
 
 | Tür | Kural | Örnek |
@@ -113,14 +77,6 @@ Assets/
 - Nesne havuzu (Object Pool) — mermi, VFX, UI elementi için `Instantiate`/`Destroy` yerine pool kullanılır
 - String karşılaştırması için `tag ==` değil, `CompareTag()` kullanılır
 - Boş `MonoBehaviour` metodları (`void Update() {}`) silinir
-
----
-
-## 7. Analiz Araçları
-
-- **UnityEngineAnalyzer** — Unity'ye özgü anti-pattern tespiti; `UnityEngineAnalyzer.CLI.exe Assets/` ile çalıştırılır
-- **dotnet format** — kod stili tutarlılığı; `dotnet format OYUN.sln` ile çalıştırılır
-- **MCP Sunucusu:** `CoplayDev/unity-mcp` — Unity Editor entegrasyonu (Roslyn validasyon, sahne yönetimi)
 
 ---
 

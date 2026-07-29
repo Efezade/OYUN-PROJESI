@@ -2,8 +2,8 @@ using UnityEngine;
 
 // DİKKAT: namespace `TacticalRPG.Input` OLMAMALI. Öyle olursa `TacticalRPG.*` altındaki her dosyada
 // `Input.GetKeyDown(...)` bu namespace'e çözülür ve `UnityEngine.Input` gölgelenir → proje derlenmez.
-// (Bir kez denendi, 9 dosya birden kırıldı.) Dosya CLAUDE.md §4'e göre Input/ klasöründe duruyor,
-// ama namespace projedeki diğer sahne bileşenleriyle aynı: TacticalRPG.Core (bkz MapInputHandler).
+// (Bir kez denendi, 9 dosya birden kırıldı.) Dosya Input/ klasöründe duruyor, ama namespace
+// projedeki diğer sahne bileşenleriyle aynı: TacticalRPG.Core (bkz MapInputHandler).
 namespace TacticalRPG.Core
 {
     /// <summary>

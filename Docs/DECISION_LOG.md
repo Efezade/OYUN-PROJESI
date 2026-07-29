@@ -29,7 +29,7 @@ GameObject'i gizlendiği için hedef pasifken kamera olduğu yerde durur.
 **TUZAK (bu bölümü okumadan `Input/` altına sınıf ekleme):** Sınıfı önce `namespace TacticalRPG.Input`
 içine koydum → `TacticalRPG.*` altındaki HER dosyada `Input.GetKeyDown(...)` bu namespace'e çözüldü,
 `UnityEngine.Input` gölgelendi ve **9 dosya birden derlenmedi** (AbilityCaster, MapInputHandler,
-MenuNavigator, MinimapHUD…). Çözüm: dosya `Input/` klasöründe kalsın (CLAUDE.md §4), ama namespace
+MenuNavigator, MinimapHUD…). Çözüm: dosya `Input/` klasöründe kalsın, ama namespace
 `TacticalRPG.Core` olsun — projedeki diğer sahne bileşenleriyle aynı (bkz `MapInputHandler`).
 
 **COMMIT:** (bu giriş)
