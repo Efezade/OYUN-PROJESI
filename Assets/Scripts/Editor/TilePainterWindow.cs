@@ -28,6 +28,7 @@ namespace TacticalRPG.Editor
         private HexCoordinate _hoveredCoord;
 
         private Vector2 _scroll;
+        private string  _tileFilter = "";   // palet araması (60+ karo arasında karo bulmak için)
         private Vector2 _windowScroll;   // tüm pencere kaydırması (yüz seçici içeriği aşağı itince kontroller erişilebilsin)
 
         // Klasörden karo ekleme: taranacak klasör (oturumlar arası EditorPrefs'te hatırlanır).
@@ -249,12 +250,29 @@ namespace TacticalRPG.Editor
                 return;
             }
 
-            _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.Height(180));
+            // Palet 60+ karoya çıktı (prosedürel terrain + düğüm karoları) → arama + daha uzun liste,
+            // yoksa aranan karoyu bulmak için sürekli kaydırmak gerekiyor.
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("Ara", GUILayout.Width(28f));
+                _tileFilter = EditorGUILayout.TextField(_tileFilter);
+                if (GUILayout.Button("Temizle", GUILayout.Width(64f))) { _tileFilter = ""; GUI.FocusControl(null); }
+            }
+
+            int shown = 0;
+            _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.Height(320));
 
             for (int i = 0; i < _palette.tiles.Count; i++)
             {
                 var  entry      = _palette.tiles[i];
                 bool isSelected = i == _selectedIndex;
+
+                if (!string.IsNullOrEmpty(_tileFilter) &&
+                    entry.id.IndexOf(_tileFilter, System.StringComparison.OrdinalIgnoreCase) < 0 &&
+                    (entry.displayName == null ||
+                     entry.displayName.IndexOf(_tileFilter, System.StringComparison.OrdinalIgnoreCase) < 0))
+                    continue;
+                shown++;
 
                 Rect r = EditorGUILayout.GetControlRect(false, 30);
 
@@ -289,6 +307,11 @@ namespace TacticalRPG.Editor
             }
 
             EditorGUILayout.EndScrollView();
+            EditorGUILayout.LabelField(
+                string.IsNullOrEmpty(_tileFilter)
+                    ? $"Toplam {_palette.tiles.Count} karo"
+                    : $"{shown} / {_palette.tiles.Count} karo (filtre: \"{_tileFilter}\")",
+                EditorStyles.miniLabel);
         }
 
         private void DrawControls()

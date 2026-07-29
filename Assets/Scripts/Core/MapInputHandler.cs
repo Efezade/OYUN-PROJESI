@@ -48,6 +48,11 @@ namespace TacticalRPG.Core
                  "kaldırılmışsa (FogOfWarManager.IsFullyRevealed) bu sınır UYGULANMAZ — serbest yürüyüş.")]
         [SerializeField] private int _maxMoveRange = 2;
 
+        [Tooltip("SİSİ AÇILMIŞ karoya tıklarken mesafe sınırı UYGULANMASIN mı? Açıkken keşfettiğin " +
+                 "her yere tek tıkla gidebilirsin; sınır yalnız keşfedilmemiş karanlığa girerken " +
+                 "geçerli olur (kullanıcı isteği 2026-07-29).")]
+        [SerializeField] private bool _freeMoveOnExplored = true;
+
         private HexPathfinder _pathfinder;
 
         // İki aşamalı hareket (XCOM/Desperados): 1. tık = yolu göster, 2. tık (aynı karo) = yürü.
@@ -167,8 +172,12 @@ namespace TacticalRPG.Core
             List<HexCell> found = _pathfinder.FindPath(start, target, _gridManager);
             if (found == null || found.Count < 2) { ClearPreview(); return; }
 
-            // Menzil kapısı yalnız SAVAŞ SİSİ VARKEN; sis kalkmışsa EffectiveMoveRange sınırsız.
-            bool reachable = found.Count - 1 <= EffectiveMoveRange;
+            // Menzil kapısı yalnız SİSİN İÇİNE giderken uygulanır. KEŞFEDİLMİŞ (sisi açılmış) bir
+            // karoya tıklanıyorsa mesafe SINIRSIZ — "sis olmayan yere istediğin kadar git"
+            // (kullanıcı isteği 2026-07-29). Sis kalıcı açıldığı için bu, gezdiğin/kule ile açtığın
+            // her yere serbest yürüyüş demek; keşfedilmemiş karanlığa ise hâlâ 2 karo.
+            bool targetExplored = _freeMoveOnExplored && _fogManager != null && _fogManager.IsKnown(targetCoord);
+            bool reachable      = targetExplored || found.Count - 1 <= EffectiveMoveRange;
 
             _pendingCoord = targetCoord;
             _pendingPath  = reachable ? found : null;

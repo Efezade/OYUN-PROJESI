@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEditor;
+using TacticalRPG.Core;
 using TacticalRPG.Data;
 using TacticalRPG.Grid;
 
@@ -53,6 +54,10 @@ namespace TacticalRPG.Editor
             GameObject rocky2 = EnsureRockyTile("Tile_bol_taslik_ova", 5, 0.28f, seed: 22);
             GameObject dense  = EnsureConiferTile("Tile_sik_orman",    5, seed: 33);
             GameObject mount  = EnsureMountainTile("Tile_dag");
+            GameObject cave   = EnsureCaveTile("Tile_magara");
+            GameObject camp   = EnsureCampTile("Tile_kamp");
+            GameObject quest  = EnsureQuestTile("Tile_gorev_alani");
+            GameObject market = EnsureMarketTile("Tile_han");
 
             // ── 2) id → prefab eslemesi ──────────────────────────────────────
             // Yurunur karolarda yuzey yuksekligi ELLE TileHeight: birim karonun USTUNDE durur,
@@ -69,6 +74,12 @@ namespace TacticalRPG.Editor
                 (TerrainGenerator.DagId,              mount,                HexMetrics.TileHeight),
                 (TerrainGenerator.GolId,              Load("Tile_su"),      0f),
                 (TerrainGenerator.NehirId,            Load("Tile_su"),      0f),
+
+                // Dugum karolari — her biri ADINA UYGUN model (kullanici istegi 2026-07-29):
+                (ChapterNodeManager.DungeonTileId,    cave,   HexMetrics.TileHeight),  // magara girisi
+                (ChapterNodeManager.EncounterTileId,  camp,   HexMetrics.TileHeight),  // baskin kampi
+                (ChapterNodeManager.MandatoryTileId,  quest,  HexMetrics.TileHeight),  // dikilitas + sancak
+                (ChapterNodeManager.MarketTileId,     market, HexMetrics.TileHeight),  // ticaret hani
             };
 
             var so    = new SerializedObject(palette);
@@ -85,7 +96,11 @@ namespace TacticalRPG.Editor
                     if (e.FindPropertyRelative("id").stringValue != id) continue;
 
                     SerializedProperty p = e.FindPropertyRelative("prefab");
-                    if (!force && p.objectReferenceValue != null) break;   // kullanicinin modeli EZILMEZ
+                    // ISTISNA: "magaza" karosunda eskiden MANTAR modeli vardi (otomatik atanmisti,
+                    // kullanici secimi degil). Kullanici 2026-07-29'da dukkanda tezgah/han istedi →
+                    // bu giris EZILIR. Digerlerinde dolu giris korunur.
+                    bool overwrite = force || id == ChapterNodeManager.MarketTileId;
+                    if (!overwrite && p.objectReferenceValue != null) break;
 
                     p.objectReferenceValue = prefab;
                     e.FindPropertyRelative("surfaceHeightOverride").floatValue = surface;
@@ -222,6 +237,120 @@ namespace TacticalRPG.Editor
                     new Vector3(0.70f, 0.62f, 0.70f), rockMat);
             AddCone(go.transform, cone, new Vector3(0.48f, HexMetrics.TileHeight, -0.30f),
                     new Vector3(0.58f, 0.50f, 0.58f), rockMat);
+            return SaveTile(go, name);
+        }
+
+        /// <summary>Mağara (zindan girişi): iki yan kaya + üstte kemer bloğu + KARANLIK ağız.</summary>
+        private static GameObject EnsureCaveTile(string name)
+        {
+            GameObject existing = Load(name);
+            if (existing != null) return existing;
+
+            GameObject go = NewTileBase(name);
+            if (go == null) return null;
+            Material rock = EnsureMaterial("Terrain_Rock",     new Color(0.56f, 0.54f, 0.50f));
+            Material dark = EnsureMaterial("Terrain_CaveDark", new Color(0.05f, 0.05f, 0.07f));
+            float y = HexMetrics.TileHeight;
+
+            // Yan kayalar + kemer (kaba bir giriş silueti)
+            AddDecor(go.transform, PrimitiveType.Cube, new Vector3(-0.36f, y + 0.30f, 0.10f),
+                new Vector3(0.30f, 0.60f, 0.42f), Quaternion.Euler(0f, 12f, -6f), rock);
+            AddDecor(go.transform, PrimitiveType.Cube, new Vector3(0.36f, y + 0.30f, 0.10f),
+                new Vector3(0.30f, 0.60f, 0.42f), Quaternion.Euler(0f, -12f, 6f), rock);
+            AddDecor(go.transform, PrimitiveType.Cube, new Vector3(0f, y + 0.62f, 0.10f),
+                new Vector3(0.95f, 0.26f, 0.44f), Quaternion.identity, rock);
+            // Arkada tepe kütlesi (mağara bir yamaca oyulmuş hissi)
+            AddDecor(go.transform, PrimitiveType.Sphere, new Vector3(0f, y + 0.18f, -0.42f),
+                new Vector3(1.25f, 0.95f, 0.95f), Quaternion.identity, rock);
+            // KARANLIK AĞIZ — içeri çekik koyu kütle
+            AddDecor(go.transform, PrimitiveType.Cube, new Vector3(0f, y + 0.26f, -0.02f),
+                new Vector3(0.52f, 0.52f, 0.30f), Quaternion.identity, dark);
+
+            return SaveTile(go, name);
+        }
+
+        /// <summary>Kamp (karşılaşma): koni çadır + kamp ateşi (kütükler + kor).</summary>
+        private static GameObject EnsureCampTile(string name)
+        {
+            GameObject existing = Load(name);
+            if (existing != null) return existing;
+
+            GameObject go = NewTileBase(name);
+            if (go == null) return null;
+            Material cloth = EnsureMaterial("Terrain_Tent",  new Color(0.72f, 0.62f, 0.44f));
+            Material bark  = EnsureMaterial("Terrain_Bark",  new Color(0.30f, 0.21f, 0.13f));
+            Material ember = EnsureMaterial("Terrain_Ember", new Color(0.95f, 0.45f, 0.12f));
+            Mesh cone = EnsureConeMesh();
+            float y = HexMetrics.TileHeight;
+
+            AddCone(go.transform, cone, new Vector3(-0.28f, y, -0.10f), new Vector3(0.80f, 0.65f, 0.80f), cloth);
+
+            // Kamp ateşi: çapraz iki kütük + ortada kor
+            AddDecor(go.transform, PrimitiveType.Cylinder, new Vector3(0.35f, y + 0.05f, 0.20f),
+                new Vector3(0.06f, 0.20f, 0.06f), Quaternion.Euler(0f, 30f, 78f), bark);
+            AddDecor(go.transform, PrimitiveType.Cylinder, new Vector3(0.35f, y + 0.05f, 0.20f),
+                new Vector3(0.06f, 0.20f, 0.06f), Quaternion.Euler(0f, -35f, 78f), bark);
+            AddDecor(go.transform, PrimitiveType.Sphere, new Vector3(0.35f, y + 0.09f, 0.20f),
+                new Vector3(0.14f, 0.10f, 0.14f), Quaternion.identity, ember);
+
+            return SaveTile(go, name);
+        }
+
+        /// <summary>Görev alanı: dikilitaş + sancak (uzaktan seçilsin diye altın renkli).</summary>
+        private static GameObject EnsureQuestTile(string name)
+        {
+            GameObject existing = Load(name);
+            if (existing != null) return existing;
+
+            GameObject go = NewTileBase(name);
+            if (go == null) return null;
+            Material stone  = EnsureMaterial("Terrain_Rock",   new Color(0.56f, 0.54f, 0.50f));
+            Material banner = EnsureMaterial("Terrain_Banner", new Color(0.92f, 0.74f, 0.22f));
+            float y = HexMetrics.TileHeight;
+
+            AddDecor(go.transform, PrimitiveType.Cube, new Vector3(-0.18f, y + 0.45f, 0f),
+                new Vector3(0.26f, 0.90f, 0.26f), Quaternion.Euler(0f, 18f, 0f), stone);   // dikilitaş
+            AddDecor(go.transform, PrimitiveType.Cube, new Vector3(-0.18f, y + 0.95f, 0f),
+                new Vector3(0.34f, 0.12f, 0.34f), Quaternion.Euler(0f, 18f, 0f), stone);   // başlık
+            AddDecor(go.transform, PrimitiveType.Cylinder, new Vector3(0.30f, y + 0.50f, 0.05f),
+                new Vector3(0.05f, 0.50f, 0.05f), Quaternion.identity, stone);             // sancak direği
+            AddDecor(go.transform, PrimitiveType.Cube, new Vector3(0.47f, y + 0.78f, 0.05f),
+                new Vector3(0.34f, 0.30f, 0.03f), Quaternion.identity, banner);            // sancak bezi
+
+            return SaveTile(go, name);
+        }
+
+        /// <summary>Ticaret hanı / manav: tezgâh + çizgili tente + fıçılar + sandık.</summary>
+        private static GameObject EnsureMarketTile(string name)
+        {
+            GameObject existing = Load(name);
+            if (existing != null) return existing;
+
+            GameObject go = NewTileBase(name);
+            if (go == null) return null;
+            Material wood   = EnsureMaterial("Terrain_Bark",     new Color(0.30f, 0.21f, 0.13f));
+            Material plank  = EnsureMaterial("Terrain_Plank",    new Color(0.62f, 0.45f, 0.28f));
+            Material canopy = EnsureMaterial("Terrain_Canopy",   new Color(0.78f, 0.24f, 0.22f));
+            Material goods  = EnsureMaterial("Terrain_Goods",    new Color(0.42f, 0.62f, 0.30f));
+            float y = HexMetrics.TileHeight;
+
+            // Tezgâh
+            AddDecor(go.transform, PrimitiveType.Cube, new Vector3(0f, y + 0.22f, 0.18f),
+                new Vector3(0.95f, 0.44f, 0.34f), Quaternion.identity, plank);
+            // Dört direk
+            foreach (var p in new[] { new Vector2(-0.45f, -0.25f), new Vector2(0.45f, -0.25f),
+                                      new Vector2(-0.45f, 0.35f), new Vector2(0.45f, 0.35f) })
+                AddDecor(go.transform, PrimitiveType.Cylinder, new Vector3(p.x, y + 0.40f, p.y),
+                    new Vector3(0.05f, 0.40f, 0.05f), Quaternion.identity, wood);
+            // Tente (hafif eğimli)
+            AddDecor(go.transform, PrimitiveType.Cube, new Vector3(0f, y + 0.84f, 0.05f),
+                new Vector3(1.15f, 0.06f, 0.85f), Quaternion.Euler(-8f, 0f, 0f), canopy);
+            // Fıçı + sandık (mal)
+            AddDecor(go.transform, PrimitiveType.Cylinder, new Vector3(-0.52f, y + 0.16f, 0.30f),
+                new Vector3(0.20f, 0.16f, 0.20f), Quaternion.identity, wood);
+            AddDecor(go.transform, PrimitiveType.Cube, new Vector3(0.52f, y + 0.14f, 0.32f),
+                new Vector3(0.26f, 0.28f, 0.26f), Quaternion.Euler(0f, 22f, 0f), goods);
+
             return SaveTile(go, name);
         }
 

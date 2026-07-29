@@ -144,13 +144,17 @@ namespace TacticalRPG.Editor
             Debug.Log("[TacticalRPG] Store sistemi kuruldu (magaza karosu + 5 item + StoreManager/PlayerBuffs/StoreHUD).");
         }
 
-        /// <summary>Palete "magaza" karosunu ekler/günceller (mantar_karo modeli, isStore, yürünemez).</summary>
+        /// <summary>Palete "magaza" karosunu ekler/günceller (TİCARET HANI modeli, isStore, yürünemez).
+        /// Model önceliği: üretilen `Tile_han` → yoksa eski mantar karosu (placeholder).
+        /// Kullanıcı isteği 2026-07-29: dükkân karosunda mantar değil, tezgâh/han görünsün.</summary>
         private static void AddStorePaletteEntry(HexGridManager grid)
         {
             TilePaletteSO palette = grid.TilePalette;
             if (palette == null) return;
 
-            GameObject storePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(StoreTilePath);
+            GameObject storePrefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Grid/Tile_han.prefab")
+                ?? AssetDatabase.LoadAssetAtPath<GameObject>(StoreTilePath);
 
             var palSO   = new SerializedObject(palette);
             var tiles   = palSO.FindProperty("tiles");

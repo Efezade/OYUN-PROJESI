@@ -52,6 +52,8 @@ namespace TacticalRPG.Core
         [SerializeField] private StoreManager         _store;
         [Tooltip("Zorunlu görev karolarının çöküşten muaf tutulması için (TASK-007).")]
         [SerializeField] private MapCollapseManager   _collapse;
+        [Tooltip("Kule sisi açarken oynayan epik ışık efekti (eski oyundaki açılış animasyonu).")]
+        [SerializeField] private TowerRevealEffect    _towerFx;
 
         [Header("İşaretler (whitebox — gerçek görsel gelince prefab atanır)")]
         [Tooltip("Zorunlu görev işareti bu yüksekliğe konur — sis bulutunun ÜSTÜNDE kalsın diye " +
@@ -144,11 +146,15 @@ namespace TacticalRPG.Core
             Take(pool, ref idx, _config.WatchtowerCount, MapNodeType.Watchtower,
                  () => 0, () => _config.WatchtowerAP, rnd);
 
-            // Gözetleme kulesi karolarını GERÇEK "kule" karosuna çevir → palette'teki kule modeli
-            // (Tile_kule.prefab) render edilir; ayrı bir işaret küresine gerek kalmaz.
-            // "kule" karosu YÜRÜNEMEZ olduğu için kule KOMŞU karodan kullanılır (bkz NodeForPlayer).
+            // Her düğümün karosunu KENDİ karo tipine çevir → palette'teki model render edilir
+            // (mağara / kamp / görev alanı / ticaret hanı / kule) ve savaşlı olanlar canEnterCombat
+            // taşıdığı için eski oyundaki "yaklaş → Savaşa Gir" akışı çalışır. Ayrı işaret küresine
+            // gerek kalmaz. Yürünemez olanlar (kule, mağaza) KOMŞU karodan kullanılır (NodeForPlayer).
             foreach (var n in _nodes)
-                if (n.Type == MapNodeType.Watchtower) _map.SetTile(n.Coord, WatchtowerTileId);
+            {
+                string tileId = TileIdOf(n.Type);
+                if (!string.IsNullOrEmpty(tileId)) _map.SetTile(n.Coord, tileId);
+            }
 
             // Boss: KONUMDAN BAĞIMSIZ — havuzdan karo almaz, haritada işareti yoktur.
             Boss = new MapNode { Type = MapNodeType.Boss, APCost = _config.BossAP, Value = 0 };
@@ -179,8 +185,26 @@ namespace TacticalRPG.Core
 
         // ── Sorgular ─────────────────────────────────────────────────────────
 
-        /// <summary>Palette'teki gözetleme kulesi karosunun id'si (kule modeli bu girişe bağlı).</summary>
-        public const string WatchtowerTileId = "kule";
+        // ── Düğüm KARO id'leri (palette'teki modellere bağlı) ───────────────
+        // Düğümler artık haritada GERÇEK KARO olarak duruyor: kendi modeliyle görünür ve savaşlı
+        // olanlar `canEnterCombat` sayesinde eski oyundaki gibi "yaklaş → Savaşa Gir" akışını açar
+        // (MissionManager.GetEnterableMission bu bayrağa bakıyor).
+        public const string WatchtowerTileId = "kule";          // gözetleme kulesi
+        public const string DungeonTileId    = "magara";        // zindan girişi
+        public const string EncounterTileId  = "kamp";          // karşılaşma (baskın kampı)
+        public const string MandatoryTileId  = "gorev_alani";   // zorunlu harita-kurtarma görevi
+        public const string MarketTileId     = "magaza";        // ticaret hanı (StoreManager açar)
+
+        /// <summary>Düğüm tipinin haritadaki karo id'si (yoksa null → karo boyanmaz).</summary>
+        public static string TileIdOf(MapNodeType t) => t switch
+        {
+            MapNodeType.Watchtower => WatchtowerTileId,
+            MapNodeType.Zindan     => DungeonTileId,
+            MapNodeType.Encounter  => EncounterTileId,
+            MapNodeType.Mandatory  => MandatoryTileId,
+            MapNodeType.Market     => MarketTileId,
+            _                      => null   // boss konumsuz
+        };
 
         public MapNode NodeAt(HexCoordinate c)
         {
@@ -189,16 +213,18 @@ namespace TacticalRPG.Core
         }
 
         /// <summary>Oyuncunun ŞU AN kullanabileceği düğüm: bastığı karodaki düğüm; yoksa 1 karo
-        /// yanındaki gözetleme kulesi. Kule karosu yürünemez olduğu için (üstünde bir yapı var)
-        /// kuleye komşu karodan çıkılır — eski WatchtowerManager de böyle çalışıyordu.</summary>
+        /// yanındaki YÜRÜNEMEZ yapı (kule / ticaret hanı). Bunların karosuna basılamaz — üstlerinde
+        /// bir yapı var — bu yüzden komşu karodan kullanılırlar (eski WatchtowerManager deseni).</summary>
         public MapNode NodeForPlayer(HexCoordinate c)
         {
             MapNode here = NodeAt(c);
             if (here != null) return here;
 
             foreach (var n in _nodes)
-                if (n.Type == MapNodeType.Watchtower && !n.Completed && c.DistanceTo(n.Coord) <= 1)
-                    return n;
+            {
+                bool adjacentUsable = n.Type == MapNodeType.Watchtower || n.Type == MapNodeType.Market;
+                if (adjacentUsable && !n.Completed && c.DistanceTo(n.Coord) <= 1) return n;
+            }
             return null;
         }
 
@@ -258,6 +284,9 @@ namespace TacticalRPG.Core
             {
                 case MapNodeType.Watchtower:
                     if (_fog != null) _fog.RevealAreaPermanent(n.Coord, _config.WatchtowerRadius);
+                    // Eski oyundaki EPİK AÇILIŞ efekti (ışık hüzmesi + genişleyen halka + patlama).
+                    if (_towerFx != null && _grid != null && _grid.TryGetCell(n.Coord, out HexCell tCell))
+                        _towerFx.Play(tCell.WorldPosition + Vector3.up * tCell.SurfaceHeight);
                     Complete(n);
                     return true;
 
@@ -319,6 +348,15 @@ namespace TacticalRPG.Core
 
         private void HandleStateChanged(GameState s)
         {
+            // Savaşa KARO ÜZERİNDEN girildiyse (eski akış: yaklaş → "Savaşa Gir" istemi) düğüm
+            // sistemi devrede değildi. İki yolu birleştir: o an oyuncunun üstünde/yanında savaşlı
+            // bir düğüm varsa onu bekleyen say → dönüşte tamamlanır ve ÖDÜLÜ verilir.
+            if ((s == GameState.ConfirmMission || s == GameState.Combat) && _pendingCombatNode == null && _player != null)
+            {
+                MapNode n = NodeForPlayer(_player.CurrentCoord);
+                if (n != null && !n.Completed && IsCombatNode(n.Type)) _pendingCombatNode = n;
+            }
+
             // Savaştan overworld'e dönüldü → bekleyen düğümü tamamla + ödülü AÇIKLA.
             if (s == GameState.Overworld && _pendingCombatNode != null)
             {
@@ -326,6 +364,10 @@ namespace TacticalRPG.Core
                 _pendingCombatNode = null;
             }
         }
+
+        private static bool IsCombatNode(MapNodeType t)
+            => t == MapNodeType.Zindan || t == MapNodeType.Encounter
+            || t == MapNodeType.Mandatory || t == MapNodeType.Boss;
 
         private void Complete(MapNode n)
         {

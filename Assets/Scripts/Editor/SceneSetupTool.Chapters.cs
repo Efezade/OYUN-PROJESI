@@ -168,6 +168,10 @@ namespace TacticalRPG.Editor
             nSO.FindProperty("_state").objectReferenceValue    = state;
             nSO.FindProperty("_missions").objectReferenceValue = FindComponentAnywhere<MissionManager>();
             nSO.FindProperty("_store").objectReferenceValue    = FindComponentAnywhere<StoreManager>();
+            // Kule acilis efekti (eski oyundaki isik huzmesi + halka) — dugum kulesi de oynatsin.
+            var towerFx = host.GetComponent<TowerRevealEffect>();
+            if (towerFx == null) towerFx = host.AddComponent<TowerRevealEffect>();
+            nSO.FindProperty("_towerFx").objectReferenceValue  = towerFx;
             nSO.ApplyModifiedProperties();
 
             // ── TASK-007: zaman baskisi + bolum kaybi/retry ──────────────────
@@ -263,6 +267,13 @@ namespace TacticalRPG.Editor
                 (TerrainGenerator.DagId,              "Dağ (engel)",         false, new Color(0.45f, 0.42f, 0.40f), 0f),
                 (TerrainGenerator.GolId,             "Göl (engel)",          false, new Color(0.20f, 0.42f, 0.66f), 0f),
                 (TerrainGenerator.NehirId,            "Nehir (engel)",       false, new Color(0.26f, 0.54f, 0.78f), 0f),
+
+                // ── DUGUM karolari (TASK-006 dugumleri artik gercek karo) ────
+                // Savasli olanlar canEnterCombat ile isaretlenir (asagida) → eski oyundaki
+                // "yaklas -> Savasa Gir" akisi prosedurel haritada da calisir.
+                (ChapterNodeManager.DungeonTileId,    "Mağara (zindan)",     true,  new Color(0.34f, 0.30f, 0.34f), 0f),
+                (ChapterNodeManager.EncounterTileId,  "Kamp (karşılaşma)",   true,  new Color(0.72f, 0.45f, 0.24f), 0f),
+                (ChapterNodeManager.MandatoryTileId,  "Görev Alanı",         true,  new Color(0.90f, 0.76f, 0.28f), 0f),
             };
 
             var palSO    = new SerializedObject(palette);
@@ -284,7 +295,11 @@ namespace TacticalRPG.Editor
                 e.FindPropertyRelative("displayName").stringValue          = d.name;
                 e.FindPropertyRelative("prefab").objectReferenceValue      = null;  // placeholder tint
                 e.FindPropertyRelative("isWalkable").boolValue             = d.walkable;
-                e.FindPropertyRelative("canEnterCombat").boolValue         = false;
+                // Savas alani mi? Mağara / kamp / gorev alani = evet (savasa giris karolari).
+                e.FindPropertyRelative("canEnterCombat").boolValue         =
+                    d.id == ChapterNodeManager.DungeonTileId   ||
+                    d.id == ChapterNodeManager.EncounterTileId ||
+                    d.id == ChapterNodeManager.MandatoryTileId;
                 e.FindPropertyRelative("isStore").boolValue                = false;
                 e.FindPropertyRelative("surfaceHeightOverride").floatValue = d.height;
                 e.FindPropertyRelative("editorColor").colorValue           = d.color;
