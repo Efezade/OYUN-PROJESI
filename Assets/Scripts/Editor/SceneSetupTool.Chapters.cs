@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using TacticalRPG.Core;
 using TacticalRPG.Data;
 using TacticalRPG.Grid;
@@ -308,6 +309,69 @@ namespace TacticalRPG.Editor
             palSO.ApplyModifiedProperties();
             EditorUtility.SetDirty(palette);
             if (added > 0) Debug.Log($"[Bolum] Palete {added} terrain karosu eklendi.");
+        }
+
+        /// <summary>
+        /// **Haritayı EDİTÖRDE üretir** — Play'e basmadan sahnede yeni (prosedürel) harita görünsün
+        /// (kullanıcı isteği 2026-07-29: "oyunu başlatmasam da yeni map gözüksün, eski maple işimiz
+        /// kalmadı"). Üretilen harita kalıcı bir asset'e (`Bolum1_Uretilen.asset`) yazılır ve grid'e
+        /// atanır → sahne kaydedilince/yeniden açılınca da yeni harita durur.
+        ///
+        /// ESKİ ELLE BOYANMIŞ HARİTA SİLİNMEZ: `TileMap.asset` + `Face_2..9` yerinde duruyor
+        /// (ayrıca `Docs/Alternatif_Tasarimlar/3x3_Dunya_Haritasi/` yedeği var). Sadece grid artık
+        /// ona değil, üretilen haritaya bakıyor.
+        /// </summary>
+        [MenuItem("TacticalRPG/Bolum - Haritayi Simdi Uret (Play'siz gorun)", false, 26)]
+        public static void GenerateChapterMapInEditor()
+        {
+            var gen  = FindComponentAnywhere<ChapterMapGenerator>();
+            var grid = FindComponentAnywhere<HexGridManager>();
+            if (gen == null || grid == null)
+            {
+                if (!_silentSetup)
+                    EditorUtility.DisplayDialog("Harita Uret",
+                        "ChapterMapGenerator ya da grid yok. Once TAM KURULUM calistir.", "Tamam");
+                return;
+            }
+
+            TerrainConfigSO cfg = EnsureTerrainConfig();
+            int seed = (cfg != null && cfg.SeedPool != null && cfg.SeedPool.Count > 0)
+                ? cfg.SeedPool[Random.Range(0, cfg.SeedPool.Count)]
+                : 1;
+
+            // Kalici cikti asset'i — runtime kopya olsa editorde derleme sonrasi kaybolurdu.
+            EnsureFolder("Assets/Data/Map");
+            const string outPath = "Assets/Data/Map/Bolum1_Uretilen.asset";
+            var outMap = AssetDatabase.LoadAssetAtPath<TileMapSO>(outPath);
+            if (outMap == null)
+            {
+                outMap = ScriptableObject.CreateInstance<TileMapSO>();
+                AssetDatabase.CreateAsset(outMap, outPath);
+            }
+
+            gen.GenerateInto(outMap, seed);
+
+            // Dugumleri de yerlestir ki magara/kamp/gorev/han/kule karolari editorde gorunsun.
+            var nodes = FindComponentAnywhere<ChapterNodeManager>();
+            if (nodes != null) nodes.Rebuild();
+
+            // Grid KALICI olarak uretilen haritaya baksin (sahne yeniden acilinca eski harita gelmesin).
+            var gridSO = new SerializedObject(grid);
+            gridSO.FindProperty("_tileMap").objectReferenceValue = outMap;
+            gridSO.ApplyModifiedProperties();
+
+            EditorUtility.SetDirty(outMap);
+            EditorUtility.SetDirty(grid);
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+
+            Debug.Log($"[Bolum] Harita EDITORDE uretildi — seed {seed}. Eski elle boyanmis harita silinmedi.");
+            if (!_silentSetup)
+                EditorUtility.DisplayDialog("Harita Uretildi",
+                    $"Seed {seed} ile uretildi ve sahneye uygulandi.\n\n" +
+                    "Play'e basmadan da yeni harita gorunur. Farkli bir harita icin bu menuyu\n" +
+                    "tekrar calistir (havuzdan baska bir seed secilir).\n\n" +
+                    "Eski elle boyanmis harita SILINMEDI (TileMap.asset + Face_2..9 duruyor).", "Tamam");
         }
 
         /// <summary>NodeConfig.asset'i yükler; YOKSA varsayılanlarla oluşturur (varsa DOKUNMAZ —

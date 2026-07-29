@@ -53,7 +53,13 @@ namespace TacticalRPG.Core
         public void GenerateNew() => Generate(PickSeed());
 
         /// <summary>Belirli bir seed ile üretir — 10'luk havuzun test/doğrulaması için.</summary>
-        public void Generate(int seed)
+        public void Generate(int seed) => GenerateInto(null, seed);
+
+        /// <summary>Haritayı üretir ve grid'e uygular.
+        /// <paramref name="target"/> null ise RUNTIME kopyaya yazar (oyun; asset'e dokunulmaz —
+        /// CLAUDE.md §2). Bir TileMapSO ASSET'i verilirse ONA yazar: editörde Play'e basmadan da
+        /// üretilen harita sahnede kalıcı görünsün diye (kullanıcı isteği 2026-07-29).</summary>
+        public void GenerateInto(TileMapSO target, int seed)
         {
             if (_grid == null || _config == null)
             {
@@ -67,9 +73,17 @@ namespace TacticalRPG.Core
                 _config.ObstaclePct, _config.RiverCount, _config.BridgesPerRiver,
                 _config.BlobSizeMin, _config.BlobSizeMax, _config.SubtypeWeights());
 
-            // Runtime TileMap — asset DEĞİL, sahnede yaşayan kopya.
-            _runtimeMap = ScriptableObject.CreateInstance<TileMapSO>();
-            _runtimeMap.name          = $"ChapterMap_Seed{seed}";
+            // Hedef verilmediyse RUNTIME kopya (asset'e yazılmaz); verildiyse o asset'e yazılır.
+            if (target != null)
+            {
+                _runtimeMap = target;
+                _runtimeMap.assignments.Clear();
+            }
+            else
+            {
+                _runtimeMap      = ScriptableObject.CreateInstance<TileMapSO>();
+                _runtimeMap.name = $"ChapterMap_Seed{seed}";
+            }
             _runtimeMap.defaultTileId = TerrainGenerator.OvaId;
             for (int q = 0; q < _config.Width; q++)
                 for (int r = 0; r < _config.Height; r++)

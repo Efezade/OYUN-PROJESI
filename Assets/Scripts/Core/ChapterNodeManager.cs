@@ -397,7 +397,12 @@ namespace TacticalRPG.Core
         private void ClearMarkers()
         {
             _markers.Clear();
-            if (_markersRoot != null) Destroy(_markersRoot.gameObject);
+            // Editörde (Play'e basılmadan önizleme üretilirken) Destroy çalışmaz → DestroyImmediate.
+            if (_markersRoot != null)
+            {
+                if (Application.isPlaying) Destroy(_markersRoot.gameObject);
+                else                       DestroyImmediate(_markersRoot.gameObject);
+            }
             _markersRoot = null;
         }
 
@@ -406,17 +411,19 @@ namespace TacticalRPG.Core
             _markersRoot = new GameObject("NodeMarkers").transform;
             _markersRoot.SetParent(transform, false);
 
+            // Artık HER düğümün kendi karo modeli var (mağara/kamp/görev alanı/han/kule), bu yüzden
+            // işaret küresi YALNIZ ZORUNLU GÖREVLERDE kalıyor: onlar sis'ten BAĞIMSIZ görünmek
+            // zorunda (TASK-006), karo modeli ise sisin altında kalır. Diğerleri normal keşifle bulunur.
             foreach (var n in _nodes)
             {
-                if (n.Type == MapNodeType.Boss) continue;           // konumsuz
-                // Kulenin İŞARETİ YOK — karonun kendisi kule modeli (yukarıda SetTile ile boyandı).
-                if (n.Type == MapNodeType.Watchtower) continue;
+                if (n.Type != MapNodeType.Mandatory) continue;
                 if (!_grid.TryGetCell(n.Coord, out HexCell cell)) continue;
 
                 var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 go.name = $"Node_{n.Type}_{n.Coord.Q}_{n.Coord.R}";
                 go.transform.SetParent(_markersRoot, false);
-                Destroy(go.GetComponent<Collider>());                // tıklamayı engellemesin
+                Collider col = go.GetComponent<Collider>();          // tıklamayı engellemesin
+                if (col != null) { if (Application.isPlaying) Destroy(col); else DestroyImmediate(col); }
 
                 float y = n.Type == MapNodeType.Mandatory ? _mandatoryMarkerHeight : _markerHeight;
                 go.transform.position   = cell.WorldPosition + Vector3.up * y;

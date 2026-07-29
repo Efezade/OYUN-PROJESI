@@ -367,7 +367,7 @@ MonoBehaviour:
     surfaceHeightOverride: 0
   - id: magaza
     displayName: "Ma\u011Faza"
-    prefab: {fileID: 919132149155446097, guid: 31459a87a3299a44baad21a9de4b38a1, type: 3}
+    prefab: {fileID: 7326032838502997202, guid: 46810d8acb808274bb643721f615f69c, type: 3}
     editorColor: {r: 1, g: 0.82, b: 0.2, a: 1}
     isWalkable: 0
     canEnterCombat: 0
@@ -453,3 +453,27 @@ MonoBehaviour:
     canEnterCombat: 0
     isStore: 0
     surfaceHeightOverride: 0
+  - id: magara
+    displayName: "Ma\u011Fara (zindan)"
+    prefab: {fileID: 2123238937332438056, guid: f2ae886b61bc3d14a9cecd4e553169fc, type: 3}
+    editorColor: {r: 0.34, g: 0.3, b: 0.34, a: 1}
+    isWalkable: 1
+    canEnterCombat: 1
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: kamp
+    displayName: "Kamp (kar\u015F\u0131la\u015Fma)"
+    prefab: {fileID: 5681492701762484678, guid: 496874fb4afd71640b94aff9fd75ad37, type: 3}
+    editorColor: {r: 0.72, g: 0.45, b: 0.24, a: 1}
+    isWalkable: 1
+    canEnterCombat: 1
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: gorev_alani
+    displayName: "G\xF6rev Alan\u0131"
+    prefab: {fileID: 7767301672241300771, guid: 87cf24df3caf2144388fa216cd91e6ea, type: 3}
+    editorColor: {r: 0.9, g: 0.76, b: 0.28, a: 1}
+    isWalkable: 1
+    canEnterCombat: 1
+    isStore: 0
+    surfaceHeightOverride: 0.3

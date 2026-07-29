@@ -55,6 +55,9 @@ namespace TacticalRPG.Editor
                 SetupChapters();     // 8 bolum ilerlemesi — UIShell'den ONCE olmali
                 SetupUIShell();      // ana menu gezinme kabugu (KITAP/CANTA/HARITA sekmeleri + ayar)
                 SetupStore();    // magaza karosu + oz ile item/pot satin alma (StoreManager/PlayerBuffs/StoreHUD)
+                // EN SON: haritayi editorde uret ki Play'e basmadan da yeni harita gorunsun.
+                // (Store'dan SONRA olmali — magaza karosunun modeli o adimda kesinlesiyor.)
+                GenerateChapterMapInEditor();
             }
             finally { _silentSetup = false; }
 
