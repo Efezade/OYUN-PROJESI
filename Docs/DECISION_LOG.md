@@ -16,6 +16,27 @@
 
 ---
 
+## 2026-08-04 — Canlı sahne artık `Assets/Scenes/xd.unity` (SampleScene DEĞİL)
+
+**KARAR:** TASK-005/006/007 ile kurulan 22×25 prosedürel harita, node'lar (`Node_Mandatory_*`,
+`NodeRing_*`, `Path_*`, `State_*`) ve yeni UI (Panel_Map/Bag/Book, pusula) **`Assets/Scenes/xd.unity`**
+içinde. Eski `Assets/Scenes/SampleScene.unity` 10×10 grid'li ESKİ hâliyle duruyor —
+silinmedi, alternatif/referans olarak kalıyor.
+
+**NEDEN:** Unity oturumu boyunca çalışılan sahne kaydedilmemiş (Untitled) bir sahneydi; kapatırken
+`xd` adıyla `Assets/Scenes/` altına kaydedildi. SampleScene'in üzerine yazılmadı → eski whitebox
+düzeni referans olarak korunuyor.
+
+**DİKKAT (bir sonraki oturum):** Unity'i açınca varsayılan olarak SampleScene açılabilir; güncel
+harita için `Assets/Scenes/xd.unity`'e çift tıkla. `ProjectSettings/EditorBuildSettings.asset`
+sahne listesi BOŞ — build alınacaksa File → Build Settings → Add Open Scenes gerekli.
+Sahnenin adı `xd` geçici; Unity Project penceresinden `Bolum1` gibi bir isme değiştirilebilir
+(GUID korunur, Explorer'dan değil Unity içinden yeniden adlandır).
+
+**COMMIT:** bu giriş ile aynı commit.
+
+---
+
 ## 2026-07-28 — Kamera karakteri takip ediyor (kullanıcı isteği)
 
 **SORUN:** Kamera sabitti (Faz 0'da 10×10 grid merkezine göre elle konumlanmış). Harita TASK-005 ile
