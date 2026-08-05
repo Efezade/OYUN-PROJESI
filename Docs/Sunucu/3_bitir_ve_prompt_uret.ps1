@@ -12,7 +12,12 @@
 #    - Karsi PC'ye yapistirilacak hazir promptu uretir
 # =====================================================================
 
-$ErrorActionPreference = 'Stop'
+# DIKKAT - 'Stop' bilerek KULLANILMIYOR:
+# PowerShell 5.1'de native programlarin (git, gitea, tailscale) stderr'e
+# yazdigi NORMAL ilerleme ve uyari mesajlari 'Stop' modunda olumcul hata
+# sayilir ve script ortasinda durur. Ornegin "git push" ilerlemeyi stderr'e
+# yazar. Bunun yerine kritik adimlarda $LASTEXITCODE acikca kontrol edilir.
+$ErrorActionPreference = 'Continue'
 
 $GiteaDir  = 'C:\Gitea'
 $GiteaPort = 3000
@@ -29,6 +34,13 @@ function Adim($n,$t){ Write-Host "`n=== $n. $t ===" -ForegroundColor Cyan }
 function Tamam($m){ Write-Host "  [OK] $m" -ForegroundColor Green }
 function Bilgi($m){ Write-Host "  [..] $m" -ForegroundColor Gray }
 function Uyari($m){ Write-Host "  [!] $m" -ForegroundColor Yellow }
+function Dur($m){ Write-Host "HATA: $m" -ForegroundColor Red; exit 1 }
+
+# Gitea'yi calistirip ciktisini metin olarak dondurur (stderr dahil).
+function Gitea {
+    param([Parameter(ValueFromRemainingArguments = $true)]$Arg)
+    return (& $giteaExe @Arg 2>&1 | Out-String)
+}
 
 $pr = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $pr.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -38,17 +50,29 @@ if (-not $pr.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
 # ===================================================================
 Adim 1 "Tailscale baglantisi kontrolu"
 # ===================================================================
-$tsIp = (& tailscale ip -4 2>$null | Select-Object -First 1)
+# tailscale.exe PATH'te olmayabilir: bu pencere Tailscale kurulmadan once
+# acildiysa PATH bayat kalir. Once dogrudan kurulum yolunu deneriz.
+$tsExe = @(
+    'C:\Program Files\Tailscale\tailscale.exe',
+    'C:\Program Files (x86)\Tailscale\tailscale.exe'
+) | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $tsExe) {
+    $k = Get-Command tailscale -ErrorAction SilentlyContinue
+    if ($k) { $tsExe = $k.Source }
+}
+if (-not $tsExe) { Dur "Tailscale kurulu degil. Once 1_sunucu_kur.ps1 calistir." }
+
+$tsIp = (& $tsExe ip -4 2>$null | Select-Object -First 1)
 if (-not $tsIp -or $tsIp -notmatch '^100\.') {
     Write-Host "HATA: Tailscale'e giris yapilmamis." -ForegroundColor Red
     Write-Host "  Once su komutu calistir ve tarayicidan giris yap:" -ForegroundColor Yellow
-    Write-Host "      tailscale up" -ForegroundColor Cyan
+    Write-Host "      & '$tsExe' up" -ForegroundColor Cyan
     exit 1
 }
 $tsIp = $tsIp.Trim()
 Tamam "Bu PC'nin Tailscale adresi: $tsIp"
 
-$tsAd = (& tailscale status --self --json 2>$null | ConvertFrom-Json).Self.DNSName
+$tsAd = (& $tsExe status --self --json 2>$null | ConvertFrom-Json).Self.DNSName
 if ($tsAd) { $tsAd = $tsAd.TrimEnd('.'); Tamam "Tailscale adi: $tsAd" }
 
 # ===================================================================
@@ -78,8 +102,8 @@ if ((Get-Service gitea).Status -ne 'Running') {
 Adim 3 "Sherlock kullanicisini olustur"
 # ===================================================================
 $sherlockSifreDosya = "$GiteaDir\SHERLOCK_SIFRE.txt"
-$mevcut = & $giteaExe admin user list --config $appIni --work-path $GiteaDir 2>$null
-if ($mevcut -match "\b$SherlockUser\b") {
+$mevcut = Gitea admin user list --config $appIni --work-path $GiteaDir
+if ($mevcut -match "(?m)^\s*\d+\s+$SherlockUser\s") {
     Tamam "Kullanici '$SherlockUser' zaten var"
     $sherlockSifre = if (Test-Path $sherlockSifreDosya) {
         (Get-Content $sherlockSifreDosya -Raw).Trim()
@@ -87,9 +111,12 @@ if ($mevcut -match "\b$SherlockUser\b") {
 } else {
     Add-Type -AssemblyName System.Web
     $sherlockSifre = [System.Web.Security.Membership]::GeneratePassword(18,3) -replace '[\\"''`$@:/]','x'
-    & $giteaExe admin user create --username $SherlockUser --password $sherlockSifre `
+    $sonuc = Gitea admin user create --username $SherlockUser --password $sherlockSifre `
         --email "sherlock@oyun.local" --must-change-password=false `
-        --config $appIni --work-path $GiteaDir | Out-Null
+        --config $appIni --work-path $GiteaDir
+    if ($sonuc -notmatch 'successfully created') {
+        Uyari "Beklenmedik cikti:"; Write-Host $sonuc -ForegroundColor DarkGray
+    }
     Set-Content -Path $sherlockSifreDosya -Value $sherlockSifre -Encoding utf8
     Tamam "Kullanici '$SherlockUser' olusturuldu"
 }
@@ -98,11 +125,11 @@ if ($mevcut -match "\b$SherlockUser\b") {
 Adim 4 "Erisim anahtari + depo olustur"
 # ===================================================================
 $tokenAd = "kurulum-$(Get-Date -Format 'yyyyMMddHHmm')"
-$tokenCikti = & $giteaExe admin user generate-access-token --username $AdminUser `
+$tokenCikti = Gitea admin user generate-access-token --username $AdminUser `
     --token-name $tokenAd --scopes "write:repository,write:user,write:admin" `
-    --config $appIni --work-path $GiteaDir 2>&1 | Out-String
+    --config $appIni --work-path $GiteaDir
 if ($tokenCikti -match '([a-f0-9]{40})') { $token = $Matches[1] }
-else { Write-Host "HATA: erisim anahtari alinamadi:`n$tokenCikti" -ForegroundColor Red; exit 1 }
+else { Dur "Erisim anahtari alinamadi:`n$tokenCikti" }
 Tamam "Erisim anahtari alindi"
 
 $api = "http://127.0.0.1:$GiteaPort/api/v1"
@@ -120,7 +147,10 @@ if ($depoVar) {
 } else {
     $govde = @{ name = $DepoAdi; private = $true; default_branch = 'main'
                 description = 'Turk mitolojisi taktiksel RPG - Unity 6' } | ConvertTo-Json
-    Invoke-RestMethod "$api/user/repos" -Method Post -Headers $basliklar -Body $govde | Out-Null
+    try {
+        Invoke-RestMethod "$api/user/repos" -Method Post -Headers $basliklar `
+            -Body $govde -ErrorAction Stop | Out-Null
+    } catch { Dur "Depo olusturulamadi: $($_.Exception.Message)" }
     Tamam "Depo olusturuldu: $AdminUser/$DepoAdi"
 }
 
@@ -134,6 +164,7 @@ try {
 # ===================================================================
 Adim 5 "Projeyi Gitea'ya gonder"
 # ===================================================================
+if (-not (Test-Path "$Proje\.git")) { Dur "Proje bulunamadi: $Proje" }
 Push-Location $Proje
 
 # GitHub'i 'github' adiyla yedege al, 'origin' Gitea olsun

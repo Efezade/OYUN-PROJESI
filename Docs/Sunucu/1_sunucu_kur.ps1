@@ -25,6 +25,20 @@ function Tamam($m)    { Write-Host "  [OK] $m" -ForegroundColor Green }
 function Bilgi($m)    { Write-Host "  [..] $m" -ForegroundColor Gray }
 function Uyari($m)    { Write-Host "  [!!] $m" -ForegroundColor Yellow }
 
+# Gitea'yi guvenli calistirir.
+# Neden gerekli: PowerShell 5.1'de $ErrorActionPreference='Stop' iken bir
+# native program stderr'e TEK SATIR yazsa bile bu olumcul hata sayilir.
+# Gitea normal calisirken de stderr'e uyari yazar (ornek: SCRIPT_TYPE "bash"
+# is not on PATH). Bu sarmalayici olmadan script zararsiz uyarida duruyor.
+function Gitea {
+    param([Parameter(ValueFromRemainingArguments = $true)]$Arg)
+    $eski = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try     { $cikti = & $giteaExe @Arg 2>&1 | Out-String }
+    finally { $ErrorActionPreference = $eski }
+    return $cikti
+}
+
 # --- Yonetici kontrolu ---------------------------------------------
 $pr = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $pr.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -74,7 +88,7 @@ New-Item -ItemType Directory -Force -Path $GiteaDir, "$GiteaDir\custom\conf", `
 
 $giteaExe = "$GiteaDir\gitea.exe"
 if (Test-Path $giteaExe) {
-    Tamam "Gitea binary zaten var ($(& $giteaExe --version))"
+    Tamam "Gitea binary zaten var ($((Gitea --version).Trim()))"
 } else {
     Bilgi "En son surum GitHub'dan sorgulaniyor..."
     $rel = Invoke-RestMethod 'https://api.github.com/repos/go-gitea/gitea/releases/latest' `
@@ -163,20 +177,24 @@ ENABLED = true
 
 # --- Veritabanini hazirla ------------------------------------------
 Bilgi "Veritabani semasi hazirlaniyor..."
-& $giteaExe migrate --config $appIni --work-path $GiteaDir | Out-Null
+Gitea migrate --config $appIni --work-path $GiteaDir | Out-Null
 Tamam "Veritabani hazir"
 
 # --- Admin kullanici -----------------------------------------------
 $krtDosya = "$GiteaDir\GIRIS_BILGILERI.txt"
-$mevcut = & $giteaExe admin user list --config $appIni --work-path $GiteaDir 2>$null
-if ($mevcut -match "\b$AdminUser\b") {
+$mevcut = Gitea admin user list --config $appIni --work-path $GiteaDir
+if ($mevcut -match "(?m)^\s*\d+\s+$AdminUser\s") {
     Tamam "Kullanici '$AdminUser' zaten var"
 } else {
     Add-Type -AssemblyName System.Web
     $sifre = [System.Web.Security.Membership]::GeneratePassword(18, 3) -replace '[\\"''`$]', 'x'
-    & $giteaExe admin user create --admin --username $AdminUser --password $sifre `
+    $sonuc = Gitea admin user create --admin --username $AdminUser --password $sifre `
         --email $AdminEmail --must-change-password=false `
-        --config $appIni --work-path $GiteaDir | Out-Null
+        --config $appIni --work-path $GiteaDir
+    if ($sonuc -notmatch 'successfully created|has been successfully created') {
+        Uyari "Kullanici olusturma ciktisi beklenmedik:"
+        Write-Host $sonuc -ForegroundColor DarkGray
+    }
 
     @"
 GITEA GIRIS BILGILERI  -  BU DOSYAYI GUVENDE TUT
