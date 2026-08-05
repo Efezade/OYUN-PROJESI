@@ -75,7 +75,6 @@ namespace TacticalRPG.Editor
 
             // ── 3) Bağımlılıklar ──────────────────────────────────────────────
             GameStateManager  gsm      = FindComponentAnywhere<GameStateManager>();
-            WorldGridManager  world    = FindComponentAnywhere<WorldGridManager>();
             PlayerController  player   = FindComponentAnywhere<PlayerController>();
             MapInputHandler   input    = FindComponentAnywhere<MapInputHandler>();
             ActionPointManager ap      = FindComponentAnywhere<ActionPointManager>();
@@ -99,7 +98,6 @@ namespace TacticalRPG.Editor
             var sso = new SerializedObject(store);
             sso.FindProperty("_grid").objectReferenceValue         = grid;
             sso.FindProperty("_stateManager").objectReferenceValue = gsm;
-            sso.FindProperty("_worldGrid").objectReferenceValue    = world;
             SerializedProperty cat = sso.FindProperty("_catalog");
             cat.arraySize = catalog.Count;
             for (int i = 0; i < catalog.Count; i++)

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -22,7 +23,6 @@ namespace TacticalRPG.Editor
         private TileMapSO      _tileMap;
 
         private int     _selectedIndex = 0;
-        private int     _currentFace = 1;   // Küp = 6 yüz; şu an düzenlenen yüz (1=Ön … 6=Alt)
         private bool    _isPainting    = false;
         private bool    _hasHovered    = false;
         private HexCoordinate _hoveredCoord;
@@ -35,11 +35,41 @@ namespace TacticalRPG.Editor
         private const string ScanFolderPrefKey = "TacticalRPG.TilePainter.ScanFolder";
         private DefaultAsset _scanFolder;
 
+        // Karo id'si → ŞU ANKİ haritada kaç hücrede kullanılıyor. null = yeniden hesapla.
+        //
+        // NEDEN VAR: palette 58 karo var ama üretilen Bölüm 1 haritası bunların yalnız ~16'sını
+        // kullanıyor (kalanı eski 3x3 dünyanın karoları: agac1-3, cicek, mantar, portal*, deneme*).
+        // Sayaç olmadan "Ağaç 1'i Yürünmez yaptım ama ağaçların üstünden hâlâ geçiyorum" tuzağı
+        // görünmüyordu — haritadaki ağaçlar aslında 'orman'/'nadir_yuksek_orman' karoları.
+        private Dictionary<string, int> _usageCounts;
+
+        // ── Arşiv karoları ────────────────────────────────────────────────────
+        // Eski 3×3 dünyanın karoları. SİLİNMEDİ (alternatif tasarım hâlâ çalışır:
+        // Docs/Alternatif_Tasarimlar/3x3_Dunya_Haritasi + "Arsiv" menüsü), ama yürürlükteki
+        // tasarımda (1 bölüm = 1 harita, prosedürel terrain) hiçbiri kullanılmıyor →
+        // varsayılan olarak GÖSTERİLMEZ (kullanıcı isteği 2026-08-04).
+        private static readonly HashSet<string> ArchivedIds = new HashSet<string>
+        {
+            "default", "agac1", "agac2", "agac3", "cicek", "mantar", "su", "kum", "lav",
+        };
+
+        private const string ShowArchivedPrefKey = "TacticalRPG.TilePainter.ShowArchived";
+        private bool _showArchived;
+
+        /// <summary>Karo eski 3×3 dünyaya mı ait? (portal1-12 ve deneme1-20 önek ile yakalanır.)</summary>
+        private static bool IsArchived(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return false;
+            return ArchivedIds.Contains(id) ||
+                   id.StartsWith("portal", System.StringComparison.Ordinal) ||
+                   id.StartsWith("deneme", System.StringComparison.Ordinal);
+        }
+
         [MenuItem("TacticalRPG/Tile Painter - Karo Boyama", false, 20)]
         public static void OpenWindow()
         {
             var w = GetWindow<TilePainterWindow>("Tile Painter");
-            w.minSize = new Vector2(280, 420);
+            w.minSize = new Vector2(400, 420);   // isim + kullanım sayacı + yürünürlük yan yana sığsın
         }
 
         private void OnEnable()
@@ -50,6 +80,8 @@ namespace TacticalRPG.Editor
             string saved = EditorPrefs.GetString(ScanFolderPrefKey, "Assets/Art/Models/Tiles");
             if (!string.IsNullOrEmpty(saved))
                 _scanFolder = AssetDatabase.LoadAssetAtPath<DefaultAsset>(saved);
+
+            _showArchived = EditorPrefs.GetBool(ShowArchivedPrefKey, false);
         }
 
         private void OnDisable()
@@ -69,8 +101,8 @@ namespace TacticalRPG.Editor
             {
                 _palette = _gridManager.TilePalette;
                 _tileMap = _gridManager.TileMap;
-                DetectCurrentFace();
             }
+            _usageCounts = null;
         }
 
         // ── GUI ──────────────────────────────────────────────────────────────
@@ -92,7 +124,7 @@ namespace TacticalRPG.Editor
 
             _windowScroll = EditorGUILayout.BeginScrollView(_windowScroll);
             EditorGUILayout.Space(6);
-            DrawFaceSelector();
+            DrawCurrentMapHeader();
             EditorGUILayout.Space(6);
             DrawPalette();
             EditorGUILayout.Space(6);
@@ -102,74 +134,24 @@ namespace TacticalRPG.Editor
             EditorGUILayout.EndScrollView();
         }
 
-        // ── Küp yüzü seçici (Küp = 6 yüz, açılım/cross düzeni) ───────────────
-        // Her yüz KENDİ TileMapSO asset'i: yüz 1 (Ön) = TileMap.asset; 2-6 = Face_N.asset (ilk
-        // seçimde oluşur). Yüz seçince grid o yüzün haritasıyla yenilenir → tasarlarsın, Ctrl+S
-        // kalıcı kaydolur. (Sonra: oyun-içi yüz çubuğu + kenar geçişleri + küp dönüşü aynı asset'leri kullanır.)
-        private static readonly string[] FaceNames = { "", "Ön", "Sağ", "Arka", "Sol", "Üst", "Alt" }; // 1-6
-
-        private void DrawFaceSelector()
+        // ── Düzenlenen harita ─────────────────────────────────────────────────
+        // ESKİ "9 harita / 3×3 snake" YÜZ SEÇİCİSİ KALDIRILDI (2026-08-04, kullanıcı isteği:
+        // eski tasarım saklansın ama GÖRÜNMESİN). O seçici sadece göze batmıyordu, aktif bir
+        // TEHLİKEYDİ: "Harita N" düğmesine basmak grid'in haritasını sessizce eski elle boyanmış
+        // TileMap.asset / Face_N.asset ile DEĞİŞTİRİYORDU → üretilen bölüm haritası kayboluyordu.
+        // Eski haritalar silinmedi: Assets/Data/Map/{TileMap,Face_2..9}.asset yerinde +
+        // Docs/Alternatif_Tasarimlar/3x3_Dunya_Haritasi/ yedeği + "TacticalRPG/Arsiv" menüsü.
+        private void DrawCurrentMapHeader()
         {
-            EditorGUILayout.LabelField($"Harita (3×3 snake) — şu an: HARİTA {_currentFace}",
-                EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("9 harita. Haritayı seç → tasarla → Ctrl+S (her harita ayrı + kalıcı).",
+            string mapName = _tileMap != null ? _tileMap.name : "(yok)";
+            EditorGUILayout.LabelField($"Düzenlenen harita: {mapName}", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(
+                "Bölüm haritası PROSEDÜREL üretilir. Yeni harita için: " +
+                "TacticalRPG → Bolum - Haritayi Simdi Uret.",
                 EditorStyles.miniLabel);
-
-            const float w = 72f, h = 34f;
-            int[,] layout = { { 9, 8, 7 }, { 6, 5, 4 }, { 3, 2, 1 } };  // snake dizilim
-            for (int r = 0; r < 3; r++)
-            {
-                EditorGUILayout.BeginHorizontal();
-                for (int col = 0; col < 3; col++) FaceButton(layout[r, col], w, h);
-                EditorGUILayout.EndHorizontal();
-            }
-        }
-
-        private void FaceButton(int face, float w, float h)
-        {
-            Color prev = GUI.backgroundColor;
-            if (face == _currentFace) GUI.backgroundColor = new Color(0.40f, 0.80f, 1f);
-            if (GUILayout.Button($"Harita {face}", GUILayout.Width(w), GUILayout.Height(h)))
-                SelectFace(face);
-            GUI.backgroundColor = prev;
-        }
-
-        private void SelectFace(int n)
-        {
-            if (n < 1 || n > 9) return;
-            TileMapSO map = LoadOrCreateFace(n);
-            if (map == null) return;
-            _currentFace = n;
-            _tileMap     = map;
-            if (_gridManager != null)
-            {
-                _gridManager.SetTileMap(map); // _tileMap'i değiştirir + grid'i yeniden üretir
-                EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-            }
-        }
-
-        private void DetectCurrentFace()
-        {
-            string path = _tileMap != null ? AssetDatabase.GetAssetPath(_tileMap) : "";
-            for (int n = 1; n <= 9; n++)
-                if (path == FaceAssetPath(n)) { _currentFace = n; return; }
-            _currentFace = 1;
-        }
-
-        private static string FaceAssetPath(int n) =>
-            n == 1 ? "Assets/Data/Map/TileMap.asset" : $"Assets/Data/Map/Face_{n}.asset";
-
-        private static TileMapSO LoadOrCreateFace(int n)
-        {
-            string path = FaceAssetPath(n);
-            var map = AssetDatabase.LoadAssetAtPath<TileMapSO>(path);
-            if (map == null)
-            {
-                map = ScriptableObject.CreateInstance<TileMapSO>();
-                AssetDatabase.CreateAsset(map, path);
-                AssetDatabase.SaveAssets();
-            }
-            return map;
+            EditorGUILayout.LabelField(
+                "Buradaki boyama üretilen haritanın ÜSTÜNE yazar; yeniden üretince silinir.",
+                EditorStyles.miniLabel);
         }
 
         // ── Klasörden karo ekleme ─────────────────────────────────────────────
@@ -226,18 +208,24 @@ namespace TacticalRPG.Editor
         private void DrawReferences()
         {
             EditorGUILayout.LabelField("Referanslar", EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
             _gridManager = (HexGridManager)EditorGUILayout.ObjectField(
                 "Grid Manager", _gridManager, typeof(HexGridManager), true);
             _palette = (TilePaletteSO)EditorGUILayout.ObjectField(
                 "Tile Palette", _palette, typeof(TilePaletteSO), false);
             _tileMap = (TileMapSO)EditorGUILayout.ObjectField(
                 "Tile Map", _tileMap, typeof(TileMapSO), false);
+            if (EditorGUI.EndChangeCheck())
+                _usageCounts = null;   // başka harita/grid seçildi → sayaçlar bayat
         }
 
         private void DrawPalette()
         {
             EditorGUILayout.LabelField("Karo Paleti", EditorStyles.boldLabel);
             EditorGUILayout.LabelField("Sağdaki düğme: üstünden GEÇİLİR (yeşil) / GEÇİLMEZ (kırmızı). Tıkla → değiştir.",
+                EditorStyles.miniLabel);
+            EditorGUILayout.LabelField("Düğmenin solundaki sayı: karo bu haritada kaç hücrede var. " +
+                "\"bu haritada YOK\" ise yürünürlüğü değiştirmek burada bir şey yapmaz.",
                 EditorStyles.miniLabel);
 
             if (_palette.tiles.Count == 0)
@@ -259,6 +247,28 @@ namespace TacticalRPG.Editor
                 if (GUILayout.Button("Temizle", GUILayout.Width(64f))) { _tileFilter = ""; GUI.FocusControl(null); }
             }
 
+            // Eski 3×3 dünyanın karoları varsayılan olarak GİZLİ (silinmedi — bkz ArchivedIds).
+            int archivedCount = 0;
+            for (int i = 0; i < _palette.tiles.Count; i++)
+                if (IsArchived(_palette.tiles[i].id)) archivedCount++;
+
+            if (archivedCount > 0)
+            {
+                EditorGUI.BeginChangeCheck();
+                _showArchived = EditorGUILayout.ToggleLeft(
+                    $"Eski (arşiv) karoları da göster — {archivedCount} adet", _showArchived);
+                if (EditorGUI.EndChangeCheck())
+                    EditorPrefs.SetBool(ShowArchivedPrefKey, _showArchived);
+            }
+
+            // Seçili karo gizlendiyse görünür ilk karoya kay — yoksa görünmeyen bir karoyla boyanır.
+            if (!_showArchived && _selectedIndex < _palette.tiles.Count &&
+                IsArchived(_palette.tiles[_selectedIndex].id))
+            {
+                _selectedIndex = _palette.tiles.FindIndex(t => !IsArchived(t.id));
+                if (_selectedIndex < 0) _selectedIndex = 0;
+            }
+
             int shown = 0;
             _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.Height(320));
 
@@ -266,6 +276,8 @@ namespace TacticalRPG.Editor
             {
                 var  entry      = _palette.tiles[i];
                 bool isSelected = i == _selectedIndex;
+
+                if (!_showArchived && IsArchived(entry.id)) continue;
 
                 if (!string.IsNullOrEmpty(_tileFilter) &&
                     entry.id.IndexOf(_tileFilter, System.StringComparison.OrdinalIgnoreCase) < 0 &&
@@ -276,9 +288,13 @@ namespace TacticalRPG.Editor
 
                 Rect r = EditorGUILayout.GetControlRect(false, 30);
 
-                // Sol = seçim (renk+isim); sağ = yürünürlük anahtarı (ayrı buton → tık çakışmaz).
+                // Sol = seçim (renk+isim); orta = bu haritadaki kullanım; sağ = yürünürlük anahtarı
+                // (ayrı buton → tık çakışmaz).
                 const float toggleW = 96f;
-                Rect selectRect = new Rect(r.x, r.y, r.width - toggleW - 4f, r.height);
+                const float usageW  = 104f;
+                Rect selectRect = new Rect(r.x, r.y,
+                    Mathf.Max(40f, r.width - toggleW - usageW - 8f), r.height);
+                Rect usageRect  = new Rect(r.xMax - toggleW - usageW - 4f, r.y + 6f, usageW, 18f);
                 Rect toggleRect = new Rect(r.xMax - toggleW, r.y + 4f, toggleW, r.height - 8f);
 
                 Color prevBG = GUI.backgroundColor;
@@ -294,6 +310,15 @@ namespace TacticalRPG.Editor
                 GUI.Label(new Rect(r.x + 30, r.y + 6, selectRect.width - 34f, 20),
                     $"{entry.displayName}  [{entry.id}]", labelStyle);
 
+                // Bu karo ŞU ANKİ haritada kaç hücrede var? 0 ise yürünürlüğü değiştirmek bu
+                // haritada HİÇBİR ŞEY yapmaz — kullanıcı yanlış karoyu ayarlamasın diye uyarıyoruz.
+                int  usage      = UsageOf(entry.id);
+                var  usageStyle = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleRight };
+                usageStyle.normal.textColor = usage > 0
+                    ? new Color(0.55f, 0.55f, 0.55f)
+                    : new Color(0.95f, 0.62f, 0.20f);
+                GUI.Label(usageRect, usage > 0 ? $"haritada {usage}" : "bu haritada YOK", usageStyle);
+
                 // Yürünürlük anahtarı — tıkla → değiş + paleti dirty + grid hemen yenilen.
                 GUI.backgroundColor = entry.isWalkable ? new Color(0.40f, 0.82f, 0.45f)
                                                        : new Color(0.90f, 0.42f, 0.36f);
@@ -301,16 +326,23 @@ namespace TacticalRPG.Editor
                 {
                     entry.isWalkable = !entry.isWalkable;
                     EditorUtility.SetDirty(_palette);
+                    AssetDatabase.SaveAssets();   // DİSKE yaz — yalnız SetDirty ayarı kaydetmeden
+                                                  // çıkınca/reimport'ta kaybediyordu.
                     RegenerateAll(); // yürünürlük hemen etki etsin (grid yeniden üretilir)
+                    _usageCounts = null;          // sayaçlar tazelensin
                 }
                 GUI.backgroundColor = prevBG;
             }
 
             EditorGUILayout.EndScrollView();
+
+            int visibleTotal = _showArchived ? _palette.tiles.Count
+                                             : _palette.tiles.Count - archivedCount;
             EditorGUILayout.LabelField(
                 string.IsNullOrEmpty(_tileFilter)
-                    ? $"Toplam {_palette.tiles.Count} karo"
-                    : $"{shown} / {_palette.tiles.Count} karo (filtre: \"{_tileFilter}\")",
+                    ? $"Toplam {visibleTotal} karo" +
+                      (_showArchived || archivedCount == 0 ? "" : $"  (+{archivedCount} arşiv gizli)")
+                    : $"{shown} / {visibleTotal} karo (filtre: \"{_tileFilter}\")",
                 EditorStyles.miniLabel);
         }
 
@@ -452,6 +484,40 @@ namespace TacticalRPG.Editor
             }
         }
 
+        // ── Karo kullanım sayacı ──────────────────────────────────────────────
+
+        /// <summary>Karo id'sinin şu anki haritadaki hücre sayısı (gerekirse tabloyu kurar).</summary>
+        private int UsageOf(string id)
+        {
+            if (_usageCounts == null) BuildUsageCounts();
+            return !string.IsNullOrEmpty(id) && _usageCounts.TryGetValue(id, out int n) ? n : 0;
+        }
+
+        /// <summary>Haritadaki karo dağılımını sayar. Atanmamış hücreler
+        /// <see cref="TileMapSO.defaultTileId"/>'ye yazılır — HexGridManager.ResolveEntry ile aynı kural.</summary>
+        private void BuildUsageCounts()
+        {
+            _usageCounts = new Dictionary<string, int>();
+            if (_tileMap == null) return;
+
+            int assigned = 0;
+            foreach (var a in _tileMap.assignments)
+            {
+                if (string.IsNullOrEmpty(a.tileId)) continue;
+                _usageCounts.TryGetValue(a.tileId, out int n);
+                _usageCounts[a.tileId] = n + 1;
+                assigned++;
+            }
+
+            int total = _gridManager != null ? _gridManager.Width * _gridManager.Height : 0;
+            int rest  = total - assigned;
+            if (rest > 0 && !string.IsNullOrEmpty(_tileMap.defaultTileId))
+            {
+                _usageCounts.TryGetValue(_tileMap.defaultTileId, out int n);
+                _usageCounts[_tileMap.defaultTileId] = n + rest;
+            }
+        }
+
         // ── Yardımcılar ───────────────────────────────────────────────────────
 
         private void EnsureGridCells()
@@ -471,6 +537,7 @@ namespace TacticalRPG.Editor
         {
             EditorUtility.SetDirty(_tileMap);
             AssetDatabase.SaveAssets();
+            _usageCounts = null;   // harita değişti → kullanım sayaçları bayat
         }
     }
 }

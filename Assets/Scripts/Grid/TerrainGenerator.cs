@@ -71,9 +71,27 @@ namespace TacticalRPG.Grid
         /// <summary>Bölüm 1'in öz türleri (GAME_DESIGN.md §3: sadece taş + doğa).</summary>
         public enum EssenceKind { None = 0, Tas = 1, Doga = 2 }
 
-        /// <summary>Hex komşuluk yönleri — `harita_sim.DIRS` ile AYNI SIRADA (aday listelerinin
-        /// sırası RNG seçimini etkilediği için sıra kritiktir).</summary>
-        private static readonly int[,] Dirs = { { 1, 0 }, { 1, -1 }, { 0, -1 }, { -1, 0 }, { -1, 1 }, { 0, 1 } };
+        // ── Hex komşuluk (odd-r OFFSET) ──────────────────────────────────────
+        // Üretici (sütun, satır) indisli bir DİZİ üzerinde çalışır ve bu dizi tahtaya
+        // `HexCoordinate.FromOffset` ile oturur → komşuluk da OFFSET kuralına uymak ZORUNDA:
+        // tek satırlar yarım karo sağa kaydığı için komşu tablosu satır PARİTESİNE bağlıdır.
+        //
+        // 2026-08-05 DÜZELTMESİ: burada eskiden düz AXIAL tablo vardı
+        // ({1,0},{1,-1},{0,-1},{-1,0},{-1,1},{0,1}) — dizi bir axial EŞKENAR DÖRTGEN sanılıyordu,
+        // oysa tahta bir DİKDÖRTGEN. Sonuç: nehir kopuk kopuk, bloblar delikli, "bağlantılı"
+        // denen alan tahtada bağlantısız olabiliyordu. Tablolar aşağıda axial karşılıklarıyla
+        // AYNI SIRADA yazıldı (aday listesinin sırası RNG çekimini etkiler).
+        //   sıra:  sağ · sağ-üst · sol-üst · sol · sol-alt · sağ-alt
+        private static readonly int[,] DirsEven = { { 1, 0 }, { 0, -1 }, { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, 1 } };
+        private static readonly int[,] DirsOdd  = { { 1, 0 }, { 1, -1 }, {  0, -1 }, { -1, 0 }, {  0, 1 }, { 1, 1 } };
+
+        /// <summary>(sütun, satır)'ın <paramref name="d"/>. offset komşusu.</summary>
+        private static void Neighbor(int q, int r, int d, out int nq, out int nr)
+        {
+            int[,] t = (r & 1) == 0 ? DirsEven : DirsOdd;
+            nq = q + t[d, 0];
+            nr = r + t[d, 1];
+        }
 
         /// <summary>
         /// `generate_terrain(w, h, seed, ...)` portu. Dönen dizi `[q, r]` ile indislenir.
@@ -109,13 +127,13 @@ namespace TacticalRPG.Grid
                     var candidates = new List<(int q, int r)>();
                     for (int d = 0; d < 6; d++)
                     {
-                        int nq = q + Dirs[d, 0], nr = r + Dirs[d, 1];
+                        Neighbor(q, r, d, out int nq, out int nr);
                         if (InBounds(nq, nr, w, h) && nq >= q) candidates.Add((nq, nr));
                     }
                     if (candidates.Count == 0)
                         for (int d = 0; d < 6; d++)
                         {
-                            int nq = q + Dirs[d, 0], nr = r + Dirs[d, 1];
+                            Neighbor(q, r, d, out int nq, out int nr);
                             if (InBounds(nq, nr, w, h)) candidates.Add((nq, nr));
                         }
 
@@ -164,7 +182,7 @@ namespace TacticalRPG.Grid
                     var nbs = new List<(int q, int r)>();
                     for (int d = 0; d < 6; d++)
                     {
-                        int nq = cur.q + Dirs[d, 0], nr = cur.r + Dirs[d, 1];
+                        Neighbor(cur.q, cur.r, d, out int nq, out int nr);
                         if (InBounds(nq, nr, w, h) && !blob.Contains((nq, nr)) && terrain[nq, nr] == null)
                             nbs.Add((nq, nr));
                     }
@@ -228,7 +246,7 @@ namespace TacticalRPG.Grid
                 var cur = queue.Dequeue();
                 for (int d = 0; d < 6; d++)
                 {
-                    int nq = cur.q + Dirs[d, 0], nr = cur.r + Dirs[d, 1];
+                    Neighbor(cur.q, cur.r, d, out int nq, out int nr);
                     if (!InBounds(nq, nr, w, h)) continue;
                     if (IsImpassable(terrain[nq, nr])) continue;
                     if (seen.Add((nq, nr))) queue.Enqueue((nq, nr));

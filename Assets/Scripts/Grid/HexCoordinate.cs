@@ -31,6 +31,22 @@ namespace TacticalRPG.Grid
             R = r;
         }
 
+        // ── Offset (satır/sütun) ↔ axial dönüşümü ────────────────────────────
+        // Tahta DİKDÖRTGEN çizilir: <see cref="HexGridManager.GenerateGrid"/> hücreleri
+        // "odd-r offset" düzeninde kurar (tek satırlar yarım karo sağa kayar) ve axial'e çevirir.
+        // Üretici/algoritmalar ise (sütun, satır) indisli DİZİ ile çalışır. İki uzay AYNI DEĞİL:
+        // satır r'de axial Q = col - (r >> 1). Dönüşüm atlanırsa üretilen harita tahtaya kayık
+        // oturur (sol altta boş kama, sağdaki üretim çöpe gider) — 2026-08-05'te bulunan hata.
+        /// <summary>(sütun, satır) offset indisinden axial koordinat.</summary>
+        public static HexCoordinate FromOffset(int col, int row) => new(col - (row >> 1), row);
+
+        /// <summary>Axial koordinattan (sütun, satır) offset indisi.</summary>
+        public void ToOffset(out int col, out int row)
+        {
+            row = R;
+            col = Q + (R >> 1);
+        }
+
         // Axial koordinatı dünya pozisyonuna çevirir (pointy-top, XZ düzlemi)
         public Vector3 ToWorldPosition(float hexSize)
         {

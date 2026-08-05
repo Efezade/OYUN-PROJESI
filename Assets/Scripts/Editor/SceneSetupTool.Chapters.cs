@@ -193,6 +193,7 @@ namespace TacticalRPG.Editor
             rSO.FindProperty("_wallet").objectReferenceValue         = FindComponentAnywhere<EssenceWallet>();
             rSO.FindProperty("_turns").objectReferenceValue          = FindComponentAnywhere<TurnManager>();
             rSO.FindProperty("_state").objectReferenceValue          = state;
+            rSO.FindProperty("_collapse").objectReferenceValue       = collapseMgr;
             rSO.ApplyModifiedProperties();
 
             // Sert kesimde harita tiklamalarini kilitle.
@@ -225,26 +226,17 @@ namespace TacticalRPG.Editor
 
             var fog = FindComponentAnywhere<FogOfWarManager>();
 
-            // NOT (2026-07-28): ESKI WatchtowerManager bu kuruluma DAHIL DEGIL.
-            // Sebep: o bilesen "kule" karosuna yaklasinca TUM haritanin sisini aciyor. Prosedurel
-            // harita artik kule karolarini DUGUM olarak yerlestiriyor ve dugum sistemi 5x5'lik
-            // KALICI acma yapiyor (TASK-006) — ikisi ayni karoda catisir, eskisi yenisini
-            // anlamsiz kilardi. Kod SILINMEDI: ALTERNATIF 9 adali dunyada (SetupWorld3x3) hala
-            // kuruluyor ve orada ada-basina acma davranisi anlamli.
-
-            // ── MapCollapseManager — durum baglantisi (_world null: tek harita = "Ada 1")
+            // ── MapCollapseManager — durum baglantisi
             var cm = host.GetComponent<MapCollapseManager>();
             if (cm != null)
             {
                 var cmSO = new SerializedObject(cm);
-                cmSO.FindProperty("_world").objectReferenceValue = null;
                 cmSO.FindProperty("_state").objectReferenceValue = state;
                 cmSO.ApplyModifiedProperties();
             }
 
             EditorUtility.SetDirty(host);
-            Debug.Log("[Bolum] Tek haritali dunya kuruldu (1 bolum = 1 harita). " +
-                      "9 adali dunya ALTERNATIF menusunde duruyor, silinmedi.");
+            Debug.Log("[Bolum] Tek haritali dunya kuruldu (1 bolum = 1 harita).");
         }
 
         /// <summary>Prosedürel terrain'in 11 karo tipini palete ekler — YALNIZ YOKSA
@@ -370,8 +362,7 @@ namespace TacticalRPG.Editor
                 EditorUtility.DisplayDialog("Harita Uretildi",
                     $"Seed {seed} ile uretildi ve sahneye uygulandi.\n\n" +
                     "Play'e basmadan da yeni harita gorunur. Farkli bir harita icin bu menuyu\n" +
-                    "tekrar calistir (havuzdan baska bir seed secilir).\n\n" +
-                    "Eski elle boyanmis harita SILINMEDI (TileMap.asset + Face_2..9 duruyor).", "Tamam");
+                    "tekrar calistir (havuzdan baska bir seed secilir).", "Tamam");
         }
 
         /// <summary>NodeConfig.asset'i yükler; YOKSA varsayılanlarla oluşturur (varsa DOKUNMAZ —

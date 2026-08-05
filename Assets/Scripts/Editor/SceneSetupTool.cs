@@ -78,8 +78,7 @@ namespace TacticalRPG.Editor
                 "  • Faz C3 — Tur sistemi (initiative + hareket + saldiri + AI)\n" +
                 "  • Faz C4 — Kam komutan + savas buyusu + lose=Kam olumu\n" +
                 "  • Faz D — Cok-tipli oz + harita toplama + tarifle birim uretme\n" +
-                "  • BOLUM — 1 bolum = 1 harita (TEK harita; 9 adali 3x3 dunya ARTIK ZINCIRDE DEGIL,\n" +
-                "    silinmedi: menu 'ALTERNATIF - 9 Harita 3x3 Dunyayi Geri Yukle')\n" +
+                "  • BOLUM — 1 bolum = 1 harita (prosedurel 22x25 terrain + dugumler)\n" +
                 "  • HARITA ekrani + TAB = 8 bolumluk ilerleme\n\n" +
                 "Ctrl+S ile kaydet, Play'e bas:\n" +
                 "Overworld'de renkli ozleri TOPLA (sag panel, 1 AP) → SavasciRanger URET →\n" +
@@ -261,7 +260,6 @@ namespace TacticalRPG.Editor
             // Watchtower konumları — SABİT poz YOK. Kule = yalnız Tile Painter'da boyanan "kule"
             // karosu (HexGridManager.SpawnVisual onu CellType.Watchtower yapar). Böylece ışık
             // göstergesi/istem sadece GERÇEK kule karolarında çıkar, rastgele karolarda değil.
-            gridSO.FindProperty("_watchtowerPositions").ClearArray();
             gridSO.ApplyModifiedProperties();
             gridManager.GenerateGrid();
             EditorUtility.SetDirty(gridVisualsGO);
@@ -1480,11 +1478,6 @@ namespace TacticalRPG.Editor
             EnsureFolder("Assets/Data/Config");
             EssenceConfigSO config = GetOrCreateEssenceConfig("Assets/Data/Config/EssenceConfig.asset");
 
-            // El yapımı öz haritası (rastgele DEĞİL). VARSA KORUNUR — boyamaların TAM KURULUM'da
-            // silinmez; yoksa birkaç örnek yerleşimle oluşturulur (Essence Painter ile düzenle).
-            EnsureFolder("Assets/Data/Map");
-            EssenceMapSO essenceMap = GetOrCreateEssenceMap("Assets/Data/Map/EssenceMap.asset");
-
             // ── 2) Üretim tarifleri (Savaşçı/Ranger — 2 öz kombinasyonu) ──────
             EnsureFolder("Assets/Data/Recipes");
             CharacterClassData warriorData = AssetDatabase.LoadAssetAtPath<CharacterClassData>(
@@ -1502,31 +1495,16 @@ namespace TacticalRPG.Editor
                 "Assets/Data/Recipes/RangerRecipe.asset", "Ranger", rangerData,
                 new[] { new EssenceAmount(EssenceType.Tas, 1), new EssenceAmount(EssenceType.Doga, 4) });
 
-            // ── 3) EssenceNodeManager (harita öz node'ları + topla) ───────────
-            var oldEN = gameManagerGO.GetComponent<EssenceNodeManager>();
-            if (oldEN != null) Object.DestroyImmediate(oldEN);
-            EssenceNodeManager nodes = gameManagerGO.AddComponent<EssenceNodeManager>();
-            var enSO = new SerializedObject(nodes);
-            enSO.FindProperty("_grid").objectReferenceValue         = grid;
-            enSO.FindProperty("_stateManager").objectReferenceValue = gsm;
-            enSO.FindProperty("_player").objectReferenceValue        = player;
-            enSO.FindProperty("_ap").objectReferenceValue            = ap;
-            enSO.FindProperty("_wallet").objectReferenceValue        = wallet;
-            enSO.FindProperty("_config").objectReferenceValue        = config;
-            enSO.FindProperty("_map").objectReferenceValue           = essenceMap;
-            enSO.FindProperty("_nodeHeight").floatValue              = 0.12f; // yere yakın
-            enSO.FindProperty("_nodeScale").floatValue               = 0.16f;
-            enSO.FindProperty("_ringRadius").floatValue              = 0.34f;
-            enSO.ApplyModifiedProperties();
-
-            // ── 4) OverworldEssenceHUD (sadece cüzdan + topla + roster — ÜRETİM YOK) ─
+            // ── 3) OverworldEssenceHUD (sadece cüzdan + topla + roster — ÜRETİM YOK) ─
+            // NOT (2026-08-05): ESKİ `EssenceNodeManager` (elle boyanmış öz küreleri) SİLİNDİ.
+            // Öz artık KARONUN KENDİSİ (TASK-005) → `_terrain` alanını SetupChapterWorld doldurur.
+            // Eski sistem prosedürel haritada anlamsız koordinatlara küre serpiyordu.
             var oldOE = gameManagerGO.GetComponent<OverworldEssenceHUD>();
             if (oldOE != null) Object.DestroyImmediate(oldOE);
             OverworldEssenceHUD oeh = gameManagerGO.AddComponent<OverworldEssenceHUD>();
             var oeSO = new SerializedObject(oeh);
             oeSO.FindProperty("_state").objectReferenceValue  = gsm;
             oeSO.FindProperty("_wallet").objectReferenceValue = wallet;
-            oeSO.FindProperty("_nodes").objectReferenceValue  = nodes;
             oeSO.FindProperty("_player").objectReferenceValue = player;
             oeSO.FindProperty("_party").objectReferenceValue  = party;
             oeSO.FindProperty("_config").objectReferenceValue = config;
@@ -1572,24 +1550,6 @@ namespace TacticalRPG.Editor
                 "Tamam");
 
             Debug.Log("[TacticalRPG] Faz D (el yapimi oz haritasi + uretim yerlestirmede) kuruldu.");
-        }
-
-        // El yapımı öz haritası asset'i: VARSA korunur (boyamalar silinmez); yoksa örneklerle oluşturulur.
-        private static EssenceMapSO GetOrCreateEssenceMap(string path)
-        {
-            EssenceMapSO map = AssetDatabase.LoadAssetAtPath<EssenceMapSO>(path);
-            if (map != null) return map; // mevcut boyamayı koru
-
-            map = ScriptableObject.CreateInstance<EssenceMapSO>();
-            AssetDatabase.CreateAsset(map, path);
-
-            // Sadece İLK oluşturmada birkaç örnek (oyuncu başlangıcı Q3R4 yakını) — sonra painter ile düzenle.
-            map.SetAmount(new HexCoordinate(2, 4), EssenceType.Toprak, 3);
-            map.SetAmount(new HexCoordinate(4, 4), EssenceType.Su,     2);
-            map.SetAmount(new HexCoordinate(4, 5), EssenceType.Ates,   2);
-            map.SetAmount(new HexCoordinate(4, 5), EssenceType.Toprak, 1);
-            EditorUtility.SetDirty(map);
-            return map;
         }
 
         // EssenceConfig asset'i oluşturur/günceller (3 tip: ad+renk; prefab boş = placeholder).
@@ -1843,132 +1803,14 @@ namespace TacticalRPG.Editor
         private static T GetOrAddVolumeOverride<T>(VolumeProfile profile) where T : VolumeComponent
             => profile.TryGet<T>(out T comp) ? comp : profile.Add<T>(true);
 
-        // ── ALTERNATİF DÜNYA: 9 HARİTA 3x3 SNAKE + PORTAL ───────────────────
-        // TASK-004 (2026-07-28) ile TAM KURULUM zincirinden ÇIKARILDI — yürürlükteki tasarım
-        // "1 bölüm = 1 harita" (bkz SetupChapterWorld). SİLİNMEDİ: bu menüden tek tıkla geri gelir.
-        // Kod, 9 harita asset'i ve ~900 boyalı karo yerinde duruyor.
-        // Ayrıntı + geri yükleme: Docs/Alternatif_Tasarimlar/3x3_Dunya_Haritasi/README.md
-        [MenuItem("TacticalRPG/ALTERNATIF - 9 Harita 3x3 Dunyayi Geri Yukle", false, 25)]
-        public static void SetupWorld3x3()
-        {
-            var grid   = FindComponentAnywhere<HexGridManager>();
-            var player = FindComponentAnywhere<PlayerController>();
-            if (grid == null) { Debug.LogError("[3x3] HexGridManager yok — Faz 1 calistir."); return; }
-
-            var state = FindComponentAnywhere<GameStateManager>();
-            GameObject host = state != null ? state.gameObject : GameObject.Find("GameManager");
-            if (host == null) { Debug.LogError("[3x3] Host GameObject bulunamadi."); return; }
-
-            // (Eski küp bileşenleri projeden tamamen kaldırıldı — artık temizlenecek tip yok.)
-            var wgm = host.GetComponent<WorldGridManager>();
-            if (wgm == null) wgm = host.AddComponent<WorldGridManager>();
-            var so = new SerializedObject(wgm);
-            so.FindProperty("_grid").objectReferenceValue   = grid;
-            so.FindProperty("_player").objectReferenceValue = player;
-            var maps = so.FindProperty("_maps");
-            maps.arraySize = 9;
-            for (int n = 1; n <= 9; n++)
-                maps.GetArrayElementAtIndex(n - 1).objectReferenceValue = LoadOrCreateFaceAsset(n);
-            so.ApplyModifiedProperties();
-
-            // MapInputHandler'a bagla (harita disina tiklama = gecis).
-            var mih = FindComponentAnywhere<MapInputHandler>();
-            if (mih != null)
-            {
-                var mihSO = new SerializedObject(mih);
-                var prop  = mihSO.FindProperty("_worldGrid");
-                if (prop != null) { prop.objectReferenceValue = wgm; mihSO.ApplyModifiedProperties(); }
-            }
-
-            if (grid.GridRoot != null) grid.GridRoot.gameObject.SetActive(true); // grid gizli kalmasin
-
-            // NOT (TASK-004, 2026-07-28): TAB minimap ARTIK BURADA KURULMUYOR — 3x3 ada minimap'i
-            // yerine 8 BOLUMLUK ilerleme seridi geldi, kurulumu SetupChapters()'a tasindi.
-            // Eski 3x3 minimap: git show 3dafb5f:Assets/Scripts/UI/MinimapHUD.cs
-
-            // ── WatchtowerManager — kule ile ada sisini KALICI kaldırma (yakınlık istemi + epik efekt)
-            var fog = FindComponentAnywhere<FogOfWarManager>();
-            var wt  = host.GetComponent<WatchtowerManager>();
-            if (wt == null) wt = host.AddComponent<WatchtowerManager>();
-            var wtSO = new SerializedObject(wt);
-            wtSO.FindProperty("_grid").objectReferenceValue   = grid;
-            wtSO.FindProperty("_player").objectReferenceValue = player;
-            wtSO.FindProperty("_fog").objectReferenceValue    = fog;
-            wtSO.FindProperty("_world").objectReferenceValue  = wgm;
-            wtSO.FindProperty("_state").objectReferenceValue  = state;
-            wtSO.ApplyModifiedProperties();
-
-            // ── MapCollapseManager'a ada-bağımsızlık bağla (Faz 1'de kuruldu; _world/_state o an
-            // henüz yoktu). Bu sayede ışınlanma çöküş sayacını SIFIRLAMAZ, ada başına devam eder.
-            var cm = host.GetComponent<MapCollapseManager>();
-            if (cm != null)
-            {
-                var cmSO = new SerializedObject(cm);
-                cmSO.FindProperty("_world").objectReferenceValue = wgm;
-                cmSO.FindProperty("_state").objectReferenceValue = state;
-                cmSO.ApplyModifiedProperties();
-            }
-
-            // ── Portal (teleport) karoları — Tile Painter'a boyanabilir tipler (adaları bağlar).
-            // portal1..12 (12 çift). Aynı id'li ("portalN") 2 karo bir çift; kullanıcı istediği
-            // adalara boyar (1↔2, 5↔6 …).
-            EnsurePortalPaletteEntries(grid);
-            EnsureCombatTestTiles(grid);
-
-            // ── TeleportManager — portal çiftleri arası ışınlanma (basınca "geç?" istemi)
-            var tp = host.GetComponent<TeleportManager>();
-            if (tp == null) tp = host.AddComponent<TeleportManager>();
-            var tpSO = new SerializedObject(tp);
-            tpSO.FindProperty("_grid").objectReferenceValue   = grid;
-            tpSO.FindProperty("_world").objectReferenceValue  = wgm;
-            tpSO.FindProperty("_player").objectReferenceValue = player;
-            tpSO.FindProperty("_state").objectReferenceValue  = state;
-            tpSO.ApplyModifiedProperties();
-
-            Debug.Log("[3x3-ALT] ALTERNATIF 9 adali dunya geri kuruldu (WorldGrid + Kule + Portal/teleport). " +
-                      "Tek haritali (bolum) kuruluma donmek icin: TAM KURULUM.");
-
-            if (!_silentSetup)
-                EditorUtility.DisplayDialog("Alternatif Dunya Geri Yuklendi",
-                    "9 harita 3x3 snake dunya + portal isinlanmasi geri kuruldu.\n\n" +
-                    "NOT: HARITA ekrani ve TAB seridi BOLUM ilerlemesini gostermeye devam eder\n" +
-                    "(ada gostergesi degil) — dunya calisir, sadece o iki UI bolum-tabanlidir.\n\n" +
-                    "Tek haritali (1 bolum = 1 harita) kuruluma donmek icin TAM KURULUM calistir.",
-                    "Tamam");
-        }
-
-        /// <summary>Portal karo tipleri (portal1-12) — ALTERNATİF 9 adalı dünyanın adalar-arası geçidi.
-        /// Aynı id'li 2 karo bir çift. Tek haritalı (bölüm) kurulumda EKLENMEZ.</summary>
-        private static void EnsurePortalPaletteEntries(HexGridManager grid)
-        {
-            TilePaletteSO palette = grid != null ? grid.TilePalette : null;
-            if (palette == null) return;
-
-            var palSO    = new SerializedObject(palette);
-            var tilesArr = palSO.FindProperty("tiles");
-            for (int i = 1; i <= 12; i++)
-            {
-                string id  = $"portal{i}";
-                int    idx = -1;
-                for (int j = 0; j < tilesArr.arraySize; j++)
-                    if (tilesArr.GetArrayElementAtIndex(j).FindPropertyRelative("id").stringValue == id) { idx = j; break; }
-                if (idx < 0) { tilesArr.arraySize++; idx = tilesArr.arraySize - 1; }
-                var e = tilesArr.GetArrayElementAtIndex(idx);
-                e.FindPropertyRelative("id").stringValue              = id;
-                e.FindPropertyRelative("displayName").stringValue     = $"Portal {i}";
-                e.FindPropertyRelative("prefab").objectReferenceValue = null; // placeholder tint
-                e.FindPropertyRelative("isWalkable").boolValue        = true;
-                e.FindPropertyRelative("canEnterCombat").boolValue    = false;
-                e.FindPropertyRelative("isStore").boolValue           = false;  // arraySize++ son elemani kopyalar
-                e.FindPropertyRelative("editorColor").colorValue      = Color.HSVToRGB((i * 0.16f) % 1f, 0.85f, 0.98f);
-            }
-            palSO.ApplyModifiedProperties();
-            EditorUtility.SetDirty(palette);
-        }
-
-        /// <summary>Deneme karoları (20) — savaş alanı testi; ada yapısından BAĞIMSIZ, çekirdek oynanış.
+        /// <summary>Deneme karoları — savaş alanı testi; ada yapısından BAĞIMSIZ, çekirdek oynanış.
         /// YALNIZ YOKSA eklenir: kullanıcının Inspector ayarları (canEnterCombat, renk, prefab) EZİLMEZ.
-        /// deneme1-10 = normal · deneme11-20 = SAVAŞ ALANI (canEnterCombat ✓, kırmızı-turuncu tonlar).</summary>
+        /// **deneme11-20 = SAVAŞ ALANI** (canEnterCombat ✓, kırmızı-turuncu tonlar) — eski 3×3 dünyanın
+        /// haritalarında (TileMap + Face_2..9) fiilen kullanılıyorlar, o yüzden korunuyorlar.
+        ///
+        /// deneme1-10 (normal, savaşsız) 2026-08-04'te palet temizliğinde SİLİNDİ: hiçbir haritada
+        /// geçmiyorlardı ve 58 karoluk palette aranan karoyu bulmayı zorlaştırıyorlardı. Döngü bu yüzden
+        /// 11'den başlıyor — 1'e geri çekersen silinen 10 karo bir sonraki TAM KURULUM'da geri gelir.</summary>
         private static void EnsureCombatTestTiles(HexGridManager grid)
         {
             TilePaletteSO palette = grid != null ? grid.TilePalette : null;
@@ -1976,7 +1818,7 @@ namespace TacticalRPG.Editor
 
             var palSO    = new SerializedObject(palette);
             var tilesArr = palSO.FindProperty("tiles");
-            for (int i = 1; i <= 20; i++)
+            for (int i = 11; i <= 20; i++)
             {
                 string id  = $"deneme{i}";
                 bool exists = false;
@@ -2000,20 +1842,6 @@ namespace TacticalRPG.Editor
             }
             palSO.ApplyModifiedProperties();
             EditorUtility.SetDirty(palette);
-        }
-
-        private static TileMapSO LoadOrCreateFaceAsset(int n)
-        {
-            EnsureFolder("Assets/Data/Map");
-            string path = n == 1 ? "Assets/Data/Map/TileMap.asset" : $"Assets/Data/Map/Face_{n}.asset";
-            var map = AssetDatabase.LoadAssetAtPath<TileMapSO>(path);
-            if (map == null)
-            {
-                map = ScriptableObject.CreateInstance<TileMapSO>();
-                AssetDatabase.CreateAsset(map, path);
-                AssetDatabase.SaveAssets();
-            }
-            return map;
         }
 
         private static Mesh GetOrCreateHexMesh()

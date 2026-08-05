@@ -118,13 +118,19 @@ namespace TacticalRPG.Core
             if (_map == null || _config == null || _grid == null) return;
 
             // Yerleşim yalnız "ova" karolarına (GAME_DESIGN §3) ve oyuncunun başladığı karo hariç.
+            // Havuz TAHTANIN gerçek koordinatlarında kurulur (HexCoordinate.FromOffset). 2026-08-05'e
+            // kadar ham dizi indisleri kullanılıyordu → alt satırlardaki düğümler var olmayan
+            // hücrelere düşüp SESSİZCE kayboluyordu (zorunlu görev/market dahil).
             HexCoordinate start = _player != null ? _player.CurrentCoord : new HexCoordinate(0, 0);
             var pool = new List<HexCoordinate>();
-            for (int q = 0; q < _grid.Width; q++)
-                for (int r = 0; r < _grid.Height; r++)
+            for (int col = 0; col < _grid.Width; col++)
+                for (int row = 0; row < _grid.Height; row++)
                 {
-                    var c = new HexCoordinate(q, r);
+                    var c = HexCoordinate.FromOffset(col, row);
                     if (c.Equals(start)) continue;
+                    // SADECE erişilebilir bölge (referans: build_nodes → `walkable_comp`).
+                    // Aksi halde bir zorunlu görev dağ ardındaki cebe düşüp bölümü bitirilemez yapardı.
+                    if (!_map.IsReachable(c)) continue;
                     if (_map.TerrainIdAt(c) == TerrainGenerator.OvaId) pool.Add(c);
                 }
 

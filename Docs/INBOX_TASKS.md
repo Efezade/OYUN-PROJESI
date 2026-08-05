@@ -256,6 +256,22 @@ Performans notu: 550 karo + BFS tabanlı bağlantı kontrolü, küçük ölçekl
 > olarak açılması, öz toplama akışı ve 24 AP/gün'ün oyunda hissi TEST EDİLMEDİ. Kabul kriterinin
 > "Unity'de açılabiliyor" kısmını senin doğrulaman gerekiyor: **TAM KURULUM → Play.**
 > Detay: DECISION_LOG.md 2026-07-28 TASK-005 girişi.
+>
+> ---
+> **⚠ SONRADAN BULUNAN KUSUR — DÜZELTİLDİ (Watson, 2026-08-05).** Bu görev `done` işaretliydi ama
+> üretilen harita oyunda YANLIŞ oturuyordu: üretici (sütun, satır) dizisini doğrudan tahtaya
+> yazıyordu, oysa tahta **odd-r offset** (`Q = col - (row>>1)`). Sonuç: 550 hücrenin **144'ü (%26)**
+> hiç atama almıyor (düz ova kalıyor), üretimin sağ tarafı tahta dışına düşüp çöpe gidiyordu.
+> Ayrıca üreticinin komşuluk tablosu düz axial'di → dikdörtgen tahtada nehir kopuk, bloblar delikli
+> ve bağlantı kontrolü YANLIŞ komşulukla ölçüyordu.
+> Düzeltildi (hem C# hem Python referansı); `dogrula.ps1` yeniden koşuldu → **10 seed × 550 karo,
+> sıfır fark**, parite korundu. Tahtanın 550 hücresinin 550'si atama alıyor (doğrulandı).
+>
+> **SENİN KARARIN GEREK:** 10 seed'in "elle doğrulanmış oynanabilirlik" onayı artık BAYAT — o
+> doğrulama bozuk komşulukla yapılmıştı. Yeni komşulukta **seed 20** (82 karo) ve **seed 286**
+> (129 karo = yürünür alanın %29'u) ana bölgeden kopuk cepler içeriyor. Oyun oynanabilir (düğümler
+> erişilebilir bölgeye kısıtlandı) ama öz arzı hesabı değişti. Havuz `GAME_DESIGN §3`'te canonical
+> olduğu için DEĞİŞTİRMEDİM — istersen yeni havuz seçelim.
 
 ### [TASK-006] Zorunlu görev/zindan/encounter/market/kule node sistemi — status: done
 Kaynak: aynı oturum, `Docs/Balance/tools/harita_map1_sim.py` (node değer/maliyet tabloları).
@@ -319,6 +335,14 @@ Performans notu: yok.
 >    dükkân** açılıyor. Gece kapalı (zaman ilerleyince `OnTimeAdvanced` ile güncelleniyor), gündüz açık.
 >    Elle boyanan `magaza` karosu **aynen çalışmaya devam ediyor** — iki yol da geçerli.
 >    Market düğümü TÜKENMEZ, tekrar tekrar girilebilir.
+>
+> ---
+> **⚠ SONRADAN BULUNAN PORT EKSİĞİ — DÜZELTİLDİ (Watson, 2026-08-05).** Referans
+> `harita_map1_sim.build_nodes` düğüm havuzunu **`walkable_comp`** (ana bağlantılı bileşen) üzerinden
+> kuruyor; C# portu ise TÜM `ova` karolarını havuza alıyordu. Dağ/göl ardındaki bir cebe düşen
+> **zorunlu görev bölümü bitirilemez** yapardı. `ChapterMapGenerator.IsReachable()` eklendi, havuz
+> ona kısıtlandı. Ayrıca yerleşim koordinatları artık tahtanın gerçek koordinatında (bkz TASK-005
+> notu) — önceden alt satırlardaki düğümler var olmayan hücrelere düşüp SESSİZCE kayboluyordu.
 
 ### [TASK-007] Zaman baskısı — collapse/zorlaşma + bölüm-scope kayıp/retry — status: awaiting_review
 Kaynak: aynı oturum. Açıklama: TASK-005/006'dan SONRA. Sayılar TASLAK — kullanıcı playtest'le
@@ -367,9 +391,13 @@ Performans notu: yok.
 > 1. **Meta-Öz kodda HİÇ YOK** — projede `Meta` diye bir şey aramadım bulamadım, hiç yazılmamış.
 >    "Meta-Öz korunuyor" kriteri bu yüzden boşlukta doğru: korunacak bir şey yok. Meta-Öz gerçekten
 >    istenen bir sistemse ayrı bir görev gerekiyor.
-> 2. **Uyarı süresi tam 1 gün** (kriter "en az 1-2 gün" diyordu). Mevcut sistemin tasarımı bu:
->    işaretle → ertesi gün sil. 2 güne çıkarmak istersen söyle, `MapCollapseManager`'da işaretleme
->    ile silme arasına bir gün daha koyarım.
+> 2. ~~**Uyarı süresi tam 1 gün**~~ → **DÜZELTİLDİ (Watson, 2026-08-05): artık 2 gün.**
+>    `CollapseConfig._telegraphDays` (varsayılan 2) eklendi. İşaretli karolar silinecekleri günü
+>    taşıyor; her gün sınırında vadesi gelen silinir, `GetRemovalCount(gün + uyarıSüresi)` kadar
+>    yenisi işaretlenir → **günlük silme takvimi değişmedi** (gün10=10 … gün14=14, kümülatif 60),
+>    yalnız uyarı iki gün önceden başlıyor. Kabul kriterinin "en az 1-2 gün" kısmı artık tam karşılanıyor.
+>    Ek: `ResetCollapse()` eklendi ve `RestartChapter` onu çağırıyor — retry'de eski haritanın
+>    silinmiş/işaretli karoları yeni haritaya taşınıyordu (sessiz hata).
 > 3. Sayılar TASLAK olduğu için hepsi `CollapseConfig.asset` / `NodeConfig.asset`'ten ayarlanabilir,
 >    TAM KURULUM ezmez.
 >

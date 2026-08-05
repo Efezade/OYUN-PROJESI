@@ -29,14 +29,6 @@ MonoBehaviour:
     canEnterCombat: 0
     isStore: 0
     surfaceHeightOverride: 0
-  - id: barbarkarakteri
-    displayName: barbarkarakteri
-    prefab: {fileID: 2365868163860744472, guid: 873e773dab20bd84091d1729e9c0d03c, type: 3}
-    editorColor: {r: 0.85, g: 0.425, b: 0.7366668, a: 1}
-    isWalkable: 0
-    canEnterCombat: 0
-    isStore: 0
-    surfaceHeightOverride: 0
   - id: agac1
     displayName: "A\u011Fa\xE7 1"
     prefab: {fileID: 4838299069624766153, guid: 36ad959f8730b3a4f8af78931975ded9, type: 3}
@@ -77,22 +69,6 @@ MonoBehaviour:
     canEnterCombat: 0
     isStore: 0
     surfaceHeightOverride: 0.3
-  - id: kum
-    displayName: Kum
-    prefab: {fileID: 7451080782150078508, guid: 68fdb89a2601d6646b21988ecc0c4c29, type: 3}
-    editorColor: {r: 0.84, g: 0.76, b: 0.5, a: 1}
-    isWalkable: 1
-    canEnterCombat: 0
-    isStore: 0
-    surfaceHeightOverride: 0
-  - id: lav
-    displayName: Lav
-    prefab: {fileID: 6679325916122202230, guid: db38f526af2418b439bc60a0da2e844e, type: 3}
-    editorColor: {r: 0.82, g: 0.28, b: 0.12, a: 1}
-    isWalkable: 0
-    canEnterCombat: 0
-    isStore: 0
-    surfaceHeightOverride: 0
   - id: mantar
     displayName: Mantar
     prefab: {fileID: 1491404702431365764, guid: f6c1dfe9443f20d4d9f47e7a67617dca, type: 3}
@@ -201,86 +177,6 @@ MonoBehaviour:
     displayName: Portal 12
     prefab: {fileID: 0}
     editorColor: {r: 0.98, g: 0.14699998, b: 0.5468404, a: 1}
-    isWalkable: 1
-    canEnterCombat: 0
-    isStore: 0
-    surfaceHeightOverride: 0
-  - id: deneme1
-    displayName: Deneme 1
-    prefab: {fileID: 0}
-    editorColor: {r: 0.40499997, g: 0.9, b: 0.7514999, a: 1}
-    isWalkable: 1
-    canEnterCombat: 0
-    isStore: 0
-    surfaceHeightOverride: 0
-  - id: deneme2
-    displayName: Deneme 2
-    prefab: {fileID: 0}
-    editorColor: {r: 0.40499997, g: 0.9, b: 0.8702999, a: 1}
-    isWalkable: 1
-    canEnterCombat: 0
-    isStore: 0
-    surfaceHeightOverride: 0
-  - id: deneme3
-    displayName: Deneme 3
-    prefab: {fileID: 0}
-    editorColor: {r: 0.40499997, g: 0.81090003, b: 0.9, a: 1}
-    isWalkable: 1
-    canEnterCombat: 0
-    isStore: 0
-    surfaceHeightOverride: 0
-  - id: deneme4
-    displayName: Deneme 4
-    prefab: {fileID: 0}
-    editorColor: {r: 0.40499997, g: 0.6920999, b: 0.9, a: 1}
-    isWalkable: 1
-    canEnterCombat: 0
-    isStore: 0
-    surfaceHeightOverride: 0
-  - id: deneme5
-    displayName: Deneme 5
-    prefab: {fileID: 0}
-    editorColor: {r: 0.40499997, g: 0.57329994, b: 0.9, a: 1}
-    isWalkable: 1
-    canEnterCombat: 0
-    isStore: 0
-    surfaceHeightOverride: 0
-  - id: deneme6
-    displayName: Deneme 6
-    prefab: {fileID: 0}
-    editorColor: {r: 0.40499997, g: 0.45450005, b: 0.9, a: 1}
-    isWalkable: 1
-    canEnterCombat: 0
-    isStore: 0
-    surfaceHeightOverride: 0
-  - id: deneme7
-    displayName: Deneme 7
-    prefab: {fileID: 0}
-    editorColor: {r: 0.4742999, g: 0.40499997, b: 0.9, a: 1}
-    isWalkable: 1
-    canEnterCombat: 0
-    isStore: 0
-    surfaceHeightOverride: 0
-  - id: deneme8
-    displayName: Deneme 8
-    prefab: {fileID: 0}
-    editorColor: {r: 0.5930998, g: 0.40499997, b: 0.9, a: 1}
-    isWalkable: 1
-    canEnterCombat: 0
-    isStore: 0
-    surfaceHeightOverride: 0
-  - id: deneme9
-    displayName: Deneme 9
-    prefab: {fileID: 0}
-    editorColor: {r: 0.71189994, g: 0.40499997, b: 0.9, a: 1}
-    isWalkable: 1
-    canEnterCombat: 0
-    isStore: 0
-    surfaceHeightOverride: 0
-  - id: deneme10
-    displayName: Deneme 10
-    prefab: {fileID: 0}
-    editorColor: {r: 0.83070004, g: 0.40499997, b: 0.9, a: 1}
     isWalkable: 1
     canEnterCombat: 0
     isStore: 0

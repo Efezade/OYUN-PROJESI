@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using TacticalRPG.Data;
 using TacticalRPG.Grid;
@@ -35,8 +36,14 @@ namespace TacticalRPG.Core
 
         private const string LastSeedKey = "TacticalRPG.LastChapterSeed";
 
-        private string[,] _terrain;      // [q, r] — üretilmiş karo tipleri (öz tükenince güncellenir)
+        private string[,] _terrain;      // [sütun, satır] — üretilmiş karo tipleri (öz tükenince güncellenir)
         private TileMapSO _runtimeMap;   // RUNTIME kopya — asset'e YAZILMAZ (CLAUDE.md §2)
+
+        // Oyuncunun başlangıcından YÜRÜYEREK erişebildiği karolar (tahta koordinatında).
+        // Dağ/göl arkasında kalan cepler buraya girmez; düğüm yerleşimi bunu kullanır
+        // (referans: harita_map1_sim.build_nodes → havuz `walkable_comp`'tan seçilir).
+        private readonly HashSet<HexCoordinate> _reachable = new();
+        private HexCoordinate _startCoord;
 
         /// <summary>Bu koşumda kullanılan seed (HUD/log için).</summary>
         public int CurrentSeed { get; private set; } = -1;
@@ -84,16 +91,21 @@ namespace TacticalRPG.Core
                 _runtimeMap      = ScriptableObject.CreateInstance<TileMapSO>();
                 _runtimeMap.name = $"ChapterMap_Seed{seed}";
             }
+            // (sütun, satır) → tahtanın AXIAL koordinatı. Bu dönüşüm 2026-08-05'e kadar YOKTU:
+            // harita tahtaya kayık oturuyordu (sol altta giderek büyüyen boş "ova" kaması, sağdaki
+            // üretim tahta dışına düşüp çöpe gidiyordu — 550 karonun 144'ü, %26).
             _runtimeMap.defaultTileId = TerrainGenerator.OvaId;
-            for (int q = 0; q < _config.Width; q++)
-                for (int r = 0; r < _config.Height; r++)
-                    _runtimeMap.SetTileId(new HexCoordinate(q, r), _terrain[q, r]);
+            for (int col = 0; col < _config.Width; col++)
+                for (int row = 0; row < _config.Height; row++)
+                    _runtimeMap.SetTileId(HexCoordinate.FromOffset(col, row), _terrain[col, row]);
+
+            BuildReachable();
 
             _grid.SetTileMap(_runtimeMap);   // grid yeniden üretilir → sis/çöküş kendini yeniler
 
             // Oyuncuyu YÜRÜNÜR bir karoya koy — sabit başlangıç koordinatı prosedürel haritada
             // dağın/gölün içine denk gelebilirdi.
-            if (_player != null) _player.Initialize(ResolveStartCoord());
+            if (_player != null) _player.Initialize(_startCoord);
 
             PlayerPrefs.SetInt(LastSeedKey, seed);
             Debug.Log($"[Bolum] Harita uretildi — seed {seed} ({_config.Width}x{_config.Height}).");
@@ -116,12 +128,30 @@ namespace TacticalRPG.Core
 
         // ── Öz (terrain'in kendisi) ──────────────────────────────────────────
 
+        // Dışarıdan gelen koordinatlar TAHTANIN axial'i; iç dizi (sütun, satır) indisli.
         private bool InRange(HexCoordinate c)
-            => _terrain != null && c.Q >= 0 && c.Q < _terrain.GetLength(0)
-                                && c.R >= 0 && c.R < _terrain.GetLength(1);
+        {
+            if (_terrain == null) return false;
+            c.ToOffset(out int col, out int row);
+            return col >= 0 && col < _terrain.GetLength(0)
+                && row >= 0 && row < _terrain.GetLength(1);
+        }
+
+        /// <summary>Axial koordinatın dizideki karşılığı (sınır kontrolü çağıranın işi).</summary>
+        private string TerrainRef(HexCoordinate c)
+        {
+            c.ToOffset(out int col, out int row);
+            return _terrain[col, row];
+        }
+
+        private void SetTerrain(HexCoordinate c, string id)
+        {
+            c.ToOffset(out int col, out int row);
+            _terrain[col, row] = id;
+        }
 
         /// <summary>Bu karonun terrain tipi (yoksa null).</summary>
-        public string TerrainIdAt(HexCoordinate c) => InRange(c) ? _terrain[c.Q, c.R] : null;
+        public string TerrainIdAt(HexCoordinate c) => InRange(c) ? TerrainRef(c) : null;
 
         /// <summary>Karonun tipini değiştir (hem terrain hem runtime TileMap hem görsel).
         /// Düğüm yerleşimi kullanır: ör. gözetleme kulesi karosunu gerçek "kule" karosuna çevirmek —
@@ -129,7 +159,7 @@ namespace TacticalRPG.Core
         public void SetTile(HexCoordinate c, string tileId)
         {
             if (!InRange(c) || string.IsNullOrEmpty(tileId)) return;
-            _terrain[c.Q, c.R] = tileId;
+            SetTerrain(c, tileId);
             if (_runtimeMap != null) _runtimeMap.SetTileId(c, tileId);
             if (_grid != null) _grid.RegenerateCellVisual(c);   // IsWalkable de palete göre senkronlanır
         }
@@ -138,7 +168,7 @@ namespace TacticalRPG.Core
         public bool HasEssenceAt(HexCoordinate c)
         {
             if (!InRange(c)) return false;
-            TerrainGenerator.EssenceOf(_terrain[c.Q, c.R], out int amount, out _);
+            TerrainGenerator.EssenceOf(TerrainRef(c), out int amount, out _);
             return amount > 0;
         }
 
@@ -146,7 +176,7 @@ namespace TacticalRPG.Core
         public string Describe(HexCoordinate c)
         {
             if (!InRange(c)) return "";
-            string id = _terrain[c.Q, c.R];
+            string id = TerrainRef(c);
             TerrainGenerator.EssenceOf(id, out int amount, out TerrainGenerator.EssenceKind kind);
             if (amount <= 0) return "";
             return $"{amount} {(kind == TerrainGenerator.EssenceKind.Tas ? "Taş" : "Doğa")} ({id})";
@@ -160,7 +190,7 @@ namespace TacticalRPG.Core
         {
             if (!CanCollect(c)) return false;
 
-            TerrainGenerator.EssenceOf(_terrain[c.Q, c.R], out int amount, out TerrainGenerator.EssenceKind kind);
+            TerrainGenerator.EssenceOf(TerrainRef(c), out int amount, out TerrainGenerator.EssenceKind kind);
             if (amount <= 0) return false;
 
             if (_ap != null) _ap.SpendAP(_collectAPCost);
@@ -169,7 +199,7 @@ namespace TacticalRPG.Core
                 _wallet.Gain(kind == TerrainGenerator.EssenceKind.Tas ? EssenceType.Tas : EssenceType.Doga, amount);
 
             // TEK SEFERLİK: karo tükenir → ova. Hem terrain'de hem runtime TileMap'te.
-            _terrain[c.Q, c.R] = TerrainGenerator.DepletedId;
+            SetTerrain(c, TerrainGenerator.DepletedId);
             if (_runtimeMap != null) _runtimeMap.SetTileId(c, TerrainGenerator.DepletedId);
             if (_grid != null) _grid.RegenerateCellVisual(c);
 
@@ -177,13 +207,27 @@ namespace TacticalRPG.Core
         }
 
         /// <summary>Oyuncunun başlayacağı karo: config'teki ipucundan en yakın YÜRÜNÜR karo,
-        /// ana bağlantılı bileşen içinde (harita parçalıysa küçük bir adada doğmasın).</summary>
-        public HexCoordinate ResolveStartCoord()
+        /// ana bağlantılı bileşen içinde (harita parçalıysa küçük bir cepte doğmasın).</summary>
+        public HexCoordinate ResolveStartCoord() => _startCoord;
+
+        /// <summary>Bu karoya başlangıçtan YÜRÜYEREK gidilebilir mi? (dağ/göl arkasındaki
+        /// cepler false döner). Düğüm yerleşimi bunu kullanır — erişilemeyen bir karoya konan
+        /// zorunlu görev bölümü bitirilemez yapardı.</summary>
+        public bool IsReachable(HexCoordinate c) => _reachable.Contains(c);
+
+        /// <summary>Erişilebilir karo sayısı (HUD/log/teşhis).</summary>
+        public int ReachableCount => _reachable.Count;
+
+        /// <summary>Başlangıç karosunu ve ana bağlantılı bileşeni hesaplar (üretimden sonra).</summary>
+        private void BuildReachable()
         {
-            if (_terrain == null) return new HexCoordinate(0, 0);
+            _reachable.Clear();
+            if (_terrain == null) { _startCoord = new HexCoordinate(0, 0); return; }
+
             Vector2Int hint = _config != null ? _config.StartHint : new Vector2Int(0, 0);
-            TerrainGenerator.ConnectedComponent(_terrain, hint.x, hint.y, out (int q, int r) start);
-            return new HexCoordinate(start.q, start.r);
+            var comp = TerrainGenerator.ConnectedComponent(_terrain, hint.x, hint.y, out (int q, int r) start);
+            _startCoord = HexCoordinate.FromOffset(start.q, start.r);   // dizi indisi → tahta koordinatı
+            foreach (var t in comp) _reachable.Add(HexCoordinate.FromOffset(t.q, t.r));
         }
     }
 }

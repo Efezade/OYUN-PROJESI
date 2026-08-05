@@ -15,9 +15,7 @@ namespace TacticalRPG.UI
         [Header("Bağımlılıklar")]
         [SerializeField] private GameStateManager  _state;
         [SerializeField] private EssenceWallet      _wallet;
-        [Tooltip("ESKİ akış: elle boyanmış öz node'ları (Essence Painter). Bölüm dünyasında kullanılmaz.")]
-        [SerializeField] private EssenceNodeManager _nodes;
-        [Tooltip("YENİ akış (TASK-005): öz karonun KENDİSİDİR — atanmışsa bu öncelikli kullanılır.")]
+        [Tooltip("Öz KARONUN KENDİSİDİR (TASK-005) — toplanınca karo tükenir.")]
         [SerializeField] private ChapterMapGenerator _terrain;
         [SerializeField] private PlayerController    _player;
         [SerializeField] private PartyManager        _party;
@@ -78,30 +76,15 @@ namespace TacticalRPG.UI
         {
             if (_player == null) return;
 
+            if (_terrain == null) return;
             HexCoordinate here = _player.CurrentCoord;
 
-            // YENİ akış önce: öz = karonun kendisi (terrain), toplanınca karo tükenir.
-            if (_terrain != null)
+            if (_terrain.HasEssenceAt(here))
             {
-                if (_terrain.HasEssenceAt(here))
-                {
-                    GUILayout.Label($"Bu karoda: {_terrain.Describe(here)}");
-                    GUI.enabled = _terrain.CanCollect(here);
-                    if (GUILayout.Button("Topla (1 AP)", GUILayout.Height(26)))
-                        _terrain.CollectAt(here);
-                    GUI.enabled = true;
-                }
-                else GUILayout.Label("Bu karoda öz yok.");
-                return;
-            }
-
-            if (_nodes == null) return;
-            if (_nodes.HasEssenceAt(here))
-            {
-                GUILayout.Label($"Bu karoda: {_nodes.Describe(here)}");
-                GUI.enabled = _nodes.CanCollect(here);
+                GUILayout.Label($"Bu karoda: {_terrain.Describe(here)}");
+                GUI.enabled = _terrain.CanCollect(here);
                 if (GUILayout.Button("Topla (1 AP)", GUILayout.Height(26)))
-                    _nodes.CollectAt(here);
+                    _terrain.CollectAt(here);
                 GUI.enabled = true;
             }
             else GUILayout.Label("Bu karoda öz yok.");

@@ -15,8 +15,9 @@ namespace TacticalRPG.Editor
     ///   • FBX/model  → hex boyutuna ÖLÇEKLER (footprint = köşe-köşe 1.90 m) + pivot ALT-ORTA
     ///                  + MeshCollider ekler → bir prefab kaydeder (Assets/Prefabs/Grid/Tile_&lt;id&gt;).
     ///   • .prefab    → doğrudan referanslar (hazır karo).
-    /// Her varlık için palet girişini (id'ye göre) bul/oluştur ve günceller (NON-DESTRUCTIVE:
-    /// klasörde olmayan mevcut girişlere dokunmaz).
+    /// Her varlık için palet girişini (id'ye göre) bulur/oluşturur. NON-DESTRUCTIVE: klasörde olmayan
+    /// girişlere hiç dokunmaz; klasörde OLAN mevcut girişlerde ise yalnız <c>prefab</c> tazelenir —
+    /// ad/renk/yürünürlük/yükseklik tasarımcınındır ve korunur (bkz. <c>UpsertEntry</c>).
     ///
     /// GÜVENLİK: Bir model aşırı büyük/dağınıksa (footprint &gt; <see cref="MaxFootprint"/> birim)
     /// palete EKLENMEZ — "ATLANDI" uyarısı verilir. Böylece temiz olmayan export'lar (Blender'da
@@ -121,9 +122,11 @@ namespace TacticalRPG.Editor
                     continue;
                 }
 
-                UpsertEntry(palette, def, prefab);
+                bool isNew = UpsertEntry(palette, def, prefab);
                 count++;
-                sb.AppendLine($"  ✓ {stem} → '{def.id}'" + (note != null ? $"   [{note}]" : ""));
+                sb.AppendLine($"  ✓ {stem} → '{def.id}' " +
+                              (isNew ? "(yeni giriş)" : "(model tazelendi — palet ayarları korundu)") +
+                              (note != null ? $"   [{note}]" : ""));
             }
 
             if (count == 0 && sb.Length == 0)
@@ -208,19 +211,38 @@ namespace TacticalRPG.Editor
             };
         }
 
-        private static void UpsertEntry(TilePaletteSO palette, TileDef def, GameObject prefab)
+        /// <summary>Palet girişini ekler/tazeler. Girişi YENİ oluşturduysa true döner.</summary>
+        /// <remarks>
+        /// Yukarıdaki <see cref="Overrides"/> tablosu ve <see cref="ResolveDef"/> yalnızca
+        /// **İLK OLUŞTURMA** varsayılanlarıdır. MEVCUT bir giriş için sadece <c>prefab</c> tazelenir;
+        /// ad / renk / <c>isWalkable</c> / yüzey yüksekliği TASARIMCININ malıdır (Tile Painter'dan
+        /// ayarlanır) ve taramada korunur.
+        ///
+        /// TUZAK (2026-08-04'te bulundu): eskiden bu metod her alanı koşulsuz üzerine yazıyordu.
+        /// Sonuç: Tile Painter'da bir karoyu "Yürünmez ✗" yapıp sonra "Klasörü Tara"ya basınca ayar
+        /// SESSİZCE geri alınıyordu (tablodaki varsayılan su/lav dışında hepsi walkable=true).
+        /// Karo hattı "FBX at → Klasörü Tara → boya" olduğu için bu düğmeye sık basılıyor; yürünmezlik
+        /// ayarları bu yüzden hiç tutmuyordu. Bu davranışı geri getirme.
+        /// </remarks>
+        private static bool UpsertEntry(TilePaletteSO palette, TileDef def, GameObject prefab)
         {
             TilePaletteSO.TileEntry entry = palette.tiles.FirstOrDefault(t => t.id == def.id);
-            if (entry == null)
+            if (entry != null)
             {
-                entry = new TilePaletteSO.TileEntry { id = def.id };
-                palette.tiles.Add(entry);
+                entry.prefab = prefab;   // modeli tazele, tasarımcı ayarlarına DOKUNMA
+                return false;
             }
-            entry.displayName           = def.displayName;
-            entry.prefab                = prefab;
-            entry.editorColor           = def.color;
-            entry.isWalkable            = def.walkable;
-            entry.surfaceHeightOverride = def.surfaceHeightOverride;
+
+            palette.tiles.Add(new TilePaletteSO.TileEntry
+            {
+                id                    = def.id,
+                displayName           = def.displayName,
+                prefab                = prefab,
+                editorColor           = def.color,
+                isWalkable            = def.walkable,
+                surfaceHeightOverride = def.surfaceHeightOverride,
+            });
+            return true;
         }
 
         // ── Yardımcılar ───────────────────────────────────────────────────────

@@ -18,8 +18,6 @@ namespace TacticalRPG.Core
         [Header("Bağımlılıklar")]
         [SerializeField] private HexGridManager   _grid;
         [SerializeField] private GameStateManager _stateManager;
-        [Tooltip("Opsiyonel — atanırsa ada değişince işaretler yeniden kurulur.")]
-        [SerializeField] private WorldGridManager _worldGrid;
 
         [Header("Katalog")]
         [Tooltip("Mağazada satılan öğeler (kalıcı item + geçici pot). Sıra = ekranda görünüm sırası.")]
@@ -41,13 +39,11 @@ namespace TacticalRPG.Core
         private void OnEnable()
         {
             if (_stateManager != null) _stateManager.OnStateChanged += HandleStateChanged;
-            if (_worldGrid    != null) _worldGrid.OnMapChanged      += RebuildMarkersDeferred;
         }
 
         private void OnDisable()
         {
             if (_stateManager != null) _stateManager.OnStateChanged -= HandleStateChanged;
-            if (_worldGrid    != null) _worldGrid.OnMapChanged      -= RebuildMarkersDeferred;
         }
 
         private void Start() => RebuildMarkersDeferred();

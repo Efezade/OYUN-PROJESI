@@ -13,7 +13,24 @@ sadece deneme icindi, iptal - ileride baska maplerde farkli ozler gelecek).
 """
 import random
 from collections import deque
-from harita_sim import neighbors  # noqa: F401
+
+# ── Komsuluk: odd-r OFFSET (2026-08-05 duzeltmesi) ──────────────────────────
+# Onceden `from harita_sim import neighbors` kullaniliyordu; o tablo duz AXIAL
+# ({1,0},{1,-1},{0,-1},{-1,0},{-1,1},{0,1}) ve (q, r) dizisini axial bir ESKENAR DORTGEN
+# sayiyor. Oyun tahtasi ise odd-r OFFSET bir DIKDORTGEN (Unity: HexGridManager.GenerateGrid
+# -> HexCoordinate.FromOffset). Iki uzay ayni degil: bu yuzden uretilen nehir tahtada kopuk
+# kopuk, bloblar delikli cikiyordu ve "bagli" denen alan tahtada bagli olmayabiliyordu.
+# Tablolar eski axial siralamayla AYNI SIRADA (aday listesi sirasi RNG cekimini etkiler).
+#   sira: sag · sag-ust · sol-ust · sol · sol-alt · sag-alt
+DIRS_EVEN = [(1, 0), (0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1)]
+DIRS_ODD  = [(1, 0), (1, -1), (0, -1),  (-1, 0), (0, 1),  (1, 1)]
+
+
+def neighbors(q, r):
+    """(sutun, satir) icin odd-r offset komsulari."""
+    for dq, dr in (DIRS_EVEN if r % 2 == 0 else DIRS_ODD):
+        yield (q + dq, r + dr)
+
 
 IMPASSABLE_BLOBS = ['sik_orman', 'dag', 'gol']
 

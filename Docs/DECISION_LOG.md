@@ -16,6 +16,195 @@
 
 ---
 
+## 2026-08-05 — "Harita düzgün oluşmuyor"un GERÇEK sebebi: koordinat uzayı uyuşmazlığı + eski oyun SİLİNDİ
+
+**Kullanıcı emri:** görevleri git'ten denetle, eksik kalanı tamamla, **eski oyunun öğelerini SİL**
+(assetler kalsın — tekrar kullanılabilir).
+
+### 1) KÖK SEBEP — üretilen harita tahtaya KAYIK oturuyordu
+
+`TerrainGenerator` (sütun, satır) indisli bir dizi üretiyordu ve `ChapterMapGenerator` bunu
+`new HexCoordinate(q, r)` diye **doğrudan** TileMap'e yazıyordu. Ama `HexGridManager.GenerateGrid`
+hücreleri **odd-r offset**'ten türetiyor: `Q = col - (row >> 1)`. İki uzay aynı değil.
+
+Ölçülen zarar (üretilmiş `Bolum1_Uretilen.asset` doğrudan okunarak):
+- **550 hücrenin 144'ü (%26) hiç atama almıyordu** → `defaultTileId` = düz ova. Sol altta satır
+  indikçe büyüyen boş bir kama. Aynı anda üretimin sağ tarafı tahta dışına düşüp **çöpe gidiyordu**.
+- `ChapterNodeManager` de ham indis kullanıyordu → alt satırlara düşen düğümler var olmayan
+  hücrelere denk gelip `RegenerateCellVisual`'da sessizce eleniyordu (**zorunlu görev/market dahil**).
+
+**İkinci, daha derin katman:** düzeltme sırasında görüldü ki üretici **düz axial komşuluk**
+kullanıyordu (`{1,0},{1,-1},{0,-1},{-1,0},{-1,1},{0,1}`) — yani diziyi axial bir *eşkenar dörtgen*
+sanıyordu. Tahta ise *dikdörtgen*. Shear dönüşümü komşuluğu KORUMAZ (çift satırlarda "sağ-üst"
+komşu tahtada 2 karo uzağa düşüyor) → nehir tahtada kopuk kopuk, bloblar delikli, ve
+`largest_connected_component`'in "bağlantılı" dediği alan tahtada bağlantısız olabiliyordu.
+
+**KARAR:** üretici ve tahta AYNI uzayda buluşturuldu — **odd-r offset**:
+- `HexCoordinate.FromOffset/ToOffset` eklendi; `HexGridManager` ve `ChapterMapGenerator` ikisi de bunu kullanıyor.
+- `TerrainGenerator`'ın komşuluk tablosu satır **paritesine** bağlı hale getirildi (DirsEven/DirsOdd),
+  eski axial sırayla birebir eşleşen sırada.
+- Python referansı (`harita_terrain_v2.py`) da aynı şekilde düzeltildi (`harita_sim.neighbors`
+  importu yerine yerel offset komşuluğu).
+- **PARİTE KORUNDU:** `dogrula.ps1` yeniden koşuldu → *"BIREBIR AYNI — 10 seed × 550 karo = 5500 karo,
+  sıfır fark"*. TASK-005'in "Python referansıyla eşleşiyor" kriteri hâlâ geçerli.
+- Doğrulandı: tahtanın 550 hücresinin **550'si** atama alıyor, 0 boşluk, 0 taşma.
+
+**⚠ SHERLOCK'A:** 10 seed'in "elle doğrulanmış adalet/oynanabilirlik" onayı **BAYAT** — o doğrulama
+bozuk komşulukla yapılmıştı. Yeni komşulukta seed **20** (82 karo) ve seed **286** (129 karo, yürünür
+alanın %29'u) ana bölgeden KOPUK cepler içeriyor. Oyun artık bunlarla da oynanabilir (düğümler
+erişilebilir bölgeye kısıtlandı, aşağı bkz) ama öz arzı hesabı değişti. Havuz `GAME_DESIGN §3`'te
+canonical olduğu için DEĞİŞTİRMEDİM.
+
+### 2) TASK-006 port eksiği: düğümler erişilemeyen ceplere düşebiliyordu
+
+Python referansı (`harita_map1_sim.build_nodes`) havuzu **`walkable_comp`**'tan (ana bağlantılı
+bileşen) kuruyor; C# portu ise TÜM `ova` karolarından kuruyordu. Dağ ardındaki bir cebe düşen
+zorunlu görev bölümü **bitirilemez** yapardı. `ChapterMapGenerator.IsReachable()` eklendi, havuz
+ona kısıtlandı. (Seed 89: 244 ova → 241'i erişilebilir; 22 düğüm için fazlasıyla yeterli.)
+
+### 3) TASK-007 kabul kriteri tamamlandı: uyarı süresi 1 → **2 gün**
+
+Kriter "en az 1-2 gün önceden görsel uyarı" diyordu, sistem tam 1 gündü. `CollapseConfig`'e
+`_telegraphDays` (varsayılan 2) eklendi; işaretli karolar artık *silinecekleri günü* taşıyor
+(`_doomed: (coord, removeDay)`), her gün sınırında vadesi gelenler siliniyor ve
+`GetRemovalCount(gün + uyarıSüresi)` kadar yenisi işaretleniyor → **günlük silme takvimi aynı kaldı**
+(gün10=10 … gün14=14, kümülatif 60), sadece uyarı iki gün önce başlıyor.
+Ayrıca `ResetCollapse()` eklendi ve `ChapterRunManager.RestartChapter` onu çağırıyor — retry'de
+eski haritanın silinmiş/işaretli karoları yeni haritaya taşınmıyordu.
+
+### 4) ESKİ OYUN SİLİNDİ (kullanıcı emri) — assetlere DOKUNULMADI
+
+**Silinen kod:** `WorldGridManager` · `TeleportManager` · `WatchtowerManager` ·
+`EssenceNodeManager` · `EssencePainterWindow` · `SceneSetupTool.SetupWorld3x3()` +
+`EnsurePortalPaletteEntries()` + `LoadOrCreateFaceAsset()` + `GetOrCreateEssenceMap()` ·
+`HexGridManager._watchtowerPositions` · `MapCollapseManager`'ın ada-başına durum sözlüğü
+(tek haritaya indirildi) · `MapInputHandler._worldGrid` · `StoreManager._worldGrid` ·
+`OverworldEssenceHUD._nodes`. "Arsiv" menüsü de gitti.
+
+**Neden önemliydi (kozmetik değil):** `EssenceNodeManager` CANLI sahnedeydi ve `Start()`'ta
+`EssenceMap.asset`'teki **eski elle boyanmış** koordinatlardan (negatif Q'lar dahil) öz küreleri
+sahneye serpiyordu — prosedürel haritada anlamsız yerlerde duran görsel çöp.
+
+**Silinmeyen (emir gereği):** hiçbir `.asset`/`.fbx`/`.prefab`. `TileMap.asset` + `Face_2..9.asset`
+(eski 9 harita), `EssenceMap.asset`, paletteki `portal*`/`deneme*`/`agac*` girişleri, tüm modeller
+yerinde. `EssenceMapSO.cs` de duruyor — `EssenceMap.asset`'in şeması olduğu için (silinseydi asset
+bozuk script'e düşerdi).
+
+**Geri dönüş:** artık tek yol git — `git show 48a8b49:Assets/Scripts/Core/WorldGridManager.cs` vb.
+
+**DOĞRULAMA:** İki assembly de Unity'nin kendi Roslyn'iyle **hatasız derlendi (exit=0)**;
+C#↔Python paritesi **kanıtlandı**; `Bolum1_Uretilen.asset` doğru koordinatlarla (seed 89) yeniden
+üretildi ve tahtayı tam kapladığı doğrulandı. **UNITY'DE AÇILMADI/OYNANMADI.**
+
+**COMMIT:** (bu giriş)
+**DERS:** İki ayrı yerde "(q, r)" yazması aynı koordinat sistemi oldukları anlamına gelmez. Bir
+üretici ile onu tüketen tahta arasında dönüşüm YOKSA, bu bir varsayımdır — ve sessizce yanlış
+olabilir. Belirti "harita biraz tuhaf" gibi görünür; asıl kanıt veri: kaç hücre atama ALMIYOR?
+
+---
+
+## 2026-08-04 — Eski 3×3 tasarımı editörden GİZLENDİ (silinmedi) + "harita düzgün oluşmuyor" teşhisi
+
+> **SÜPERSEDE (2026-08-05):** Kullanıcı eski tasarımın saklanmasına gerek olmadığını, silinebileceğini
+> söyledi. Buradaki "gizleme" işi yerini SİLMEYE bıraktı (bkz üstteki giriş). Tile Painter'daki
+> arşiv-karo filtresi duruyor (palet asset'i korunduğu için hâlâ işe yarıyor).
+
+**ŞİKÂYET (kullanıcı):** "harita düzgün oluşmuyor gibi hissediyorum" + "eski harita tasarımını
+sadece sakla, gösterme, görmek de istemiyorum."
+
+**BULGU 1 — üretilen haritanın VERİSİ sağlam.** `Bolum1_Uretilen.asset` doğrudan okundu:
+550 karo (22×25), 431 yürünür ve **hepsi tek bağlantılı bileşende** (BFS ile doğrulandı — kopuk
+ada yok), 1 nehir + 2 köprü, 3 kule, 3 zorunlu görev, 6 mağara, 8 kamp, 2 mağaza. Sahne bağlantısı
+da doğru: `HexGridManager._tileMap` → `Bolum1_Uretilen`, 22×25, palet atanmış. Yani üretici çalışıyor.
+
+**BULGU 2 — asıl şüpheli Tile Painter'ın 9-harita seçicisiydi.** Pencerenin en üstünde duran
+"Harita (3×3 snake)" ızgarasındaki bir düğmeye basmak `SetTileMap(TileMap/Face_N)` çağırıyor →
+sahnedeki **üretilen harita sessizce eski elle boyanmış haritayla değişiyordu**. Kullanıcı bunu
+"harita düzgün oluşmadı" diye görür; aslında başka bir harita yüklenmiştir.
+
+**KARAR — eski tasarım göz önünden alındı, HİÇBİR ŞEY SİLİNMEDİ:**
+1. Tile Painter'daki 9-harita/3×3 yüz seçicisi **kaldırıldı**; yerine yalnız düzenlenen haritanın
+   adı + "yeni harita nasıl üretilir" ipucu. (Bu aynı zamanda yukarıdaki tuzağı ortadan kaldırıyor.)
+2. Palette eski dünyanın karoları (`default`, `agac1/2/3`, `cicek`, `mantar`, `su`, `kum`, `lav`,
+   `portal*`, `deneme*`) **varsayılan olarak gösterilmiyor** — "Eski (arşiv) karoları da göster"
+   kutusuyla geri gelir (tercih EditorPrefs'te). **Palet asset'i değiştirilmedi**, bu sadece görüntü
+   filtresi → boyalı alternatif haritalar etkilenmez.
+3. Menü kalemi `ALTERNATIF - 9 Harita 3x3 Dunyayi Geri Yukle` → **`TacticalRPG/Arsiv/`** altına taşındı.
+4. TAM KURULUM ve harita-üretme diyaloglarındaki "9 adalı dünya / eski harita silinmedi" cümleleri
+   çıkarıldı (kullanıcı o metinleri görmek istemiyor).
+
+Geri yükleme yolu ve tam liste: `Docs/Alternatif_Tasarimlar/3x3_Dunya_Haritasi/README.md` → "Gizleme".
+
+**AÇIK — kullanıcıya soruldu, cevap bekleniyor:** Harita verisi doğruysa "düzgün değil" hissi
+büyük olasılıkla **görsel**: alt tipler (ova/taşlık/ağaçlı/orman) hücre hücre bağımsız ağırlıkla
+seçiliyor, kümelenme YOK → orman/taşlık bölge yerine tuz-biber serpiştirme. Python referansı da
+böyle (denge simülasyonu için yazılmıştı, görsel için değil). Kümeleme istenirse ayrı görev.
+
+**DOĞRULAMA:** İki assembly de Unity'nin kendi Roslyn'iyle **hatasız derlendi (exit=0)**.
+**Unity'de açılmadı/oynanmadı** — Tile Painter'ın yeni hâli gözle görülmedi.
+
+**COMMIT:** (bu giriş)
+**DERS:** Bir editör aracının "sadece görünüm" sandığın bir parçası, canlı veriyi yazan bir düğme
+olabilir. Eski tasarımı saklarken onu KURCALANABİLİR bırakmak, silmekten daha tehlikeli.
+
+---
+
+## 2026-08-04 — "Yürünmez yaptım ama hâlâ yürünüyorum": 3 ayrı sebep + palet temizliği
+
+**ŞİKÂYET (kullanıcı):** Tile Painter'da karolar "Yürünmez ✗" yapılıyor ama oyunda hâlâ üstünden
+geçiliyor.
+
+**BULGU — hareket tarafı SAĞLAMDI.** `HexPathfinder`, `MapInputHandler` ve `TurnManager` üçü de
+`IsWalkable`'ı doğru kontrol ediyor; `HexGridManager.SpawnVisual` da hücreyi palete göre senkronluyor.
+Kırık olan **paletteki değerin kendisiydi** — üç ayrı sebepten:
+
+1. **`TileFolderImporter.UpsertEntry` mevcut girişleri koşulsuz eziyordu.** "Klasörü Tara → Palete Ekle"
+   her basıldığında `isWalkable` (+ ad, renk, yüzey yüksekliği) sabit `Overrides` tablosundan geri
+   yazılıyordu; tabloda `su`/`lav` dışında her şey `walkable = true`. Karo hattı zaten
+   "FBX at → Klasörü Tara → boya" olduğu için bu düğmeye sık basılıyor. Ölçülen zarar: kullanıcının
+   `agac1/2/3` **ve `kule`** ayarları her taramada sıfırlanıyordu — `kule` CANLI Bölüm 1 haritasında var,
+   yani bu sessizce oynanışı bozuyordu.
+   **KARAR:** `Overrides`/`ResolveDef` artık **yalnız ilk oluşturma** varsayılanı. Mevcut girişte sadece
+   `prefab` tazeleniyor; ad/renk/yürünürlük/yükseklik **tasarımcınındır** ve korunuyor.
+2. **Anahtar diske yazmıyordu.** Toggle yalnız `EditorUtility.SetDirty` çağırıyordu →
+   kaydetmeden çıkışta/reimport'ta ayar kayboluyordu. `AssetDatabase.SaveAssets()` eklendi.
+3. **Palet 58 karo gösteriyordu ama canlı harita bunların yalnız 16'sını kullanıyor.** Kullanıcı
+   haritadaki ağacı yürünmez yapmak isteyip "Ağaç 1/2/3"ü kapatıyor — oysa üretilen haritadaki ağaçlar
+   `orman` / `nadir_yuksek_orman` / `sik_orman`. `agac*` eski 3×3 dünyanın karosu, Bölüm 1'de hiç yok.
+   **KARAR:** Tile Painter her satırda artık "**haritada N**" / "**bu haritada YOK**" (turuncu) rozeti
+   gösteriyor → etkisiz bir toggle görünür oldu.
+
+**PALET TEMİZLİĞİ (kullanıcı isteği, kapsam kullanıcıya sorulup onaylandı):** 58 → **45** giriş.
+Silinen 13: `barbarkarakteri` (kırık referans — bir karakter FBX'i yanlışlıkla karo olarak taranmış,
+işaret ettiği asset zaten yoktu), `deneme1-10` (prefabsız placeholder), `kum`, `lav`.
+Ayrıca 3 yetim prefab: `Tile_kum`, `Tile_lav`, `Tile_KopruKaro` (sonuncusu hiçbir yerden referanssızdı;
+güncel köprü `Tile_kopru.prefab`).
+
+**SİLİNMEYENLER — bilinçli:** `default` (Face_2..9 + TileMap'in `defaultTileId`'si), `agac1/2/3`,
+`cicek`, `mantar`, `su`, `portal1-12`, `deneme11-20`. Hepsi ALTERNATİF 3×3 dünyanın haritalarında
+fiilen kullanılıyor — silmek korunan alternatifi bozardı.
+
+**Silmenin KALICI olması için iki kod değişikliği gerekti** (yoksa geri gelirlerdi):
+`SceneSetupTool.EnsureCombatTestTiles` döngüsü `1..20` → **`11..20`** (TAM KURULUM `deneme1-10`'u geri
+ekliyordu); `kum_karo.fbx` + `lav_karo.fbx` **taranan klasörün dışına** alındı
+(`Assets/Art/Models/Tiles_Arsiv/`, README ile) — o klasörde kalsalardı ilk taramada palete dönerlerdi.
+FBX'ler silinmedi, arşivlendi (geri dönülebilir).
+
+**DOĞRULAMA:** Kalan 45 girişin, tüm haritalarda geçen her `tileId` ve `defaultTileId`'yi karşıladığı
+script'le doğrulandı. **UNITY'DE OYNANARAK TEST EDİLMEDİ** — derleme ve görsel doğrulama bekliyor.
+
+**AÇIK BULGU (bu işin parçası değil, dokunulmadı):** `CombatTileMap.asset`'in `defaultTileId`'si
+`kaya`, ama palette `kaya` diye bir karo YOK → savaş arenasının her hücresi `entry == null`'a düşüyor,
+`_hexCellPrefab` ile çiziliyor ve `IsWalkable` varsayılan `true` kalıyor. Arena düz/yürünür olduğu için
+şu an görünür bir zarar yok, ama arenaya engel konulmak istenirse önce bu bağ kurulmalı.
+
+**COMMIT:** (bu giriş)
+**DERS:** Bir ayar "tutmuyor" diyorsa, ayarı OKUYAN tarafı suçlamadan önce ayarı YAZAN tarafları say.
+Burada okuma zinciri baştan sona doğruydu; üç ayrı yazıcı (importer, eksik kaydetme, yanlış karo seçimi)
+aynı semptomu üretiyordu.
+
+---
+
 ## 2026-08-04 — Canlı sahne artık `Assets/Scenes/xd.unity` (SampleScene DEĞİL)
 
 **KARAR:** TASK-005/006/007 ile kurulan 22×25 prosedürel harita, node'lar (`Node_Mandatory_*`,
@@ -422,6 +611,28 @@ Tarihsel gerekçeleri arşivde; burada sadece **hâlâ geçerli olan** hüküm v
   Z-up + pivot tepedeydi.
 - Karo FBX'lerinin doku yolları `C:\Users\zeynep\Downloads\*.jpg`'ye referans veriyor → dokular projede
   yok. "Karolar neden renksiz" sorusunun cevabı bu, shader değil.
+- **Importer'ın `Overrides` tablosu YALNIZ İLK OLUŞTURMA varsayılanıdır.** `UpsertEntry` mevcut girişte
+  sadece `prefab`'ı tazeler. Oraya "ad/renk/yürünürlük de tazelensin" diye geri koyma: 2026-08-04'e kadar
+  öyleydi ve her "Klasörü Tara" tasarımcının Yürünür/Yürünmez ayarlarını **sessizce** geri alıyordu.
+- **Palet girişini silmek tek başına KALICI DEĞİL.** İki üretici geri ekler: taranan klasörde
+  (`Assets/Art/Models/Tiles/`, özyinelemeli) duran FBX → "Klasörü Tara"da; `deneme*` ve `portal*` →
+  TAM KURULUM'un `EnsureCombatTestTiles` / `EnsurePortalTiles` döngüleri. Silerken ikisini de kes.
+- **Palet ≠ harita.** Palette bir karonun olması onun haritada KULLANILDIĞI anlamına gelmez: 45 karoluk
+  palette Bölüm 1 haritası yalnız 16'sını kullanıyor, kalanı eski 3×3 dünyanın. Tile Painter'daki
+  "haritada N / bu haritada YOK" rozeti bunun içindir — yürünürlük ayarlamadan önce ona bak.
+  (2026-08-04'ten beri o eski karolar varsayılan olarak gizli.)
+- **"Harita bozuk göründü" demeden önce hangi TileMapSO'nun yüklü olduğuna bak.** `SetTileMap`
+  çağıran her yol (eskiden Tile Painter'ın 9-harita düğmeleri) sahnedeki üretilen haritayı sessizce
+  başka bir asset'le değiştirebilir. Grid'in `_tileMap`'i `Bolum1_Uretilen` değilse üretici suçsuzdur.
+- **Tahta koordinatı ≠ dizi indisi.** Tahta **odd-r offset**: `Q = col - (row >> 1)`
+  (`HexCoordinate.FromOffset`). Harita üreten/okuyan her yeni kod bu dönüşümü YAPMAK ZORUNDA;
+  ham `(q, r)` yazmak haritayı satır satır kaydırır ve %26'sını sessizce yutar (2026-08-05).
+  Sınama basit: **tahtanın kaç hücresi atama almıyor?** 0 değilse dönüşüm eksiktir.
+- **Komşuluk tablosu da offset'e bağlıdır** (satır paritesi: `DirsEven`/`DirsOdd`). Düz axial tablo
+  kullanan bir algoritma dikdörtgen tahtada kopuk nehir/delikli blob üretir — üstelik kendi
+  "bağlantılıdır" kontrolünü de geçer, çünkü yanlış komşulukla ölçer.
+- **Düğüm yerleşimi ERİŞİLEBİLİR bölgeye kısıtlı olmalı** (`ChapterMapGenerator.IsReachable`).
+  Aksi halde zorunlu görev dağ ardındaki cebe düşer ve bölüm bitirilemez.
 
 **Render / sahne**
 - URP shader property **`_BaseColor`** (`_Color` DEĞİL). Tint her zaman `MaterialPropertyBlock` ile →

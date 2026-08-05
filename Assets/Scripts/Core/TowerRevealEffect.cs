@@ -7,11 +7,8 @@ namespace TacticalRPG.Core
     /// Kule ile sis açılırken oynayan **epik açılış efekti**: gökten inen ışık hüzmesi + zeminde
     /// dışa genişleyen halka + anlık ışık patlaması.
     ///
-    /// Bu efekt eskiden <see cref="WatchtowerManager"/>'ın içindeydi; o bileşen ADA BAŞINA "tüm
-    /// haritayı aç" mantığıyla çalışıyor ve bölüm dünyasında kullanılmıyor. Efekt oradan buraya
-    /// AYRILDI ki düğüm tabanlı kule (<see cref="ChapterNodeManager"/>, 9 karo çapında açma) da
-    /// aynı görseli oynatabilsin. <see cref="WatchtowerManager"/> kendi kopyasıyla çalışmaya
-    /// devam ediyor — alternatif dünya bozulmadı.
+    /// Düğüm tabanlı gözetleme kulesi (<see cref="ChapterNodeManager"/>, 9 karo çapında kalıcı
+    /// sis açma) bu efekti oynatır.
     /// </summary>
     public class TowerRevealEffect : MonoBehaviour
     {

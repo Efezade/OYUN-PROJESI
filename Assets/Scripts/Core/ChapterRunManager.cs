@@ -29,6 +29,8 @@ namespace TacticalRPG.Core
         [SerializeField] private EssenceWallet       _wallet;
         [SerializeField] private TurnManager         _turns;
         [SerializeField] private GameStateManager    _state;
+        [Tooltip("Yeniden başlarken çöküş sayacı/işaretleri sıfırlansın diye.")]
+        [SerializeField] private MapCollapseManager  _collapse;
 
         [Tooltip("Bölüm kaybedilince sıfırlanan ÖZ türleri — bölümün ham özü. Kalıcı birime dönüşmüş " +
                  "öz zaten roster'da, etkilenmez.")]
@@ -92,7 +94,10 @@ namespace TacticalRPG.Core
             // 2) Zaman motoru 1. güne sarılır (tüm run değil, bu bölümün sayacı).
             if (_ap != null) { _ap.SetFrozen(false); _ap.ResetTime(); }
 
-            // 3) Harita havuzdan FARKLI bir seed ile yeniden üretilir → düğümler/sis/çöküş sıfırlanır
+            // 3) Çöküş durumu sıfırlanır (silinmiş/işaretli karolar yeni haritaya taşınmasın).
+            if (_collapse != null) _collapse.ResetCollapse();
+
+            // 4) Harita havuzdan FARKLI bir seed ile yeniden üretilir → düğümler/sis sıfırlanır
             //    (ChapterNodeManager ve MapCollapseManager OnMapGenerated/OnGridRegenerated dinliyor).
             if (_map != null) _map.GenerateNew();
 

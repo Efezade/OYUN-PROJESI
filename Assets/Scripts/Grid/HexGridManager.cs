@@ -20,9 +20,6 @@ namespace TacticalRPG.Grid
         [SerializeField] private TilePaletteSO _tilePalette;
         [SerializeField] private TileMapSO     _tileMap;
 
-        [Header("Harita Özellikleri")]
-        [SerializeField] private List<HexCoordinate> _watchtowerPositions = new();
-
         private Dictionary<HexCoordinate, HexCell> _cells;
 
         public IReadOnlyDictionary<HexCoordinate, HexCell> Cells      => _cells;
@@ -67,16 +64,12 @@ namespace TacticalRPG.Grid
 
             for (int r = 0; r < _height; r++)
             {
-                int rOffset = r >> 1;
                 for (int col = 0; col < _width; col++)
                 {
-                    int q     = col - rOffset;
-                    var coord = new HexCoordinate(q, r);
+                    // odd-r offset → axial (bkz HexCoordinate.FromOffset). Üretici de AYNI
+                    // dönüşümü kullanır; ikisi ayrışırsa harita tahtaya kayık oturur.
+                    var coord = HexCoordinate.FromOffset(col, r);
                     var cell  = new HexCell(coord, _hexSize);
-
-                    if (_watchtowerPositions.Contains(coord))
-                        cell.CellType = CellType.Watchtower;
-
                     _cells[coord] = cell;
                     SpawnVisual(cell);
                 }
@@ -159,8 +152,8 @@ namespace TacticalRPG.Grid
                 cell.CanEnterCombat = entry.canEnterCombat;   // boyalı savaş alanı karosu
                 cell.IsStore        = entry.isStore;          // boyalı mağaza karosu
 
-                // Boyanmış "kule" karosu → görev karosu: WatchtowerManager bunun 1 karo yakınında
-                // ADA sisini kalıcı kaldırma istemi gösterir (sabit _watchtowerPositions'a EK).
+                // "kule" karosu → gözetleme kulesi hücresi. ChapterNodeManager komşu karodan
+                // kullandırır (kulenin üstüne basılamaz) ve çöküş bu hücreleri atlar.
                 if (entry.id == "kule") cell.CellType = CellType.Watchtower;
 
                 // Sisin çarpacağı temel renk: placeholder=editorColor, dokulu prefab=beyaz

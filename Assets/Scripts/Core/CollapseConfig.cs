@@ -9,10 +9,13 @@ namespace TacticalRPG.Core
     public class CollapseConfig : ScriptableObject
     {
         [Header("Kıyamet Eşiği")]
-        [Tooltip("Kaçıncı günün başında çökecek karolar İŞARETLENMEYE başlar? İşaretlenen karolar " +
-                 "1 gün sonra silinir (uyarı süresi). 3 → uyarılar 3. günde çıkar, İLK SİLME 4. günün " +
-                 "sabahında olur (3. günün gecesi bittiği anda).")]
+        [Tooltip("İLK SİLMENİN olduğu gün. Karolar bu günden 'Uyarı Günü' kadar ÖNCE işaretlenir " +
+                 "(kırmızı çerçeve + sayaç), sonra silinir.")]
         [SerializeField] private int _collapseStartDay = 3;
+
+        [Tooltip("Bir karo silinmeden KAÇ GÜN önce görsel olarak uyarılır? (TASK-007 kabul kriteri: " +
+                 "en az 1-2 gün). 2 = karo iki gün boyunca çatlak/kırmızı çerçeveli durur, sonra silinir.")]
+        [SerializeField, Min(1)] private int _telegraphDays = 2;
 
         [Header("Çöküş Hızı")]
         [Tooltip("Her gün sonu kaç karo silinir?")]
@@ -32,6 +35,7 @@ namespace TacticalRPG.Core
 
         public int HardCutDay            => _hardCutDay;
         public int CollapseStartDay      => _collapseStartDay;
+        public int TelegraphDays         => Mathf.Max(1, _telegraphDays);
         public int TilesRemovedPerDay    => _tilesRemovedPerDay;
         public int RemovalAcceleration   => _removalAcceleration;
         public int MaxRemovalPerDay      => _maxRemovalPerDay;

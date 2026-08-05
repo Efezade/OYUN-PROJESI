@@ -25,14 +25,10 @@ namespace TacticalRPG.Core
         [SerializeField] private PlayerController   _player;
         [SerializeField] private CollapseConfig     _config;
         [SerializeField] private Camera             _camera;
-        [Tooltip("Hangi ada (CurrentMap) — 3x3 dünya. Yoksa tek ada (1) varsayılır.")]
-        [SerializeField] private WorldGridManager   _world;
         [Tooltip("Yalnız Overworld'de collapse uygula (savaş grid'inde değil). Atanmazsa hep uygulanır.")]
         [SerializeField] private GameStateManager   _state;
-        [Tooltip("Karo çökünce üstündeki özü de siler. Boşsa Awake'te sahnede aranır.")]
-        [SerializeField] private EssenceNodeManager _essenceNodes;
-        [Tooltip("Çöküş anında kırmızı su-dalgası efekti (göle taş atma). 3x3'te uzak adada çöküş " +
-                 "olursa gecikmeyle gelir. Atanmazsa dalga çizilmez (çöküş yine olur).")]
+        [Tooltip("Çöküş anında kırmızı su-dalgası efekti (göle taş atma). Atanmazsa dalga çizilmez " +
+                 "(çöküş yine olur).")]
         [SerializeField] private CollapseWaveEffect _wave;
 
         [Header("Çöküş Görseli")]
@@ -66,22 +62,24 @@ namespace TacticalRPG.Core
 
         private int _lastProcessedDay = 0;
 
-        // ── Ada başına çöküş durumu ──────────────────────────────────────────
-        // doomed    = bu gün sonunda çökecek (işaretli) karolar
-        // collapsed = kalıcı silinmiş karolar (o adaya dönünce yeniden uygulanır)
-        private class MapCollapse
+        // ── Çöküş durumu (1 bölüm = 1 harita → tek durum) ────────────────────
+        // _doomed    = işaretlenmiş karolar + HANGİ GÜN silinecekleri. Karo, silineceği günden
+        //              CollapseConfig.TelegraphDays kadar ÖNCE işaretlenir → oyuncu görmeden
+        //              bir karo ASLA kaybolmaz (TASK-007: "sessiz silinme yok").
+        // _collapsed = kalıcı silinmiş karolar (savaştan dönünce yeniden uygulanır)
+        private readonly List<(HexCoordinate coord, int removeDay)> _doomed = new();
+        private readonly HashSet<HexCoordinate> _collapsed = new();
+
+        private bool IsDoomed(HexCoordinate c)
         {
-            public readonly List<HexCoordinate>    doomed    = new();
-            public readonly HashSet<HexCoordinate> collapsed = new();
+            for (int i = 0; i < _doomed.Count; i++) if (_doomed[i].coord.Equals(c)) return true;
+            return false;
         }
-        private readonly Dictionary<int, MapCollapse> _mapStates = new();
-        private MapCollapse State(int map)
-        {
-            if (!_mapStates.TryGetValue(map, out var s)) { s = new MapCollapse(); _mapStates[map] = s; }
-            return s;
-        }
-        private int CurrentMap => _world != null ? _world.CurrentMap : 1;
+
         private bool InOverworld => _state == null || _state.State == GameState.Overworld;
+
+        /// <summary>Silinecek karo işaretlenirken kaç gün önceden uyarılır.</summary>
+        private int TelegraphDays => _config != null ? _config.TelegraphDays : 2;
 
         // Seçildi ama henüz AÇIKLANMADI (dalga+yıldırım bekliyor) → çerçeve/sayaç gizli.
         private readonly HashSet<HexCoordinate> _pendingReveal = new();
@@ -95,7 +93,6 @@ namespace TacticalRPG.Core
         private void Awake()
         {
             if (_camera == null) _camera = Camera.main;
-            if (_essenceNodes == null) _essenceNodes = FindObjectOfType<EssenceNodeManager>();
             _outlineRoot = new GameObject("CollapseWarnings").transform;
             _outlineRoot.SetParent(transform, false);
         }
@@ -103,10 +100,8 @@ namespace TacticalRPG.Core
         private void OnEnable()
         {
             if (_apManager   != null) _apManager.OnTimeAdvanced += HandleTimeAdvanced;
-            // Harita geçişi / savaştan dönüş → aktif adanın çöküş durumunu yeniden uygula
-            // (ClearWarnings YERİNE — durum artık ada başına saklandığı için sıfırlanmaz).
+            // Savaştan dönüş / harita yeniden üretimi → çöküş durumunu yeniden uygula.
             if (_gridManager != null) _gridManager.OnGridRegenerated += ApplyCollapseStateForCurrentMap;
-            if (_world       != null) _world.OnMapChanged            += ApplyCollapseStateForCurrentMap;
             if (_state       != null) _state.OnStateChanged          += HandleStateChanged;
         }
 
@@ -114,7 +109,6 @@ namespace TacticalRPG.Core
         {
             if (_apManager   != null) _apManager.OnTimeAdvanced -= HandleTimeAdvanced;
             if (_gridManager != null) _gridManager.OnGridRegenerated -= ApplyCollapseStateForCurrentMap;
-            if (_world       != null) _world.OnMapChanged            -= ApplyCollapseStateForCurrentMap;
             if (_state       != null) _state.OnStateChanged          -= HandleStateChanged;
         }
 
@@ -135,25 +129,23 @@ namespace TacticalRPG.Core
 
         private IEnumerator DayBoundaryRoutine(int day)
         {
-            // 0) Dün işaretlenenleri (BUGÜN çökecekler) tüm adalardan topla ve listelerden düş.
-            var todays = new List<(int map, List<HexCoordinate> coords)>();
-            foreach (int map in new List<int>(_mapStates.Keys))
-            {
-                MapCollapse s = State(map);
-                if (s.doomed.Count == 0) continue;
-                todays.Add((map, new List<HexCoordinate>(s.doomed)));
-                s.doomed.Clear();
-            }
+            // 0) Vadesi GELMİŞ (removeDay <= bugün) işaretleri topla ve listeden düş. Uyarı süresi
+            //    TelegraphDays gün olduğu için bunlar en az o kadar gündür kırmızı duruyordu.
+            var todays = new List<HexCoordinate>();
+            for (int i = _doomed.Count - 1; i >= 0; i--)
+                if (_doomed[i].removeDay <= day) { todays.Add(_doomed[i].coord); _doomed.RemoveAt(i); }
+            todays.Reverse();                        // işaretlenme sırası korunsun
             if (todays.Count > 0) ClearOutlines();   // çökenlerin eski kırmızı çerçeveleri
 
-            // 1) Bu gün sonunda çökecek YENİ karoları ŞİMDİ seç (veri hemen kesinleşir; ışınlanma
-            //    sayacı bozamaz). GÖRSEL açıklama (kırmızı çerçeve + sayaç) hemen DEĞİL — dalga
-            //    cephesi karonun üstünden geçerken YILDIRIMLA gelir (PlayWave → RevealDoomedTile).
-            HashSet<HexCoordinate> collapsingNow = null;
-            foreach (var (map, coords) in todays)
-                if (map == CurrentMap) { collapsingNow = new HashSet<HexCoordinate>(coords); break; }
-            int count = _config != null ? _config.GetRemovalCount(day) : 0;
-            List<HexCell> newDoomed = (count > 0 && InOverworld) ? PickDoomed(count, collapsingNow) : null;
+            // 1) İLERİDE (day + TelegraphDays) çökecek YENİ karoları ŞİMDİ seç — veri hemen
+            //    kesinleşir. GÖRSEL açıklama (kırmızı çerçeve + sayaç) hemen DEĞİL: dalga cephesi
+            //    karonun üstünden geçerken YILDIRIMLA gelir (PlayWave → RevealDoomedTile).
+            int targetDay = day + TelegraphDays;
+            var collapsingNow = new HashSet<HexCoordinate>(todays);
+            int count = _config != null ? _config.GetRemovalCount(targetDay) : 0;
+            List<HexCell> newDoomed = (count > 0 && InOverworld)
+                ? PickDoomed(count, targetDay, collapsingNow)
+                : null;
             bool revealsAssigned = false;
 
             // İlk çıkan dalga açıklamaları taşır; diğerleri sade dalga.
@@ -165,47 +157,35 @@ namespace TacticalRPG.Core
                 else _wave.Play(c, d);
             }
 
-            // 2) Çöküşler: aktif ada = deprem + görsel silme + karodan dalga; uzak ada = veri +
-            //    sanal-konumlu dalga (halka o adanın yönünden gerçek mesafeyi katedip gelir).
-            foreach (var (map, coords) in todays)
+            // 2) Çöküşler: deprem + görsel silme + karodan dalga.
+            if (todays.Count > 0 && InOverworld)
             {
-                MapCollapse s = State(map);
-                if (map == CurrentMap && InOverworld)
+                IsCollapseActive = true;
+                foreach (var coord in todays)
                 {
-                    IsCollapseActive = true;
-                    foreach (var coord in coords)
+                    _collapsed.Add(coord);
+                    if (_gridManager.TryGetCell(coord, out HexCell cell) && cell.IsWalkable)
                     {
-                        s.collapsed.Add(coord);
-                        if (_gridManager.TryGetCell(coord, out HexCell cell) && cell.IsWalkable)
-                        {
-                            PlayWave(cell.WorldPosition, 0f);
-                            StartCoroutine(ShakeAndRemove(cell));
-                        }
-                        yield return new WaitForSeconds(0.12f);
+                        PlayWave(cell.WorldPosition, 0f);
+                        StartCoroutine(ShakeAndRemove(cell));
                     }
-                    yield return new WaitForSeconds(_shakeDuration);
-                    IsCollapseActive = false;
+                    yield return new WaitForSeconds(0.12f);
                 }
-                else
+                yield return new WaitForSeconds(_shakeDuration);
+                IsCollapseActive = false;
+            }
+            else
+            {
+                // Savaştayken gün döndüyse: veri işlensin, görseli overworld'e dönünce uygulanır.
+                foreach (var coord in todays)
                 {
-                    int n = 0;
-                    foreach (var coord in coords)
-                    {
-                        if (!s.collapsed.Add(coord)) continue;
-                        TotalRemovedTiles++;
-                        OnTileCollapsed?.Invoke(1, TotalRemovedTiles);
-
-                        if (_world != null && InOverworld)
-                        {
-                            Vector3 local = coord.ToWorldPosition(_gridManager.HexSize);
-                            PlayWave(_world.VirtualPositionOnCurrentMap(map, local), n * 0.15f);
-                        }
-                        n++;
-                    }
+                    if (!_collapsed.Add(coord)) continue;
+                    TotalRemovedTiles++;
+                    OnTileCollapsed?.Invoke(1, TotalRemovedTiles);
                 }
             }
 
-            // 3) Hiç dalga çıkmadıysa (örn. İLK kıyamet günü — henüz çöküş yok) yıldırımlar
+            // 3) Hiç dalga çıkmadıysa (örn. İLK uyarı günü — henüz çöküş yok) yıldırımlar
             //    dalgasız, art arda çakarak yeni işaretleri açıklar.
             if (newDoomed != null && newDoomed.Count > 0 && !revealsAssigned)
             {
@@ -214,28 +194,24 @@ namespace TacticalRPG.Core
             }
         }
 
-        // Yeni işaretlenecek karoları SEÇER (veri: s.doomed + _pendingReveal). Kırmızı çerçeve /
+        // Yeni işaretlenecek karoları SEÇER (veri: _doomed + _pendingReveal). Kırmızı çerçeve /
         // sayaç BURADA ÇİZİLMEZ — dalga cephesi karonun üstünden geçerken yıldırımla açıklanır
         // (RevealDoomedTile). alsoExclude = şu an çökmekte olanlar (yeniden seçilmesinler).
-        private List<HexCell> PickDoomed(int count, HashSet<HexCoordinate> alsoExclude)
+        // removeDay = bu karoların SİLİNECEĞİ gün (bugün + uyarı süresi).
+        private List<HexCell> PickDoomed(int count, int removeDay, HashSet<HexCoordinate> alsoExclude)
         {
-            MapCollapse s = State(CurrentMap);
             HexCoordinate playerCoord = _player != null ? _player.CurrentCoord : default;
-            var tileMap = _gridManager.TileMap;   // portal muafiyeti için boyalı id'ye bak
             var candidates = new List<HexCell>();
             foreach (HexCell cell in _gridManager.Cells.Values)
             {
                 if (!cell.IsWalkable)                        continue;
                 if (cell.Coordinate == playerCoord)          continue;
                 if (cell.CellType == CellType.Watchtower)    continue;
-                if (s.doomed.Contains(cell.Coordinate))      continue;
-                if (s.collapsed.Contains(cell.Coordinate))   continue;
+                if (IsDoomed(cell.Coordinate))               continue;
+                if (_collapsed.Contains(cell.Coordinate))    continue;
                 if (alsoExclude != null && alsoExclude.Contains(cell.Coordinate)) continue;
                 // ZORUNLU GÖREV karoları asla silinmez (TASK-007) — bölüm bitirilemez hale gelmesin.
                 if (_protectedTiles.Contains(cell.Coordinate)) continue;
-                // Portal karoları kıyametten MUAF — adalar arası tek geçiş yolu yok olmasın.
-                string id = tileMap != null ? tileMap.GetTileId(cell.Coordinate) : null;
-                if (id != null && id.StartsWith("portal", StringComparison.Ordinal)) continue;
                 candidates.Add(cell);
             }
 
@@ -245,7 +221,7 @@ namespace TacticalRPG.Core
                 int idx = UnityEngine.Random.Range(0, candidates.Count);
                 HexCell cell = candidates[idx];
                 candidates.RemoveAt(idx);
-                s.doomed.Add(cell.Coordinate);
+                _doomed.Add((cell.Coordinate, removeDay));
                 _pendingReveal.Add(cell.Coordinate);
                 picked.Add(cell);
             }
@@ -262,23 +238,33 @@ namespace TacticalRPG.Core
             CreateOutline(cell);
         }
 
-        /// <summary>Aktif adaya girince: kalıcı silinmişleri (collapsed) grid'e uygula +
-        /// işaretli (doomed) karoların kırmızı çizgilerini yeniden çiz. Savaş grid'inde çalışmaz.</summary>
+        /// <summary>Overworld'e dönünce: kalıcı silinmişleri grid'e uygula + işaretli karoların
+        /// kırmızı çizgilerini yeniden çiz. Savaş grid'inde çalışmaz.</summary>
         public void ApplyCollapseStateForCurrentMap()
         {
             if (_gridManager == null || _gridManager.Cells == null) return;
             ClearOutlines();
-            _pendingReveal.Clear();   // dalga yarıda kaldıysa: bu ada işaretlerini direkt çiz
+            _pendingReveal.Clear();   // dalga yarıda kaldıysa: işaretleri direkt çiz
             if (!InOverworld) return;                 // savaş grid'ine overworld çöküşünü uygulama
 
-            MapCollapse s = State(CurrentMap);
-            foreach (var coord in s.collapsed)
+            foreach (var coord in _collapsed)
                 if (_gridManager.TryGetCell(coord, out HexCell cell) && cell.IsWalkable)
                     RemoveTile(cell);
 
-            foreach (var coord in s.doomed)
+            foreach (var (coord, _) in _doomed)
                 if (_gridManager.TryGetCell(coord, out HexCell cell))
                     CreateOutline(cell);
+        }
+
+        /// <summary>Yeni bölüm/harita başlarken çöküş durumunu tamamen sıfırlar (TASK-007 retry).</summary>
+        public void ResetCollapse()
+        {
+            _doomed.Clear();
+            _collapsed.Clear();
+            _pendingReveal.Clear();
+            TotalRemovedTiles = 0;
+            _lastProcessedDay = 0;
+            ClearOutlines();
         }
 
         // ── Kırmızı hex çizgisi ──────────────────────────────────────────────
@@ -343,7 +329,7 @@ namespace TacticalRPG.Core
             RemoveTile(cell);
             TotalRemovedTiles++;
             OnTileCollapsed?.Invoke(1, TotalRemovedTiles);
-            Debug.Log($"[Collapse] Karo silindi (Ada {CurrentMap}): {cell.Coordinate} | Toplam: {TotalRemovedTiles}");
+            Debug.Log($"[Collapse] Karo silindi: {cell.Coordinate} | Toplam: {TotalRemovedTiles}");
         }
 
         private void RemoveTile(HexCell cell)
@@ -351,20 +337,17 @@ namespace TacticalRPG.Core
             cell.IsWalkable = false;
             cell.CellType   = CellType.Obstacle;
 
-            if (_essenceNodes != null) _essenceNodes.RemoveNodeAt(cell.Coordinate); // öz de yok olsun
-
             if (cell.MeshRenderer != null && _collapsedMaterial != null)
                 cell.MeshRenderer.sharedMaterial = _collapsedMaterial;
             else if (cell.Visual != null)
                 cell.Visual.SetActive(false);
         }
 
-        // ── Karo üstü "kalan AP" etiketi (yalnız aktif adanın doomed'ları) ───
+        // ── Karo üstü "kalan AP" etiketi (işaretli karolar) ─────────────────
         private void OnGUI()
         {
             if (_camera == null || _apManager == null || !InOverworld) return;
-            MapCollapse s = State(CurrentMap);
-            if (s.doomed.Count == 0) return;
+            if (_doomed.Count == 0) return;
 
             if (_labelStyle == null)
                 _labelStyle = new GUIStyle(GUI.skin.label)
@@ -375,7 +358,7 @@ namespace TacticalRPG.Core
             using var _scale = HudScale.Scaled();
 
             int ap = _apManager.APRemainingToday;
-            foreach (var coord in s.doomed)
+            foreach (var (coord, _) in _doomed)
             {
                 if (_pendingReveal.Contains(coord)) continue;   // yıldırım çakana dek sayaç gizli
                 if (!_gridManager.TryGetCell(coord, out HexCell cell)) continue;
