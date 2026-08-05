@@ -121,8 +121,8 @@ graphify-out.meta
 __pycache__/
 *.pyc
 
-# Sunucu sirlari - ASLA depoya girmemeli (sifre iceriyorlar)
-Docs/Sunucu/SHERLOCK_PROMPT.txt
+# Sunucu sirlari - ASLA depoya girmemeli (sifre/ag bilgisi iceriyorlar)
+Docs/Sunucu/*_PROMPT.txt
 *GIRIS_BILGILERI*
 *SIFRE*
 *.token
