@@ -24,8 +24,10 @@ namespace TacticalRPG.UI
         [SerializeField] private HexGridManager    _grid;
 
         [Header("Görünüm")]
-        [SerializeField] private Vector2 _cardSize = new(400f, 520f);
-        [SerializeField] private float   _cardGap  = 56f;
+        // 4 kart (3 karo + 1 garanti büyü) yan yana sığsın diye kart daraltıldı:
+        // 4×330 + 3×40 = 1440 < 1560 satır genişliği.
+        [SerializeField] private Vector2 _cardSize = new(330f, 500f);
+        [SerializeField] private float   _cardGap  = 40f;
         [SerializeField] private Color   _validCellColor = new(0.30f, 0.90f, 1f, 0.55f);
 
         // Grup rengi — kartın nadirlik/tür rozeti. Oyuncu bir bakışta "bu artı mı eksi mi" görsün.
@@ -69,6 +71,7 @@ namespace TacticalRPG.UI
             _drum.OnChoicesOffered += ShowChoices;
             _drum.OnPlacementBegan += ShowPlacement;
             _drum.OnAugmentPlaced  += HandlePlaced;
+            _drum.OnDraftClosed    += HandleDraftClosed;   // büyü atıldı → panel kapansın
         }
 
         private void OnDisable()
@@ -78,6 +81,14 @@ namespace TacticalRPG.UI
             _drum.OnChoicesOffered -= ShowChoices;
             _drum.OnPlacementBegan -= ShowPlacement;
             _drum.OnAugmentPlaced  -= HandlePlaced;
+            _drum.OnDraftClosed    -= HandleDraftClosed;
+        }
+
+        private void HandleDraftClosed()
+        {
+            ClearCards();
+            ClearMarkers();
+            Hide();
         }
 
         // ── Akış ─────────────────────────────────────────────────────────────
@@ -128,17 +139,27 @@ namespace TacticalRPG.UI
         /// "preferred size"tan okur; düz bir RectTransform'un preferred'i 0 olduğu için üç kart da
         /// sıfır genişliğe çöküp ÜST ÜSTE biniyordu (2026-08-12 hata raporu: "yazıları bile
         /// okunmuyor"). sizeDelta tek başına layout grubuna hiçbir şey söylemez.</summary>
-        private GameObject BuildCard(AugmentCatalog.Entry e, int index)
+        private GameObject BuildCard(CombatDrumManager.DraftCard card, int index)
         {
-            Color accent = GroupColor.TryGetValue(e.Group, out var c) ? c : Color.gray;
+            // Büyü kartı KENDİ rengini taşır (göstergeyle aynı renk → kartla alan arasındaki bağ
+            // gözle kurulur). Karo kartı grup rengini kullanır.
+            Color accent = card.IsSkill
+                ? new Color(card.Skill.R, card.Skill.G, card.Skill.B)
+                : (GroupColor.TryGetValue(card.Tile.Group, out var c) ? c : Color.gray);
+
+            string groupLabel = card.IsSkill
+                ? "BÜYÜ · Kam"
+                : (GroupName.TryGetValue(card.Tile.Group, out var gn) ? gn : "");
+
+            string id = card.Id;
 
             // ── Dış çerçeve ──
-            var card = new GameObject($"Card_{e.Id}", typeof(RectTransform), typeof(Image),
-                                      typeof(Button), typeof(LayoutElement));
-            var rt = (RectTransform)card.transform;
+            var cardGO = new GameObject($"Card_{id}", typeof(RectTransform), typeof(Image),
+                                        typeof(Button), typeof(LayoutElement));
+            var rt = (RectTransform)cardGO.transform;
             rt.SetParent(_cardRow, false);
 
-            var le = card.GetComponent<LayoutElement>();
+            var le = cardGO.GetComponent<LayoutElement>();
             le.preferredWidth  = _cardSize.x;
             le.preferredHeight = _cardSize.y;
             le.flexibleWidth   = 0f;
@@ -146,7 +167,7 @@ namespace TacticalRPG.UI
             le.minWidth        = _cardSize.x;
             le.minHeight       = _cardSize.y;
 
-            card.GetComponent<Image>().color = accent;          // çerçevenin kendisi
+            cardGO.GetComponent<Image>().color = accent;        // çerçevenin kendisi
 
             // ── İç panel (çerçeveden 5px içeri) ──
             var innerGO = new GameObject("Inner", typeof(RectTransform), typeof(Image));
@@ -163,13 +184,13 @@ namespace TacticalRPG.UI
             var stripImg = strip.gameObject.AddComponent<Image>();
             stripImg.color = accent;
             stripImg.raycastTarget = false;
-            Label(strip, "GroupName", GroupName.TryGetValue(e.Group, out var gn) ? gn : "",
+            Label(strip, "GroupName", groupLabel,
                   new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(_cardSize.x - 20f, 48f),
-                  new Color(0.05f, 0.05f, 0.07f), 22f, FontStyles.Bold);
+                  new Color(0.05f, 0.05f, 0.07f), 21f, FontStyles.Bold);
 
             // ── Başlık ──
-            Label(inner, "Name", e.Name, new Vector2(0.5f, 1f), new Vector2(0f, -64f),
-                  new Vector2(_cardSize.x - 28f, 64f), new Color(0.97f, 0.94f, 0.84f), 36f, FontStyles.Bold);
+            Label(inner, "Name", card.Name, new Vector2(0.5f, 1f), new Vector2(0f, -64f),
+                  new Vector2(_cardSize.x - 28f, 64f), new Color(0.97f, 0.94f, 0.84f), 32f, FontStyles.Bold);
 
             // ── Ayraç ──
             var sep = NewRect("Sep", inner, new Vector2(0.5f, 1f), new Vector2(0f, -132f),
@@ -179,8 +200,8 @@ namespace TacticalRPG.UI
             sepImg.raycastTarget = false;
 
             // ── Açıklama ──
-            var desc = Label(inner, "Desc", e.Description, new Vector2(0.5f, 1f), new Vector2(0f, -150f),
-                             new Vector2(_cardSize.x - 44f, 200f), new Color(0.86f, 0.84f, 0.80f), 25f);
+            var desc = Label(inner, "Desc", card.Description, new Vector2(0.5f, 1f), new Vector2(0f, -150f),
+                             new Vector2(_cardSize.x - 44f, 200f), new Color(0.86f, 0.84f, 0.80f), 23f);
             desc.alignment = TextAlignmentOptions.Top;
 
             // ── ETKİ ALANI (kullanıcı isteği: yarıçap kartın ALTINDA yazsın) ──
@@ -189,22 +210,41 @@ namespace TacticalRPG.UI
             var areaImg = areaBg.gameObject.AddComponent<Image>();
             areaImg.color = new Color(accent.r * 0.30f, accent.g * 0.30f, accent.b * 0.30f, 0.85f);
             areaImg.raycastTarget = false;
-            Label(areaBg, "Area", AugmentCatalog.AreaLabel(e), new Vector2(0.5f, 0.5f), Vector2.zero,
-                  new Vector2(_cardSize.x - 48f, 42f), accent, 22f, FontStyles.Bold);
+            Label(areaBg, "Area", card.AreaLabel, new Vector2(0.5f, 0.5f), Vector2.zero,
+                  new Vector2(_cardSize.x - 48f, 42f), accent, 20f, FontStyles.Bold);
 
-            Label(inner, "Pick", "SEÇ", new Vector2(0.5f, 0f), new Vector2(0f, 22f),
-                  new Vector2(_cardSize.x - 28f, 36f), new Color(0.60f, 0.58f, 0.54f), 22f);
+            // Alt satır kartın TÜRÜNÜ söyler: karo yerleştirilir, büyü hedeflenip atılır.
+            Label(inner, "Pick", card.IsSkill ? "SEÇ → hedefle, ÇİFT TIK" : "SEÇ → Kam'ın çevresine koy",
+                  new Vector2(0.5f, 0f), new Vector2(0f, 22f),
+                  new Vector2(_cardSize.x - 28f, 36f), new Color(0.60f, 0.58f, 0.54f), 19f);
 
             int captured = index;
-            card.GetComponent<Button>().onClick.AddListener(() => OnCardClicked(captured));
-            return card;
+            cardGO.GetComponent<Button>().onClick.AddListener(() => OnCardClicked(captured));
+            return cardGO;
         }
 
         private void OnCardClicked(int index)
         {
             if (_drum == null) return;
+
+            bool isSkill = index >= 0 && index < _drum.Choices.Count && _drum.Choices[index].IsSkill;
+
             if (!_drum.Choose(index))
-                _hint.text = "Kam'ın çevresinde uygun karo yok — Kam'ı hareket ettirip tekrar dene.";
+            {
+                _hint.text = isSkill
+                    ? "Büyü sistemi bağlı değil — TacticalRPG/Savas kurulumunu çalıştır."
+                    : "Kam'ın çevresinde uygun karo yok — Kam'ı hareket ettirip tekrar dene.";
+                return;
+            }
+
+            // Büyü seçildi → panel kapanır, harita görünür olur (hedefleme oradadır).
+            // Karo seçiminde bunu ShowPlacement yapıyor; büyünün kendi yolu var.
+            if (isSkill)
+            {
+                _root.SetActive(false);
+                MenuState.IsDraftOpen = false;
+                ClearMarkers();
+            }
         }
 
         // ── Harita üstü geçerli karo işaretleri ──────────────────────────────

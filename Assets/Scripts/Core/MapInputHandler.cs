@@ -31,6 +31,8 @@ namespace TacticalRPG.Core
         [Tooltip("Davul temposu — karo yerleştirme modundayken tıklama ONA gider " +
                  "(hareket/saldırı yerine). Atanmazsa mekanik devre dışı kalır.")]
         [SerializeField] private CombatDrumManager _drum;
+        [Tooltip("Kam'ın büyü hedeflemesi — açıkken harita tıklaması büyüye gider (çift tık = at).")]
+        [SerializeField] private KamSkillCaster _skills;
         [Tooltip("Opsiyonel — atanmışsa bölüm kaybedilince (sert kesim) harita tıklamaları kilitlenir.")]
         [SerializeField] private ChapterRunManager _run;
         [Tooltip("Opsiyonel — atanmışsa SAVAŞ SİSİ kalkmış adada (kule ile) menzil sınırı kalkar.")]
@@ -109,6 +111,10 @@ namespace TacticalRPG.Core
             // "karoyu koyacaktım" beklentisini bozar ve turu boşa harcatır.
             if (_stateManager != null && _stateManager.State == GameState.Combat)
             {
+                // Kam BÜYÜ hedefliyorsa tıklama TAMAMEN onundur (çift tık = at). Buradan
+                // geçseydi ilk tık birimi yürütür, büyü hedefi seçilemezdi.
+                if (_skills != null && _skills.Busy) return;
+
                 if (!TryGetClickedCoord(out HexCoordinate combatCoord)) return;
                 if (_drum != null && _drum.IsPlacing) { _drum.PlaceAt(combatCoord); return; }
                 if (_caster != null && _caster.HasArmedAbility) { _caster.TryCastAt(combatCoord); return; }

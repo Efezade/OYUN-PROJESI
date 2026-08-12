@@ -16,6 +16,167 @@
 
 ---
 
+## 2026-08-13 — Kam'ın büyüleri (5 aktif yetenek) + animasyon "zıplama" hatası
+
+**KARAR 1 — Davul draftına GARANTİ büyü.** Draft 3 karo + **1 büyü** = 4 kart oldu. Büyü kendi
+yuvasında durur, karo yuvası YEMEZ (kırpma sırasında da korunur) — yoksa "her draftta en az bir
+büyü" sözü kart sayısı düşünce sessizce bozulurdu. Karo ile büyü arasındaki gerilim bilinçli:
+karo yalnız Kam'ın 3 karo çevresine konur (kalıcı, Kam'ı riske sokar), büyü haritanın her yerine
+atılır (tek kullanımlık, risksiz). Her vuruşta "tahtayı mı kurayım, şimdi mi patlatayım" sorusu.
+
+**KARAR 2 — Beş büyü, hepsi alan hedefli:** Gök Ateşi (gökten alev topu, 5 karo çapı, hasar) ·
+Umay'ın Şifası (11 karo çapı, İKİ TARAFI da iyileştirir → bilerek yeşil değil, ak-altın) ·
+Yel Ata (içten dışa sert rüzgâr, alan dışına + 2 karo savurur) · Taş Kesilme (alan taşlaşır,
+sarmaşıklar çıkar, herkes 1 tur sersemler) · Kara Kasırga (herkesi merkeze toplar).
+Yarıçaplar kullanıcının verdiği ölçüler: "5 karo çapı" = yarıçap 2; şifa için "5 karo yarıçapı"
+denildiği için yarıçap 5 — iki tarafı da iyileştirdiğinden geniş olması onu güçlü değil RİSKLİ
+yapar, o yüzden aynen uygulandı.
+
+**KARAR 3 — Hedefleme LoL kalıbı.** Kart seçilir → kamera uzaklaşır (`CameraZoomSettings`
+sinematik çarpanı) → şeffaf etki alanı FARE ile birlikte hareket eder → aynı karoya ÇİFT TIK
+ile atılır, Escape iptal eder (kart geri gelir, vuruş yanmaz). Gösterge ışını karo collider'ına
+değil, karo yüzeyi hizasındaki SONSUZ DÜZLEME atar: imleç tahtadan çıkınca alan donmasın.
+Kamerayı sahiplenen sınıf `CameraZoomSettings` olduğu için sinematik çarpan da orada — büyü
+sistemi `orthographicSize`'a doğrudan dokunsaydı ayarlar menüsünün ölçeğiyle çakışırdı.
+
+**KARAR 4 — Gösteri ile kural ayrı.** `KamSkillVfx` yalnız gösterir ve efektin VURDUĞU anda geri
+çağırır; hasar/can/itme tam o karede uygulanır (meteor havadayken değil). İtme/çekmede hedefler
+ÖNCE hesaplanıp yer rezerve edilir, animasyon SONRA başlar — aksi halde iki birim aynı karoya
+kayardı. İtmede en uzaktaki, çekmede en yakındaki önce hareket eder.
+
+**KARAR 5 — TEK KAROLUK ETKİ KALDIRILDI; taban ölçü YARIÇAP 1 (3 karo çapı).**
+Kullanıcı kuralı: "tek karoluk olmasın". Mekanik gerekçe: tek hexi etkileyen karo, işe yaraması
+için düşmanın TAM O KAROYA basmasını gerektiriyordu — hex tahtada bu neredeyse hiç olmuyor, kart
+ya boşa gidiyor ya da oyun "düşman oraya bassın" bekleme oyununa dönüyordu. Yeni iki kademe:
+**r1 = 7 hex / 3 karo çapı = TABAN** (19 kart) — 80 karoluk arenada %8.5 yer kaplar, ~10 birimlik
+sahada alana ortalama 1 birim düşer: kesin bir şey yapar ama her şeyi kapsamaz; eni (3) düşmanın
+tur hareketinden (3-4) küçük olduğu için hâlâ kaçınılabilir, yani konum kararı olmaya devam eder.
+**r2 = 19 hex / 5 karo çapı** (2 kart) yalnız gecikmeli/zayıf etkilerde (Ruh Bombası fitilli,
+Kutsal Zemin tur başı). Arazi kartları yarıçapla değil kapladıkları karoyla ölçülür; Boşluk da
+1 karodan **3 karoya** çıktı. Kural artık `AugmentCatalog.Validate()` ile makine tarafından
+denetleniyor — yeni kart yarıçapsız eklenirse kurulum bağırır (yorumda duran kural er geç delinir).
+**Denge notu:** 7 kartın alanı 1→7 hexe çıktı ama BÜYÜKLÜKLERİNE dokunulmadı (CLAUDE.md §9: denge
+durduruldu). En çok güçlenen ikisi Öfke Taşı (+2 hasar) ve Tuzak Taşı (sersemletme).
+
+**COMMIT:** (bu değişiklik)
+
+**DERS — "düşmanlar sürekli zıplıyor" hatasının sebebi LOOP POSE'du.** İlk şüphem yanlış çıktı:
+batch raporu (`CharacterAnimationImporter.RebuildAndReportBatch`) controller bağlarının ZATEN
+doğru olduğunu gösterdi (Idle=Idle, Walk=Walk, Attack=Punch, Death=Death). Asıl sebep import
+ayarındaydı: araç döngülü kliplerde `loopTime` ile birlikte `loopPose`'u da açıyordu. İkisi aynı
+şey değil — `loopTime` "baştan başla", `loopPose` ise "son kareyi ilk kareye ZORLA uydur" demek
+ve Unity bu düzeltmeyi klibin tamamına uygular. Zaten temiz döngülenen Quaternius take'lerinde
+bu, kökü her döngüde kaydırıyor → yerinde duran düşman saniyede bir sekiyordu. Artık `loopPose`
+asla zorlanmıyor (14 klipte `loopBlend: 0`). Ek sertleştirme: `Jump_Idle`/`Jump_Land` gibi
+klipler ("idle" içeriyorlar!) artık süzgeçten geçemiyor ve klip seçimi "ilk eşleşen" yerine
+PUANLAMA yapıyor (tam ad eşleşmesi kazanır) — asset yükleme sırası garanti olmadığı için eski
+kural makineye göre farklı sonuç verebiliyordu.
+
+**Bilinen sınır:** Kam/Savasci/Ranger'ın FBX'inde idle klibi YOK — controller yürüyüş klibinin
+ilk karesini donduruyor (`speed = 0`). Gerçek idle istenirse klasörlerine `model@Idle.fbx`
+atılıp "Karakter - Tum Karakterleri Kur" koşturulması yeterli.
+
+## 2026-08-12 (4) — Haritanın dışı dolduruldu (üç katman) + savaş haritasında sis kaldırıldı
+
+**Sorun:** Tahta dikdörtgen, kıta organik. Kıtanın dışındaki koordinatlarda hücre ÜRETİLMİYOR
+(bilinçli: kare siluet olmasın diye) → kıyının ötesi HİÇLİK. Kamera azıcık kayınca haritanın
+nerede bittiği görünüyor. Savaş arenasında daha beter: tahta 10×8, çevresi tamamen boş.
+
+**ARAŞTIRMA — tür oyunları sınırı nasıl gizliyor:** üç teknik var ve hepsi BİRLİKTE kullanılıyor;
+biri eksik olursa bir kamera açısında mutlaka açık kalıyor.
+1. *Diyejetik geçilemez arazi:* Civ VI haritayı kutupta buz kalkanı, kenarda okyanusla bitirir —
+   sınır bir duvar değil, coğrafya. 2. *Sonsuz yüzey:* oynanan alanın altına/ötesine giden tek
+   büyük düzlem (okyanus). 3. *Kenar maskeleme:* hex haritalarda kenarı dağ/kaya/ağaç siluetiyle
+   kapatmak (cliff kenarları her şeye uyar, "kasıtlı" görünür) ya da sis bandı + görünmez collider.
+   Mesh tarafında buna "skirt" deniyor: yüzey kenarına eklenen etek, iki yüzey arasındaki çatlağı
+   kapatır.
+
+**KARAR — üç katmanlı `MapSurroundBuilder` + profil SO'ları.**
+   1. **DÜZLEM** — ufka kadar tek yüzey (overworld ~700×690 birim). Garantiyi bu verir: kamera
+      nereye bakarsa baksın altta bir şey vardır.
+   2. **BANT** — tahtanın dışına 6-7 halka GERÇEK hex karosu, halka başına TEK birleştirilmiş mesh.
+      Dışa gittikçe rengi düzleme yaklaşır ve yüksekliği düzleme *iner* (skirt) — yoksa bandın son
+      halkasıyla düzlem arasında karo kalınlığı (0.3) kadar basamak kalır, yani tam da gizlemeye
+      çalıştığımız çizgi geri gelirdi.
+   3. **SÜSLEME** — bandın ötesine serpilmiş ağaç/kaya/sis, yine tek mesh. Düz renk tek başına
+      "arka plan" gibi durur; "devam eden dünya" hissini bu katman verir.
+   Overworld profili **sonsuz okyanus** (seyrek kaya/sis öbeği), arena profili **sonsuz orman**
+   (sık kanopi → "ormandaki açıklık" okunur). Hiçbiri collider taşımaz ve hiçbiri hücre olarak
+   kaydedilmez → tıklanamaz, yürünemez, sise girmez. Sınır zaten doğal: `TerrainGenerator`'ın
+   margin kuralı kara karosunun tahta kenarına değmesini engelliyor.
+   Ölçüm (batch, Play'siz): 873 hücrelik kıta → 6 halka / 963 bant karosu + 257 süsleme.
+
+**KARAR — savaş haritasında sis TAMAMEN kapalı (`FogOfWarManager.SetFogEnabled`).**
+Eskiden savaşta `RevealAll()` çağrılıyordu: bulutlar önce KURULUYOR, sonra sönüyordu → savaşın ilk
+yarım saniyesi sisli açılıyordu. Artık savaşta sis sistemi hiç çalışmıyor (bulut üretilmez,
+karartma uygulanmaz). Overworld sisine dokunulmadı — dönüşte birebir eskisi gibi kuruluyor.
+
+**COMMIT:** (bu değişiklik)
+
+**DERS — "boşluktaki sis" bulutların önbelleğinden geliyordu.** Bulutlar koordinata göre
+önbelleklenip asla yok edilmiyor (pop olmasın diye). Overworld 36×34 iken arena 10×8 olduğu için
+savaşa girince overworld'ün ~1100 bulutu, karşılığı olmayan koordinatlarda HAVADA ASILI kalıyordu.
+`HideOrphanCaps` bunu kapatıyor: harita değişince hücresi olmayan bulut gizlenir.
+
+**Kaynaklar:** [Unity Discussions — Creative ways to hide the edge of the game
+world](https://discussions.unity.com/t/creative-ways-to-hide-the-edge-of-the-game-world/704297) ·
+[GameDev.net — hex grid terrains like Civ 5/6 or AoW](https://gamedev.net/forums/topic/705413-some-doubts-regarding-hex-grid-terrains-like-civ56-or-aow/) ·
+[Civ VI harita yapısı (kutup buzulları / okyanus sınırı)](https://civilization.fandom.com/wiki/Map_(Civ6))
+
+## 2026-08-12 (3) — Davul karoları GERÇEKTEN çalışıyor: etki motoru + kendi modelleri + geri bildirim
+
+**Sorun:** Kam davulda karo koyuyordu, karo boyanıyordu, orada bitiyordu. "Sersemletir",
+"2 can yeniler", "patlar" — hiçbirini çözümleyen kod yoktu. Kullanıcı haklı olarak
+"savaş alanında karolar çalışmıyor" dedi.
+
+**KARAR 1 — Etkinin ZAMANI veriye yazıldı.** `AugmentCatalog.Entry`'ye `Trigger` alanı geldi
+(`Aura / TurnStart / OnEnter / OnDamaged / Fuse / Terrain`). Bu alan olmadan çözümleyici "Stun"
+gördüğünde bunun sürekli bir aura mı yoksa girişte bir kez mi olduğunu bilemezdi — etkilerin hiç
+yazılmamış olmasının asıl sebebi buydu, kartlar ne yaptığını söylüyordu ama NE ZAMAN yaptığını
+söylemiyordu.
+
+**KARAR 2 — `AugmentTileManager` tek çözümleyici.** Her tetikleyicinin TEK kancası var
+(`OnUnitTurnBegan`, `Unit.OnEnteredCell`, `Unit.OnDamaged`, `OnRoundStarted`, tur değişimi).
+Stat farkı birimde BİRİKMEZ: `RefreshAuras` her seferinde sıfırdan kurar (`Unit.TileBonus`) —
+birikmeli bir sistemde "karodan çıkarken çıkarmayı unutma" hatası kaçınılmazdı. SO verisi
+değişmiyor (CLAUDE.md §2), bonus ayrı katman.
+
+**KARAR 3 — Açıklama = sözleşme.** Kartta yazan ile kodun yaptığı ayrışırsa METİN düzeltilir.
+Çığ Taşı ("kırılınca moloz yayar" — kırılma sistemi yok) → "yerleştiği karoyu ve 2 komşusunu
+molozla kapatır" oldu; Ley Damarı/Kutsal Zemin/Gölge Yarığı da uygulanan davranışa göre yeniden
+yazıldı. Korku Sisi hâlâ draft dışı: isabet YÜZDESİ için vuruş zarı gerekiyor, saldırılar şu an
+hep isabet ediyor. Nişan Kayası ise artık çalışıyor (menzil bonusu `Unit.AttackRange`'e giriyor).
+
+**KARAR 4 — Görüş hattı (`LineOfSight`).** "Duvar keser, siper kesmez". Taş Duvar/Boşluk/Çığ ve
+arena `CombatRole.Wall` sırtları menzilli atışı keser; `Cover` kesmez — taktik fark tam olarak bu.
+Tek sınıfta, çünkü aynı soruyu üç yer soruyor (saldırı doğrulaması, highlight, düşman AI); ayrı ayrı
+hesaplasalardı HUD "vurabilirsin" der, tıklayınca vurmazdı. AI hedef seçimi de hattı puanlıyor,
+yoksa Taş Duvar düşmanı kilitleyip savaşı tıkardı.
+
+**KARAR 5 — Karoların KENDİ modelleri, tek renk teması.** 24 karo `TileCatalog`'a kendi
+`TileFamily.Augment` girdileriyle eklendi; modelleri `TileVisualFactory.Augments.cs` üretiyor.
+Tema: kara bazalt taban + ruh teali (0.30,0.85,0.78) emisyonlu oyma — 24 karoda AYNI renk.
+**Ayrım biçimden gelir:** ocak bir ateş çukuru, tuzak dişli bir halka, kapı bir kemer, fıçı bir
+fıçı. Eskiden arazi görsellerini ödünç alıyorlardı (dikilitaş, bataklık, sıcak kaynak) — ne
+tanınıyor ne de bir takım gibi duruyorlardı.
+
+**KARAR 6 — Geri bildirim mekaniğin parçasıdır.** Karo yerden yükselerek oturuyor (overshoot +
+dönüş), oymalar nabız atıyor, tetiklenince çakıyor; etki alanı halka olarak açılıyor ve aura
+karolarında kalıcı halka duruyor; birimin üstünde yükselen yazı ("SERSEMLEDI", "+2 CAN",
+"-3 CAN"); savaş panelinde "KARO: +2 hasar" satırı tur boyunca duruyor. Bir mekanik ancak
+GÖRÜLDÜĞÜ kadar vardır — şikâyetin yarısı buydu.
+
+**COMMIT:** (bu değişiklik)
+
+**DERSLER:**
+- **Patlama zinciri kuyrukla çözülür.** Patlama hasar verir, hasar başka bir fıçıyı tetikler.
+  Doğrudan özyineleme geçici listeleri iç içe ezip karoyu iki kez patlatıyor/hiç patlatmıyordu →
+  `QueueBlast` + `_resolvingBlasts` bayrağı.
+- **Etki uygularken listenin üstünde gezme.** Hasar → ölüm → `_placed`/`UnitManager` değişimi.
+  Önce eşleşenleri topla, sonra uygula.
+- **Emisyon keyword'ü materyalde açık olmalı.** `MaterialPropertyBlock` `_EmissionColor` yazsa da
+  `_EMISSION` kapalıysa hiçbir şey parlamaz — nabız sessizce çalışmaz görünürdü.
+
 ## 2026-08-12 (2) — Savaş ayrıştırıldı: arena üreticisi + hasar formülü + davul temposu
 
 **KARAR 1 — Savaş haritası overworld'den TAMAMEN ayrıldı.** `CombatArenaGenerator` (Unity'siz,

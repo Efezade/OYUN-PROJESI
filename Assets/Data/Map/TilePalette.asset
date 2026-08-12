@@ -837,3 +837,195 @@ MonoBehaviour:
     canEnterCombat: 0
     isStore: 0
     surfaceHeightOverride: 0.3
+  - id: aug_ata_tasi
+    displayName: "Ata Ta\u015F\u0131"
+    prefab: {fileID: 1656135347547630830, guid: 93564a25a1e013f4286f6434d0ad8907, type: 3}
+    editorColor: {r: 0.21, g: 0.27, b: 0.29, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_kalkan_tasi
+    displayName: "Kalkan Ta\u015F\u0131"
+    prefab: {fileID: 6689408508866080393, guid: 17e2f0ba330cc8d428d08e673e367388, type: 3}
+    editorColor: {r: 0.21, g: 0.27, b: 0.29, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_ruzgar_tasi
+    displayName: "R\xFCzg\xE2r Ta\u015F\u0131"
+    prefab: {fileID: 1210559962959278283, guid: bb78581c4eb5cd846b4dd62121fec1dd, type: 3}
+    editorColor: {r: 0.21, g: 0.27, b: 0.29, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_ocak
+    displayName: Ocak
+    prefab: {fileID: 1169738674150108209, guid: 063ea3ff7ab167247ad5c86c7adfe328, type: 3}
+    editorColor: {r: 0.21, g: 0.27, b: 0.29, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_ofke_tasi
+    displayName: "\xD6fke Ta\u015F\u0131"
+    prefab: {fileID: 3687626545035589684, guid: 90f0f59d53df15149a1727523866606d, type: 3}
+    editorColor: {r: 0.21, g: 0.27, b: 0.29, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_tuzak_tasi
+    displayName: "Tuzak Ta\u015F\u0131"
+    prefab: {fileID: 1227980425257330869, guid: 62df29006dbf5e946b80eb00b3c40887, type: 3}
+    editorColor: {r: 0.13, g: 0.16, b: 0.18, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_camur
+    displayName: "\xC7amur"
+    prefab: {fileID: 568196321682442673, guid: 951823da64e0f2a4bbad68fc3a7c2a37, type: 3}
+    editorColor: {r: 0.13, g: 0.16, b: 0.18, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_korku_sisi
+    displayName: Korku Sisi
+    prefab: {fileID: 4370750680402325198, guid: b1b749d24d253894a8b38895e623a36c, type: 3}
+    editorColor: {r: 0.13, g: 0.16, b: 0.18, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_diken
+    displayName: "Diken Tarlas\u0131"
+    prefab: {fileID: 617477295921040291, guid: 92f2924c2795d4d4e90a22d3eeb29f30, type: 3}
+    editorColor: {r: 0.13, g: 0.16, b: 0.18, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_agirlik
+    displayName: "A\u011F\u0131rl\u0131k Ta\u015F\u0131"
+    prefab: {fileID: 8237190503659987683, guid: b9f9867b74a3af34e8abee2401067ae5, type: 3}
+    editorColor: {r: 0.13, g: 0.16, b: 0.18, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_sarsinti
+    displayName: "Sars\u0131nt\u0131 Hatt\u0131"
+    prefab: {fileID: 8970137487251865833, guid: 4665af1fe1f1e5542888e4a48154f80b, type: 3}
+    editorColor: {r: 0.17, g: 0.21, b: 0.23, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_ruh_kapisi
+    displayName: "Ruh Kap\u0131s\u0131"
+    prefab: {fileID: 8546771410839538869, guid: 0c7a726db98a4f84da79c9f61bf250d2, type: 3}
+    editorColor: {r: 0.17, g: 0.21, b: 0.23, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_duvar
+    displayName: "Ta\u015F Duvar"
+    prefab: {fileID: 6192768421931407683, guid: 85ead7fa844ec294ebc8f46fe7dcfc86, type: 3}
+    editorColor: {r: 0.17, g: 0.21, b: 0.23, a: 1}
+    isWalkable: 0
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0
+  - id: aug_bosluk
+    displayName: "Bo\u015Fluk"
+    prefab: {fileID: 5561945047295614504, guid: 5fa38c42bbc8942458469e32689e41f3, type: 3}
+    editorColor: {r: 0.06, g: 0.07, b: 0.09, a: 1}
+    isWalkable: 0
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0
+  - id: aug_ates_ficisi
+    displayName: "Ate\u015F F\u0131\xE7\u0131s\u0131"
+    prefab: {fileID: 7950601886317641346, guid: 31d827a8956eb6840814a4cef1fed404, type: 3}
+    editorColor: {r: 0.16, g: 0.2, b: 0.22, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_buz_kabugu
+    displayName: "Buz Kabu\u011Fu"
+    prefab: {fileID: 1977385949665381284, guid: 2c1e3986dd2c2ff43bb8a1c50e6cf2f7, type: 3}
+    editorColor: {r: 0.16, g: 0.2, b: 0.22, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_ruh_bombasi
+    displayName: "Ruh Bombas\u0131"
+    prefab: {fileID: 7128372273725167609, guid: ba59a75221c1c9a4fa972ff79070a592, type: 3}
+    editorColor: {r: 0.16, g: 0.2, b: 0.22, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_cig_tasi
+    displayName: "\xC7\u0131\u011F Ta\u015F\u0131"
+    prefab: {fileID: 4014180269169267398, guid: 9c9eafc893179bc45acd3972ab8bb225, type: 3}
+    editorColor: {r: 0.16, g: 0.2, b: 0.22, a: 1}
+    isWalkable: 0
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0
+  - id: aug_nisan_kayasi
+    displayName: "Ni\u015Fan Kayas\u0131"
+    prefab: {fileID: 353977718561055491, guid: c6ef08cd0dee1bb4fa41582721220618, type: 3}
+    editorColor: {r: 0.2, g: 0.25, b: 0.28, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_kalkan_duvari
+    displayName: "Kalkan Duvar\u0131"
+    prefab: {fileID: 7701360197626592923, guid: de250f9530c9346428e77a9cb89131b9, type: 3}
+    editorColor: {r: 0.2, g: 0.25, b: 0.28, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_ley_damari
+    displayName: "Ley Damar\u0131"
+    prefab: {fileID: 1892092776203478591, guid: 3bf3f858d0aaeac43b0e93ee3fc2041a, type: 3}
+    editorColor: {r: 0.2, g: 0.25, b: 0.28, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_kutsal_zemin
+    displayName: Kutsal Zemin
+    prefab: {fileID: 4281523613054633357, guid: 340507df98021c049bcc8a1c7255e337, type: 3}
+    editorColor: {r: 0.2, g: 0.25, b: 0.28, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_golge_yarigi
+    displayName: "G\xF6lge Yar\u0131\u011F\u0131"
+    prefab: {fileID: 3747123511600596996, guid: 0ae47c206ce46c24d8a6faae63f48e80, type: 3}
+    editorColor: {r: 0.2, g: 0.25, b: 0.28, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+  - id: aug_davul_tasi
+    displayName: "Davul Ta\u015F\u0131"
+    prefab: {fileID: 6702453174916294716, guid: e88e487b3f0e30c49ae12d7ae0ce550e, type: 3}
+    editorColor: {r: 0.2, g: 0.25, b: 0.28, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3

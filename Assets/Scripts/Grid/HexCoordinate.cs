@@ -69,6 +69,39 @@ namespace TacticalRPG.Grid
             return new HexCoordinate(Q + dir.Q, R + dir.R);
         }
 
+        /// <summary>
+        /// İki hex arasındaki DÜZ HAT (iki uç dahil) — görüş hattı kontrolü bunu kullanır.
+        /// Cube-lerp + yuvarlama (redblobgames "line drawing"). Uçlara küçük bir epsilon
+        /// eklenir: tam kenara denk gelen hatlarda yuvarlama iki komşu arasında yalpalar ve
+        /// aynı iki birim için görüş bir tıkta açılıp kapanırdı.
+        /// Çağıran listeyi tekrar kullanır → savaşta çöp üretmez.
+        /// </summary>
+        public void LineTo(HexCoordinate to, System.Collections.Generic.List<HexCoordinate> buffer)
+        {
+            buffer.Clear();
+            int n = DistanceTo(to);
+            if (n == 0) { buffer.Add(this); return; }
+
+            const float Eps = 1e-4f;
+            float aq = Q + Eps,     ar = R + Eps,     as_ = S - 2f * Eps;
+            float bq = to.Q + Eps,  br = to.R + Eps,  bs  = to.S - 2f * Eps;
+
+            for (int i = 0; i <= n; i++)
+            {
+                float t = i / (float)n;
+                buffer.Add(CubeRound(Mathf.Lerp(aq, bq, t), Mathf.Lerp(ar, br, t), Mathf.Lerp(as_, bs, t)));
+            }
+        }
+
+        private static HexCoordinate CubeRound(float q, float r, float s)
+        {
+            int rq = Mathf.RoundToInt(q), rr = Mathf.RoundToInt(r), rs = Mathf.RoundToInt(s);
+            float dq = Mathf.Abs(rq - q), dr = Mathf.Abs(rr - r), ds = Mathf.Abs(rs - s);
+            if (dq > dr && dq > ds)  rq = -rr - rs;
+            else if (dr > ds)        rr = -rq - rs;
+            return new HexCoordinate(rq, rr);
+        }
+
         public bool Equals(HexCoordinate other) => Q == other.Q && R == other.R;
         public override bool Equals(object obj) => obj is HexCoordinate h && Equals(h);
         public override int GetHashCode() => Q * 397 ^ R;

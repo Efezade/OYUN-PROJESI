@@ -53,8 +53,12 @@ namespace TacticalRPG.UI
             Unit cur = _turnManager.CurrentUnit;
             bool commanderTurn = cur != null && cur.Team == UnitTeam.Player && cur.IsCommander;
 
+            // Davul karosu satırı yalnız bir etki VARKEN çizilir → panel boş yere büyümez,
+            // ama etki varken oyuncu "neden bu tur daha sert vuruyorum"u panelde görür.
+            string tileLine = cur != null ? TileEffectLine(cur) : null;
+
             const float w = 320f;
-            float h = commanderTurn ? 330f : 176f;
+            float h = (commanderTurn ? 330f : 176f) + (string.IsNullOrEmpty(tileLine) ? 0f : 26f);
             // Sol-üst (OverworldCombatHUD üst-orta "Geri Don" ile çakışmaz).
             var rect = new Rect(12f, 12f, w, h);
             ImguiBlocker.Register(rect);   // panel üstündeki tık hareket/saldırı sayılmasın
@@ -66,6 +70,8 @@ namespace TacticalRPG.UI
                 GUILayout.Label($"{who}:  {cur.DisplayName}{(cur.IsCommander ? "  ★ Komutan" : "")}");
                 GUILayout.Label($"HP {cur.CurrentHP}/{cur.MaxHP}    Hiz {cur.Speed}");
                 GUILayout.Label($"Hareket {cur.MoveRange}   ·   Saldiri menzili {cur.AttackRange}");
+
+                if (!string.IsNullOrEmpty(tileLine)) GUILayout.Label(tileLine);
 
                 if (cur.Team == UnitTeam.Player)
                 {
@@ -88,6 +94,27 @@ namespace TacticalRPG.UI
 
             GUILayout.EndArea();
         }
+
+        /// <summary>Birimin ÜSTÜNDEKİ davul karosundan gelen fark — "karo çalışıyor mu" sorusunun
+        /// sayısal cevabı. Halka/yazı geçicidir; bu satır tur boyunca durur.</summary>
+        private string TileEffectLine(Unit u)
+        {
+            var b = u.Bonus;
+            string s = "";
+            if (b.Attack     != 0) s += $"{Signed(b.Attack)} hasar  ";
+            if (b.Defense    != 0) s += $"{Signed(b.Defense)} sav  ";
+            if (b.Move       != 0) s += $"{Signed(b.Move)} hareket  ";
+            if (b.Initiative != 0) s += $"{Signed(b.Initiative)} hiz  ";
+            if (b.Range      != 0) s += $"{Signed(b.Range)} menzil  ";
+
+            if (u.IsStunned)                s += "SERSEM  ";
+            if (_turnManager.ExtraActions > 0 && u == _turnManager.CurrentUnit)
+                s += $"+{_turnManager.ExtraActions} aksiyon";
+
+            return s.Length == 0 ? null : "KARO: " + s.Trim();
+        }
+
+        private static string Signed(int v) => v > 0 ? $"+{v}" : v.ToString();
 
         // Kam'ın büyüleri: mana + 1/2/3 arm butonları (hedefe sol tıkla = uygula).
         private void DrawCommanderAbilities()

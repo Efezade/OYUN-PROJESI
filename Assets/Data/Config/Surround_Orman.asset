@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2f18c8b8899e09448444412de5f7020, type: 3}
+  m_Name: Surround_Orman
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.MapSurroundProfileSO
+  displayName: Sonsuz Orman
+  planeColor: {r: 0.12, g: 0.17, b: 0.11, a: 1}
+  planeMargin: 240
+  planeHeight: 0
+  planeSmoothness: 0.05
+  bandRings: 7
+  bandColorNear: {r: 0.19, g: 0.27, b: 0.15, a: 1}
+  bandColorFar: {r: 0.12, g: 0.17, b: 0.11, a: 1}
+  heightJitter: 0.05
+  tileScale: 1
+  propMargin: 48
+  propSpacing: 2
+  propChance: 0.72
+  propLimit: 1600
+  propColor: {r: 0.13, g: 0.27, b: 0.16, a: 1}
+  propWidth: {x: 0.9, y: 1.9}
+  propHeight: {x: 2, y: 4.4}
+  propKeepOut: 1
+  brightness: 0.85

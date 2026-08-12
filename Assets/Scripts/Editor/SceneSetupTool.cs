@@ -49,6 +49,9 @@ namespace TacticalRPG.Editor
                 SetupPhaseC3();   // tur sistemi (initiative + hareket + saldiri + AI)
                 SetupPhaseC4();   // Kam komutan + savas buyusu + lose=Kam olumu
                 SetupPhaseD();    // cok-tipli oz + harita toplama + tarifle birim uretme
+                SetupCombat();    // prosedurel arena + hasar formulu + DAVUL KAROLARI (etki + model)
+                                  // (zincire 2026-08-12'de eklendi — CLAUDE.md §9.1: yeni sistem
+                                  //  TAM KURULUM'a girer, ayri menu ezberletilmez)
                 // TASK-004: 9 adali 3x3 dunya ZINCIRDEN CIKARILDI (silinmedi — menuden geri gelir:
                 // "ALTERNATIF - 9 Harita 3x3 Dunyayi Geri Yukle"). Yururlukteki tasarim: 1 bolum = 1 harita.
                 SetupChapterWorld(); // tek haritali dunya + kule + savas karolari (portal/ada YOK)
@@ -58,6 +61,8 @@ namespace TacticalRPG.Editor
                 // EN SON: haritayi editorde uret ki Play'e basmadan da yeni harita gorunsun.
                 // (Store'dan SONRA olmali — magaza karosunun modeli o adimda kesinlesiyor.)
                 GenerateChapterMapInEditor();
+                SetupMapSurround();  // haritanin disi: sonsuz okyanus / arenada sonsuz orman
+                                     // (haritadan SONRA — cevre mevcut hucrelerden turuyor)
             }
             finally { _silentSetup = false; }
 
@@ -78,6 +83,10 @@ namespace TacticalRPG.Editor
                 "  • Faz C3 — Tur sistemi (initiative + hareket + saldiri + AI)\n" +
                 "  • Faz C4 — Kam komutan + savas buyusu + lose=Kam olumu\n" +
                 "  • Faz D — Cok-tipli oz + harita toplama + tarifle birim uretme\n" +
+                "  • SAVAS — Prosedurel arena + hasar formulu + DAVUL KAROLARI\n" +
+                "            (24 karo kendi modeliyle; etkiler gercekten uygulaniyor)\n" +
+                "  • CEVRE — Harita disi dolu: sonsuz okyanus (overworld) / sonsuz orman (arena)\n" +
+                "            Savas haritasinda SIS YOK; overworld sisi aynen duruyor.\n" +
                 "  • BOLUM — 1 bolum = 1 harita (prosedurel 22x25 terrain + dugumler)\n" +
                 "  • HARITA ekrani + TAB = 8 bolumluk ilerleme\n\n" +
                 "Ctrl+S ile kaydet, Play'e bas:\n" +
@@ -2016,7 +2025,7 @@ namespace TacticalRPG.Editor
             return tmp;
         }
 
-        private static T FindComponentAnywhere<T>() where T : UnityEngine.Component
+        internal static T FindComponentAnywhere<T>() where T : UnityEngine.Component
         {
 #if UNITY_2023_1_OR_NEWER
             return Object.FindFirstObjectByType<T>();

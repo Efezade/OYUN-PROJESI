@@ -88,10 +88,15 @@ namespace TacticalRPG.Core
             // Arena: önce PROSEDÜREL üretici denenir (düğüm tipine göre kademe), o yoksa görevin
             // elle atanmış haritası. İkisi de yoksa grid overworld'de kalır ve savaş 550 karoluk
             // kıtada açılırdı — bu yüzden fallback zinciri açıkça yazılı.
+            // SİS ÖNCE KAPANIR, arena SONRA üretilir. Sıra kritik: arena üretimi grid'i yeniden
+            // kurar ve sis o anda kendini yeniden kurar — açıkken kurulsaydı savaş sisli açılır,
+            // sonra sönerdi. Artık savaş haritasında sis diye bir şey YOK (kullanıcı isteği
+            // 2026-08-12); overworld sisine dokunulmuyor, dönüşte aynen geri geliyor.
+            if (_fog != null) _fog.SetFogEnabled(false);
+
             bool arenaBuilt = _arena != null && _arena.Build(CombatMapGenerator.TierFor(mission.Tier));
             if (!arenaBuilt && _grid != null && mission.CombatMap != null)
                 _grid.SetTileMap(mission.CombatMap);     // grid'i savaş haritasına çevir
-            if (_fog != null) _fog.RevealAll();          // savaşta tam görüş
             if (_player != null) _player.gameObject.SetActive(false); // overworld jetonu gizle
 
             SetState(GameState.Deployment);
@@ -105,6 +110,9 @@ namespace TacticalRPG.Core
             // Savaş bitti → zaman yeniden akmaya başlar (giriş bedeli zaten ödenmişti).
             if (_apManager != null) _apManager.SetFrozen(false);
 
+            // Sis overworld'e dönmeden ÖNCE geri açılır → harita yeniden kurulurken bulutlar da
+            // doğru kurulur (savaş öncesi davranışın birebir aynısı).
+            if (_fog != null) _fog.SetFogEnabled(true);
             if (_grid != null && _overworldMap != null)
                 _grid.SetTileMap(_overworldMap);         // overworld haritasını geri yükle
             if (_fog != null) _fog.ResetFog();

@@ -77,17 +77,80 @@ namespace TacticalRPG.Editor
                 spSO.ApplyModifiedProperties();
             }
 
-            // ── 5) Davul temposu (karo drafti + Kam cevresine yerlestirme) ───
+            var turns = FindComponentAnywhere<TurnManager>();
+            var units = FindComponentAnywhere<UnitManager>();
+
+            // Gorus hatti: arena duvarlari menzilli atisi kessin (siper kesmez).
+            if (turns != null)
+            {
+                var tSO = new SerializedObject(turns);
+                tSO.FindProperty("_arena").objectReferenceValue = gen;
+                tSO.ApplyModifiedProperties();
+            }
+
+            // ── 5) Davul karolarinin ETKI motoru + geri bildirimi ────────────
+            // Bu iki bilesen olmadan karo yalnizca boyanir: sersemletme, can, patlama calismaz
+            // (2026-08-12'ye kadarki durum — kullanici "karolar calismiyor" dedi).
+            var fx = host.GetComponent<AugmentFeedback>();
+            if (fx == null) fx = host.AddComponent<AugmentFeedback>();
+
+            var augments = host.GetComponent<AugmentTileManager>();
+            if (augments == null) augments = host.AddComponent<AugmentTileManager>();
+            var aSO = new SerializedObject(augments);
+            aSO.FindProperty("_grid").objectReferenceValue  = grid;
+            aSO.FindProperty("_units").objectReferenceValue = units;
+            aSO.FindProperty("_turns").objectReferenceValue = turns;
+            aSO.FindProperty("_state").objectReferenceValue = state;
+            aSO.FindProperty("_fx").objectReferenceValue    = fx;
+            aSO.FindProperty("_mana").objectReferenceValue  = FindComponentAnywhere<KamManaManager>();
+            aSO.ApplyModifiedProperties();
+
+            // ── 5b) KAM BUYULERI: hedefleme + gosterge + animasyon ───────────
+            // Ucu birlikte kurulmali: gosterge olmadan hedefleme korlemesine olur, VFX olmadan
+            // buyu "sessizce" olur, caster olmadan ikisi de calismaz.
+            var indicator = host.GetComponent<SkillAreaIndicator>();
+            if (indicator == null) indicator = host.AddComponent<SkillAreaIndicator>();
+            var indSO = new SerializedObject(indicator);
+            indSO.FindProperty("_grid").objectReferenceValue = grid;
+            indSO.ApplyModifiedProperties();
+
+            var skillVfx = host.GetComponent<KamSkillVfx>();
+            if (skillVfx == null) skillVfx = host.AddComponent<KamSkillVfx>();
+            var vfxSO = new SerializedObject(skillVfx);
+            vfxSO.FindProperty("_grid").objectReferenceValue   = grid;
+            vfxSO.FindProperty("_camera").objectReferenceValue = FindComponentAnywhere<TacticalRPG.UI.CameraZoomSettings>();
+            vfxSO.ApplyModifiedProperties();
+
+            var skills = host.GetComponent<KamSkillCaster>();
+            if (skills == null) skills = host.AddComponent<KamSkillCaster>();
+            var skSO = new SerializedObject(skills);
+            skSO.FindProperty("_grid").objectReferenceValue      = grid;
+            skSO.FindProperty("_units").objectReferenceValue     = units;
+            skSO.FindProperty("_turns").objectReferenceValue     = turns;
+            skSO.FindProperty("_camera").objectReferenceValue    = Camera.main;
+            skSO.FindProperty("_indicator").objectReferenceValue = indicator;
+            skSO.FindProperty("_vfx").objectReferenceValue       = skillVfx;
+            skSO.FindProperty("_feedback").objectReferenceValue  = fx;
+            skSO.FindProperty("_zoom").objectReferenceValue      = FindComponentAnywhere<TacticalRPG.UI.CameraZoomSettings>();
+            skSO.FindProperty("_augments").objectReferenceValue  = augments;
+            skSO.ApplyModifiedProperties();
+
+            // ── 6) Davul temposu (karo drafti + Kam cevresine yerlestirme) ───
             var drum = host.GetComponent<CombatDrumManager>();
             if (drum == null) drum = host.AddComponent<CombatDrumManager>();
             var dSO = new SerializedObject(drum);
-            dSO.FindProperty("_turns").objectReferenceValue = FindComponentAnywhere<TurnManager>();
-            dSO.FindProperty("_units").objectReferenceValue = FindComponentAnywhere<UnitManager>();
+            dSO.FindProperty("_turns").objectReferenceValue = turns;
+            dSO.FindProperty("_units").objectReferenceValue = units;
             dSO.FindProperty("_grid").objectReferenceValue  = grid;
             dSO.FindProperty("_arena").objectReferenceValue = gen;
+            dSO.FindProperty("_tiles").objectReferenceValue  = augments;
+            dSO.FindProperty("_skills").objectReferenceValue = skills;   // her draftta garanti buyu
             dSO.ApplyModifiedProperties();
 
-            // ── 6) Karo drafti ekrani (TFT tarzi 3 kart) ─────────────────────
+            // ── 6b) Davul karolarinin MODELLERI (24 prefab, tek renk temasi) ──
+            TileVisualFactory.BuildAugments(force: false);
+
+            // ── 7) Karo drafti ekrani (TFT tarzi 3 kart) ─────────────────────
             var draftHud = host.GetComponent<TacticalRPG.UI.AugmentDraftHUD>();
             if (draftHud == null) draftHud = host.AddComponent<TacticalRPG.UI.AugmentDraftHUD>();
             var hSO = new SerializedObject(draftHud);
@@ -95,12 +158,13 @@ namespace TacticalRPG.Editor
             hSO.FindProperty("_grid").objectReferenceValue = grid;
             hSO.ApplyModifiedProperties();
 
-            // ── 7) Harita tiklamasi yerlestirme moduna gitsin ────────────────
+            // ── 8) Harita tiklamasi yerlestirme moduna gitsin ────────────────
             var input = FindComponentAnywhere<MapInputHandler>();
             if (input != null)
             {
                 var iSO = new SerializedObject(input);
-                iSO.FindProperty("_drum").objectReferenceValue = drum;
+                iSO.FindProperty("_drum").objectReferenceValue   = drum;
+                iSO.FindProperty("_skills").objectReferenceValue = skills;
                 iSO.ApplyModifiedProperties();
             }
 

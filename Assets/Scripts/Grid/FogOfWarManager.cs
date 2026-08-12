@@ -111,6 +111,11 @@ namespace TacticalRPG.Grid
         {
             if (_gridManager.Cells == null) return;
             _fading.Clear();
+
+            // Sis kapalıysa (savaş haritası) hiç bulut ÜRETİLMEZ. Eskiden burada bulutlar kurulur,
+            // hemen ardından RevealAll ile söndürülürdü → savaşın ilk yarım saniyesi sisli açılıyordu.
+            if (!_fogEnabled) { ApplyFogDisabled(); return; }
+
             foreach (var cell in _gridManager.Cells.Values)
             {
                 cell.FogState = FogState.Hidden;
@@ -122,10 +127,75 @@ namespace TacticalRPG.Grid
                 cap.alpha  = cap.target;   // yüklemede anında (fade yok)
                 ApplyCapAlpha(cap);
             }
+
+            HideOrphanCaps();
+        }
+
+        /// <summary>
+        /// Yeni haritada KARŞILIĞI OLMAYAN bulutları gizler.
+        ///
+        /// Bulutlar koordinata göre önbelleklenir ve asla yok edilmez (pop olmasın diye). Overworld
+        /// 36×34 iken savaş arenası 10×8 olduğu için, savaşa girince overworld'ün ~1100 bulutu
+        /// tahtası olmayan koordinatlarda HAVADA ASILI kalıyordu — küçük arenanın çevresini saran
+        /// "boşluktaki sis" tam olarak buydu (2026-08-12 hata raporu).
+        /// </summary>
+        private void HideOrphanCaps()
+        {
+            var cells = _gridManager.Cells;
+            foreach (var kv in _caps)
+            {
+                if (cells.ContainsKey(kv.Key)) continue;
+                Cap cap = kv.Value;
+                if (cap?.go == null) continue;
+                cap.alpha = cap.target = 0f;
+                if (cap.go.activeSelf) cap.go.SetActive(false);
+            }
         }
 
         /// <summary>Tüm karoları yeniden Hidden yapar (grid yeniden üretilince otomatik çağrılır).</summary>
         public void ResetFog() => InitializeFog();
+
+        // ── Sisin tamamen kapatılması (SAVAŞ HARİTASI) ──────────────────────
+        // Kullanıcı kuralı 2026-08-12: "savaş haritasında tüm savaş sislerini kaldır; ana haritada
+        // sise dokunma". Bu yüzden kapatma AÇIK bir anahtar — savaşta gizlice "hepsini aç" demek
+        // yerine sistem tamamen devre dışı kalıyor: bulut üretilmez, karartma uygulanmaz.
+
+        private bool _fogEnabled = true;
+
+        /// <summary>Sis sistemi çalışıyor mu? (Savaş/yerleştirme sırasında kapalı.)</summary>
+        public bool FogEnabled => _fogEnabled;
+
+        /// <summary>Sisi tamamen aç/kapat. Kapatılınca bütün bulutlar gizlenir ve karolar tam
+        /// parlaklığa döner; açılınca sis sıfırdan kurulur (overworld davranışı değişmez).</summary>
+        public void SetFogEnabled(bool enabled)
+        {
+            if (_fogEnabled == enabled) return;
+            _fogEnabled = enabled;
+
+            if (enabled) InitializeFog();
+            else         ApplyFogDisabled();
+        }
+
+        /// <summary>Bütün bulutları kapatır, bütün karoları tam görünür yapar.</summary>
+        private void ApplyFogDisabled()
+        {
+            _fading.Clear();
+
+            foreach (var kv in _caps)
+            {
+                Cap cap = kv.Value;
+                if (cap?.go == null) continue;
+                cap.alpha = cap.target = 0f;
+                if (cap.go.activeSelf) cap.go.SetActive(false);
+            }
+
+            if (_gridManager.Cells == null) return;
+            foreach (var cell in _gridManager.Cells.Values)
+            {
+                cell.FogState = FogState.Visible;
+                SetCellBrightness(cell, _visibleBrightness);
+            }
+        }
 
         // ── Genel API ────────────────────────────────────────────────────
 
@@ -149,7 +219,7 @@ namespace TacticalRPG.Grid
         /// </summary>
         public void UpdateFogAround(Vector3 worldPos, float visionRadiusTiles)
         {
-            if (_gridManager.Cells == null) return;
+            if (_gridManager.Cells == null || !_fogEnabled) return;
 
             // Sonraki yeniden-uygulamalar için sakla (gece/kule değişiminde oyuncu dursa bile lazım).
             _lastFogPos    = worldPos;

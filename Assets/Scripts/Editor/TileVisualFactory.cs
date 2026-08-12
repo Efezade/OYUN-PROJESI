@@ -21,7 +21,13 @@ namespace TacticalRPG.Editor
     /// `_BaseColor`'ından gelir. Böylece 12 doku 70+ karoya hizmet eder ve her karo kendi renginde
     /// görünür — "her şey beyaz" sorununun çözümü bu (kullanıcı geri bildirimi 2026-08-12).
     /// </summary>
-    public static class TileVisualFactory
+    /// <remarks>
+    /// <c>partial</c>: davul karolarının modelleri <c>TileVisualFactory.Augments.cs</c> dosyasında
+    /// üretilir. Ayrı bir sınıf olsaydı buradaki geometri sözlüğünü (Prim/Cone/NewBase/WritePalette)
+    /// ya kopyalamak ya da yarısını public'e açmak gerekirdi; ikisi de bu dosyanın "karo üretimi
+    /// tek elden" amacını bozardı.
+    /// </remarks>
+    public static partial class TileVisualFactory
     {
         private const string TexFolder    = "Assets/Art/Textures/Tiles";
         private const string MatFolder    = "Assets/Art/Materials/Tiles";
@@ -198,6 +204,10 @@ namespace TacticalRPG.Editor
             foreach (var e in TileCatalog.All)
             {
                 if (e.Family == TileFamily.Void) continue;
+                // Davul karolarının modelleri BU üreteçte değil, Augments dosyasında yapılır
+                // (özel geometri + tek renk teması). Burada üretilseydi düz renkli birer taş
+                // olurlar ve az önce yazılan özel prefabı EZERLERDİ.
+                if (e.Family == TileFamily.Augment) continue;
                 EditorUtility.DisplayProgressBar("Karo uretimi", e.Name, i++ / (float)TileCatalog.All.Length);
                 GameObject prefab = EnsureTilePrefab(e, force);
                 if (prefab != null) built.Add((e, prefab));
@@ -805,7 +815,7 @@ namespace TacticalRPG.Editor
         //  Palet
         // ═════════════════════════════════════════════════════════════════════
 
-        private static int WritePalette(TilePaletteSO palette,
+        internal static int WritePalette(TilePaletteSO palette,
                                         List<(TileCatalog.Entry entry, GameObject prefab)> built, bool force)
         {
             var so    = new SerializedObject(palette);

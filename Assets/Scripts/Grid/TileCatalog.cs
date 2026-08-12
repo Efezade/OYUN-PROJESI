@@ -15,7 +15,8 @@ namespace TacticalRPG.Grid
         River,       // yürünemez nehir
         Mountain,    // yürünemez dağ/kaya
         Blob,        // yürünemez sık orman / göl blobu
-        Node         // düğüm karoları (mağara/kamp/görev/mağaza/kule) — ChapterNodeManager boyar
+        Node,        // düğüm karoları (mağara/kamp/görev/mağaza/kule) — ChapterNodeManager boyar
+        Augment      // KAM'IN DAVULDA KOYDUĞU karo (yalnız savaş arenasında; overworld üretimine girmez)
     }
 
     /// <summary>Karonun yüzey malzemesi — editör tarafı buna göre doku/materyal üretir.</summary>
@@ -125,8 +126,47 @@ namespace TacticalRPG.Grid
         public const string IsikCukuru   = "isik_cukuru";
         public const string GemiEnkazi   = "gemi_enkazi";
 
+        // ── DAVUL KAROLARI (Kam savaşta koyar — TEK RENK TEMASI) ────────────
+        // Bunlar overworld karosu DEĞİL: yalnız savaş arenasında, yalnız Kam'ın davul draftıyla
+        // yerleşir. Ayrı id'leri olmasının sebebi kullanıcı isteği (2026-08-12): "karolara özel
+        // modeller ekle, özelliklerine benzesinler, tek renk temasından oluşsunlar". Eskiden
+        // arazi karolarının görselini ödünç alıyorlardı (dikilitaş, bataklık…) — bu yüzden ne
+        // tanınıyorlardı ne de bir takım gibi duruyorlardı.
+        //
+        // TEMA: kara bazalt taban + RUH TEALİ (0.30, 0.85, 0.78) parlayan oyma. Zemin renkleri
+        // aynı hue'nun 5 değer basamağıdır; ayrım RENKTEN değil MODEL BİÇİMİNDEN gelir.
+        public const string AugAtaTasi      = "aug_ata_tasi";
+        public const string AugKalkanTasi   = "aug_kalkan_tasi";
+        public const string AugRuzgarTasi   = "aug_ruzgar_tasi";
+        public const string AugOcak         = "aug_ocak";
+        public const string AugOfkeTasi     = "aug_ofke_tasi";
+        public const string AugTuzakTasi    = "aug_tuzak_tasi";
+        public const string AugCamur        = "aug_camur";
+        public const string AugKorkuSisi    = "aug_korku_sisi";
+        public const string AugDiken        = "aug_diken";
+        public const string AugAgirlik      = "aug_agirlik";
+        public const string AugSarsinti     = "aug_sarsinti";
+        public const string AugRuhKapisi    = "aug_ruh_kapisi";
+        public const string AugDuvar        = "aug_duvar";
+        public const string AugBosluk       = "aug_bosluk";
+        public const string AugAtesFicisi   = "aug_ates_ficisi";
+        public const string AugBuzKabugu    = "aug_buz_kabugu";
+        public const string AugRuhBombasi   = "aug_ruh_bombasi";
+        public const string AugCigTasi      = "aug_cig_tasi";
+        public const string AugNisanKayasi  = "aug_nisan_kayasi";
+        public const string AugKalkanDuvari = "aug_kalkan_duvari";
+        public const string AugLeyDamari    = "aug_ley_damari";
+        public const string AugKutsalZemin  = "aug_kutsal_zemin";
+        public const string AugGolgeYarigi  = "aug_golge_yarigi";
+        public const string AugDavulTasi    = "aug_davul_tasi";
+
         /// <summary>Özü toplanmış karo buna döner (ova = öz yok). Öz TEK SEFERLİK.</summary>
         public const string Depleted = Ova;
+
+        /// <summary>Davul karosu tükendiğinde (patladığında/kırıldığında) buna döner — arena
+        /// zemini (<c>CombatArenaGenerator.FloorIds</c> ile aynı aile). Yürünür kalmalı: patlamış
+        /// bir fıçının yeri duvara dönerse tahta savaşın ortasında kapanır.</summary>
+        public const string Spent = Ova;
 
         // ─────────────────────────────────────────────────────────────────────
 
@@ -242,7 +282,47 @@ namespace TacticalRPG.Grid
             E(DusmusDev,    "Düşmüş Dev",        TileFamily.Landmark, true, 2, EssenceKind.Tas,  Surface.Moss,  0.44f,0.50f,0.40f, 1.0f),
             E(IsikCukuru,   "Işık Çukuru",       TileFamily.Landmark, true, 3, EssenceKind.Doga, Surface.Moss,  0.36f,0.52f,0.48f, 1.0f),
             E(GemiEnkazi,   "Gemi Enkazı",       TileFamily.Landmark, true, 1, EssenceKind.Tas,  Surface.Sand,  0.70f,0.64f,0.50f, 1.0f),
+
+            // ── DAVUL KAROLARI (yalnız savaş; ağırlık 0 → arazi üreticisi asla seçmez) ──
+            // Renkler bilerek BİRBİRİNE ÇOK YAKIN: hepsi tek bir kara-bazalt temasının değer
+            // basamakları. Oyuncu karoyu renginden değil BİÇİMİNDEN tanır; renk yalnız "bu bir
+            // ruh karosu" der. Yürünürlük burada tanımlanır → palet ve grid otomatik uyar.
+            E(AugAtaTasi,      "Ata Taşı",       TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.21f,0.27f,0.29f),
+            E(AugKalkanTasi,   "Kalkan Taşı",    TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.21f,0.27f,0.29f),
+            E(AugRuzgarTasi,   "Rüzgâr Taşı",    TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.21f,0.27f,0.29f),
+            E(AugOcak,         "Ocak",           TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.21f,0.27f,0.29f),
+            E(AugOfkeTasi,     "Öfke Taşı",      TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.21f,0.27f,0.29f),
+
+            E(AugTuzakTasi,    "Tuzak Taşı",     TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.13f,0.16f,0.18f),
+            E(AugCamur,        "Çamur",          TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.13f,0.16f,0.18f),
+            E(AugKorkuSisi,    "Korku Sisi",     TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.13f,0.16f,0.18f),
+            E(AugDiken,        "Diken Tarlası",  TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.13f,0.16f,0.18f),
+            E(AugAgirlik,      "Ağırlık Taşı",   TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.13f,0.16f,0.18f),
+
+            E(AugSarsinti,     "Sarsıntı Hattı", TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.17f,0.21f,0.23f),
+            E(AugRuhKapisi,    "Ruh Kapısı",     TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.17f,0.21f,0.23f),
+            E(AugDuvar,        "Taş Duvar",      TileFamily.Augment, false, 0, EssenceKind.None, Surface.Stone, 0.17f,0.21f,0.23f),
+            E(AugBosluk,       "Boşluk",         TileFamily.Augment, false, 0, EssenceKind.None, Surface.Stone, 0.06f,0.07f,0.09f),
+
+            E(AugAtesFicisi,   "Ateş Fıçısı",    TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.16f,0.20f,0.22f),
+            E(AugBuzKabugu,    "Buz Kabuğu",     TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.16f,0.20f,0.22f),
+            E(AugRuhBombasi,   "Ruh Bombası",    TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.16f,0.20f,0.22f),
+            E(AugCigTasi,      "Çığ Taşı",       TileFamily.Augment, false, 0, EssenceKind.None, Surface.Stone, 0.16f,0.20f,0.22f),
+
+            E(AugNisanKayasi,  "Nişan Kayası",   TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.20f,0.25f,0.28f),
+            E(AugKalkanDuvari, "Kalkan Duvarı",  TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.20f,0.25f,0.28f),
+            E(AugLeyDamari,    "Ley Damarı",     TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.20f,0.25f,0.28f),
+            E(AugKutsalZemin,  "Kutsal Zemin",   TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.20f,0.25f,0.28f),
+            E(AugGolgeYarigi,  "Gölge Yarığı",   TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.20f,0.25f,0.28f),
+            E(AugDavulTasi,    "Davul Taşı",     TileFamily.Augment, true,  0, EssenceKind.None, Surface.Stone, 0.20f,0.25f,0.28f),
         };
+
+        /// <summary>Davul karosu mu? (Savaş arenasında Kam'ın koyduğu karo.)</summary>
+        public static bool IsAugment(string id)
+        {
+            Entry e = Get(id);
+            return e != null && e.Family == TileFamily.Augment;
+        }
 
         private static readonly Dictionary<string, Entry> ById = BuildIndex();
 
@@ -295,7 +375,8 @@ namespace TacticalRPG.Grid
         {
             Entry e = Get(id);
             if (e == null) return true;                       // düğüm karoları (palette) sayılır
-            return e.Family != TileFamily.Void && e.Family != TileFamily.Fringe;
+            return e.Family != TileFamily.Void && e.Family != TileFamily.Fringe
+                && e.Family != TileFamily.Augment;            // davul karosu overworld'e hiç girmez
         }
     }
 }

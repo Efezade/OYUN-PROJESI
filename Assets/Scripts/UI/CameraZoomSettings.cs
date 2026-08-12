@@ -107,7 +107,7 @@ namespace TacticalRPG.UI
 
             if (!inCombat)
             {
-                _camera.orthographicSize = Mathf.Max(0.5f, _overworldBaseSize * OverworldScale);
+                SetBaseSize(_overworldBaseSize * OverworldScale);
                 return;
             }
 
@@ -116,12 +116,71 @@ namespace TacticalRPG.UI
                 // Kamera AÇISINA dokunulmaz: konum = merkez − forward × mesafe (CameraFollow ile aynı kural).
                 float dist = Mathf.Max(20f, fitSize * 4f);          // ortografikte yalnız kırpma için
                 _camera.transform.position = center - _camera.transform.forward * dist;
-                _camera.orthographicSize   = Mathf.Max(0.5f, fitSize * CombatScale);
+                _shakeBase = _camera.transform.position;
+                SetBaseSize(fitSize * CombatScale);
             }
             else
             {
-                _camera.orthographicSize = Mathf.Max(0.5f, _combatBaseSize * CombatScale);
+                SetBaseSize(_combatBaseSize * CombatScale);
             }
+        }
+
+        // ── Sinematik uzaklaştırma + sarsıntı (Kam'ın büyüleri) ─────────────
+        // Kullanıcı kuralı 2026-08-13: "skill seçerse Kam, kamera uzaklaşsın ve ilahi bir görünüm
+        // olsun". Kamerayı SAHİPLENEN sınıf burası olduğu için çarpan da burada uygulanır —
+        // büyü sistemi orthographicSize'a doğrudan dokunsaydı, ayarlar menüsünden gelen ölçek ile
+        // çakışır ve savaş bitince kamera yanlış yakınlıkta kalırdı.
+
+        [Header("Sinematik (büyü hedeflemesi)")]
+        [Tooltip("Sinematik çarpanın hedefe ulaşma hızı (çarpan/sn).")]
+        [SerializeField, Min(0.1f)] private float _cinematicSpeed = 2.2f;
+
+        private float   _baseSize    = 10f;   // duruma göre hesaplanan ölçek (çarpansız)
+        private float   _cineCurrent = 1f;
+        private float   _cineTarget  = 1f;
+        private Vector3 _shakeBase;
+        private Coroutine _shakeCo;
+
+        /// <summary>1 = normal. Büyü hedeflemesinde >1 verilir; bitince tekrar 1.</summary>
+        public void SetCinematicZoom(float multiplier)
+            => _cineTarget = Mathf.Clamp(multiplier, 0.5f, 3f);
+
+        private void SetBaseSize(float size)
+        {
+            _baseSize = Mathf.Max(0.5f, size);
+            if (_camera != null) _camera.orthographicSize = _baseSize * _cineCurrent;
+        }
+
+        private void LateUpdate()
+        {
+            if (_camera == null || Mathf.Approximately(_cineCurrent, _cineTarget)) return;
+            _cineCurrent = Mathf.MoveTowards(_cineCurrent, _cineTarget, _cinematicSpeed * Time.deltaTime);
+            _camera.orthographicSize = Mathf.Max(0.5f, _baseSize * _cineCurrent);
+        }
+
+        /// <summary>Kamerayı kısa süre sarsar (meteor çarpması). Ortografik kamerada konum
+        /// kaydırması görüntüyü kaydırır — ölçeğe dokunmaz.</summary>
+        public void Shake(float amount, float seconds)
+        {
+            if (_camera == null || amount <= 0f || seconds <= 0f) return;
+            if (_shakeCo != null) StopCoroutine(_shakeCo);
+            _shakeCo = StartCoroutine(ShakeRoutine(amount, seconds));
+        }
+
+        private System.Collections.IEnumerator ShakeRoutine(float amount, float seconds)
+        {
+            Vector3 basePos = _camera.transform.position;
+            _shakeBase = basePos;
+            float t = 0f;
+            while (t < seconds)
+            {
+                t += Time.deltaTime;
+                float fade = 1f - t / seconds;
+                _camera.transform.position = basePos + Random.insideUnitSphere * (amount * fade);
+                yield return null;
+            }
+            _camera.transform.position = _shakeBase;
+            _shakeCo = null;
         }
 
         /// <summary>Arenanın merkezini ve TAM SIĞACAK ortografik boyutu hesaplar.

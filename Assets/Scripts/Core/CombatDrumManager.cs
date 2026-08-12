@@ -31,6 +31,9 @@ namespace TacticalRPG.Core
         [SerializeField] private UnitManager        _units;
         [SerializeField] private HexGridManager     _grid;
         [SerializeField] private CombatMapGenerator _arena;
+        [Tooltip("Karo ETKİLERİNİ çözen bileşen. Atanmazsa karo yalnız boyanır (eski davranış) — " +
+                 "sersemletme/can/patlama çalışmaz.")]
+        [SerializeField] private AugmentTileManager _tiles;
 
         [Header("Ritim")]
         [Tooltip("İlk davul vuruşunun turu. 2 önerilir: tur 3'ten başlarsa 4-5 turluk encounter'da " +
@@ -49,16 +52,47 @@ namespace TacticalRPG.Core
         [SerializeField, Min(0)] private int _bossRadiusBonus = 1;
 
         [Header("Draft")]
-        [Tooltip("Vuruş başına sunulan kart sayısı.")]
-        [SerializeField, Min(2)] private int _choiceCount = 3;
+        [Tooltip("Vuruş başına sunulan kart sayısı (KARO kartları + 1 büyü). 4 önerilir: " +
+                 "3 karo grubu korunur ve üstüne garanti bir büyü gelir.")]
+        [SerializeField, Min(2)] private int _choiceCount = 4;
 
         [Tooltip("Bir kart yuvasının SINIFSAL kartla değişme ihtimali (sahada o sınıf varsa).")]
         [SerializeField, Range(0f, 1f)] private float _classCardChance = 0.15f;
 
+        [Tooltip("Her draftta EN AZ bir büyü kartı bulunsun mu (kullanıcı kuralı 2026-08-13).")]
+        [SerializeField] private bool _guaranteeSkill = true;
+
+        [Header("Büyüler")]
+        [Tooltip("Büyü kartı seçilince hedeflemeyi bu bileşen devralır. Boşsa büyü kartı çıkmaz.")]
+        [SerializeField] private KamSkillCaster _skills;
+
         // ── Durum ────────────────────────────────────────────────────────────
-        private readonly List<AugmentCatalog.Entry> _choices   = new();
+        private readonly List<DraftCard>            _choices   = new();
         private readonly List<HexCoordinate>        _validCells = new();
         private readonly List<string>               _usedIds    = new();   // aynı savaşta tekrar etmesin
+        private readonly List<HexCoordinate>        _placedCoords = new(); // bu kartın kapladığı karolar
+
+        /// <summary>
+        /// Draftta sunulan TEK bir kart: ya bir KARO ya bir BÜYÜ. İkisi tek listede duruyor
+        /// çünkü oyuncu için ikisi de "davulun verdiği seçenek" — ayrı iki panel açmak kararı
+        /// böler ve "karo mu büyü mü" gerilimini yok ederdi.
+        /// </summary>
+        public readonly struct DraftCard
+        {
+            public readonly AugmentCatalog.Entry  Tile;
+            public readonly KamSkillCatalog.Entry Skill;
+
+            public DraftCard(AugmentCatalog.Entry tile)  { Tile = tile; Skill = null; }
+            public DraftCard(KamSkillCatalog.Entry skill) { Tile = null; Skill = skill; }
+
+            public bool   IsSkill     => Skill != null;
+            public bool   IsValid     => Tile != null || Skill != null;
+            public string Id          => IsSkill ? Skill.Id          : Tile.Id;
+            public string Name        => IsSkill ? Skill.Name        : Tile.Name;
+            public string Description => IsSkill ? Skill.Description : Tile.Description;
+            public string AreaLabel   => IsSkill ? KamSkillCatalog.AreaLabel(Skill)
+                                                 : AugmentCatalog.AreaLabel(Tile);
+        }
 
         /// <summary>Şu an seçim bekleniyor mu? (UI bu bayrağa bakar, savaş girdisi kilitlenir.)</summary>
         public bool IsChoosing { get; private set; }
@@ -66,7 +100,10 @@ namespace TacticalRPG.Core
         /// <summary>Kart seçildi, yerleştirme bekleniyor mu?</summary>
         public bool IsPlacing { get; private set; }
 
-        public IReadOnlyList<AugmentCatalog.Entry> Choices  => _choices;
+        /// <summary>Büyü kartı seçildi, hedefleme/gösteri sürüyor mu?</summary>
+        public bool IsCastingSkill { get; private set; }
+
+        public IReadOnlyList<DraftCard>            Choices  => _choices;
         public AugmentCatalog.Entry                Selected { get; private set; }
 
         /// <summary>Seçilen karonun konabileceği karolar (Kam'ın çevresi, dolu/uygunsuz olanlar hariç).</summary>
@@ -126,14 +163,30 @@ namespace TacticalRPG.Core
             AddFromGroup(AugmentGroup.Kargis);
             AddFromGroup(Random.value < 0.5f ? AugmentGroup.Notr : AugmentGroup.Patlayici);
 
-            // Nadir sınıfsal kart: sahada O SINIF varsa bir yuvayı devralır.
+            // Nadir sınıfsal kart: sahada O SINIF varsa bir KARO yuvasını devralır.
             if (_choices.Count > 0 && Random.value < _classCardChance)
             {
                 var classCard = PickClassCard();
-                if (classCard != null) _choices[Random.Range(0, _choices.Count)] = classCard;
+                if (classCard != null) _choices[Random.Range(0, _choices.Count)] = new DraftCard(classCard);
             }
 
-            while (_choices.Count > _choiceCount) _choices.RemoveAt(_choices.Count - 1);
+            // GARANTİ BÜYÜ (kullanıcı kuralı 2026-08-13): her vuruşta en az bir aktif büyü.
+            // Kendi yuvasında durur, karo kartlarından birini YEMEZ — aksi halde tahta kurma
+            // seçenekleri azalır ve davulun asıl mekaniği (karo draftı) zayıflardı.
+            if (_guaranteeSkill && _skills != null)
+            {
+                var skill = PickSkill();
+                if (skill != null) _choices.Add(new DraftCard(skill));
+            }
+
+            // Fazlalık kırpılırken BÜYÜ dokunulmaz — yoksa "her draftta en az bir büyü" sözü
+            // kart sayısı düşürüldüğü an sessizce bozulurdu.
+            while (_choices.Count > _choiceCount)
+            {
+                int idx = _choices.FindLastIndex(c => !c.IsSkill);
+                if (idx < 0) break;
+                _choices.RemoveAt(idx);
+            }
 
             IsChoosing = true;
             IsPlacing  = false;
@@ -153,7 +206,23 @@ namespace TacticalRPG.Core
                 pool.Add(e);
             }
             if (pool.Count == 0) return;
-            _choices.Add(pool[Random.Range(0, pool.Count)]);
+            _choices.Add(new DraftCard(pool[Random.Range(0, pool.Count)]));
+        }
+
+        /// <summary>Bu savaşta henüz kullanılmamış bir büyü seçer (hepsi kullanıldıysa havuz
+        /// sıfırlanır — savaş uzarsa oyuncu büyüsüz kalmasın).</summary>
+        private KamSkillCatalog.Entry PickSkill()
+        {
+            var pool = new List<KamSkillCatalog.Entry>();
+            foreach (var s in KamSkillCatalog.All)
+                if (!_usedIds.Contains(s.Id)) pool.Add(s);
+
+            if (pool.Count == 0)
+            {
+                foreach (var s in KamSkillCatalog.All) _usedIds.Remove(s.Id);
+                pool.AddRange(KamSkillCatalog.All);
+            }
+            return pool.Count > 0 ? pool[Random.Range(0, pool.Count)] : null;
         }
 
         private AugmentCatalog.Entry PickClassCard()
@@ -184,7 +253,23 @@ namespace TacticalRPG.Core
         {
             if (!IsChoosing || index < 0 || index >= _choices.Count) return false;
 
-            Selected   = _choices[index];
+            DraftCard card = _choices[index];
+
+            // BÜYÜ: yerleştirme yok — hedefleme moduna geçilir (kamera uzaklaşır, alan fareyi
+            // takip eder, çift tık atar). Karo yolundan tamamen ayrı bir dal.
+            if (card.IsSkill)
+            {
+                if (_skills == null) return false;
+                IsChoosing     = false;
+                IsCastingSkill = true;
+                Selected       = null;
+
+                var skill = card.Skill;
+                _skills.Begin(skill, cast => HandleSkillFinished(skill, cast));
+                return true;
+            }
+
+            Selected   = card.Tile;
             IsChoosing = false;
             IsPlacing  = true;
             BuildValidCells();
@@ -204,6 +289,27 @@ namespace TacticalRPG.Core
             OnPlacementBegan?.Invoke();
             return true;
         }
+
+        /// <summary>Büyü bitti: atıldıysa kart harcanır, iptal edildiyse draft geri açılır
+        /// (yanlış tıkla bir davul vuruşu yanmasın).</summary>
+        private void HandleSkillFinished(KamSkillCatalog.Entry skill, bool cast)
+        {
+            IsCastingSkill = false;
+
+            if (!cast)
+            {
+                IsChoosing = true;                 // aynı 3+1 kart tekrar sunulur
+                OnChoicesOffered?.Invoke();
+                return;
+            }
+
+            _usedIds.Add(skill.Id);
+            _choices.Clear();
+            OnDraftClosed?.Invoke();
+        }
+
+        /// <summary>Draft kapandı (karo kondu ya da büyü atıldı) — HUD kendini toplasın.</summary>
+        public event System.Action OnDraftClosed;
 
         /// <summary>Kam'ın çevresindeki UYGUN karolar. "Uygun" = arenada var, üstünde birim yok,
         /// zaten bir davul karosu değil, ve Kam'ın kendi karosu değil.</summary>
@@ -236,19 +342,30 @@ namespace TacticalRPG.Core
                 return false;
             }
 
-            ApplyTile(coord, Selected);
-
-            // Çok karolu kartlar (Duvar 3, Kutsal Zemin 3): komşulara doğru yayılır.
+            // Kaplanacak karolar: merkez + (çok karolu kartlarda) komşular.
+            // MERKEZ HER ZAMAN İLK SIRADA — etkinin yarıçapı oradan ölçülür.
+            _placedCoords.Clear();
+            _placedCoords.Add(coord);
             if (Selected.TileCount > 1)
             {
-                int placed = 1;
-                for (int d = 0; d < 6 && placed < Selected.TileCount; d++)
+                for (int d = 0; d < 6 && _placedCoords.Count < Selected.TileCount; d++)
                 {
                     HexCoordinate n = coord.GetNeighbor(d);
-                    if (!_validCells.Contains(n)) continue;
-                    ApplyTile(n, Selected);
-                    placed++;
+                    if (_validCells.Contains(n)) _placedCoords.Add(n);
                 }
+            }
+
+            if (_tiles != null)
+            {
+                // Etki sistemi devrede: boyama + kayıt + animasyon oradan yürür.
+                _tiles.Place(Selected, _placedCoords);
+            }
+            else
+            {
+                // Yedek yol (bileşen bağlanmamış): en azından karo görünsün.
+                Debug.LogWarning("[Davul] AugmentTileManager atanmamis — karo boyaniyor ama ETKISI yok. " +
+                                 "TacticalRPG/Savas - Arena + Formul Kur menusunu calistir.");
+                foreach (var c in _placedCoords) ApplyTile(c, Selected);
             }
 
             _usedIds.Add(Selected.Id);

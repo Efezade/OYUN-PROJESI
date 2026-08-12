@@ -82,18 +82,75 @@ namespace TacticalRPG.Core
         public int  Shield    { get; private set; }
         public bool IsAlive   => CurrentHP > 0;
 
-        // ── Savaş statları (kart varsa karttan; yoksa kartsız fallback alanlarından) ──
-        public int Attack      => _card != null ? _card.Attack      : _attack;
-        public int Defense     => _card != null ? _card.Defense     : _defense;
-        public int Level       => _card != null ? _card.Level       : 1;
-        public int MoveRange   => _card != null ? _card.MoveRange   : _moveRange;
-        public int Speed       => _card != null ? _card.Speed       : _speed;
-        public int AttackRange => _card != null ? _card.AttackRange : _attackRange;
+        // ── Davul karosu etkileri (AugmentTileManager yönetir) ────────────────
+        // Birim üstünde DURDUĞU karonun etkisi burada toplanır. Kart/SO verisi değişmez
+        // (CLAUDE.md §2: "runtime'da SO verisi değiştirilmez"); bonus ayrı bir katman olarak
+        // stat property'lerine eklenir → karodan çıkınca sıfırlanır, kalıcı iz bırakmaz.
+        public struct TileBonus
+        {
+            public int Attack, Defense, Move, Initiative, Range;
+            public bool IsZero => Attack == 0 && Defense == 0 && Move == 0 && Initiative == 0 && Range == 0;
+            public bool Equals(in TileBonus o) => Attack == o.Attack && Defense == o.Defense
+                && Move == o.Move && Initiative == o.Initiative && Range == o.Range;
+        }
 
-        public event Action<Unit> OnStatsChanged; // HP veya kalkan değişti
+        private TileBonus _tileBonus;
+
+        /// <summary>Şu an bastığı karolardan gelen toplam stat farkı (HUD gösterir).</summary>
+        public TileBonus Bonus => _tileBonus;
+
+        /// <summary>Karo bonusunu yazar. Değişmediyse event yayılmaz (her tur HUD çöpü olmasın).</summary>
+        public void SetTileBonus(in TileBonus bonus)
+        {
+            if (_tileBonus.Equals(bonus)) return;
+            _tileBonus = bonus;
+            OnStatsChanged?.Invoke(this);
+        }
+
+        /// <summary>Kaç TUR sersemlemiş (tuzak/buz karosu). 0 = normal.</summary>
+        public int  StunTurns { get; private set; }
+        public bool IsStunned => StunTurns > 0;
+
+        public void ApplyStun(int turns)
+        {
+            if (turns <= 0 || !IsAlive) return;
+            StunTurns = Mathf.Max(StunTurns, turns);
+            OnStatsChanged?.Invoke(this);
+        }
+
+        /// <summary>Sersemleme bir tur tüketir (TurnManager sırası gelince çağırır).</summary>
+        public void ConsumeStun()
+        {
+            if (StunTurns <= 0) return;
+            StunTurns--;
+            OnStatsChanged?.Invoke(this);
+        }
+
+        // ── Savaş statları (kart varsa karttan; yoksa kartsız fallback alanlarından) ──
+        // Karo bonusu HEPSİNE eklenir; negatif karolar (çamur, sarsıntı) statı sıfırın altına
+        // indiremez — aksi halde "eksi savunma" formülde ters yönde hasar azaltmaya dönerdi.
+        public int Attack      => Mathf.Max(0, (_card != null ? _card.Attack      : _attack)      + _tileBonus.Attack);
+        public int Defense     => Mathf.Max(0, (_card != null ? _card.Defense     : _defense)     + _tileBonus.Defense);
+        public int Level       => _card != null ? _card.Level       : 1;
+        public int MoveRange   => Mathf.Max(0, (_card != null ? _card.MoveRange   : _moveRange)   + _tileBonus.Move);
+        public int Speed       => Mathf.Max(0, (_card != null ? _card.Speed       : _speed)       + _tileBonus.Initiative);
+        public int AttackRange => Mathf.Max(1, (_card != null ? _card.AttackRange : _attackRange) + _tileBonus.Range);
+
+        /// <summary>Karo bonusu olmadan taban hız — sıra barı "neden öne geçti"yi gösterebilsin.</summary>
+        public int BaseSpeed => _card != null ? _card.Speed : _speed;
+
+        public event Action<Unit> OnStatsChanged; // HP, kalkan, karo bonusu veya sersemleme değişti
         public event Action<Unit> OnDied;
         /// <summary>Bu birim bir hedefe saldırdı (animasyon sürücüsü dinler; argüman = hedef).</summary>
         public event Action<Unit> OnAttackPerformed;
+
+        /// <summary>Birim YÜRÜYEREK yeni bir karoya bastı (yol boyunca her adımda).
+        /// Tuzak/diken/buz karoları buna asılır — spawn ve ışınlanma tetiklemez, çünkü
+        /// "üstüne gelen" sözü yürüyüşü anlatır.</summary>
+        public event Action<Unit, HexCoordinate> OnEnteredCell;
+
+        /// <summary>Gerçekten can gitti (kalkan emmedi). Ateş fıçısı buna asılır.</summary>
+        public event Action<Unit, int> OnDamaged;
 
         private CharacterModelBinder _binder;
 
@@ -235,6 +292,8 @@ namespace TacticalRPG.Core
                     yield return null;
                 }
                 _coord = cell.Coordinate;
+                OnEnteredCell?.Invoke(this, _coord);   // tuzak/diken/buz burada tetiklenir
+                if (!IsAlive) break;                   // diken öldürdüyse yürümeye devam etme
             }
             IsMoving = false;
             onComplete?.Invoke();
@@ -300,7 +359,11 @@ namespace TacticalRPG.Core
                 }
             }
 
-            if (CurrentHP < beforeHP) PlayHitFlash(); // gerçekten can gittiyse kırmızı çak
+            if (CurrentHP < beforeHP)
+            {
+                PlayHitFlash();                       // gerçekten can gittiyse kırmızı çak
+                OnDamaged?.Invoke(this, beforeHP - CurrentHP);  // ateş fıçısı bunu dinler
+            }
         }
 
         // ── Hasar flaşı ───────────────────────────────────────────────────────

@@ -100,6 +100,40 @@ namespace TacticalRPG.Editor
             EditorUtility.DisplayDialog("Karakter Kurulumu", sb.ToString(), "Tamam");
         }
 
+        /// <summary>
+        /// BATCH: controller'ları YENİDEN kurar ve öncesi/sonrası klip bağlarını loglar.
+        /// <c>-executeMethod TacticalRPG.Editor.CharacterAnimationImporter.RebuildAndReportBatch</c>
+        ///
+        /// Neden rapor: "düşman yanlış animasyon oynatıyor" gibi bir hatayı Play'e basmadan
+        /// kanıtlamanın tek yolu, controller'daki HANGİ DURUMUN HANGİ KLİBE bağlı olduğunu
+        /// okumaktır. Bu satırlar hatanın hem teşhisi hem düzeldiğinin kanıtıdır.
+        /// </summary>
+        public static void RebuildAndReportBatch()
+        {
+            ReportControllers("ONCE ");
+            SetupAllCharacters();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            ReportControllers("SONRA");
+        }
+
+        /// <summary>Her karakterin controller'ındaki durum → klip eşlemesini loglar.</summary>
+        public static void ReportControllers(string tag)
+        {
+            foreach (string folder in CharacterFolders())
+            {
+                string name = Path.GetFileName(folder);
+                var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPathFor(folder));
+                if (ctrl == null) { Debug.Log($"[Anim {tag}] {name}: controller YOK"); continue; }
+
+                var sb = new System.Text.StringBuilder($"[Anim {tag}] {name}: ");
+                foreach (AnimatorControllerLayer layer in ctrl.layers)
+                    foreach (ChildAnimatorState st in layer.stateMachine.states)
+                        sb.Append($"{st.state.name}=[{(st.state.motion != null ? st.state.motion.name : "KLIP YOK")}]  ");
+                Debug.Log(sb.ToString());
+            }
+        }
+
         // ── Ana akış ──────────────────────────────────────────────────────────
 
         /// <summary>
@@ -342,8 +376,23 @@ namespace TacticalRPG.Editor
 
         /// <summary>Oyunun kullandığı bir duruma karşılık gelen klip adı mı?</summary>
         private static bool IsRecognizedClip(string name) =>
+            !IsExcludedClip(name) &&
             Has(name, "walk", "yuru", "idle", "bekle", "dur", "run", "kos",
                       "attack", "saldiri", "vur", "punch", "slash", "death", "die", "olum");
+
+        /// <summary>
+        /// ANAHTAR KELİMEYİ İÇERSE BİLE ALINMAYACAK klipler.
+        ///
+        /// 2026-08-13 HATA RAPORU ("düşmanlar sürekli zıplıyor"): Quaternius Orc.fbx içinde
+        /// <c>Jump_Idle</c> adlı bir take var — havada asılı kalma pozu. Adı "idle" içerdiği için
+        /// süzgeçten geçiyordu ve <see cref="FindClip"/> ilk eşleşeni aldığı için (asset yükleme
+        /// sırası GARANTİ DEĞİLDİR) bazen GERÇEK Idle yerine BU bağlanıyordu → düşman savaş
+        /// boyunca zıplama pozunda titriyordu. Aynı tuzak: <c>Jump_Land</c>, <c>Fall_Idle</c>,
+        /// <c>Crouch_Idle</c>, <c>Swim_Idle</c>…
+        /// </summary>
+        private static bool IsExcludedClip(string name) =>
+            Has(name, "jump", "zipla", "fall", "land", "crouch", "duck", "sit", "swim", "climb",
+                      "dance", "wave", "hitreact");
 
         // Model dosyasının İÇİNDE işimize yarayan take var mı? Quaternius RPG karakterleri tek
         // ANLAMSIZ take ile gelir ("Take 001") — onları animasyonlu sanıp Humanoid retarget
@@ -374,6 +423,21 @@ namespace TacticalRPG.Editor
 
         // ── Import ayarları ───────────────────────────────────────────────────
 
+        /// <summary>
+        /// LOOP POSE NEDEN KAPALI (2026-08-13 hata raporu: "düşmanlar sürekli zıplıyor").
+        ///
+        /// Eski kod döngülü kliplerde <c>loopTime</c> ile birlikte <c>loopPose</c>'u da açıyordu.
+        /// İkisi AYNI ŞEY DEĞİL:
+        ///   • loopTime = "klip bitince baştan başla" — istediğimiz bu.
+        ///   • loopPose = "son kareyi ilk kareye ZORLA uydur" — Unity klibin tamamına düzeltme
+        ///     uygular. Zaten temiz döngülen bir klipte (Quaternius take'leri böyle) bu düzeltme
+        ///     kökü her döngüde kaydırır → karakter her tur başında yukarı seker. Yerinde duran
+        ///     bir düşmanda bu, saniyede bir zıplama gibi görünür.
+        /// loopPose YALNIZCA kötü döngülenen (Mixamo'dan kesilmiş) kliplerde açılmalı, o da
+        /// tek tek elle. Bu yüzden araç artık ASLA zorlamıyor; kapalıya çekiyor.
+        /// </summary>
+        private static void LoopPoseWarning() { /* yalnızca yukarıdaki açıklamayı taşır */ }
+
         // Tek klipli animasyon FBX'i (Mixamo deseni): rig tipi + klip adı = @ soneki + loop.
         // Yalnızca bir şey DEĞİŞECEKSE reimport eder (idempotent, gereksiz churn yok).
         private static void EnsureAnimationFbx(string path, string clipName,
@@ -395,11 +459,11 @@ namespace TacticalRPG.Editor
             {
                 // Tek take varsayımı (Mixamo hep tek klip verir) — ilk klip esas alınır.
                 ModelImporterClipAnimation c = clipDefs[0];
-                if (c.name != clipName || c.loopTime != loop || c.loopPose != loop)
+                if (c.name != clipName || c.loopTime != loop || c.loopPose)
                 {
                     c.name     = clipName;
                     c.loopTime = loop;
-                    c.loopPose = loop; // döngü başı/sonu poz uyumu (yürüyüş takılmasın)
+                    c.loopPose = false;   // bkz. LoopPoseWarning
                     importer.clipAnimations = clipDefs;
                     dirty = true;
                 }
@@ -435,10 +499,11 @@ namespace TacticalRPG.Editor
             foreach (ModelImporterClipAnimation c in clipDefs)
             {
                 bool loop = IsLooping(c.name);
-                if (c.loopTime != loop || c.loopPose != loop)
+                // LOOP POSE ASLA ZORLANMAZ — bkz. LoopPoseWarning.
+                if (c.loopTime != loop || c.loopPose)
                 {
                     c.loopTime = loop;
-                    c.loopPose = loop;
+                    c.loopPose = false;
                     clipsDirty = true;
                 }
             }
@@ -575,12 +640,46 @@ namespace TacticalRPG.Editor
             toDeath.AddCondition(AnimatorConditionMode.If, 0f, DeathParam);
         }
 
+        /// <summary>
+        /// Anahtar kelimeye UYAN EN İYİ klibi seçer — ilk uyanı değil.
+        ///
+        /// Neden puanlama: bir FBX'te aynı kelimeyi taşıyan birden çok take olabiliyor
+        /// ("Idle" ve "Jump_Idle"). <c>AssetDatabase.LoadAllAssetsAtPath</c> sırası garanti
+        /// olmadığı için "ilkini al" kuralı MAKİNEYE GÖRE değişen sonuç veriyordu. Puanlama:
+        ///   1. Klip adının çekirdeği (Armature|/boşluk/alt çizgi ayıklanmış) anahtarla TAM EŞİTSE
+        ///      en iyi eşleşme — "Idle" her zaman "Jump_Idle"ı yener.
+        ///   2. Eşit değilse adı KISA olan kazanır (az ek = az süslenmiş = temel klip).
+        /// </summary>
         private static AnimationClip FindClip(List<(string name, AnimationClip clip)> clips,
                                               params string[] keys)
         {
+            AnimationClip best = null;
+            int bestScore = int.MinValue;
+
             foreach ((string name, AnimationClip clip) in clips)
-                if (Has(name, keys)) return clip;
-            return null;
+            {
+                if (IsExcludedClip(name) || !Has(name, keys)) continue;
+
+                string core  = CoreName(name);
+                bool   exact = false;
+                foreach (string k in keys)
+                    if (string.Equals(core, k, System.StringComparison.OrdinalIgnoreCase)) { exact = true; break; }
+
+                int score = (exact ? 1000 : 0) - core.Length;
+                if (score <= bestScore) continue;
+                bestScore = score;
+                best      = clip;
+            }
+            return best;
+        }
+
+        /// <summary>"CharacterArmature|Jump_Idle" → "jump_idle"; kıyaslama için sadeleştirir.</summary>
+        private static string CoreName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return string.Empty;
+            int bar = name.LastIndexOf('|');
+            if (bar >= 0 && bar < name.Length - 1) name = name.Substring(bar + 1);
+            return name.Trim().ToLowerInvariant();
         }
 
         private static void EnsureFolder(string folder)
