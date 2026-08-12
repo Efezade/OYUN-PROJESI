@@ -36,11 +36,13 @@ namespace TacticalRPG.UI
 
         private void OnGUI()
         {
+            if (MenuState.HudsHidden) return;   // augment karti / tam-ekran menu aciksa IMGUI cizilmez
             // Sanal 1920x1080 ekrana ciz -> her cozunurlukte ayni oran.
             using var _scale = HudScale.Scaled();
 
             const float w = 380f;
-            var rect = new Rect(HudScale.Width - w - 12f, 12f, w, 230f);
+            // Öz deposunun ALTINA — ikisi de sağ-üst y=12 idi, üst üste biniyorlardı.
+            var rect = new Rect(HudScale.Width - w - HudLayout.RightMargin, HudLayout.RightSecondY, w, 230f);
             ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
 

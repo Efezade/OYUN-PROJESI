@@ -333,7 +333,7 @@ namespace TacticalRPG.Editor
             // Model yoksa (kapsül fallback) eski tuning: TileHeight(0.3)+kapsül yarı-yükseklik(0.45)+boşluk.
             playerSO.FindProperty("_heightOffset").floatValue          =
                 charModel != null ? HexMetrics.TileHeight : 0.8f;
-            playerSO.FindProperty("_visionRange").intValue             = 1; // dinamik sis baloncuğu = 1 karo
+            playerSO.FindProperty("_visionRange").intValue             = 3; // dinamik sis baloncugu = 3 karo (2026-08-12: 1'den 3'e)
             playerSO.FindProperty("_startCoord").FindPropertyRelative("Q").intValue = 3;
             playerSO.FindProperty("_startCoord").FindPropertyRelative("R").intValue = 4;
             playerSO.ApplyModifiedProperties();
@@ -578,9 +578,13 @@ namespace TacticalRPG.Editor
             if (oldEM != null) Object.DestroyImmediate(oldEM);
             EssenceWallet wallet = gameManagerGO.AddComponent<EssenceWallet>();
             var emSO = new SerializedObject(wallet);
-            emSO.FindProperty("_startAtes").intValue   = 4; // test: bir-iki birim üretmeye yeter
+            emSO.FindProperty("_startAtes").intValue   = 4; // eski deneme ozleri (tarifler kullanabiliyor)
             emSO.FindProperty("_startSu").intValue     = 4;
             emSO.FindProperty("_startToprak").intValue = 4;
+            // TEST: savas ekranini denerken birim uretebilmek icin BOL tas/doga
+            // (kullanici istegi 2026-08-12). Gercek dengede 0 olacak.
+            emSO.FindProperty("_startTas").intValue    = 500;
+            emSO.FindProperty("_startDoga").intValue   = 500;
             emSO.ApplyModifiedProperties();
 
             // PartyManager — başlangıçta SADECE Kam; Savaşçı/Ranger özle üretilir (Faz D tarifleri)
@@ -888,6 +892,9 @@ namespace TacticalRPG.Editor
             }
             combatMap.defaultTileId = "kaya";
             combatMap.assignments.Clear();
+            // Savas arenasi KENDI boyutunu tasir: overworld tahtasi (organik harita icin 36x34)
+            // buyudugunde savas alani da buyumesin.
+            combatMap.SetGridSize(22, 25);
             EditorUtility.SetDirty(combatMap);
 
             // ── Görev verisi (MissionData) ────────────────────────────────────
@@ -1495,6 +1502,10 @@ namespace TacticalRPG.Editor
                 "Assets/Data/Recipes/RangerRecipe.asset", "Ranger", rangerData,
                 new[] { new EssenceAmount(EssenceType.Tas, 1), new EssenceAmount(EssenceType.Doga, 4) });
 
+            // Planlanan 5 sinif (Barbar/Okcu/Buyucu/Rahip/Serseri) — veri + placeholder model +
+            // tarif. Zincire dahil (CLAUDE.md §9.1): elle ayri menu calistirmak gerekmez.
+            var extraRecipes = CharacterClassFactory.BuildAll();
+
             // ── 3) OverworldEssenceHUD (sadece cüzdan + topla + roster — ÜRETİM YOK) ─
             // NOT (2026-08-05): ESKİ `EssenceNodeManager` (elle boyanmış öz küreleri) SİLİNDİ.
             // Öz artık KARONUN KENDİSİ (TASK-005) → `_terrain` alanını SetupChapterWorld doldurur.
@@ -1519,9 +1530,11 @@ namespace TacticalRPG.Editor
                 dhSO.FindProperty("_config").objectReferenceValue = config;
                 var recipesProp = dhSO.FindProperty("_recipes");
                 recipesProp.ClearArray();
-                recipesProp.arraySize = 2;
-                recipesProp.GetArrayElementAtIndex(0).objectReferenceValue = savasciRecipe;
-                recipesProp.GetArrayElementAtIndex(1).objectReferenceValue = rangerRecipe;
+                var allRecipes = new List<UnitRecipe> { savasciRecipe, rangerRecipe };
+                allRecipes.AddRange(extraRecipes);
+                recipesProp.arraySize = allRecipes.Count;
+                for (int i = 0; i < allRecipes.Count; i++)
+                    recipesProp.GetArrayElementAtIndex(i).objectReferenceValue = allRecipes[i];
                 dhSO.ApplyModifiedProperties();
             }
             else

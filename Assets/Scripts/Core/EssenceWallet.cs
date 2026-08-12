@@ -12,10 +12,16 @@ namespace TacticalRPG.Core
     /// </summary>
     public class EssenceWallet : MonoBehaviour
     {
-        [Header("Başlangıç özleri (test için)")]
+        [Header("Başlangıç özleri (TEST için)")]
+        [Tooltip("Bölüm 1'in gerçek özleri TAŞ ve DOĞA'dır. Ateş/Su/Toprak eski denemeden kalma " +
+                 "(GAME_DESIGN §0) — tarifler hâlâ kullanabildiği için alanlar duruyor.")]
         [SerializeField, Min(0)] private int _startAtes;
         [SerializeField, Min(0)] private int _startSu;
         [SerializeField, Min(0)] private int _startToprak;
+        [Tooltip("TEST kolaylığı: savaş ekranını denerken birim üretebilmek için bol başlangıç özü " +
+                 "(kullanıcı isteği 2026-08-12). Gerçek dengede 0 olacak.")]
+        [SerializeField, Min(0)] private int _startTas  = 500;
+        [SerializeField, Min(0)] private int _startDoga = 500;
 
         private readonly int[] _amounts = new int[Enum.GetValues(typeof(EssenceType)).Length];
 
@@ -34,6 +40,8 @@ namespace TacticalRPG.Core
             _amounts[(int)EssenceType.Ates]   = Mathf.Max(0, _startAtes);
             _amounts[(int)EssenceType.Su]     = Mathf.Max(0, _startSu);
             _amounts[(int)EssenceType.Toprak] = Mathf.Max(0, _startToprak);
+            _amounts[(int)EssenceType.Tas]    = Mathf.Max(0, _startTas);
+            _amounts[(int)EssenceType.Doga]   = Mathf.Max(0, _startDoga);
             OnChanged?.Invoke();
         }
 

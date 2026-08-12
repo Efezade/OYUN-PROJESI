@@ -235,38 +235,32 @@ namespace TacticalRPG.Editor
                 cmSO.ApplyModifiedProperties();
             }
 
+            // Savas tarafi: hasar formulu + prosedurel arena ureticisi (2026-08-12).
+            SetupCombat();
+
             EditorUtility.SetDirty(host);
             Debug.Log("[Bolum] Tek haritali dunya kuruldu (1 bolum = 1 harita).");
         }
 
-        /// <summary>Prosedürel terrain'in 11 karo tipini palete ekler — YALNIZ YOKSA
-        /// (kullanıcının atadığı prefab/renk TAM KURULUM'da EZİLMEZ).
-        /// "kopru" zaten palette var (köprü FBX'i) → dokunulmaz, nehrin geçidi olarak kullanılır.</summary>
+        /// <summary>Terrain + düğüm karolarının palet girişlerini kurar.
+        ///
+        /// Terrain karolarının TAMAMI (70+ tip, renkli/dokulu prefablarıyla) artık
+        /// <see cref="TileVisualFactory"/> tarafından üretiliyor — burada elle tutulan kısa bir
+        /// liste vardı, katalog büyüyünce ikisi kaçınılmaz olarak ayrışırdı. Düğüm karoları
+        /// (mağara/kamp/görev alanı) prosedürel dağıtıma girmediği için burada kalıyor:
+        /// savaşa giriş bayrağı (`canEnterCombat`) onlara özgü.</summary>
         private static void EnsureTerrainPaletteEntries(HexGridManager grid)
         {
             TilePaletteSO palette = grid != null ? grid.TilePalette : null;
             if (palette == null) return;
 
-            // id, görünen ad, yürünür mü, editör rengi, yüzey yüksekliği
-            var defs = new (string id, string name, bool walkable, Color color, float height)[]
-            {
-                (TerrainGenerator.OvaId,              "Ova",                 true,  new Color(0.62f, 0.70f, 0.42f), 0f),
-                (TerrainGenerator.TaslikOvaId,        "Taşlık Ova (1 taş)",  true,  new Color(0.66f, 0.64f, 0.58f), 0f),
-                (TerrainGenerator.BolTaslikOvaId,     "Bol Taşlık (2 taş)",  true,  new Color(0.55f, 0.53f, 0.50f), 0f),
-                (TerrainGenerator.AzAgacliOvaId,      "Az Ağaçlı (1 doğa)",  true,  new Color(0.45f, 0.62f, 0.35f), 0f),
-                (TerrainGenerator.OrmanId,            "Orman (2 doğa)",      true,  new Color(0.28f, 0.50f, 0.26f), 0f),
-                (TerrainGenerator.NadirYuksekOrmanId, "Yüksek Orman (3)",    true,  new Color(0.18f, 0.38f, 0.20f), 0f),
-                (TerrainGenerator.SikOrmanId,         "Sık Orman (engel)",   false, new Color(0.10f, 0.24f, 0.13f), 0f),
-                (TerrainGenerator.DagId,              "Dağ (engel)",         false, new Color(0.45f, 0.42f, 0.40f), 0f),
-                (TerrainGenerator.GolId,             "Göl (engel)",          false, new Color(0.20f, 0.42f, 0.66f), 0f),
-                (TerrainGenerator.NehirId,            "Nehir (engel)",       false, new Color(0.26f, 0.54f, 0.78f), 0f),
+            TileVisualFactory.BuildAll(force: false);
 
-                // ── DUGUM karolari (TASK-006 dugumleri artik gercek karo) ────
-                // Savasli olanlar canEnterCombat ile isaretlenir (asagida) → eski oyundaki
-                // "yaklas -> Savasa Gir" akisi prosedurel haritada da calisir.
-                (ChapterNodeManager.DungeonTileId,    "Mağara (zindan)",     true,  new Color(0.34f, 0.30f, 0.34f), 0f),
-                (ChapterNodeManager.EncounterTileId,  "Kamp (karşılaşma)",   true,  new Color(0.72f, 0.45f, 0.24f), 0f),
-                (ChapterNodeManager.MandatoryTileId,  "Görev Alanı",         true,  new Color(0.90f, 0.76f, 0.28f), 0f),
+            var defs = new (string id, string name, bool walkable, Color color)[]
+            {
+                (ChapterNodeManager.DungeonTileId,   "Mağara (zindan)",   true, new Color(0.34f, 0.30f, 0.34f)),
+                (ChapterNodeManager.EncounterTileId, "Kamp (karşılaşma)", true, new Color(0.72f, 0.45f, 0.24f)),
+                (ChapterNodeManager.MandatoryTileId, "Görev Alanı",       true, new Color(0.90f, 0.76f, 0.28f)),
             };
 
             var palSO    = new SerializedObject(palette);
@@ -286,21 +280,17 @@ namespace TacticalRPG.Editor
                 var e = tilesArr.GetArrayElementAtIndex(tilesArr.arraySize - 1);
                 e.FindPropertyRelative("id").stringValue                   = d.id;
                 e.FindPropertyRelative("displayName").stringValue          = d.name;
-                e.FindPropertyRelative("prefab").objectReferenceValue      = null;  // placeholder tint
+                e.FindPropertyRelative("prefab").objectReferenceValue      = null;  // model asagida atanir
                 e.FindPropertyRelative("isWalkable").boolValue             = d.walkable;
-                // Savas alani mi? Mağara / kamp / gorev alani = evet (savasa giris karolari).
-                e.FindPropertyRelative("canEnterCombat").boolValue         =
-                    d.id == ChapterNodeManager.DungeonTileId   ||
-                    d.id == ChapterNodeManager.EncounterTileId ||
-                    d.id == ChapterNodeManager.MandatoryTileId;
+                e.FindPropertyRelative("canEnterCombat").boolValue         = true;  // hepsi savasa giris karosu
                 e.FindPropertyRelative("isStore").boolValue                = false;
-                e.FindPropertyRelative("surfaceHeightOverride").floatValue = d.height;
+                e.FindPropertyRelative("surfaceHeightOverride").floatValue = 0f;
                 e.FindPropertyRelative("editorColor").colorValue           = d.color;
                 added++;
             }
             palSO.ApplyModifiedProperties();
             EditorUtility.SetDirty(palette);
-            if (added > 0) Debug.Log($"[Bolum] Palete {added} terrain karosu eklendi.");
+            if (added > 0) Debug.Log($"[Bolum] Palete {added} dugum karosu eklendi.");
         }
 
         /// <summary>

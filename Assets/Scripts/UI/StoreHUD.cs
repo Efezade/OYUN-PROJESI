@@ -26,9 +26,9 @@ namespace TacticalRPG.UI
 
         private void OnGUI()
         {
+            if (MenuState.HudsHidden) return;   // augment karti / tam-ekran menu aciksa IMGUI cizilmez
             if (_stateManager == null || _store == null || _player == null) return;
             if (_stateManager.State != GameState.Overworld) { _open = false; return; }
-            if (MenuState.IsAnyOpen) return; // tam-ekran menü (KİTAP/ÇANTA/…) açıkken dükkânı çizme
 
             bool near = _store.IsPlayerNearStore(_player.CurrentCoord);
             if (!near) { _open = false; return; }
@@ -43,7 +43,7 @@ namespace TacticalRPG.UI
         private void DrawOpenPrompt()
         {
             const float w = 300f, h = 76f;
-            var rect = new Rect((HudScale.Width - w) * 0.5f, 100f, w, h);
+            var rect = new Rect((HudScale.Width - w) * 0.5f, HudLayout.ThirdRowY, w, h);
             ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
             GUILayout.Label("Mağaza yakında");

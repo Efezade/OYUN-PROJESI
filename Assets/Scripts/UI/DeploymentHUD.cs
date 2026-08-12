@@ -23,20 +23,34 @@ namespace TacticalRPG.UI
         [SerializeField] private EssenceConfigSO   _config;
         [SerializeField] private List<UnitRecipe>  _recipes = new();
 
+        private Vector2 _scroll;   // içerik taşınca kaydırma (roster/tarif sayısı büyüyor)
+
         private static readonly EssenceType[] Types =
             { EssenceType.Ates, EssenceType.Su, EssenceType.Toprak };
 
         private void OnGUI()
         {
+            if (MenuState.HudsHidden) return;   // augment karti / tam-ekran menu aciksa IMGUI cizilmez
             if (_state == null || _state.State != GameState.Deployment) return;
 
             // Sanal 1920x1080 ekrana çiz → yerleştirme paneli her çözünürlükte aynı oranda.
             using var _scale = HudScale.Scaled();
 
-            const float w = 320f, h = 480f;
-            var rect = new Rect(12f, 80f, w, h);
+            // Panel yerleşimi (2026-08-12 hata raporları):
+            //  1) Eskiden 320×480 SABİT alandı; 7 tarif + büyüyen roster taşınca "SAVASI BASLAT"
+            //     düğmesi alanın DIŞINDA kalıyordu → içerik KAYDIRILABİLİR, düğmeler alta SABİT.
+            //  2) Sonra h=760 sabit yazıldı ve panel EKRANIN ALTINDAN TAŞTI. Sebep: sanal ekran
+            //     1080 DEĞİL. HudScale.UiScale = 1.5 olduğu için sanal yükseklik
+            //     Screen.height / (min(w/1920, h/1080) × 1.5) — 16:9'da ~720, geniş ekranda daha az.
+            //     Yükseklik artık EKRANDAN türetiliyor; sabit sayı yazılmaz.
+            const float w = 360f, top = 96f, bottomMargin = 14f, footer = 112f;
+            float h = Mathf.Max(240f, HudScale.Height - top - bottomMargin);
+            var rect = new Rect(14f, top, w, h);
             ImguiBlocker.Register(rect);   // panel üstündeki tık hex'e yerleştirme sayılmasın
             GUILayout.BeginArea(rect, GUI.skin.box);
+
+            // ── Kaydırılabilir içerik ──
+            _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.Height(Mathf.Max(80f, h - footer)));
 
             GUILayout.Label("ÖZ DEPOSU");
             DrawWallet();
@@ -46,11 +60,14 @@ namespace TacticalRPG.UI
             DrawRecipes();
 
             GUILayout.Space(8);
-            GUILayout.Label("YERLEŞTİR — kart seç, mavi hex'e tıkla (bedava)");
+            GUILayout.Label("YERLEŞTİR — kart seç, mavi hex'e tıkla");
             DrawCommanderLine();
             DrawCardList();
 
-            GUILayout.FlexibleSpace();
+            GUILayout.EndScrollView();
+
+            // ── Sabit alt bölüm — HER ZAMAN görünür ──
+            GUILayout.Space(4);
             GUILayout.Label($"Yerlesen birim: {(_deployment != null ? _deployment.DeployedCount : 0)}");
 
             GUI.enabled = _deployment != null && _deployment.DeployedCount > 0;

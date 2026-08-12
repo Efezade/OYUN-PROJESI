@@ -21,6 +21,7 @@ namespace TacticalRPG.UI
 
         private void OnGUI()
         {
+            if (MenuState.HudsHidden) return;   // augment karti / tam-ekran menu aciksa IMGUI cizilmez
             if (_progress == null || !Input.GetKey(_key)) return;
 
             _num   ??= new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter };

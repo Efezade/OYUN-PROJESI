@@ -27,8 +27,10 @@ namespace TacticalRPG.Core
 
         [Header("Görüş")]
         [Tooltip("Kam'ın bulunduğu karodan kaç karo uzağa kadar bulutsuz gördüğü (hex adımı). " +
-                 "Dinamik sis: karakter ilerledikçe baloncuk taşınır, arka yeniden bulutlanır.")]
-        [SerializeField] private int _visionRange = 1;
+                 "Keşif KALICI: baloncuk ilerledikçe arkası yeniden bulutlanmaz, iz açık kalır.\n\n" +
+                 "2026-08-12: 1 → 3 (kullanıcı isteği, sis 3 kat daha fazla açılsın). Gece bu değer " +
+                 "FogOfWarManager._nightVisionMultiplier ile çarpılır, yani gece görüşü de 3 katına çıkar.")]
+        [SerializeField] private int _visionRange = 3;
 
         [Header("Başlangıç Koordinatı")]
         [SerializeField] private HexCoordinate _startCoord;
@@ -43,24 +45,66 @@ namespace TacticalRPG.Core
         // Faz 1.4 AP/Zaman motoru bu event'i dinleyecek
         public event Action<HexCoordinate> OnMoved;
 
+        // Harita üreticisi (ChapterMapGenerator, execution order -90) Start'ından ÖNCE çalışıp
+        // Initialize'ı çağırıyor. Bu bayrak olmadan buradaki Start, üreticinin hesapladığı
+        // başlangıcı SERİLEŞMİŞ eski koordinatla EZİYORDU (2026-08-12 hata raporu: "kıyıda köşede,
+        // kapalı yerde doğuyorum, hareket edemiyorum" — oyuncu her seferinde Inspector'daki
+        // sabit (3,4)'e konuyordu, organik haritada orası denizin içi/cep oluyordu).
+        private bool _initialized;
+
         private void Start()
         {
             if (_gridManager == null) { Debug.LogError("[PlayerController] _gridManager NULL! Faz 1.3'ü yeniden çalıştır."); return; }
             if (_fogManager  == null) { Debug.LogError("[PlayerController] _fogManager NULL! Faz 1.3'ü yeniden çalıştır."); return; }
+            if (_initialized) return;                 // üretici zaten yerleştirdi — EZME
             Initialize(_startCoord);
         }
 
         public void Initialize(HexCoordinate startCoord)
         {
+            _initialized = true;
+
+            // GÜVENLİK AĞI: verilen karo yoksa ya da yürünemezse en yakın YÜRÜNÜR karoya kay.
+            // Üretici doğru koordinatı veriyor; bu, elle atanmış/bayat koordinatlara karşı sigorta —
+            // oyuncunun hiç hareket edemediği bir karoda başlaması her şeyi bitiriyor.
+            if (!IsUsableStart(startCoord) && TryFindNearestWalkable(startCoord, out HexCoordinate fixedCoord))
+            {
+                Debug.LogWarning($"[PlayerController] Baslangic {startCoord} kullanilamaz " +
+                                 $"(karo yok ya da yurunemez) → en yakin yurunur karo {fixedCoord}.");
+                startCoord = fixedCoord;
+            }
+
             CurrentCoord = startCoord;
 
             if (_gridManager.TryGetCell(startCoord, out HexCell cell))
                 transform.position = GroundedAt(cell);
             else
-                Debug.LogWarning($"[PlayerController] Başlangıç koordinatı {startCoord} grid'de bulunamadı!");
+                Debug.LogError($"[PlayerController] Baslangic koordinati {startCoord} grid'de YOK — " +
+                               "haritada hic yurunur karo bulunamadi.");
 
             _fogManager.UpdateFogAround(transform.position, _visionRange);
             _lastFogSample = transform.position;
+        }
+
+        private bool IsUsableStart(HexCoordinate c)
+            => _gridManager.TryGetCell(c, out HexCell cell) && cell.IsWalkable;
+
+        /// <summary>Verilen koordinata en yakın yürünür karo (hex mesafesine göre).</summary>
+        private bool TryFindNearestWalkable(HexCoordinate from, out HexCoordinate result)
+        {
+            result = from;
+            if (_gridManager.Cells == null) return false;
+
+            int best = int.MaxValue;
+            bool found = false;
+            foreach (var kv in _gridManager.Cells)
+            {
+                if (!kv.Value.IsWalkable) continue;
+                int d = from.DistanceTo(kv.Key);
+                if (d >= best) continue;
+                best = d; result = kv.Key; found = true;
+            }
+            return found;
         }
 
         // Karakter hareket ettikçe sisi CANLI konumla güncelle → saydamlık sürekli/akışkan değişir

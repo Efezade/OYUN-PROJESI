@@ -45,7 +45,10 @@ namespace TacticalRPG.Data
         [Tooltip("Atanırsa savaşta bu birim kapsül yerine bu modelle görünür (auto-scale + yön).")]
         [SerializeField] private GameObject _unitModel;
         [SerializeField] private float      _unitModelHeight  = 1.5f;
-        [SerializeField] private Vector3    _unitModelEuler   = new(90f, 0f, 0f);
+        [Tooltip("Yön düzeltmesi — model ters/yan geliyorsa. Y-yukarı DİK modellerde (0,0,0) olmalı. " +
+                 "UYARI: yanlış euler auto-scale'i de bozar — yatan modelin bounds yüksekliği küçük " +
+                 "ölçülür ve model DEVASA büyütülür.")]
+        [SerializeField] private Vector3    _unitModelEuler   = Vector3.zero;
         [SerializeField] private float      _unitModelYOffset = 0f;
         [Tooltip("Atanırsa modelin Animator'üne takılır → birim hareket ederken yürüme animasyonu oynar " +
                  "(hareketi CharacterAnimationDriver algılar).")]

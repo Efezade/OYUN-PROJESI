@@ -37,9 +37,12 @@ namespace TacticalRPG.Core
 
         // ── Hasar / İyileşme ─────────────────────────────────────────────────
 
+        /// <summary>Ham saldırı gücünü savunmadan geçirip cana yazar.
+        /// Formül <see cref="CombatMath"/>'te — eskiden burada düz çıkarma vardı
+        /// (<c>max(0, ATK−DEF)</c>) ve ATK ≤ DEF olan her eşleşmede 0 hasar üretiyordu.</summary>
         public void TakeDamage(int rawAmount)
         {
-            int reduced = Math.Max(0, rawAmount - Defense);
+            int reduced = CombatMath.Damage(rawAmount, Defense);
             CurrentHP   = Math.Max(0, CurrentHP - reduced);
             OnHPChanged?.Invoke(CurrentHP, MaxHP);
         }

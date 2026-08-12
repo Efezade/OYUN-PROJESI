@@ -36,6 +36,15 @@ namespace TacticalRPG.UI
         [SerializeField] private TextMeshProUGUI _fullscreenValue; // AÇIK/KAPALI
         [SerializeField] private TextMeshProUGUI _vsyncValue;      // AÇIK/KAPALI
 
+        [Header("Kamera Yakınlığı (2026-08-12 — test ayarı)")]
+        [Tooltip("Overworld ve savaş için AYRI zoom. Küçük değer = daha yakın. Beğenilen değer " +
+                 "sabitlenip bu ayar kaldırılabilir; şimdilik test için açık.")]
+        [SerializeField] private CameraZoomSettings _zoom;
+        [SerializeField] private Slider _overworldZoomSlider;
+        [SerializeField] private Slider _combatZoomSlider;
+        [SerializeField] private TextMeshProUGUI _overworldZoomValue;
+        [SerializeField] private TextMeshProUGUI _combatZoomValue;
+
         private bool _syncing; // OnEnable senkronunda onValueChanged'i yut
 
         private void Awake()
@@ -44,6 +53,8 @@ namespace TacticalRPG.UI
             if (_musicSlider  != null) _musicSlider.onValueChanged.AddListener(OnMusic);
             if (_sfxSlider    != null) _sfxSlider.onValueChanged.AddListener(OnSfx);
             if (_brightnessSlider != null) _brightnessSlider.onValueChanged.AddListener(OnBrightness);
+            if (_overworldZoomSlider != null) _overworldZoomSlider.onValueChanged.AddListener(OnOverworldZoom);
+            if (_combatZoomSlider    != null) _combatZoomSlider.onValueChanged.AddListener(OnCombatZoom);
         }
 
         private void OnEnable() => SyncFromModel();
@@ -59,6 +70,23 @@ namespace TacticalRPG.UI
                 UpdatePercent(_masterValue, _audio.Master);
                 UpdatePercent(_musicValue,  _audio.Music);
                 UpdatePercent(_sfxValue,    _audio.Sfx);
+            }
+            if (_zoom != null)
+            {
+                if (_overworldZoomSlider != null)
+                {
+                    _overworldZoomSlider.minValue = _zoom.MinScale;
+                    _overworldZoomSlider.maxValue = _zoom.MaxScale;
+                    _overworldZoomSlider.value    = _zoom.OverworldScale;
+                }
+                if (_combatZoomSlider != null)
+                {
+                    _combatZoomSlider.minValue = _zoom.MinScale;
+                    _combatZoomSlider.maxValue = _zoom.MaxScale;
+                    _combatZoomSlider.value    = _zoom.CombatScale;
+                }
+                UpdateZoom(_overworldZoomValue, _zoom.OverworldScale);
+                UpdateZoom(_combatZoomValue,    _zoom.CombatScale);
             }
             if (_display != null)
             {
@@ -85,6 +113,26 @@ namespace TacticalRPG.UI
         private void OnMusic(float v)      { if (_syncing) return; _audio?.SetMusic(v);   UpdatePercent(_musicValue, v); }
         private void OnSfx(float v)        { if (_syncing) return; _audio?.SetSfx(v);     UpdatePercent(_sfxValue, v); }
         private void OnBrightness(float v) { if (_syncing) return; _display?.SetBrightness(v); UpdatePercent(_brightnessValue, v); }
+
+        private void OnOverworldZoom(float v)
+        {
+            if (_syncing) return;
+            _zoom?.SetOverworldScale(v);
+            UpdateZoom(_overworldZoomValue, v);
+        }
+
+        private void OnCombatZoom(float v)
+        {
+            if (_syncing) return;
+            _zoom?.SetCombatScale(v);
+            UpdateZoom(_combatZoomValue, v);
+        }
+
+        // Zoom "%" değil "x" ile gösterilir — 0.5x, 1.0x gibi okunsun (kullanıcının konuştuğu birim).
+        private static void UpdateZoom(TextMeshProUGUI label, float v)
+        {
+            if (label != null) label.text = v.ToString("0.00") + "x";
+        }
 
         /// <summary>Kalite döngü butonu (editör aracı onClick'e bağlar).</summary>
         public void OnCycleQuality()

@@ -67,6 +67,13 @@ namespace TacticalRPG.Core
 
         /// <summary>Sıra/durum değişti → HUD ve highlighter yenilensin.</summary>
         public event Action               OnTurnChanged;
+
+        /// <summary>TUR (round) = initiative sırasının bir tam turu. Davul temposu buna asılır:
+        /// 1 birimin hamlesi değil, herkesin bir kez oynaması bir "tur"dur.</summary>
+        public int Round { get; private set; }
+
+        /// <summary>Yeni tur başladı (parametre: tur numarası, 1'den başlar).</summary>
+        public event Action<int>          OnRoundStarted;
         /// <summary>Kullanıcıya kısa geri bildirim metni.</summary>
         public event Action<string>       OnMessage;
         /// <summary>Savaş bitti (Win/Lose).</summary>
@@ -99,6 +106,7 @@ namespace TacticalRPG.Core
             _combatActive = true;
             Result        = CombatResult.Ongoing;
             _index        = -1;
+            Round         = 0;   // ilk AdvanceTurn'de 1 olur
 
             // Savaşa bir komutan (Kam) katıldıysa yenilgi = komutan ölümü; aksi halde
             // (komutansız test) yenilgi = tüm oyuncu birimlerinin ölümü.
@@ -150,6 +158,8 @@ namespace TacticalRPG.Core
             for (int step = 0; step < _order.Count; step++)
             {
                 _index = (_index + 1) % _order.Count;
+                // Sıra başa sardı → yeni TUR. Davul (CombatDrumManager) bunu dinler.
+                if (_index == 0) { Round++; OnRoundStarted?.Invoke(Round); }
                 Unit u = _order[_index];
                 if (u != null && u.IsAlive) { BeginTurn(u); return; }
             }

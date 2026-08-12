@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEditor;
 using TMPro;
 using TacticalRPG.Core;
+using TacticalRPG.Grid;
 using TacticalRPG.UI;
 
 namespace TacticalRPG.Editor
@@ -76,6 +77,36 @@ namespace TacticalRPG.Editor
             var fullscreenBtn = CreateButtonRow(t, "TAM EKRAN", "AÇ / KAPA", ref y, out var fullscreenVal);
             var vsyncBtn      = CreateButtonRow(t, "VSYNC",     "AÇ / KAPA", ref y, out var vsyncVal);
 
+            // ── KAMERA bolumu (2026-08-12: yakinlik testi icin, ayri iki zoom) ──
+            y -= 24f;
+            CreateSectionHeader(t, "KAMERA", ref y);
+            var owZoomSlider  = CreateSliderRow(t, "HARİTA ZOOM", ref y, 0.3f, 2f, out var owZoomVal);
+            var cbtZoomSlider = CreateSliderRow(t, "SAVAŞ ZOOM",  ref y, 0.3f, 2f, out var cbtZoomVal);
+
+            // Zoom bileseni: kameranin uzerinde durur, durum degisince (overworld<->savas) dogru
+            // olcegi uygular. Sahnede yoksa olusturulur.
+            var zoom = FindComponentAnywhere<CameraZoomSettings>();
+            if (zoom == null)
+            {
+                Camera mainCam = Camera.main;
+                if (mainCam != null)
+                {
+                    zoom = mainCam.gameObject.AddComponent<CameraZoomSettings>();
+                    var zso = new SerializedObject(zoom);
+                    zso.FindProperty("_camera").objectReferenceValue = mainCam;
+                    zso.FindProperty("_state").objectReferenceValue  = FindComponentAnywhere<GameStateManager>();
+                    zso.FindProperty("_grid").objectReferenceValue   = FindComponentAnywhere<HexGridManager>();
+                    zso.ApplyModifiedProperties();
+                }
+            }
+            else
+            {
+                var zso = new SerializedObject(zoom);
+                zso.FindProperty("_state").objectReferenceValue = FindComponentAnywhere<GameStateManager>();
+                zso.FindProperty("_grid").objectReferenceValue  = FindComponentAnywhere<HexGridManager>();
+                zso.ApplyModifiedProperties();
+            }
+
             // ── Görünüm bileşeni + tüm bağlar ─────────────────────────────────
             SettingsController ctrl = panelGO.AddComponent<SettingsController>();
             var cso = new SerializedObject(ctrl);
@@ -92,6 +123,11 @@ namespace TacticalRPG.Editor
             cso.FindProperty("_qualityValue").objectReferenceValue     = qualityVal;
             cso.FindProperty("_fullscreenValue").objectReferenceValue  = fullscreenVal;
             cso.FindProperty("_vsyncValue").objectReferenceValue       = vsyncVal;
+            cso.FindProperty("_zoom").objectReferenceValue                = zoom;
+            cso.FindProperty("_overworldZoomSlider").objectReferenceValue = owZoomSlider;
+            cso.FindProperty("_combatZoomSlider").objectReferenceValue    = cbtZoomSlider;
+            cso.FindProperty("_overworldZoomValue").objectReferenceValue  = owZoomVal;
+            cso.FindProperty("_combatZoomValue").objectReferenceValue     = cbtZoomVal;
             cso.ApplyModifiedProperties();
 
             // Buton onClick'leri controller metodlarına (persistent listener)

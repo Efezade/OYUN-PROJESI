@@ -28,6 +28,9 @@ namespace TacticalRPG.Core
         [SerializeField] private DeploymentManager _deployment;
         [Tooltip("Opsiyonel — Combat state'inde tıklama aktif birim hareket/saldırı olur.")]
         [SerializeField] private TurnManager _turnManager;
+        [Tooltip("Davul temposu — karo yerleştirme modundayken tıklama ONA gider " +
+                 "(hareket/saldırı yerine). Atanmazsa mekanik devre dışı kalır.")]
+        [SerializeField] private CombatDrumManager _drum;
         [Tooltip("Opsiyonel — atanmışsa bölüm kaybedilince (sert kesim) harita tıklamaları kilitlenir.")]
         [SerializeField] private ChapterRunManager _run;
         [Tooltip("Opsiyonel — atanmışsa SAVAŞ SİSİ kalkmış adada (kule ile) menzil sınırı kalkar.")]
@@ -98,10 +101,16 @@ namespace TacticalRPG.Core
                 return;
             }
 
-            // Combat: Kam büyü hazırsa tıklama = büyü hedefleme; değilse hareket/saldırı.
+            // Combat: öncelik sırası önemli —
+            //   1) DAVUL karo yerleştirme (kart seçildi, hedef bekleniyor)
+            //   2) Kam büyüsü hedefleme
+            //   3) normal hareket/saldırı
+            // Davul en üstte: yerleştirme modundayken tıklamanın birimi yürütmesi, oyuncunun
+            // "karoyu koyacaktım" beklentisini bozar ve turu boşa harcatır.
             if (_stateManager != null && _stateManager.State == GameState.Combat)
             {
                 if (!TryGetClickedCoord(out HexCoordinate combatCoord)) return;
+                if (_drum != null && _drum.IsPlacing) { _drum.PlaceAt(combatCoord); return; }
                 if (_caster != null && _caster.HasArmedAbility) { _caster.TryCastAt(combatCoord); return; }
                 if (_turnManager != null) _turnManager.HandlePlayerClick(combatCoord);
                 return;

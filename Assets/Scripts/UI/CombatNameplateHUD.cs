@@ -163,6 +163,7 @@ namespace TacticalRPG.UI
         // ── Çizim ─────────────────────────────────────────────────────────────
         private void OnGUI()
         {
+            if (MenuState.HudsHidden) return;   // augment karti / tam-ekran menu aciksa IMGUI cizilmez
             if (!BattleActive || _unitManager == null) return;
             Camera cam = ResolveRenderCamera();
             if (cam == null) return;

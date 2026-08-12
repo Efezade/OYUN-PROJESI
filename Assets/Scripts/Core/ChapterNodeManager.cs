@@ -117,7 +117,11 @@ namespace TacticalRPG.Core
 
             if (_map == null || _config == null || _grid == null) return;
 
-            // Yerleşim yalnız "ova" karolarına (GAME_DESIGN §3) ve oyuncunun başladığı karo hariç.
+            // Yerleşim yalnız ÖZSÜZ DÜZLÜK karolarına (ova/çayır/bozkır/kum…) ve oyuncunun
+            // başladığı karo hariç. Eskiden tek bir "ova" id'si aranıyordu; organik üreticide
+            // düzlük ailesi 12 alt tipe ayrıldığı için havuz neredeyse boş kalırdı (düğümler
+            // sessizce yerleşemez, bölüm bitirilemez olurdu) → aile bazlı kontrole geçildi.
+            // Öz taşıyan karolar dışarıda: düğüm oraya konsa o karonun özü kaybolurdu.
             // Havuz TAHTANIN gerçek koordinatlarında kurulur (HexCoordinate.FromOffset). 2026-08-05'e
             // kadar ham dizi indisleri kullanılıyordu → alt satırlardaki düğümler var olmayan
             // hücrelere düşüp SESSİZCE kayboluyordu (zorunlu görev/market dahil).
@@ -131,7 +135,8 @@ namespace TacticalRPG.Core
                     // SADECE erişilebilir bölge (referans: build_nodes → `walkable_comp`).
                     // Aksi halde bir zorunlu görev dağ ardındaki cebe düşüp bölümü bitirilemez yapardı.
                     if (!_map.IsReachable(c)) continue;
-                    if (_map.TerrainIdAt(c) == TerrainGenerator.OvaId) pool.Add(c);
+                    var entry = TileCatalog.Get(_map.TerrainIdAt(c));
+                    if (entry != null && entry.Family == TileFamily.Plain) pool.Add(c);
                 }
 
             // Aynı seed → aynı yerleşim. (+1000: Python referansıyla aynı ofset.)

@@ -6,14 +6,14 @@ using TacticalRPG.Grid;
 namespace TacticalRPG.Core
 {
     /// <summary>
-    /// Bölümün haritasını PROSEDÜREL üretip grid'e uygular (TASK-005 · GAME_DESIGN.md §3).
-    /// Üretimin kendisi <see cref="TerrainGenerator"/>'da (Python referansının birebir portu);
+    /// Bölümün haritasını PROSEDÜREL üretip grid'e uygular (GAME_DESIGN.md §3).
+    /// Üretimin kendisi <see cref="TerrainGenerator"/>'da (organik kıta boru hattı);
     /// bu bileşen yalnız "seed seç → üret → TileMap'e çevir → grid'e ver → özü yönet" işini yapar.
     ///
-    /// **Seed havuzu SABİT** (<see cref="TerrainConfigSO.SeedPool"/>, 10 adet). Sonsuz/tam rastgele
-    /// üretim YOK — bu 10 harita adalet/oynanabilirlik için elle doğrulandı. Havuzdan seçim rastgele
-    /// ama SON OYNANANDAN FARKLI olacak şekilde yapılır (retry'de aynı haritayı tekrar vermemek için;
-    /// son seed PlayerPrefs'te tutulur).
+    /// **Seed havuzu SABİT** (<see cref="TerrainConfigSO.SeedPool"/>, 30 adet). Sonsuz/tam rastgele
+    /// üretim YOK — bu 30 harita otomatik taramayla oran/bağlantı/AP-baskısı filtrelerinden geçirildi.
+    /// Havuzdan seçim rastgele ama SON OYNANANDAN FARKLI olacak şekilde yapılır (retry'de aynı
+    /// haritayı tekrar vermemek için; son seed PlayerPrefs'te tutulur).
     ///
     /// ÖZ TEK SEFERLİK: öz ayrı bir node değil, karonun kendisidir. Toplanınca karo
     /// <see cref="TerrainGenerator.DepletedId"/> (ova) olur ve görseli yenilenir — bir daha vermez.
@@ -75,10 +75,8 @@ namespace TacticalRPG.Core
             }
 
             CurrentSeed = seed;
-            _terrain = TerrainGenerator.Generate(
-                _config.Width, _config.Height, seed,
-                _config.ObstaclePct, _config.RiverCount, _config.BridgesPerRiver,
-                _config.BlobSizeMin, _config.BlobSizeMax, _config.SubtypeWeights());
+            MapResult result = TerrainGenerator.Generate(_config.ToParams(), seed);
+            _terrain = result.Tiles;
 
             // Hedef verilmediyse RUNTIME kopya (asset'e yazılmaz); verildiyse o asset'e yazılır.
             if (target != null)
@@ -94,21 +92,32 @@ namespace TacticalRPG.Core
             // (sütun, satır) → tahtanın AXIAL koordinatı. Bu dönüşüm 2026-08-05'e kadar YOKTU:
             // harita tahtaya kayık oturuyordu (sol altta giderek büyüyen boş "ova" kaması, sağdaki
             // üretim tahta dışına düşüp çöpe gidiyordu — 550 karonun 144'ü, %26).
-            _runtimeMap.defaultTileId = TerrainGenerator.OvaId;
+            //
+            // VARSAYILAN ARTIK "BOŞ": atanmamış her koordinatta hücre ÜRETİLMEZ. Organik sınır
+            // buradan geliyor — kıtanın dışı gerçekten yok, sadece görünmeyen değil.
+            _runtimeMap.defaultTileId = TerrainGenerator.VoidId;
+            // Tahta boyutunu HARİTA taşısın: grid'in Inspector değeri config'le uyuşmazsa
+            // (ör. TAM KURULUM koşmadıysa) harita kırpılırdı — sessiz ve teşhisi zor bir hata.
+            _runtimeMap.SetGridSize(_config.Width, _config.Height);
             for (int col = 0; col < _config.Width; col++)
                 for (int row = 0; row < _config.Height; row++)
                     _runtimeMap.SetTileId(HexCoordinate.FromOffset(col, row), _terrain[col, row]);
 
-            BuildReachable();
+            BuildReachable(result);
 
             _grid.SetTileMap(_runtimeMap);   // grid yeniden üretilir → sis/çöküş kendini yeniler
 
-            // Oyuncuyu YÜRÜNÜR bir karoya koy — sabit başlangıç koordinatı prosedürel haritada
-            // dağın/gölün içine denk gelebilirdi.
+            // Oyuncuyu YÜRÜNÜR bir karoya koy — sabit başlangıç koordinatı organik haritada
+            // denizin/dağın içine denk gelirdi.
             if (_player != null) _player.Initialize(_startCoord);
 
             PlayerPrefs.SetInt(LastSeedKey, seed);
-            Debug.Log($"[Bolum] Harita uretildi — seed {seed} ({_config.Width}x{_config.Height}).");
+            Debug.Log($"[Bolum] Harita uretildi — seed {seed} | kara {result.Land} karo " +
+                      $"(yurunur %{result.WalkablePct:F1} · nehir %{result.RiverPct:F1} · " +
+                      $"dag %{result.MountainPct:F1} · orman/gol %{result.BlobPct:F1} · " +
+                      $"gecit %{result.CrossingPct:F2}) | erisilebilir %{result.ReachablePct:F1} " +
+                      $"({result.MainComponent} karo) | oz arzi {result.EssenceSupply} | " +
+                      $"landmark {result.Landmark} | sinir dekoru {result.Fringe}");
             OnMapGenerated?.Invoke();
         }
 
@@ -168,7 +177,7 @@ namespace TacticalRPG.Core
         public bool HasEssenceAt(HexCoordinate c)
         {
             if (!InRange(c)) return false;
-            TerrainGenerator.EssenceOf(TerrainRef(c), out int amount, out _);
+            TileCatalog.EssenceOf(TerrainRef(c), out int amount, out _);
             return amount > 0;
         }
 
@@ -177,9 +186,9 @@ namespace TacticalRPG.Core
         {
             if (!InRange(c)) return "";
             string id = TerrainRef(c);
-            TerrainGenerator.EssenceOf(id, out int amount, out TerrainGenerator.EssenceKind kind);
+            TileCatalog.EssenceOf(id, out int amount, out EssenceKind kind);
             if (amount <= 0) return "";
-            return $"{amount} {(kind == TerrainGenerator.EssenceKind.Tas ? "Taş" : "Doğa")} ({id})";
+            return $"{amount} {(kind == EssenceKind.Tas ? "Taş" : "Doğa")} ({id})";
         }
 
         public bool CanCollect(HexCoordinate c)
@@ -190,13 +199,13 @@ namespace TacticalRPG.Core
         {
             if (!CanCollect(c)) return false;
 
-            TerrainGenerator.EssenceOf(TerrainRef(c), out int amount, out TerrainGenerator.EssenceKind kind);
+            TileCatalog.EssenceOf(TerrainRef(c), out int amount, out EssenceKind kind);
             if (amount <= 0) return false;
 
             if (_ap != null) _ap.SpendAP(_collectAPCost);
 
             if (_wallet != null)
-                _wallet.Gain(kind == TerrainGenerator.EssenceKind.Tas ? EssenceType.Tas : EssenceType.Doga, amount);
+                _wallet.Gain(kind == EssenceKind.Tas ? EssenceType.Tas : EssenceType.Doga, amount);
 
             // TEK SEFERLİK: karo tükenir → ova. Hem terrain'de hem runtime TileMap'te.
             SetTerrain(c, TerrainGenerator.DepletedId);
@@ -218,14 +227,16 @@ namespace TacticalRPG.Core
         /// <summary>Erişilebilir karo sayısı (HUD/log/teşhis).</summary>
         public int ReachableCount => _reachable.Count;
 
-        /// <summary>Başlangıç karosunu ve ana bağlantılı bileşeni hesaplar (üretimden sonra).</summary>
-        private void BuildReachable()
+        /// <summary>Başlangıç karosunu ve ana bağlantılı bileşeni kaydeder. Başlangıcı ÜRETİCİ
+        /// seçer (kıtanın ağırlık merkezine yakın, alçak, yürünür karo) — organik haritada sabit
+        /// bir "ipucu koordinatı" denize düşerdi.</summary>
+        private void BuildReachable(MapResult result)
         {
             _reachable.Clear();
             if (_terrain == null) { _startCoord = new HexCoordinate(0, 0); return; }
 
-            Vector2Int hint = _config != null ? _config.StartHint : new Vector2Int(0, 0);
-            var comp = TerrainGenerator.ConnectedComponent(_terrain, hint.x, hint.y, out (int q, int r) start);
+            var comp = TerrainGenerator.ConnectedComponent(_terrain, result.Start.q, result.Start.r,
+                                                           out (int q, int r) start);
             _startCoord = HexCoordinate.FromOffset(start.q, start.r);   // dizi indisi → tahta koordinatı
             foreach (var t in comp) _reachable.Add(HexCoordinate.FromOffset(t.q, t.r));
         }

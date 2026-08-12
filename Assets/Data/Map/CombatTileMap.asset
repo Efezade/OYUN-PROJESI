@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.TileMapSO
   defaultTileId: kaya
   assignments: []
+  _gridSize: {x: 22, y: 25}

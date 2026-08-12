@@ -21,6 +21,7 @@ namespace TacticalRPG.UI
 
         private void OnGUI()
         {
+            if (MenuState.HudsHidden) return;   // augment karti / tam-ekran menu aciksa IMGUI cizilmez
             if (_run == null) return;
             using var _scale = HudScale.Scaled();
 
@@ -46,8 +47,8 @@ namespace TacticalRPG.UI
 
             if (_nodes != null && _nodes.LateCostActive) msg += " · zindanlar pahalı (×2)";
 
-            const float w = 620f, h = 30f;
-            var rect = new Rect((HudScale.Width - w) * 0.5f, 8f, w, h);
+            const float w = 620f, h = HudLayout.RunBarHeight;
+            var rect = new Rect((HudScale.Width - w) * 0.5f, HudLayout.RunBarY, w, h);
             ImguiBlocker.Register(rect);
 
             var style = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.MiddleCenter, fontSize = 18 };

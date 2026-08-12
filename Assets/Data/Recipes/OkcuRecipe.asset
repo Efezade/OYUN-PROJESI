@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89b9ebd443167cf47842e329d3f834ed, type: 3}
+  m_Name: OkcuRecipe
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.UnitRecipe
+  _displayName: Okcu
+  _unitClass: {fileID: 11400000, guid: 945e9ea93adde784cac9ca1ca15d8827, type: 2}
+  _cost:
+  - type: 3
+    amount: 1
+  - type: 4
+    amount: 4

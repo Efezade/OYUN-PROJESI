@@ -58,6 +58,7 @@ namespace TacticalRPG.UI
 
         private void OnGUI()
         {
+            if (MenuState.HudsHidden) return;   // augment karti / tam-ekran menu aciksa IMGUI cizilmez
             if (_apManager == null) return;
             if (_stateManager != null &&
                 _stateManager.State != GameState.Overworld &&

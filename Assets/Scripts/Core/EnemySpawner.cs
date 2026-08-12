@@ -18,6 +18,9 @@ namespace TacticalRPG.Core
         [SerializeField] private GameStateManager _stateManager;
         [SerializeField] private HexGridManager    _grid;
         [SerializeField] private UnitManager       _unitManager;
+        [Tooltip("Prosedürel arena üretici. Atanmışsa düşmanlar ONUN hesapladığı doğma " +
+                 "noktalarına iner; atanmamışsa görevdeki sabit koordinatlar kullanılır.")]
+        [SerializeField] private CombatMapGenerator _arena;
 
         [Header("Görsel")]
         [Tooltip("Opsiyonel — atanmazsa runtime kırmızı kapsül üretilir.")]
@@ -58,17 +61,36 @@ namespace TacticalRPG.Core
             MissionData mission = _stateManager != null ? _stateManager.ActiveMission : null;
             if (mission == null || _grid == null) return;
 
+            // Arena PROSEDÜREL üretildiyse, görevdeki SABİT koordinatlar anlamsızdır (her savaşta
+            // farklı tahta). Üreticinin hesapladığı, birbirinden ayrık doğma noktaları kullanılır;
+            // roster'daki koordinat yalnız arena yokken (elle yapılmış harita) geçerlidir.
+            var arenaSpawns = _arena != null ? _arena.EnemySpawns : null;
+            int spawnIndex = 0;
+
             foreach (var entry in mission.EnemyRoster)
             {
                 if (entry.enemyClass == null) continue;
-                if (!_grid.IsInBounds(entry.coord))
+
+                HexCoordinate coord = entry.coord;
+                if (arenaSpawns != null && arenaSpawns.Count > 0)
                 {
-                    Debug.LogWarning($"[EnemySpawner] {entry.enemyClass.ClassName} için {entry.coord} grid dışı — atlandı.");
+                    if (spawnIndex >= arenaSpawns.Count)
+                    {
+                        Debug.LogWarning($"[EnemySpawner] Arenada {arenaSpawns.Count} dogma noktasi var, " +
+                                         $"roster daha kalabalik — {entry.enemyClass.ClassName} atlandi.");
+                        continue;
+                    }
+                    coord = arenaSpawns[spawnIndex++];
+                }
+
+                if (!_grid.IsInBounds(coord))
+                {
+                    Debug.LogWarning($"[EnemySpawner] {entry.enemyClass.ClassName} için {coord} grid dışı — atlandı.");
                     continue;
                 }
 
                 var  card = new CharacterCard(entry.enemyClass, Mathf.Max(1, entry.level));
-                Unit unit = SpawnUnit(entry.coord, card);
+                Unit unit = SpawnUnit(coord, card);
                 _spawned.Add(unit);
             }
 

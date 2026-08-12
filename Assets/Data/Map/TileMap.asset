@@ -414,3 +414,4 @@ MonoBehaviour:
       Q: 6
       R: 1
     tileId: cicek
+  _gridSize: {x: 0, y: 0}

@@ -16,6 +16,94 @@
 
 ---
 
+## 2026-08-12 (2) — Savaş ayrıştırıldı: arena üreticisi + hasar formülü + davul temposu
+
+**KARAR 1 — Savaş haritası overworld'den TAMAMEN ayrıldı.** `CombatArenaGenerator` (Unity'siz,
+taranabilir) düğüm tipine göre 4 kademede arena üretiyor: encounter 10×8 (~70 karo) · zindan 11×9
+(~79) · zorunlu 12×10 (~97) · boss 13×11 (~109). Eskiden savaş, overworld ile aynı 22×25'lik
+`CombatTileMap`'i kullanıyordu: **550 karo düz "kaya", sıfır engel**, iki tarafın buluşması 7 tur.
+400 seed × 4 kademe ölçüldü: engel %8-10, etkileşimli %10-12, **kilitli arena 0/1600**.
+Tahta boyutu artık `TileMapSO.GridSize`'da (ikisi aynı `HexGridManager`'ı paylaşıyor).
+
+**KARAR 2 — Hasar formülü çarpansal.** `max(0, ATK−DEF)` küçük sayılarda çöküyordu: Goblin (ATK 3) →
+Savaşçı (DEF 3) = **0 hasar**, seviye 1 Savaşçı goblinlere karşı ölümsüzdü; "+1 hasar" veren bir karo
+bazı eşleşmelerde %20, bazılarında sonsuz iyileştirme demekti (0→1) — davul karolarının değerleri o
+zeminde hesaplanamazdı. Yeni: `ATK × 100 / (100 + DEF × 15)`, taban 1. `CombatMath` (Unity'siz) +
+`CombatFormulaSO`.
+
+**KARAR 3 — Davul temposu + karo draftı.** Tur 2,4,6,8,10'da davul çalar, 3 kart sunulur
+(1 Kut + 1 Kargış + 1 Nötr/Patlayıcı, %15 nadir sınıfsal), seçilen karo **yalnız Kam'ın 3 karo
+çevresine** konur (boss 4). Yarıçap türetmesi: düşman tehdit menzili 4-5, temas hattı deploy'dan 5-6
+karo → R=3 ile Kam temas hattına karo koymak için tehdit menziline GİRMEK zorunda. R=5-6 olsaydı
+güvenli mesafeden koyar, risk sıfırlanırdı. 24 kartlık havuz (`AugmentCatalog`), yarıçap kuralı
+"güç × alan ≈ sabit": r0 sert (sersemletme/patlama), r1 orta, r2 hafif-geniş.
+
+**Denge sayıları:** saha tavanı Kam+4; düşman GE bütçesi encounter 0.8× → boss 1.5×; deploy 3 öz/birim
+(50 birim-indirme × 3 = 150, bütçe 151). Karar/savaş = 20-28 (Into the Breach 15, XCOM ~40) —
+144 savaşlık bir run'da tekrar yorgunluğunu önlemek için bilinçli.
+
+**COMMIT:** (bu değişiklik)
+
+**DERSLER (hepsi gerçek hata olarak çıktı):**
+- **Execution order ezmesi:** `ChapterMapGenerator` (-90) oyuncuyu doğru karoya koyuyordu, sonra
+  `PlayerController.Start()` (0) SERİLEŞMİŞ eski koordinatla EZİYORDU → oyuncu hep Hex(3,4)'te,
+  organik haritada denizde/cepte doğuyordu. Bir bileşen başkasını Start'ta kuruyorsa, kurulan
+  tarafta "zaten kuruldum" bayrağı ŞART.
+- **IMGUI her zaman Canvas'ın ÜSTÜNE çizer.** uGUI panelin `sortingOrder`'ı bunu değiştirmez;
+  tek çözüm IMGUI'yi susturmak (`MenuState.HudsHidden`).
+- **`HudScale.UiScale = 1.5` yüzünden sanal ekran 1080 DEĞİL** (~720). IMGUI'de sabit yükseklik
+  yazmak paneli ekran dışına taşırır — `HudScale.Height`'tan türetilmeli.
+- **HorizontalLayoutGroup çocuk boyutunu preferred size'dan okur;** `sizeDelta` ona hiçbir şey
+  söylemez → `LayoutElement`'siz kartlar sıfır genişliğe çöküp üst üste biner.
+- **`CharacterClassData._unitModelEuler` varsayılanı (90,0,0) idi** → koddan üretilen dik modeller
+  yatıyordu VE auto-scale yatık bounds'u ölçüp devasa büyütüyordu. Varsayılan sıfırlandı.
+- **Başlangıç karosu seçimi üç şart ister:** en büyük YÜRÜNÜR bileşen + çevresi açık (2 hex'te ≥13
+  yürünür) + o bileşenin KENDİ ağırlık merkezine yakın. Kıtanın ağırlık merkezi hilal şekillerde
+  körfeze düşüyor. "Başlangıç kapalı" filtresi tek başına 12.000 adayın 642'sini eledi.
+
+---
+
+## 2026-08-12 — Kare tahta bırakıldı: ORGANİK KITA üreticisi + 30 seed havuzu + 74 karo tipi
+
+**KARAR:** Bölüm haritası artık dolu bir 22×25 dikdörtgen değil; 36×34'lük bir tahtanın içine oturan,
+kıyısı gürültüyle şekillenmiş **organik bir kıta** (~550 kara karo) + kıyının dışında düzensiz
+genişlikte **sis/deniz bandı**. Tahtanın dışı gerçekten boş: `TileCatalog.Void` karosunda
+`HexGridManager` hücre ÜRETMEZ.
+
+**NEDEN:** Efe (2026-08-12): "haritayı kare olarak görünce otomatik sınırı olduğunu anlamak oyunu
+sıkıcılaştırıyor" — For The King tarzı, sınırı belirsiz, sonsuz hissi veren harita isteniyor. Kare
+siluet keşif gerilimini ilk bakışta öldürüyordu.
+
+**Karo dağılımı Efe'nin kendi araştırmasından** (KITAYA oranla, sınır dekoru sayılmaz):
+yürünür %78.4 · nehir %4.9 · dağ/kaya %7.5 · sık orman+göl %8.9 · köprü/geçit %0.4.
+Üretici bu oranları hedefleyerek çalışıyor; 30-seed havuzunun ortalaması %78.8 / %4.9 / %7.4 / %8.9.
+
+**Köprü kuralı:** köprü artık nehir yolundan rastgele örneklenmiyor. Aday = iki KARŞIT yanında
+yürünür kara olan nehir karosu; aralarından "köprü olmasa dolaşmak en uzun sürecek" olanlar seçiliyor.
+Ayrıca kopuk kalan büyük cepler için dağ geçidi / sığ geçit açılıyor (harita bitirilebilir kalsın).
+
+**Boru hattı (gerçek coğrafya taklidi):** domain-warp'lı fBm + harmonik burun/koy terimi → kıta
+maskesi · SIRT gürültüsü → çizgisel dağ silsileleri · yokuş-aşağı akış → nehirler denize/göle ·
+çukurlarda göl, nemli alçakta sık orman · (yükseklik, nem, sıcaklık) → ~30 yürünür alt tipe biyom
+dağıtımı. İklim ekseni seed'e göre DÖNER (her harita hep "kuzeyi karlı" olmasın).
+
+**Seed havuzu 10 → 30.** Seçim artık elle değil: `Docs/Balance/tools/seed_taramasi/tara.ps1`
+OYUNDA ÇALIŞAN C# kodunun aynısını Unity açmadan derleyip 12.000 aday üretiyor, oran/bağlantı/
+kıyı-organikliği/14-günlük AP baskısı filtrelerinden geçiriyor (6358 geçti) ve METRİK UZAYINDA
+BİRBİRİNDEN UZAK 30 tanesini seçiyor (30 harita birbirinin kopyası olmasın diye).
+
+**Karo çeşitliliği 16 → 74 tip**, hepsi renkli + prosedürel dokulu. Tek doğruluk kaynağı
+`TileCatalog`; görselleri `TileVisualFactory` üretiyor (12 gri tonlu yüzey dokusu × karo rengi +
+~30 süsleme reçetesi). Bir haritada tipik olarak 55-59 farklı karo tipi görünüyor.
+
+**COMMIT:** (bu değişiklik) · eski Python-portu üretici git'te: `git show 70ac734:Assets/Scripts/Grid/TerrainGenerator.cs`
+
+**DERS:** Boyut tek bir yerde (HexGridManager Inspector) durduğu için overworld tahtası büyüyünce
+SAVAŞ arenası da büyüyordu (aynı grid paylaşılıyor). Tahta boyutu artık `TileMapSO.GridSize` ile
+haritanın kendi verisi.
+
+---
+
 ## 2026-08-05 — "Harita düzgün oluşmuyor"un GERÇEK sebebi: koordinat uzayı uyuşmazlığı + eski oyun SİLİNDİ
 
 **Kullanıcı emri:** görevleri git'ten denetle, eksik kalanı tamamla, **eski oyunun öğelerini SİL**

@@ -14,15 +14,22 @@ namespace TacticalRPG.Data
         [SerializeField] private string    _displayName = "Görev";
         [TextArea(2, 4)]
         [SerializeField] private string    _description = "";
-        [Tooltip("Bu göreve girilince yüklenecek savaş haritası (TileMap).")]
+
+        [Tooltip("Arena kademesi — savaş tahtasının boyutunu ve düşman sayısını belirler.\n" +
+                 "Encounter ~65 karo/4 düşman · Zindan ~80/6 · Zorunlu ~100/7 · Boss ~110/6+dalga.")]
+        [SerializeField] private MapNodeType _tier = MapNodeType.Zindan;
+
+        [Tooltip("YEDEK: prosedürel arena üretici yoksa kullanılacak elle atanmış savaş haritası. " +
+                 "Normal akışta CombatMapGenerator arenayı üretir, bu alan boş kalabilir.")]
         [SerializeField] private TileMapSO _combatMap;
 
         [Header("Düşman Roster (Faz C — savaşa girince spawn olur)")]
         [SerializeField] private List<EnemySpawn> _enemyRoster = new();
 
-        public string    DisplayName => _displayName;
-        public string    Description => _description;
-        public TileMapSO CombatMap   => _combatMap;
+        public string      DisplayName => _displayName;
+        public string      Description => _description;
+        public MapNodeType Tier        => _tier;
+        public TileMapSO   CombatMap   => _combatMap;
         public IReadOnlyList<EnemySpawn> EnemyRoster => _enemyRoster;
 
         /// <summary>Tek bir düşman spawn tanımı: sınıf + savaş haritasındaki konum + seviye.</summary>

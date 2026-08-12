@@ -20,6 +20,7 @@ namespace TacticalRPG.UI
 
         private void OnGUI()
         {
+            if (MenuState.HudsHidden) return;   // augment karti / tam-ekran menu aciksa IMGUI cizilmez
             if (_stateManager == null) return;
 
             // Sanal 1920x1080 ekrana çiz → panel her çözünürlükte aynı oranda görünür.
@@ -42,8 +43,9 @@ namespace TacticalRPG.UI
             MissionData mission = _missionManager.GetEnterableMission(_player.CurrentCoord);
             if (mission == null) return;
 
+            // Gün barının ALTINA — ikisi de üst-ortadaydı ve birebir çakışıyordu (bkz HudLayout).
             const float w = 360f, h = 76f;
-            var rect = new Rect((HudScale.Width - w) * 0.5f, 12f, w, h);
+            var rect = new Rect((HudScale.Width - w) * 0.5f, HudLayout.SecondRowY, w, h);
             ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
             GUILayout.Label($"Gorev yakinda: '{mission.DisplayName}'");
@@ -77,7 +79,7 @@ namespace TacticalRPG.UI
 
             // Üst-ORTA sıra barına (TurnOrderBarHUD) bırakıldı → bu panel sağ üstte.
             const float w = 320f;
-            var rect = new Rect(HudScale.Width - w - 12f, 12f, w, 74f);
+            var rect = new Rect(HudScale.Width - w - HudLayout.RightMargin, HudLayout.RightSecondY, w, 74f);
             ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
             GUILayout.Label($"SAVAS — {missionName}");

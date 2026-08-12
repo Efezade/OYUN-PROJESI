@@ -32,17 +32,17 @@ namespace TacticalRPG.UI
 
         private void OnGUI()
         {
+            if (MenuState.HudsHidden) return;   // augment karti / tam-ekran menu aciksa IMGUI cizilmez
             if (_state == null || _state.State != GameState.Overworld) return;
 
             // Tam-ekran menü (KİTAP/ÇANTA/HARİTA) açıkken bu paneli ÇİZME — IMGUI, uGUI menüsünün
             // üstüne taşardı; ayrıca KİTAP'ın kendi ÖZ DEPOSU'su zaten var (bkz. MenuState).
-            if (MenuState.IsAnyOpen) return;
 
             // Sanal 1920x1080 ekrana ciz -> her cozunurlukte ayni oran.
             using var _scale = HudScale.Scaled();
 
             const float w = 300f;
-            var rect = new Rect(HudScale.Width - w - 12f, 12f, w, 230f);
+            var rect = new Rect(HudScale.Width - w - HudLayout.RightMargin, HudLayout.RightFirstY, w, 230f);
             ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
 

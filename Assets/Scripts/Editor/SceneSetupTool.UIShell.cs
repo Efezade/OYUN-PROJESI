@@ -87,6 +87,13 @@ namespace TacticalRPG.Editor
                 panelsProp.GetArrayElementAtIndex(i).objectReferenceValue = panels[i];
 
             so.FindProperty("_persistentBar").objectReferenceValue  = bar;
+            // Overworld'e OZEL sekmeler — savasta gizlenir. Ayar dislisi BU LISTEDE YOK:
+            // her durumda erisilebilir kalmali (2026-08-12: savasta ayarlara ulasilamiyordu).
+            var tabsProp = so.FindProperty("_overworldOnlyTabs");
+            tabsProp.arraySize = 3;
+            tabsProp.GetArrayElementAtIndex(0).objectReferenceValue = bookTab.gameObject;
+            tabsProp.GetArrayElementAtIndex(1).objectReferenceValue = bagTab.gameObject;
+            tabsProp.GetArrayElementAtIndex(2).objectReferenceValue = mapTab.gameObject;
             so.FindProperty("_bookTab").objectReferenceValue        = bookTab;
             so.FindProperty("_bagTab").objectReferenceValue         = bagTab;
             so.FindProperty("_mapTab").objectReferenceValue         = mapTab;

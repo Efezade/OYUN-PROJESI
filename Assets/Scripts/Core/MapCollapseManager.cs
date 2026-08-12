@@ -346,6 +346,7 @@ namespace TacticalRPG.Core
         // ── Karo üstü "kalan AP" etiketi (işaretli karolar) ─────────────────
         private void OnGUI()
         {
+            if (MenuState.HudsHidden) return;   // augment karti / tam-ekran menu aciksa IMGUI cizilmez
             if (_camera == null || _apManager == null || !InOverworld) return;
             if (_doomed.Count == 0) return;
 

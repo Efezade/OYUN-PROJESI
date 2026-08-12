@@ -89,42 +89,43 @@ private GameObject player = GameObject.Find("Player");
 
 ---
 
-## 9. Görev Gelen Kutusu (Inbox) Akışı
+## 9. Çalışma Akışı
 
-İkinci bir PC'de (Unity dosyaları olmadan) Efe + Kardelen tasarım/denge kararları tartışıyor;
-bu kararlar `Docs/GAME_DESIGN.md` (tek doğruluk kaynağı) ve `Docs/INBOX_TASKS.md` (görev listesi)
-üzerinden buraya push ediliyor. Bu projede o taraftaki Claude oturumuna **Sherlock**, bu tarafa
-(sen, kod/implementasyon tarafı) **Watson** deniyor — dokümanlarda/loglarda bu isimlerle geçebilirsin.
+Proje **tek geliştiriciyle** yürüyor: Efe + bu oturum. Başka bir Claude oturumu, ikinci bir PC rolü
+ya da onay mercii YOK.
 
-- **HER OTURUMUN İLK ADIMI, konu ne olursa olsun:** önce `git pull` çalıştır (Sherlock'un push'ladığı
-  yeni dosyalar/görevler local'de görünmeyebilir), sonra `Docs/INBOX_TASKS.md`'yi oku. Bu adımı
-  atlama — Efe/Kardelen konuyu hatırlatmasa bile varsayılan davranışın bu olsun.
-- **TEK SEFERDE SADECE BİR `pending` GÖREV işle (2026-07-27 kararlaştırıldı).** Birden fazla
-  `pending` görev varsa hepsini art arda/aynı oturumda bitirmeye ÇALIŞMA — birini bitir, açıkla, DUR.
-- **Görev bitince:** `Docs/DECISION_LOG.md`'ye ne yapıldığını (nasıl/neden dahil) yaz, INBOX_TASKS.md'de
-  görevi `done` DEĞİL **`awaiting_review`** işaretle + kısa bir özet not düş (satırı silme — arşiv
-  kalsın). `done`'a çevirme yetkisi Watson'da değil — Efe/Kardelen (Sherlock tarafı) inceleyip onaylar.
-- **`awaiting_review` durumunda bekleyen bir görev varken YENİ bir `pending` göreve BAŞLAMA** — bu,
-  canlı bir onay bağlantımız olmadığı için (iki ayrı PC/oturum) dosya-tabanlı bir "onay kapısı"dır.
-  Sherlock bir sonraki taraf-geçişinde inceler: onaylarsa `done`'a çevirir (ya da "doğru, devam"
-  notu düşer), sorun bulursa `blocked` + nedenini yazar. Ancak öyle işaretlenmiş bir görev varsa
-  önce ONU düzelt, başka pending'e geçme.
-- **Belirsiz/çelişkili görev:** `blocked` işaretle + nedenini yaz, sessizce atlamayan.
-- `Docs/GAME_DESIGN.md` ile mevcut kod/ROADMAP arasında çelişki varsa GAME_DESIGN.md önceliklidir;
-  büyük bir çelişkiyse INBOX_TASKS.md'ye not düşüp diğer tarafın netleştirmesini bekle.
+- **Tarihsel not (2026-08-12'de kapandı):** bir dönem "Watson (Unity/kod) ↔ Sherlock (denge/stat)"
+  iki-PC rol oyunu vardı; görevler `Docs/INBOX_TASKS.md` üzerinden gelir, bitince `awaiting_review`
+  işaretlenip onay beklenirdi. **Bu akış artık geçerli değil.** O dosyalar arşiv olarak duruyor,
+  okunmuyor/işlenmiyor; "Sherlock'a sor", "onay bekle", "inbox'tan görev al" gibi adımlar ATLANIR.
+  Eski loglarda/yorumlarda geçen bu isimler tarihsel bağlamdır, talimat değildir.
+- **İş doğrudan Efe'den gelir.** Belirsizlik varsa ona sor; dosya üzerinden onay kapısı kurma.
+- **`Docs/DECISION_LOG.md` yaşamaya devam ediyor** — ama artık "karşı tarafa rapor" değil, geriye
+  dönük **NEDEN** kaydı: kalıcı bir mimari/tasarım kararı verildiğinde kısa bir giriş düşülür
+  (KARAR / NEDEN / COMMIT / varsa DERS). Her küçük değişiklik için değil.
+- `ROADMAP.md` = ileriye dönük plan · `Docs/DECISION_LOG.md` = geriye dönük neden+ders ·
+  `Docs/GAME_DESIGN.md` = tasarım/denge sayıları. Aynı şeyi üçünde tekrar anlatma.
+- **Denge/ekonomi hesapları şimdilik DURDURULDU** (Efe, 2026-08-12): öz maliyeti, stat dengesi ve
+  benzeri sayısal işler **çekirdek mekanikler bitince** yapılacak. İstenmeden denge simülasyonu
+  koşturma/öneri üretme.
 
-**Dosya sahipliği (çakışmayı önlemek için, 2026-07-26 kararlaştırıldı):**
-- `Docs/DECISION_LOG.md` — **Watson-sahipli.** Sherlock sadece okur, yazmaz. Yalın, ters-kronolojik,
-  sadece aktif kararlar + "Tuzaklar/Dersler" bölümü. Tamamlanmış faz detayları
-  `Docs/DECISION_LOG_ARCHIVE.md`'ye taşınır. Bayat "güncel durum/son push" bloğu tutulmaz —
-  o bilginin canlı kaynağı Watson'ın kendi hafızası.
-- `Docs/INBOX_TASKS.md` — **append-only.** Sherlock yeni görevleri sona ekler; Watson yalnız
-  ilgili görevin status/DONE notunu günceller, başka görevlere dokunmaz.
-- `Docs/GAME_DESIGN.md` — **Sherlock-sahipli.** Watson normalde sadece okur; yalnız INBOX'tan
-  açıkça görevlendirilirse (TASK-001'deki gibi) yazar, canonical bölümlerin üzerine yazmaz.
-- `ROADMAP.md` = ileriye dönük plan · `Docs/DECISION_LOG.md` = geriye dönük NEDEN+ders ·
-  `Docs/GAME_DESIGN.md` = canonical sayılar. Yeni içerik yazarken bu ayrımı koru, üçünde aynı
-  şeyi tekrar anlatma.
+---
+
+## 9.1 Kurulum Zinciri Kuralı (ZORUNLU)
+
+**Yeni bir sistem eklendiğinde, onu çalışır hale getiren kurulum adımı MUTLAKA
+`SceneSetupTool.FullSetup()` ("TAM KURULUM") zincirine eklenir.**
+
+Efe tek bir menü tıklamasıyla her şeyi kurabilmeli; "önce şu menüyü, sonra bu menüyü çalıştır"
+diye bir sıra ezberlemek zorunda kalmamalı (kullanıcı isteği 2026-08-12).
+
+- Ayrı menü girişi **olabilir** (tek başına yeniden çalıştırmak için) ama zincire de girecek.
+- Zincir `SceneSetupTool.cs` içindeki `FullSetup()`'tadır; alt kurulumlar oradan çağrılan
+  `SetupPhaseX` / `SetupChapterWorld` / `SetupCombat` gibi metodlara asılır.
+- Bir adım **asset üretiyorsa** (SO, prefab, doku) idempotent olmalı: var olanı EZMEMELİ,
+  yalnız eksik olanı üretmeli. Aksi halde TAM KURULUM kullanıcının tweaklerini siler.
+- Kurulumu Unity açmadan doğrulamak için batch girişi yazılabilir
+  (`-executeMethod ...Batch.Run`) — bkz `CombatSetupBatch`, `ChapterMapBatch`.
 
 ---
 

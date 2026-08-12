@@ -17,6 +17,9 @@ namespace TacticalRPG.Core
     {
         [Header("Bağımlılıklar")]
         [SerializeField] private HexGridManager    _grid;
+        [Tooltip("Savaş arenasını PROSEDÜREL üretir (2026-08-12). Atanmazsa görevin elle atanmış " +
+                 "CombatMap'i kullanılır — eski davranış korunur.")]
+        [SerializeField] private CombatMapGenerator _arena;
         [SerializeField] private FogOfWarManager   _fog;
         [SerializeField] private PlayerController   _player;
         [SerializeField] private ActionPointManager _apManager;
@@ -82,7 +85,11 @@ namespace TacticalRPG.Core
             }
             if (_player != null) _savedPlayerCoord = _player.CurrentCoord;
 
-            if (_grid != null && mission.CombatMap != null)
+            // Arena: önce PROSEDÜREL üretici denenir (düğüm tipine göre kademe), o yoksa görevin
+            // elle atanmış haritası. İkisi de yoksa grid overworld'de kalır ve savaş 550 karoluk
+            // kıtada açılırdı — bu yüzden fallback zinciri açıkça yazılı.
+            bool arenaBuilt = _arena != null && _arena.Build(CombatMapGenerator.TierFor(mission.Tier));
+            if (!arenaBuilt && _grid != null && mission.CombatMap != null)
                 _grid.SetTileMap(mission.CombatMap);     // grid'i savaş haritasına çevir
             if (_fog != null) _fog.RevealAll();          // savaşta tam görüş
             if (_player != null) _player.gameObject.SetActive(false); // overworld jetonu gizle

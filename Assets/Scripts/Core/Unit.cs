@@ -288,7 +288,10 @@ namespace TacticalRPG.Core
             }
             else
             {
-                _currentHP = Mathf.Max(0, _currentHP - remaining);
+                // Kartsız birim (savaş testi/placeholder): savunma BURADA da uygulanmalı.
+                // Eskiden bu dal Defense'i tamamen atlıyordu → aynı birim kartlıyken dayanıklı,
+                // kartsızken kağıttan oluyordu ve denge ölçümleri iki farklı sonuç veriyordu.
+                _currentHP = Mathf.Max(0, _currentHP - CombatMath.Damage(remaining, Defense));
                 OnStatsChanged?.Invoke(this);
                 if (!IsAlive && !_diedNotified)
                 {

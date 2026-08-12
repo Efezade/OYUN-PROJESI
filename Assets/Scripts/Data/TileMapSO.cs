@@ -22,6 +22,20 @@ namespace TacticalRPG.Data
         public string               defaultTileId = "default";
         public List<TileAssignment> assignments   = new();
 
+        [Header("Tahta boyutu")]
+        [Tooltip("Bu haritanın kaç sütun × satır kapladığı. (0,0) = grid'in kendi ayarı kullanılır.\n\n" +
+                 "NEDEN VAR: overworld ile savaş haritası AYNI HexGridManager'ı paylaşıyor. Boyut " +
+                 "yalnız grid'de dursaydı, overworld tahtası büyüyünce savaş arenası da büyürdü " +
+                 "(1 bölüm haritası 36×34 iken savaş da 1224 karo olurdu). Boyut artık haritanın " +
+                 "kendi verisi.")]
+        [SerializeField] private Vector2Int _gridSize = Vector2Int.zero;
+
+        /// <summary>Haritanın kendi tahta boyutu; (0,0) ise grid'in ayarı geçerlidir.</summary>
+        public Vector2Int GridSize => _gridSize;
+
+        /// <summary>Runtime üretimde tahta boyutunu bildirir (üretici çağırır).</summary>
+        public void SetGridSize(int width, int height) => _gridSize = new Vector2Int(width, height);
+
         public string GetTileId(HexCoordinate coord)
         {
             foreach (var a in assignments)

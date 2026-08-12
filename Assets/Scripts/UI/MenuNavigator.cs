@@ -24,6 +24,10 @@ namespace TacticalRPG.UI
         [Tooltip("Yönetilen tam-ekran menü panelleri (KİTAP/ÇANTA/HARİTA/AYARLAR). Sıra önemsiz.")]
         [SerializeField] private MenuScreenPanel[] _panels;
 
+        [Tooltip("Yalnız OVERWORLD'de görünecek sekmeler (KİTAP/ÇANTA/HARİTA). Ayar dişlisi bu " +
+                 "listede OLMAMALI — o her durumda erişilebilir kalır.")]
+        [SerializeField] private GameObject[] _overworldOnlyTabs;
+
         [Header("Kalıcı Kabuk")]
         [Tooltip("Sekmeleri + ayar düğmesini barındıran kök. Overworld dışında gizlenir.")]
         [SerializeField] private GameObject _persistentBar;
@@ -73,9 +77,13 @@ namespace TacticalRPG.UI
 
         private void Update()
         {
-            // Esc → açık menüyü kapat (eski Input Manager; activeInputHandler=Both).
-            if (IsMenuOpen && Input.GetKeyDown(KeyCode.Escape))
-                CloseScreen();
+            // Esc → açıksa kapat, kapalıysa AYARLAR'ı aç.
+            // "Aç" kısmı 2026-08-12'de eklendi: üst sekme barı overworld dışında gizlendiği için
+            // savaşta/yerleştirmede ⚙ düğmesine ulaşılamıyor, ayarlar (ses/parlaklık/kamera zoom)
+            // erişilemez oluyordu. Esc her durumda ayarları açar.
+            if (!Input.GetKeyDown(KeyCode.Escape)) return;
+            if (IsMenuOpen) CloseScreen();
+            else            OpenScreen(MenuScreen.Settings);
         }
 
         /// <summary>Sekme davranışı: aynı ekran zaten açıksa kapatır, değilse o ekrana geçer.</summary>
@@ -113,7 +121,16 @@ namespace TacticalRPG.UI
         private void HandleStateChanged(GameState state)
         {
             bool overworld = state == GameState.Overworld;
-            if (_persistentBar != null) _persistentBar.SetActive(overworld);
+
+            // ÜST BAR AÇIK KALIR, yalnız overworld'e özel SEKMELER gizlenir.
+            // Eskiden barın tamamı kapatılıyordu; ⚙ ayar düğmesi de barın çocuğu olduğu için
+            // savaşta/yerleştirmede ayarlara HİÇ ulaşılamıyordu (2026-08-12 hata raporu).
+            // KİTAP/ÇANTA/HARİTA savaşta anlamsız → onlar gizli; dişli her durumda görünür.
+            if (_overworldOnlyTabs != null)
+                foreach (var tab in _overworldOnlyTabs)
+                    if (tab != null) tab.SetActive(overworld);
+
+            if (_persistentBar != null) _persistentBar.SetActive(true);
             if (!overworld) CloseScreen();
         }
 

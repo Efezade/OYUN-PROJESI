@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9b7847f6dca9724ea656d7e35c7e53b, type: 3}
+  m_Name: Buyucu
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.CharacterClassData
+  _className: Buyucu
+  _lore: "Ate\u015Fi ve buzu \xE7a\u011F\u0131ran, z\u0131rhs\u0131z ama y\u0131k\u0131c\u0131."
+  _unitNames: []
+  _maxHP: 8
+  _attack: 6
+  _defense: 0
+  _moveRange: 3
+  _speed: 5
+  _attackRange: 3
+  _essenceCostPerLevel: 00000000050000000c000000
+  _hpMultiplierPerLevel:
+  - 1
+  - 1.3
+  - 1.7
+  _atkMultiplierPerLevel:
+  - 1
+  - 1.2
+  - 1.5
+  _defMultiplierPerLevel:
+  - 1
+  - 1.15
+  - 1.4
+  _deployCost: 3
+  _isCommander: 0
+  _unitColor: {r: 0.45, g: 0.38, b: 0.78, a: 1}
+  _unitModel: {fileID: 3083208523140352698, guid: 7e95786e65dec4c4f95dd18ecff0dbb0, type: 3}
+  _unitModelHeight: 1.5
+  _unitModelEuler: {x: 0, y: 0, z: 0}
+  _unitModelYOffset: 0
+  _unitAnimator: {fileID: 0}
+  _portrait: {fileID: 0}
+  _hasManaSystem: 1
+  _maxMana: 8
+  _abilities: []

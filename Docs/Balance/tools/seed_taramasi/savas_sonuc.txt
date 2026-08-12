@@ -1,0 +1,78 @@
+﻿# SAVAS ARENASI RAPORU
+
+## Hasar formulu — vurus/olum tablosu
+formul: ATK x 100 / (100 + DEF x 15), taban 1
+
+saldiran \ hedef Savasci      Ranger       Kam          Goblin       Yamyam       GoblinSaman  
+Savasci          -            4 (3v)       4 (2v)       5 (2v)       5 (2v)       4 (3v)       
+Ranger           4 (4v)       -            5 (2v)       6 (2v)       6 (2v)       5 (2v)       
+Kam              3 (5v)       3 (4v)       -            4 (2v)       4 (2v)       3 (4v)       
+Goblin           2 (7v)       3 (4v)       3 (3v)       -            3 (3v)       3 (4v)       
+Yamyam           3 (5v)       3 (4v)       3 (3v)       4 (2v)       -            3 (4v)       
+GoblinSaman      3 (5v)       4 (3v)       4 (2v)       5 (2v)       5 (2v)       -            
+
+ESKI formul (max(0, ATK-DEF)) ile Goblin -> Savasci = 0 hasar (ASLA olmezdi).
+
+
+## Arena kademeleri (400 seed ortalamasi)
+kademe      kutu    oynanabilir  engel%  etkilesim%  deploy  dusman  mesafe  temas-tur  kilitli
+Encounter   10x8      70 (62-78)    8.2       10.0      16     4.0     5.0          1      yok
+Dungeon     11x9      79 (70-89)    8.9       11.0      15     6.0     6.0          1      yok
+Mandatory   12x10     97 (89-105)   10.1       12.1      16     7.0     6.0          2      yok
+Boss        13x11    109 (101-118)   10.0       12.0      26     6.0     6.0          2      yok
+
+## ONIZLEME
+
+### Encounter (seed 7)
+ . .     . .   . .   
+X . . X . X . . . X 
+   . . . . . . ~ . n 
+. # . . . . . . # n 
+ . . ^ ~ . . . # n   
+. . . ^ ^ ~ . ^ . . 
+   o o o o o o o o o 
+  o o o   o o o o o 
+  'X'=dusman  'o'=deploy  '#'=duvar(gorus keser)  'n'=siper  '^'=yukselti  '!'=tehlike  '~'=zor arazi
+
+
+### Dungeon (seed 7)
+    X   . .       .   
+ X . . X . X . . X X   
+. . . ~ n . . . . . . 
+   . ^ n n . . . . ! . 
+  . ~ . . . . . ~ . ~ 
+ . . . n . n . . . . . 
+^ . ^ n . . n ! . . . 
+   o o o o o o o o o o 
+      o   o o   o   o 
+  'X'=dusman  'o'=deploy  '#'=duvar(gorus keser)  'n'=siper  '^'=yukselti  '!'=tehlike  '~'=zor arazi
+
+
+### Mandatory (seed 7)
+ . .     . .       . X   
+  X . . . X . . . . .   
+ . . X . . . . X . X . X 
+. . . # # . . . ! . . . 
+   . # ^ ^ . n ~ . ^ .   
+  . ^ . . . n . . . .   
+ . . . . ! n ~ . . # # . 
+^ . ! . . n . ! . . # ~ 
+   o o o o o o o o o o   
+      o   o o   o   o o 
+  'X'=dusman  'o'=deploy  '#'=duvar(gorus keser)  'n'=siper  '^'=yukselti  '!'=tehlike  '~'=zor arazi
+
+
+### Boss (seed 7)
+  . .     .     . X       
+   X . . . . . . . . . .   
+  . . X . X . . X . . X   
+   . n . . # . . n . ! .   
+  . . . ^ ~ # . n n # . ~ 
+   . n . ~ . ~ n ~ . . . . 
+  . . n . ~ . . . . . .   
+ ! . n ~ ~ ! . ^ . . . .   
+o o o o o o o o o o o o o 
+   o o o o o o o o o o o o 
+      o             o     
+  'X'=dusman  'o'=deploy  '#'=duvar(gorus keser)  'n'=siper  '^'=yukselti  '!'=tehlike  '~'=zor arazi
+

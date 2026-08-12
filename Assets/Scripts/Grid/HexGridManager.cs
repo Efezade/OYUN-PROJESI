@@ -60,16 +60,30 @@ namespace TacticalRPG.Grid
         public void GenerateGrid()
         {
             ClearVisuals();
-            _cells = new Dictionary<HexCoordinate, HexCell>(_width * _height);
 
-            for (int r = 0; r < _height; r++)
+            // Tahta boyutunu ÖNCE harita söyler (TileMapSO.GridSize), yoksa Inspector değeri.
+            // Overworld ile savaş aynı grid'i paylaştığı için boyut haritanın verisi olmalı —
+            // aksi halde overworld 36×34'e çıkınca savaş arenası da 1224 karo olurdu.
+            int w = _width, h = _height;
+            if (_tileMap != null && _tileMap.GridSize.x > 0 && _tileMap.GridSize.y > 0)
+            { w = _tileMap.GridSize.x; h = _tileMap.GridSize.y; }
+
+            _cells = new Dictionary<HexCoordinate, HexCell>(w * h);
+
+            for (int r = 0; r < h; r++)
             {
-                for (int col = 0; col < _width; col++)
+                for (int col = 0; col < w; col++)
                 {
                     // odd-r offset → axial (bkz HexCoordinate.FromOffset). Üretici de AYNI
                     // dönüşümü kullanır; ikisi ayrışırsa harita tahtaya kayık oturur.
                     var coord = HexCoordinate.FromOffset(col, r);
-                    var cell  = new HexCell(coord, _hexSize);
+
+                    // "BOŞ" karo = burada hücre YOK. Organik harita sınırı buradan gelir:
+                    // tahta hâlâ bir dikdörtgen ama kıtanın dışındaki koordinatlarda karo
+                    // üretilmez → oyuncu kare bir kenar görmez, sis/deniz bandı kıyıyı sarar.
+                    if (IsVoidAt(coord)) continue;
+
+                    var cell = new HexCell(coord, _hexSize);
                     _cells[coord] = cell;
                     SpawnVisual(cell);
                 }
@@ -77,6 +91,10 @@ namespace TacticalRPG.Grid
 
             OnGridRegenerated?.Invoke();   // sis yeniden kurulsun (harita değişiminde)
         }
+
+        /// <summary>Bu koordinatta karo var mı? TileMap yoksa (elle kurulmuş savaş grid'i) hepsi dolu.</summary>
+        private bool IsVoidAt(HexCoordinate coord)
+            => _tileMap != null && TileCatalog.IsVoid(_tileMap.GetTileId(coord));
 
         public void ClearVisuals()
         {
@@ -146,7 +164,20 @@ namespace TacticalRPG.Grid
             cell.MeshRenderer = go.GetComponent<MeshRenderer>()
                              ?? go.GetComponentInChildren<MeshRenderer>();
 
-            if (entry != null)
+            if (entry == null)
+            {
+                // Palette'te girişi OLMAYAN karo (ör. editör kurulumu henüz koşmadı). Sessizce
+                // "gri ve yürünür" bırakmak en tehlikelisi olurdu — dağın üstünde yürünürdü.
+                // Katalog tek doğruluk kaynağı: yürünürlük ve renk oradan okunur.
+                TileCatalog.Entry cat = _tileMap != null ? TileCatalog.Get(_tileMap.GetTileId(cell.Coordinate)) : null;
+                if (cat != null)
+                {
+                    cell.IsWalkable = cat.Walkable;
+                    cell.BaseColor  = new Color(cat.R, cat.G, cat.B);
+                    if (cell.MeshRenderer != null) ApplyTint(cell.MeshRenderer, cell.BaseColor);
+                }
+            }
+            else
             {
                 cell.IsWalkable     = entry.isWalkable;
                 cell.CanEnterCombat = entry.canEnterCombat;   // boyalı savaş alanı karosu

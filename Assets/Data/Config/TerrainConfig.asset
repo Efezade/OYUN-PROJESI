@@ -12,19 +12,48 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ab007af39e8ae94c936fec50b236393, type: 3}
   m_Name: TerrainConfig
   m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.TerrainConfigSO
-  _width: 22
-  _height: 25
-  _obstaclePct: 0.2
-  _riverCount: 1
-  _bridgesPerRiver: 2
-  _blobSizeMin: 8
-  _blobSizeMax: 30
-  _subtypeWeights:
-  - 0.55
-  - 0.12
-  - 0.05
-  - 0.15
-  - 0.1
-  - 0.03
-  _seedPool: 5900000007000000140000006c000000db00000040000000ad0000001b0100008d0000001e010000
-  _startHint: {x: 11, y: 12}
+  _width: 36
+  _height: 34
+  _targetLandMin: 500
+  _targetLandMax: 600
+  _riverPct: 0.049
+  _mountainPct: 0.075
+  _blobPct: 0.089
+  _bridgePct: 0.004
+  _fringeWidth: 2
+  _coastRoughness: 0.42
+  _shapeFrequency: 1.55
+  _warpAmount: 0.34
+  _landmarkCount: 12
+  _landmarkSpacing: 4
+  _seedPool:
+  - 9941
+  - 436
+  - 6118
+  - 11015
+  - 5059
+  - 10759
+  - 3647
+  - 11192
+  - 8358
+  - 11558
+  - 3867
+  - 5655
+  - 1342
+  - 7985
+  - 4717
+  - 9981
+  - 7528
+  - 8831
+  - 11574
+  - 5088
+  - 5421
+  - 1767
+  - 5674
+  - 9049
+  - 1037
+  - 4944
+  - 8226
+  - 3241
+  - 10274
+  - 2471
