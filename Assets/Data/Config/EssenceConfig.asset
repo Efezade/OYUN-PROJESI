@@ -16,20 +16,42 @@ MonoBehaviour:
   - type: 0
     displayName: Ates
     color: {r: 0.9, g: 0.25, b: 0.2, a: 1}
-    prefab: {fileID: 0}
+    orbShape: 0
+    prefab: {fileID: 8315634125242263385, guid: 71909dd114258714993698138d00ddf4, type: 3}
   - type: 1
     displayName: Su
     color: {r: 0.25, g: 0.5, b: 0.95, a: 1}
-    prefab: {fileID: 0}
+    orbShape: 1
+    prefab: {fileID: 1436597608676259840, guid: db5a0ce96825f434e941fd987b5aab1b, type: 3}
   - type: 2
     displayName: Toprak
     color: {r: 0.35, g: 0.75, b: 0.35, a: 1}
-    prefab: {fileID: 0}
+    orbShape: 2
+    prefab: {fileID: 7131766282727620348, guid: e4889d5ad6d330d4188099cc17e8b592, type: 3}
   - type: 3
     displayName: "Ta\u015F"
     color: {r: 0.62, g: 0.6, b: 0.56, a: 1}
-    prefab: {fileID: 0}
+    orbShape: 3
+    prefab: {fileID: 4472444989186231503, guid: 0e46f362fd027144e8cb10ef4ae5794c, type: 3}
   - type: 4
     displayName: "Do\u011Fa"
     color: {r: 0.36, g: 0.62, b: 0.32, a: 1}
-    prefab: {fileID: 0}
+    orbShape: 4
+    prefab: {fileID: 1736506227406033810, guid: af6d1da38e46f524d96f86271aacdd35, type: 3}
+  _totalRange: {x: 60, y: 80}
+  _mapTypes: 0300000004000000
+  _amountPerTile: {x: 1, y: 3}
+  _tileTint: 0.42
+  _outlineWidth: 0.18
+  _outlineEdgeWidth: 0.045
+  _outlineEdgeColor: {r: 0.04, g: 0.04, b: 0.05, a: 1}
+  _glow: 3
+  _orbHeight: 0.34
+  _orbScale: 0.36
+  _outlineMaterial: {fileID: 0}
+  _drainedColor: {r: 0.5, g: 0.47, b: 0.43, a: 1}
+  _drainStrength: 0.88
+  _drainCapColor: {r: 0.42, g: 0.38, b: 0.32, a: 1}
+  _drainCapOpacity: 0.82
+  _crackColor: {r: 0.09, g: 0.075, b: 0.06, a: 1}
+  _drainDuration: 1.15

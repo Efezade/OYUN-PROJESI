@@ -15,8 +15,8 @@ namespace TacticalRPG.UI
         [Header("Bağımlılıklar")]
         [SerializeField] private GameStateManager  _state;
         [SerializeField] private EssenceWallet      _wallet;
-        [Tooltip("Öz KARONUN KENDİSİDİR (TASK-005) — toplanınca karo tükenir.")]
-        [SerializeField] private ChapterMapGenerator _terrain;
+        [Tooltip("Haritaya saçılmış öz yatakları (2026-08-17). Toplanınca karo tükenip ovaya döner.")]
+        [SerializeField] private EssenceFieldManager _field;
         [SerializeField] private PlayerController    _player;
         [SerializeField] private PartyManager        _party;
         [SerializeField] private EssenceConfigSO     _config;
@@ -42,7 +42,7 @@ namespace TacticalRPG.UI
             using var _scale = HudScale.Scaled();
 
             const float w = 300f;
-            var rect = new Rect(HudScale.Width - w - HudLayout.RightMargin, HudLayout.RightFirstY, w, 230f);
+            var rect = new Rect(HudScale.Width - w - HudLayout.RightMargin, HudLayout.RightFirstY, w, 252f);
             ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
 
@@ -76,18 +76,21 @@ namespace TacticalRPG.UI
         {
             if (_player == null) return;
 
-            if (_terrain == null) return;
+            if (_field == null) return;
             HexCoordinate here = _player.CurrentCoord;
 
-            if (_terrain.HasEssenceAt(here))
+            if (_field.HasEssenceAt(here))
             {
-                GUILayout.Label($"Bu karoda: {_terrain.Describe(here)}");
-                GUI.enabled = _terrain.CanCollect(here);
-                if (GUILayout.Button("Topla (1 AP)", GUILayout.Height(26)))
-                    _terrain.CollectAt(here);
+                GUILayout.Label($"Bu karoda: {_field.Describe(here)}");
+                GUI.enabled = _field.CanCollect(here);
+                if (GUILayout.Button($"Topla ({_field.CollectAPCost} AP)", GUILayout.Height(26)))
+                    _field.CollectAt(here);
                 GUI.enabled = true;
             }
             else GUILayout.Label("Bu karoda öz yok.");
+
+            // Haritada KAÇ öz kaldı — "60-80 öz toplamam gerekiyor" hedefi görünsün.
+            GUILayout.Label($"Haritada kalan: {_field.RemainingTotal} öz ({_field.DepositCount} karo)");
         }
 
         private void DrawRoster()

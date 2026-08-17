@@ -4,6 +4,7 @@ using UnityEditor;
 using TMPro;
 using TacticalRPG.Core;
 using TacticalRPG.Data;
+using TacticalRPG.Grid;
 using TacticalRPG.UI;
 
 namespace TacticalRPG.Editor
@@ -15,8 +16,11 @@ namespace TacticalRPG.Editor
     ///
     ///  • ÇANTA — sap + sol dikey sekmeler + iki sütun (POTLAR | KAM KARTLARI, noktalı ayraç). Kartlar
     ///    gerçek <see cref="KamAbilityData"/> asset'lerine <see cref="AbilityCardView"/> ile bağlı.
-    ///  • HARİTA — çerçeveli harita + sol PINS paneli (HAN/ŞİFACI/MARKET) + **8 bölümlük ilerleme yolu**
-    ///    (map pin olarak, <see cref="WorldMapView"/> ile <see cref="ChapterProgress"/>'e CANLI) + pusula.
+    ///  • HARİTA — bölümün GERÇEK minihatitası (keşfedilen arazi + önemli karo işaretleri),
+    ///    sağda işaret açıklamaları, sürüklenip yakınlaştırılabilir.
+    ///    2026-08-17'de KALDIRILANLAR (kullanıcı isteği): 8 bölümlük ilerleme yolu (aynı bilgi TAB
+    ///    şeridinde), "Bölüm N — tema" başlığı ve pusula. Ekran tamamen haritaya ayrıldı.
+    ///    Bunlarla birlikte <see cref="WorldMapView"/> de bu panelde kullanılmıyor (sınıf duruyor).
     ///    1 bölüm = 1 harita (GAME_DESIGN.md §0). Eski 3×3 snake dünya: TASK-004 ile alternatife alındı,
     ///    bkz <c>Docs/Alternatif_Tasarimlar/3x3_Dunya_Haritasi/</c>.
     /// </summary>
@@ -135,6 +139,17 @@ namespace TacticalRPG.Editor
         // HARİTA — parşömen
         // ─────────────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// HARİTA EKRANI — bölümün GERÇEK haritası (kullanıcı isteği 2026-08-17).
+        ///
+        /// Eskiden burada 8 bölümlük ilerleme yolu vardı; o bilgi TAB şeridinde zaten duruyor
+        /// (<see cref="TacticalRPG.UI.MinimapHUD"/>) ve oyuncunun haritayı açtığında görmek
+        /// istediği şey BULUNDUĞU bölümün arazisi: nereyi keşfetti, market/savaş alanı/öz nerede.
+        ///
+        /// Harita dokusunu <see cref="MinimapRenderer"/> verinin kendisinden boyar, işaretleri
+        /// <see cref="TacticalRPG.UI.MinimapView"/> üstüne yerleştirir. Bu araç yalnız YERLEŞİMİ
+        /// kurar ve referansları bağlar.
+        /// </summary>
         private static void PopulateMapScreen(GameObject panelGO)
         {
             Transform t = panelGO.transform;
@@ -145,94 +160,294 @@ namespace TacticalRPG.Editor
             // İç çerçeve (çift kenar hissi) — 4 ince mürekkep çizgi
             InnerBorder(map, 22f, InkSoft);
 
-            // ── Sol PINS paneli (dışa taşan parşömen) ──────────────────────────
-            RectTransform pins = FramedPanel(map, "PinsPanel", new Vector2(0f, 0.5f),
-                new Vector2(-70f, 40f), new Vector2(300f, 440f), 10f, ParchmentHi, FrameDark);
-            SectionHeader(pins, "PinsHeader", "PINS", new Vector2(0.5f, 1f), new Vector2(0f, -14f), 200f, 32f);
-            string[] svc = { "HAN", "ŞİFACI", "MARKET" };
-            for (int i = 0; i < svc.Length; i++)
+            // ── Harita yüzeyi: koyu parşömen yuvası + doku ─────────────────────
+            // Yuva KREM DEĞİL koyu: keşfedilmemiş bölge hiç çizilmiyor, altındaki koyu zemin
+            // "burası daha çizilmedi" hissini veriyor.
+            RectTransform board = FramedPanel(map, "MinimapBoard", new Vector2(0.5f, 0.5f),
+                new Vector2(-170f, 0f), new Vector2(980f, 650f), 10f,
+                new Color(0.20f, 0.17f, 0.13f), FrameDark);
+
+            // Yuva artık MASKELİ GÖRÜŞ ALANI: yakınlaştırılan harita taşınca kırpılsın.
+            // Ayrıca fareyi yakalaması gerek — sürükleme olayı bu grafikten baloncuklanıyor.
+            var boardImg = board.GetComponent<Image>();
+            if (boardImg != null) boardImg.raycastTarget = true;
+            board.gameObject.AddComponent<RectMask2D>();
+
+            var rawGO = new GameObject("MinimapImage", typeof(RectTransform), typeof(RawImage));
+            rawGO.transform.SetParent(board, false);
+            var rawRT = rawGO.GetComponent<RectTransform>();
+            rawRT.anchorMin = rawRT.anchorMax = rawRT.pivot = new Vector2(0.5f, 0.5f);
+            rawRT.anchoredPosition = Vector2.zero;
+            rawRT.sizeDelta = new Vector2(940f, 620f);        // MinimapView oranı koruyarak düzeltir
+            var raw = rawGO.GetComponent<RawImage>();
+            raw.raycastTarget = false;
+
+            // İşaret katmanı dokunun ÇOCUĞU ve onu tam kaplar → doku yeniden boyutlanınca
+            // işaretler de kendiliğinden doğru yerde kalır.
+            var iconGO = new GameObject("Icons", typeof(RectTransform));
+            iconGO.transform.SetParent(rawRT, false);
+            var iconRT = iconGO.GetComponent<RectTransform>();
+            iconRT.anchorMin = Vector2.zero;
+            iconRT.anchorMax = Vector2.one;
+            iconRT.offsetMin = iconRT.offsetMax = Vector2.zero;
+
+            // Seyahat işaretleri (seçim halkası + rota noktaları) AYRI katman: harita ekranı her
+            // açıldığında ikonlar sıfırdan kurulur, seçim onunla birlikte silinmesin.
+            var travelGO = new GameObject("TravelMarkers", typeof(RectTransform));
+            travelGO.transform.SetParent(rawRT, false);
+            var travelRT = travelGO.GetComponent<RectTransform>();
+            travelRT.anchorMin = Vector2.zero;
+            travelRT.anchorMax = Vector2.one;
+            travelRT.offsetMin = travelRT.offsetMax = Vector2.zero;
+
+            // Parlama katmanı: haritanın ÜSTÜNDE saydam renk. rawGO'dan SONRA eklendiği için
+            // ikonların da üstünde kalır → hız tokeni parlaması tüm yüzeyi kaplar.
+            var surfaceGO = new GameObject("GlowSurface", typeof(RectTransform), typeof(Image));
+            surfaceGO.transform.SetParent(board, false);
+            var surfaceRT = surfaceGO.GetComponent<RectTransform>();
+            surfaceRT.anchorMin = Vector2.zero;
+            surfaceRT.anchorMax = Vector2.one;
+            surfaceRT.offsetMin = surfaceRT.offsetMax = Vector2.zero;
+            var surfaceImg = surfaceGO.GetComponent<Image>();
+            surfaceImg.color         = new Color(1f, 1f, 1f, 0f);
+            surfaceImg.raycastTarget = false;   // tıklama/sürükleme haritaya geçsin
+
+            // Çerçeve şeritleri: maskenin DIŞINDA (yuvanın çerçevesinde) → harita kaysa bile
+            // kenarda sabit dururlar.
+            Transform frameT = board.parent;
+            var borders = new Image[4];
+            borders[0] = GlowStrip(frameT, "GlowTop",    new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 7f));
+            borders[1] = GlowStrip(frameT, "GlowRight",  new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(7f, 0f));
+            borders[2] = GlowStrip(frameT, "GlowBottom", new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 7f));
+            borders[3] = GlowStrip(frameT, "GlowLeft",   new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(7f, 0f));
+
+            TextMeshProUGUI empty = CreateCenteredLabel(board, "MinimapEmpty",
+                "Harita henüz üretilmedi", new Vector2(0.5f, 0.5f), Vector2.zero,
+                new Vector2(700f, 60f), new Color(0.72f, 0.66f, 0.55f), 30f);
+
+            // ── Yakınlaştırma düğmeleri (haritanın sağ alt köşesinde, MASKENİN DIŞINDA) ──
+            // Yuvanın çocuğu olsalardı maske onları da kırpardı ve harita kayarken beraber
+            // kayarlardı; MapBody'ye asılıyorlar → sabit dururlar.
+            Button zoomIn  = CreateUIButton(map, "Btn_ZoomIn",  "+", new Vector2(0.5f, 0.5f),
+                new Vector2(268f, -216f), new Vector2(54f, 54f), new Color(0.16f, 0.13f, 0.10f, 0.92f), 40f);
+            // "-" ASCII kısa çizgi: yazı tipi atlasında kesin var. En-dash/minus işareti eksik
+            // glyph riski taşıyor (TMP fallback atlası eksik karakteri kutu olarak çizer).
+            Button zoomOut = CreateUIButton(map, "Btn_ZoomOut", "-", new Vector2(0.5f, 0.5f),
+                new Vector2(268f, -278f), new Vector2(54f, 54f), new Color(0.16f, 0.13f, 0.10f, 0.92f), 40f);
+
+            var pan = board.gameObject.AddComponent<MinimapPanZoom>();
+            var pzo = new SerializedObject(pan);
+            pzo.FindProperty("_viewport").objectReferenceValue       = board;
+            pzo.FindProperty("_content").objectReferenceValue        = rawRT;
+            pzo.FindProperty("_zoomInButton").objectReferenceValue   = zoomIn;
+            pzo.FindProperty("_zoomOutButton").objectReferenceValue  = zoomOut;
+            pzo.ApplyModifiedProperties();
+
+            // ── Sağdaki açıklama şeridi (legend) ──────────────────────────────
+            RectTransform legend = FramedPanel(map, "LegendPanel", new Vector2(0.5f, 0.5f),
+                new Vector2(500f, 0f), new Vector2(320f, 650f), 10f, ParchmentHi, FrameDark);
+            SectionHeader(legend, "LegendHeader", "İŞARETLER", new Vector2(0.5f, 1f),
+                new Vector2(0f, -18f), 240f, 28f);
+
+            var rows = new (MinimapIconKind kind, string label)[]
             {
-                float y = 90f - i * 96f;
-                Circle(pins, "Pin_" + svc[i], new Vector2(0f, 0.5f), new Vector2(48f, y), 44f, new Color(0.66f, 0.26f, 0.22f));
-                CreateCenteredLabel(pins, "SvcLbl_" + svc[i], svc[i], new Vector2(0f, 0.5f),
-                    new Vector2(110f, y), new Vector2(190f, 40f), Ink, 26f);
+                (MinimapIconKind.Market,     "Ticaret Hanı"),
+                (MinimapIconKind.Encounter,  "Savaş Alanı"),
+                (MinimapIconKind.Dungeon,    "Zindan"),
+                (MinimapIconKind.Mandatory,  "Zorunlu Görev"),
+                (MinimapIconKind.Watchtower, "Gözetleme Kulesi"),
+                (MinimapIconKind.Essence,    "Öz Yatağı"),
+            };
+
+            var legendIcons = new Image[rows.Length];
+            for (int i = 0; i < rows.Length; i++)
+            {
+                // Satır aralığı sıkıldı: altta İKİ yol taşı düğmesi + sayaçları duracak.
+                float y = 230f - i * 52f;
+                var icoGO = new GameObject("LegendIcon_" + rows[i].kind, typeof(RectTransform), typeof(Image));
+                icoGO.transform.SetParent(legend, false);
+                var icoRT = icoGO.GetComponent<RectTransform>();
+                icoRT.anchorMin = icoRT.anchorMax = icoRT.pivot = new Vector2(0f, 0.5f);
+                icoRT.anchoredPosition = new Vector2(28f, y);
+                icoRT.sizeDelta = new Vector2(34f, 34f);
+                legendIcons[i] = icoGO.GetComponent<Image>();
+                legendIcons[i].raycastTarget = false;
+                // Sprite ÇALIŞMA ZAMANINDA üretiliyor (MinimapIcons) → MinimapView atar.
+
+                CreateCenteredLabel(legend, "LegendLbl_" + rows[i].kind, rows[i].label,
+                    new Vector2(0f, 0.5f), new Vector2(74f, y), new Vector2(220f, 36f), Ink, 22f);
             }
 
-            // ── 8 BÖLÜMLÜK İLERLEME YOLU (1 bölüm = 1 harita, GAME_DESIGN.md §0) ─
-            // Yılan yol: üst sıra 1-2-3-4 (soldan sağa), sağdan aşağı, alt sıra 5-6-7-8 (sağdan sola).
-            // (Eski 3×3 snake dünya buradaydı — TASK-004 ile alternatife alındı, bkz
-            //  Docs/Alternatif_Tasarimlar/3x3_Dunya_Haritasi/.)
-            TextMeshProUGUI title = CreateCenteredLabel(map, "ChapterTitle", "Bölüm 1",
-                new Vector2(0.5f, 0.5f), new Vector2(160f, 282f), new Vector2(900f, 52f), Ink, 34f);
+            CreateCenteredLabel(legend, "LegendNote",
+                "Sürükle: kaydır · +/−: yakınlaştır\nSeyahat için önce bir YOL TAŞI kullan.",
+                new Vector2(0.5f, 0f), new Vector2(0f, 250f), new Vector2(280f, 60f), InkSoft, 18f);
 
-            const float node = 110f;
-            var nodeBgs    = new Image[ChapterCount];
-            var nodeLabels = new TextMeshProUGUI[ChapterCount];
-            for (int c = 1; c <= ChapterCount; c++)
-                nodeBgs[c - 1] = CreateChapterNode(map, c, ChapterNodePos(c), node, out nodeLabels[c - 1]);
+            // ── Yol taşları: seyahatin anahtarı ───────────────────────────────
+            // YOL TAŞI  → koşarak git, AP ve zaman normal işler (1 taş / yolculuk)
+            // GÜÇLÜ TAŞ → mesafeye göre birkaç taş, ama AP ve zaman HİÇ harcanmaz
+            TextMeshProUGUI roadLabel = CreateCenteredLabel(legend, "RoadStoneCount", "Yol taşı: 0",
+                new Vector2(0.5f, 0f), new Vector2(0f, 200f), new Vector2(280f, 30f),
+                new Color(0.42f, 0.34f, 0.22f), 20f);
 
-            // Düğümleri bağlayan yol parçaları: index 0 = 1→2 … 6 = 7→8
-            var connectors = new Image[ChapterCount - 1];
-            for (int c = 1; c < ChapterCount; c++)
-            {
-                Vector2 a = ChapterNodePos(c), b = ChapterNodePos(c + 1);
-                Vector2 mid = (a + b) * 0.5f;
-                bool horizontal = Mathf.Abs(a.y - b.y) < 0.5f;
-                Vector2 size = horizontal
-                    ? new Vector2(Mathf.Abs(b.x - a.x) - node, 7f)
-                    : new Vector2(7f, Mathf.Abs(b.y - a.y) - node);
-                connectors[c - 1] = Line(map, $"Path_{c}_{c + 1}", new Vector2(0.5f, 0.5f), mid, size, InkSoft);
-                connectors[c - 1].transform.SetAsFirstSibling();   // yol, düğümlerin ALTINDA kalsın
-            }
+            Button roadButton = CreateUIButton(legend, "Btn_RoadStone", "YOL TAŞI KULLAN",
+                new Vector2(0.5f, 0f), new Vector2(0f, 158f), new Vector2(252f, 44f),
+                new Color(0.26f, 0.22f, 0.34f, 0.98f), 18f);
 
-            // ── Pusula (sağ alt) ───────────────────────────────────────────────
-            CreateCompass(map, new Vector2(500f, -250f), 140f);
+            TextMeshProUGUI powerLabel = CreateCenteredLabel(legend, "PowerStoneCount", "Güçlü yol taşı: 0",
+                new Vector2(0.5f, 0f), new Vector2(0f, 104f), new Vector2(280f, 30f),
+                new Color(0.42f, 0.34f, 0.22f), 20f);
 
-            WorldMapView view = panelGO.AddComponent<WorldMapView>();
-            ChapterProgress progress = FindComponentAnywhere<ChapterProgress>();
-            if (progress == null)
-                Debug.LogWarning("[HARİTA] Sahnede ChapterProgress yok — ekran boş/varsayılan görünür. " +
-                                 "Once 'TacticalRPG → Bolum - 8 Bolum Ilerlemesi Kur' calistir (ya da TAM KURULUM).");
-            var vso = new SerializedObject(view);
-            vso.FindProperty("_progress").objectReferenceValue    = progress;
-            vso.FindProperty("_titleLabel").objectReferenceValue  = title;
-            FillObjectArray(vso, "_nodeBackgrounds", nodeBgs);
-            FillObjectArray(vso, "_nodeLabels",      nodeLabels);
-            FillObjectArray(vso, "_connectors",      connectors);
-            vso.ApplyModifiedProperties();
+            Button powerButton = CreateUIButton(legend, "Btn_PowerStone", "GÜÇLÜ YOL TAŞI KULLAN",
+                new Vector2(0.5f, 0f), new Vector2(0f, 60f), new Vector2(252f, 44f),
+                new Color(0.20f, 0.30f, 0.36f, 0.98f), 17f);
+
+            // NOT: pusula ve "Bölüm 1 — …" başlığı 2026-08-17'de KALDIRILDI (kullanıcı isteği).
+            // Bölüm adı TAB şeridinde duruyor; başlıksız ekran haritaya daha çok yer bırakıyor.
+            // Başlık gidince WorldMapView'in bu panelde yapacak işi kalmadı → eklenmiyor.
+
+            // ── Seyahat onayı: haritanın alt kenarına oturan şerit (maskenin DIŞINDA) ──
+            var promptGO = new GameObject("TravelPrompt", typeof(RectTransform));
+            promptGO.transform.SetParent(map, false);
+            var promptRT = promptGO.GetComponent<RectTransform>();
+            promptRT.anchorMin = promptRT.anchorMax = promptRT.pivot = new Vector2(0.5f, 0.5f);
+            promptRT.anchoredPosition = new Vector2(-170f, -262f);
+            promptRT.sizeDelta = new Vector2(640f, 88f);
+
+            Sliced(promptGO.transform, "PromptBg", new Vector2(0.5f, 0.5f), Vector2.zero,
+                new Vector2(640f, 88f), new Color(0.10f, 0.085f, 0.065f, 0.95f), raycast: true);
+
+            TextMeshProUGUI costLabel = CreateCenteredLabel(promptGO.transform, "CostLabel",
+                "—", new Vector2(0.5f, 0.5f), new Vector2(-110f, 0f), new Vector2(380f, 56f),
+                new Color(0.94f, 0.90f, 0.78f), 25f);
+
+            Button confirm = CreateUIButton(promptGO.transform, "Btn_Confirm", "ONAYLA",
+                new Vector2(0.5f, 0.5f), new Vector2(148f, 0f), new Vector2(140f, 54f),
+                new Color(0.24f, 0.42f, 0.22f, 0.98f), 24f);
+            Button cancel = CreateUIButton(promptGO.transform, "Btn_Cancel", "VAZGEÇ",
+                new Vector2(0.5f, 0.5f), new Vector2(262f, 0f), new Vector2(96f, 54f),
+                new Color(0.30f, 0.20f, 0.16f, 0.98f), 20f);
+
+            promptGO.SetActive(false);   // yalnız karo seçilince görünür
+
+            // Parlama efekti: token kullanılınca çerçeve ve yüzey renklenip parlar.
+            var glow = board.gameObject.AddComponent<MinimapGlowEffect>();
+            var gso  = new SerializedObject(glow);
+            SerializedProperty borderProp = gso.FindProperty("_border");
+            borderProp.arraySize = borders.Length;
+            for (int i = 0; i < borders.Length; i++)
+                borderProp.GetArrayElementAtIndex(i).objectReferenceValue = borders[i];
+            gso.FindProperty("_surface").objectReferenceValue = surfaceImg;
+            gso.FindProperty("_frame").objectReferenceValue   = frameT.GetComponent<Image>();
+            gso.ApplyModifiedProperties();
+
+            WireTravelSelector(board, rawRT, travelRT, promptGO, costLabel, confirm, cancel,
+                               glow, roadButton, roadLabel, powerButton, powerLabel);
+
+            WireMinimapView(panelGO, raw, iconRT, empty, pan, legendIcons, rows);
 
             CreateCenteredLabel(t, "MapHint",
-                "8 bölüm — her bölüm kendi haritası ve temalı elementi · bulunduğun bölüm CANLI · Kapat: Esc",
+                "Keşfettiğin arazi · önemli karolar işaretli · sis çizilmez · " +
+                "sürükle: kaydır · tekerlek/+/−: yakınlaştır · Kapat: Esc",
                 new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(1400f, 40f),
                 new Color(0.62f, 0.57f, 0.48f), 24f);
         }
 
-        /// <summary>Toplam bölüm sayısı (GAME_DESIGN.md §3). UI yerleşimi bu sayıya göre kurulur.</summary>
-        private const int ChapterCount = 8;
-
-        /// <summary>Bölüm düğümünün HARİTA gövdesindeki yeri — yılan yol: üst 1-2-3-4, alt 8-7-6-5.</summary>
-        private static Vector2 ChapterNodePos(int chapter)
+        /// <summary>Haritadan seyahat seçicisini kurar (tıkla → rota + bedel → onayla → yürü).
+        /// Sürükleme/yakınlaştırma ile AYNI nesnede durur ama birbirlerini bilmezler: biri fareyi
+        /// kaydırma, öbürü tıklama olarak okur.</summary>
+        /// <summary>Parlama şeridi: kenara yapışan ince, başlangıçta görünmez bir bant.</summary>
+        private static Image GlowStrip(Transform parent, string name, Vector2 anchorMin,
+                                       Vector2 anchorMax, Vector2 size)
         {
-            const float cx = 160f, gapX = 240f, topY = 130f, botY = -60f;
-            int   col = chapter <= 4 ? chapter - 1 : 8 - chapter;   // alt sıra sağdan sola
-            float x   = cx + (col - 1.5f) * gapX;
-            return new Vector2(x, chapter <= 4 ? topY : botY);
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.pivot     = (anchorMin + anchorMax) * 0.5f;
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = size;   // 0 olan eksen kenar boyunca GERİLİR
+
+            var img = go.GetComponent<Image>();
+            img.color         = new Color(1f, 1f, 1f, 0f);
+            img.raycastTarget = false;
+            return img;
         }
 
-        /// <summary>Bir bölüm düğümü = daire "map pin" + numara + altında durum yazısı.
-        /// Renkleri/yazıları <see cref="WorldMapView"/> canlı olarak günceller.</summary>
-        private static Image CreateChapterNode(Transform parent, int chapter, Vector2 pos, float size,
-                                               out TextMeshProUGUI stateLabel)
+        private static void WireTravelSelector(RectTransform board, RectTransform content,
+                                               RectTransform markerLayer, GameObject prompt,
+                                               TextMeshProUGUI costLabel, Button confirm, Button cancel,
+                                               MinimapGlowEffect glow,
+                                               Button roadButton,  TextMeshProUGUI roadLabel,
+                                               Button powerButton, TextMeshProUGUI powerLabel)
         {
-            Circle(parent, "NodeRing_" + chapter, new Vector2(0.5f, 0.5f), pos, size + 10f, FrameDark);
-            Image bg = Circle(parent, "Node_" + chapter, new Vector2(0.5f, 0.5f), pos, size,
-                new Color(0.83f, 0.75f, 0.58f, 1f));
-            CreateCenteredLabel(bg.transform, "Num", chapter.ToString(),
-                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size, size), Ink, 46f);
-            stateLabel = CreateCenteredLabel(parent, "State_" + chapter, "",
-                new Vector2(0.5f, 0.5f), new Vector2(pos.x, pos.y - size * 0.5f - 24f),
-                new Vector2(190f, 30f), InkSoft, 20f);
-            return bg;
+            var sel = board.gameObject.AddComponent<MinimapTravelSelector>();
+            var so  = new SerializedObject(sel);
+
+            so.FindProperty("_renderer").objectReferenceValue = FindComponentAnywhere<MinimapRenderer>();
+            so.FindProperty("_grid").objectReferenceValue     = FindComponentAnywhere<HexGridManager>();
+            so.FindProperty("_fog").objectReferenceValue      = FindComponentAnywhere<FogOfWarManager>();
+            so.FindProperty("_player").objectReferenceValue   = FindComponentAnywhere<PlayerController>();
+            so.FindProperty("_ap").objectReferenceValue       = FindComponentAnywhere<ActionPointManager>();
+            so.FindProperty("_state").objectReferenceValue    = FindComponentAnywhere<GameStateManager>();
+            so.FindProperty("_run").objectReferenceValue      = FindComponentAnywhere<ChapterRunManager>();
+            so.FindProperty("_nav").objectReferenceValue      = FindComponentAnywhere<TacticalRPG.UI.MenuNavigator>();
+
+            so.FindProperty("_content").objectReferenceValue     = content;
+            so.FindProperty("_markerLayer").objectReferenceValue = markerLayer;
+            so.FindProperty("_promptRoot").objectReferenceValue  = prompt;
+            so.FindProperty("_costLabel").objectReferenceValue   = costLabel;
+            so.FindProperty("_confirmButton").objectReferenceValue = confirm;
+            so.FindProperty("_cancelButton").objectReferenceValue  = cancel;
+
+            so.FindProperty("_buffs").objectReferenceValue       = FindComponentAnywhere<PlayerBuffs>();
+            so.FindProperty("_glow").objectReferenceValue        = glow;
+            so.FindProperty("_roadButton").objectReferenceValue  = roadButton;
+            so.FindProperty("_roadLabel").objectReferenceValue   = roadLabel;
+            so.FindProperty("_powerButton").objectReferenceValue = powerButton;
+            so.FindProperty("_powerLabel").objectReferenceValue  = powerLabel;
+            so.ApplyModifiedProperties();
+        }
+
+        /// <summary>Miniharita görüntüleyicisini kurar ve sahnedeki veri kaynaklarına bağlar.</summary>
+        private static void WireMinimapView(GameObject panelGO, RawImage raw, RectTransform iconLayer,
+                                            TextMeshProUGUI empty, MinimapPanZoom panZoom,
+                                            Image[] legendIcons,
+                                            (MinimapIconKind kind, string label)[] rows)
+        {
+            var mv  = panelGO.AddComponent<MinimapView>();
+            var mso = new SerializedObject(mv);
+
+            MinimapRenderer renderer = FindComponentAnywhere<MinimapRenderer>();
+            if (renderer == null)
+                Debug.LogWarning("[HARİTA] Sahnede MinimapRenderer yok — harita bos gorunur. " +
+                                 "Once 'TacticalRPG → Bolum - Tek Haritali Dunya Kur' calistir (ya da TAM KURULUM).");
+
+            mso.FindProperty("_renderer").objectReferenceValue = renderer;
+            mso.FindProperty("_grid").objectReferenceValue     = FindComponentAnywhere<HexGridManager>();
+            mso.FindProperty("_fog").objectReferenceValue      = FindComponentAnywhere<FogOfWarManager>();
+            mso.FindProperty("_nodes").objectReferenceValue    = FindComponentAnywhere<ChapterNodeManager>();
+            mso.FindProperty("_field").objectReferenceValue    = FindComponentAnywhere<EssenceFieldManager>();
+            mso.FindProperty("_player").objectReferenceValue   = FindComponentAnywhere<PlayerController>();
+            mso.FindProperty("_style").objectReferenceValue    = EnsureMinimapStyle();
+
+            mso.FindProperty("_image").objectReferenceValue      = raw;
+            mso.FindProperty("_iconLayer").objectReferenceValue  = iconLayer;
+            mso.FindProperty("_panZoom").objectReferenceValue    = panZoom;
+            mso.FindProperty("_emptyLabel").objectReferenceValue = empty;
+            mso.FindProperty("_maxSize").vector2Value            = new Vector2(940f, 620f);
+
+            SerializedProperty legend = mso.FindProperty("_legend");
+            legend.arraySize = legendIcons.Length;
+            for (int i = 0; i < legendIcons.Length; i++)
+            {
+                SerializedProperty e = legend.GetArrayElementAtIndex(i);
+                // DİKKAT: dizi büyütülürken Unity son elemanı KOPYALAR → her alan açıkça yazılır.
+                e.FindPropertyRelative("icon").objectReferenceValue = legendIcons[i];
+                e.FindPropertyRelative("kind").enumValueIndex       = (int)rows[i].kind;
+            }
+            mso.ApplyModifiedProperties();
         }
 
         /// <summary>SerializedObject dizisini verilen Unity nesneleriyle doldurur (boyut dahil).</summary>
@@ -245,6 +460,8 @@ namespace TacticalRPG.Editor
                 arr.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
         }
 
+        /// <summary>Parşömen pusulası (N/E/S/W). HARİTA ekranından 2026-08-17'de kaldırıldı ama
+        /// yardımcı DURUYOR — başka bir ekranda istenirse tek satırla geri gelir.</summary>
         private static void CreateCompass(Transform parent, Vector2 pos, float diam)
         {
             Circle(parent, "CompassRing", new Vector2(0.5f, 0.5f), pos, diam + 12f, FrameDark);

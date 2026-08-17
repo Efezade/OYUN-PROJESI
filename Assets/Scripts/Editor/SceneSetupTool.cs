@@ -1517,8 +1517,9 @@ namespace TacticalRPG.Editor
 
             // ── 3) OverworldEssenceHUD (sadece cüzdan + topla + roster — ÜRETİM YOK) ─
             // NOT (2026-08-05): ESKİ `EssenceNodeManager` (elle boyanmış öz küreleri) SİLİNDİ.
-            // Öz artık KARONUN KENDİSİ (TASK-005) → `_terrain` alanını SetupChapterWorld doldurur.
-            // Eski sistem prosedürel haritada anlamsız koordinatlara küre serpiyordu.
+            // 2026-08-17: öz haritaya 60-80 olarak SAÇILIYOR (EssenceFieldManager) → HUD'in
+            // `_field` alanını SetupChapterWorld doldurur. Bu faz HUD'i YENİDEN KURDUĞU için
+            // zincirde SetupChapterWorld'den ÖNCE olmak zorunda (yoksa `_field` boş kalır).
             var oldOE = gameManagerGO.GetComponent<OverworldEssenceHUD>();
             if (oldOE != null) Object.DestroyImmediate(oldOE);
             OverworldEssenceHUD oeh = gameManagerGO.AddComponent<OverworldEssenceHUD>();
@@ -1558,14 +1559,16 @@ namespace TacticalRPG.Editor
 
             if (!_silentSetup) EditorUtility.DisplayDialog("Faz D — Oz Toplama + Uretim Hazir",
                 "Kurulanlar:\n" +
-                "  • Cok-tipli oz (Ates/Su/Toprak) — cuzdan + ÖZ DEPOSU gosterimi\n" +
-                "  • EL YAPIMI oz haritasi (EssenceMap) — RASTGELE DEGIL\n" +
-                "  • Ozler artik karo yuzeyine YAKIN; her tur tek kure (ust uste binmez)\n" +
+                "  • Cok-tipli oz — cuzdan + ÖZ DEPOSU gosterimi\n" +
+                "  • Oz haritaya SACILIR (60-80 oz, seed'e bagli rastgele, yurunur karolara)\n" +
+                "  • Ozlu karo: turun renginde boyanir + konturlanir + ustunde hareketli kure doner\n" +
                 "  • Birim URETME artik YERLESTIRME ekraninda (overworld'de DEGIL)\n" +
                 "  • 'Savasa Gir' istemi yalniz goreve ~1 hex yaklasinca cikar\n\n" +
-                "Oz yerlestirmek icin:\n" +
-                "  • TacticalRPG → Essence Painter - Oz Boyama → tur sec + miktar gir → karoya tikla.\n" +
-                "  • Kendi (animasyonlu) oz prefab'ini EssenceConfig'de ilgili ture ata.\n\n" +
+                "Oz ayarlari:\n" +
+                "  • Assets/Data/Config/EssenceConfig.asset → toplam aralik, renk, kure biciminden\n" +
+                "    karo boyasi/kontur kalinligina kadar hepsi orada.\n" +
+                "  • Kendi (animasyonlu) oz modelini ilgili turun 'prefab' alanina at — uretilen\n" +
+                "    kure yerine o kullanilir.\n\n" +
                 "Play (Overworld):\n" +
                 "  • Ozlu karoya git → sag panelden 'Topla (1 AP)'.\n" +
                 "  • Savas karosuna yaklas → 'Savasa Gir' → yerlestirmede 'Uret' + BEDAVA yerlestir.",

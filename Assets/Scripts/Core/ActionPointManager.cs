@@ -80,8 +80,29 @@ namespace TacticalRPG.Core
             OnAPChanged?.Invoke(CurrentAP, MaxAP);
         }
 
+        // BEDAVA HAMLE STOKU (Güçlü Yol Taşı, 2026-08-17). Sıfırdan büyükken hareket AP harcamaz,
+        // zaman dilimi ilerlemez, gün dönmez. Sayaç hamle başına düşer → kendi kendini bitirir;
+        // "şimdi kapat" demeyi unutan bir bayrak gibi sonsuza kadar açık kalamaz.
+        private int _freeMoves;
+
+        /// <summary>Kaç hamle bedava (Güçlü Yol Taşı). Var olan stok EZİLMEZ, en büyüğü kalır.</summary>
+        public void GrantFreeMoves(int count)
+        {
+            if (count <= 0) return;
+            _freeMoves = Mathf.Max(_freeMoves, count);
+        }
+
+        /// <summary>Kalan bedava hamle (HUD/teşhis).</summary>
+        public int FreeMovesLeft => _freeMoves;
+
         private void HandlePlayerMoved(HexCoordinate newCoord)
         {
+            if (_freeMoves > 0)
+            {
+                _freeMoves--;
+                return;                       // bedava: AP de zaman da işlemez
+            }
+
             int cost = _config != null ? _config.APPerMove : 1;
             SpendAP(cost);
         }
@@ -90,7 +111,15 @@ namespace TacticalRPG.Core
         /// Savaş/yerleştirme sırasında motoru dondurur: AP harcanmaz, dilim/gün ilerlemez.
         /// Savaşın TAMAMI giriş anında ödenen sabit AP'ye sayıldığı için gerekli.
         /// </summary>
-        public void SetFrozen(bool frozen) => IsFrozen = frozen;
+        public void SetFrozen(bool frozen)
+        {
+            IsFrozen = frozen;
+
+            // Savaşa girmek overworld yürüyüşünü kesiyor (oyuncu nesnesi pasifleşiyor → yol
+            // coroutine'i yarıda kalıyor). Harcanmamış BEDAVA HAMLE stoku kalırsa savaştan sonra
+            // sessizce bedava yürüyüş verirdi — Güçlü Yol Taşı'nın bedeli buharlaşırdı.
+            if (frozen) _freeMoves = 0;
+        }
 
         /// <summary>Zaman motorunu 1. günün başına sarar — BÖLÜM yeniden başlarken (TASK-007).
         /// Tüm run'ı sıfırlamaz; yalnız o haritanın gün/dilim/AP sayacını sıfırlar.</summary>
@@ -100,6 +129,7 @@ namespace TacticalRPG.Core
             CurrentSlot = 0;
             TotalMoves  = 0;
             IsFrozen    = false;
+            _freeMoves  = 0;              // yeni bölüm → eski bedava hamle stoku taşınmaz
             CurrentAP   = MaxAP;
             OnAPChanged?.Invoke(CurrentAP, MaxAP);
             OnTimeAdvanced?.Invoke(CurrentDay, CurrentSlot, GetCurrentSlotName());
@@ -129,6 +159,34 @@ namespace TacticalRPG.Core
 
             OnAPChanged?.Invoke(CurrentAP, MaxAP);
             Debug.Log($"[Time] Gün {CurrentDay} | {GetCurrentSlotName()} | AP: {CurrentAP}/{MaxAP}");
+        }
+
+        /// <summary>Karo başına hareket maliyeti (TimeSlotConfig.APPerMove).</summary>
+        public int APPerMove => _config != null ? _config.APPerMove : 1;
+
+        /// <summary>
+        /// Verilen sayıda hamlenin KAÇ AP tutacağını ve KAÇ ZAMAN DİLİMİ devireceğini HARCAMADAN
+        /// hesaplar — harita ekranındaki "gitmek şu kadara mal olur" önizlemesi için.
+        ///
+        /// Döngü <see cref="SpendAP(int,bool)"/>'in aynısıdır (AP sıfıra inince dilim ilerler ve
+        /// AP tazelenir). Ayrı bir formülle tahmin etmek yerine gerçek kuralı taklit ediyor;
+        /// aksi halde önizleme ile gerçek harcama zamanla ayrışırdı.
+        /// </summary>
+        public void PreviewCost(int moves, out int apCost, out int slotsAdvanced)
+        {
+            int per = APPerMove;
+            moves   = Mathf.Max(0, moves);
+            apCost  = moves * per;
+            slotsAdvanced = 0;
+
+            if (MaxAP <= 0) return;
+
+            int cur = CurrentAP;
+            for (int i = 0; i < moves; i++)
+            {
+                cur -= per;
+                while (cur <= 0) { slotsAdvanced++; cur += MaxAP; }
+            }
         }
 
         public void RefillAP()

@@ -60,7 +60,7 @@ namespace TacticalRPG.Editor
 
             PopulateBookScreen(bookPanel.gameObject);                 // GERÇEK içerik
             PopulateBagScreen(bagPanel.gameObject);                   // GERÇEK içerik (potlar + Kam kartları)
-            PopulateMapScreen(mapPanel.gameObject);                   // GERÇEK içerik (8 bölümlük yol + pinler)
+            PopulateMapScreen(mapPanel.gameObject);                   // GERÇEK içerik (bölümün minihatitası + işaretler)
             PopulateSettingsScreen(setPanel.gameObject);              // GERÇEK içerik (ses/parlaklık/kalite)
 
             // ── Kalıcı çubuk (panellerden SONRA → üstte çizilir, sekmeler açık panelde de tıklanır)

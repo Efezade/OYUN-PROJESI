@@ -13,7 +13,9 @@
 param(
     [int]$Seeds = 4000,
     [int]$Want  = 30,
-    [switch]$Arena     # savas arenalarini olc (overworld seed taramasi yerine)
+    [switch]$Arena,    # savas arenalarini olc (overworld seed taramasi yerine)
+    [switch]$Oz,       # 30 seed'in oz yerlesimini olc (60-80 hedefi tutuyor mu)
+    [switch]$Minimap   # minihatita boyamasini PNG olarak yaz (gorsel dogrulama)
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,6 +48,8 @@ $rsp += "`"$repo\Assets\Scripts\Grid\TerrainGenerator.cs`""
 $rsp += "`"$repo\Assets\Scripts\Core\CombatMath.cs`""
 $rsp += "`"$repo\Assets\Scripts\Grid\CombatArenaGenerator.cs`""
 $rsp += "`"$here\ArenaReport.cs`""
+$rsp += "`"$here\EssenceReport.cs`""
+$rsp += "`"$here\MinimapPreview.cs`""
 $rsp += "`"$here\SeedSearchMain.cs`""
 $rsp | Out-File "$work\seed.rsp" -Encoding utf8
 
@@ -56,9 +60,14 @@ if ($LASTEXITCODE -ne 0) { Write-Error "C# derlemesi basarisiz"; exit 1 }
     Out-File "$work\seed.runtimeconfig.json" -Encoding utf8
 
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
-if ($Arena) { & dotnet "$work\seed.dll" arena | Out-File "$here\savas_sonuc.txt" -Encoding utf8 }
-else        { & dotnet "$work\seed.dll" $Seeds $Want | Out-File "$here\sonuc.txt" -Encoding utf8 }
+if     ($Arena)   { & dotnet "$work\seed.dll" arena | Out-File "$here\savas_sonuc.txt" -Encoding utf8 }
+elseif ($Oz)      { & dotnet "$work\seed.dll" oz    | Out-File "$here\oz_sonuc.txt"    -Encoding utf8 }
+elseif ($Minimap) { & dotnet "$work\seed.dll" minimap }
+else              { & dotnet "$work\seed.dll" $Seeds $Want | Out-File "$here\sonuc.txt" -Encoding utf8 }
 $sw.Stop()
 
-Write-Host ("Tarama bitti: {0:N1} sn - sonuc.txt yazildi" -f $sw.Elapsed.TotalSeconds) -ForegroundColor Green
-if ($Arena) { Get-Content "$here\savas_sonuc.txt" } else { Get-Content "$here\sonuc.txt" -TotalCount 60 }
+Write-Host ("Tarama bitti: {0:N1} sn" -f $sw.Elapsed.TotalSeconds) -ForegroundColor Green
+if     ($Arena)   { Get-Content "$here\savas_sonuc.txt" }
+elseif ($Oz)      { Get-Content "$here\oz_sonuc.txt" }
+elseif ($Minimap) { Copy-Item "$work\minimap_*.png" "$here\" -Force; "PNG'ler: $here" }
+else              { Get-Content "$here\sonuc.txt" -TotalCount 60 }

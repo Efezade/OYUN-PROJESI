@@ -15,20 +15,17 @@ namespace TacticalRPG.Core
     /// Havuzdan seçim rastgele ama SON OYNANANDAN FARKLI olacak şekilde yapılır (retry'de aynı
     /// haritayı tekrar vermemek için; son seed PlayerPrefs'te tutulur).
     ///
-    /// ÖZ TEK SEFERLİK: öz ayrı bir node değil, karonun kendisidir. Toplanınca karo
-    /// <see cref="TerrainGenerator.DepletedId"/> (ova) olur ve görseli yenilenir — bir daha vermez.
+    /// ÖZ ARTIK BURADA DEĞİL (2026-08-17): "her taşlık/orman karosu öz verir" kuralı kalktı,
+    /// yerine haritaya 60–80 öz SAÇAN <see cref="EssenceFieldManager"/> geldi. Bu bileşen özün
+    /// yalnız ALTYAPISINI sağlar: karo tipi sorgusu (<see cref="TerrainIdAt"/>), karo değiştirme
+    /// (<see cref="SetTile"/>) ve erişilebilirlik (<see cref="IsReachable"/>).
     /// </summary>
     [DefaultExecutionOrder(-90)]   // HexGridManager(-100) kurulduktan SONRA, tüketicilerden ÖNCE
     public class ChapterMapGenerator : MonoBehaviour
     {
         [SerializeField] private HexGridManager     _grid;
         [SerializeField] private TerrainConfigSO    _config;
-        [SerializeField] private EssenceWallet      _wallet;
-        [SerializeField] private ActionPointManager _ap;
         [SerializeField] private PlayerController   _player;
-
-        [Tooltip("Öz toplamanın AP maliyeti (GAME_DESIGN §0: 1 AP).")]
-        [SerializeField, Min(0)] private int _collectAPCost = 1;
 
         [Tooltip("Kapalıysa üretim yapılmaz — grid'e elle atanmış TileMap kullanılır (elle boyanmış " +
                  "haritayla test etmek için).")]
@@ -135,7 +132,7 @@ namespace TacticalRPG.Core
             return pick;
         }
 
-        // ── Öz (terrain'in kendisi) ──────────────────────────────────────────
+        // ── Karo sorguları (öz yerleşimi ve düğümler bunları kullanır) ──────
 
         // Dışarıdan gelen koordinatlar TAHTANIN axial'i; iç dizi (sütun, satır) indisli.
         private bool InRange(HexCoordinate c)
@@ -171,48 +168,6 @@ namespace TacticalRPG.Core
             SetTerrain(c, tileId);
             if (_runtimeMap != null) _runtimeMap.SetTileId(c, tileId);
             if (_grid != null) _grid.RegenerateCellVisual(c);   // IsWalkable de palete göre senkronlanır
-        }
-
-        /// <summary>Bu karoda toplanabilir öz var mı?</summary>
-        public bool HasEssenceAt(HexCoordinate c)
-        {
-            if (!InRange(c)) return false;
-            TileCatalog.EssenceOf(TerrainRef(c), out int amount, out _);
-            return amount > 0;
-        }
-
-        /// <summary>UI metni, örn "2 Doğa (orman)".</summary>
-        public string Describe(HexCoordinate c)
-        {
-            if (!InRange(c)) return "";
-            string id = TerrainRef(c);
-            TileCatalog.EssenceOf(id, out int amount, out EssenceKind kind);
-            if (amount <= 0) return "";
-            return $"{amount} {(kind == EssenceKind.Tas ? "Taş" : "Doğa")} ({id})";
-        }
-
-        public bool CanCollect(HexCoordinate c)
-            => HasEssenceAt(c) && (_ap == null || _ap.CurrentAP >= _collectAPCost);
-
-        /// <summary>Karonun özünü topla: AP harca, cüzdana ekle, karoyu TÜKET (ovaya çevir).</summary>
-        public bool CollectAt(HexCoordinate c)
-        {
-            if (!CanCollect(c)) return false;
-
-            TileCatalog.EssenceOf(TerrainRef(c), out int amount, out EssenceKind kind);
-            if (amount <= 0) return false;
-
-            if (_ap != null) _ap.SpendAP(_collectAPCost);
-
-            if (_wallet != null)
-                _wallet.Gain(kind == EssenceKind.Tas ? EssenceType.Tas : EssenceType.Doga, amount);
-
-            // TEK SEFERLİK: karo tükenir → ova. Hem terrain'de hem runtime TileMap'te.
-            SetTerrain(c, TerrainGenerator.DepletedId);
-            if (_runtimeMap != null) _runtimeMap.SetTileId(c, TerrainGenerator.DepletedId);
-            if (_grid != null) _grid.RegenerateCellVisual(c);
-
-            return true;
         }
 
         /// <summary>Oyuncunun başlayacağı karo: config'teki ipucundan en yakın YÜRÜNÜR karo,

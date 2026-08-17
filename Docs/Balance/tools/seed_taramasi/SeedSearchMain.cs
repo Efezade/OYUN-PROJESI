@@ -40,6 +40,12 @@ public static class SeedSearchMain
         // Ayrı bir program yerine aynı derlemede bir dal — iki .ps1 bakmak zorunda kalmayalım.
         if (args.Length > 0 && args[0] == "arena") { ArenaReport.Run(); return; }
 
+        // "oz" modu: 30 seed'in oz yerlesimini olcer (60-80 hedefi tutuyor mu).
+        if (args.Length > 0 && args[0] == "oz") { EssenceReport.Run(); return; }
+
+        // "minimap" modu: minihatita boyamasini PNG olarak yazar (Unity'siz gorsel dogrulama).
+        if (args.Length > 0 && args[0] == "minimap") { MinimapPreview.Run(); return; }
+
         int seedCount = args.Length > 0 ? int.Parse(args[0]) : 4000;
         int want      = args.Length > 1 ? int.Parse(args[1]) : 30;
         var p = TerrainParams.Default;

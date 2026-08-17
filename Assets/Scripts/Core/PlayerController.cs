@@ -118,11 +118,24 @@ namespace TacticalRPG.Core
             _lastFogSample = transform.position;
         }
 
-        public void MoveAlongPath(List<HexCell> path)
+        /// <summary>
+        /// Yolu yürür. <paramref name="speedMultiplier"/> YALNIZ BU YÜRÜYÜŞE uygulanır ve sonunda
+        /// sıfırlanır — kalıcı <see cref="SpeedMultiplier"/> (iksir/çizme) buffundan bağımsızdır.
+        ///
+        /// Neden var: haritadan seyahat (minihatita → onayla) onlarca karoluk rotayı normal hızda
+        /// yürürse oyuncu dakikalarca bekler. Hız yalnız GÖRSELDİR — AP ve zaman dilimi karo başına
+        /// <see cref="OnMoved"/> ile normal işler, yani bedel hiç değişmez (kullanıcı isteği
+        /// 2026-08-17: "ap ve maliyet sistemi düzgün işlesin ama çok daha hızlı varsın").
+        /// </summary>
+        public void MoveAlongPath(List<HexCell> path, float speedMultiplier = 1f)
         {
             if (IsMoving || path == null || path.Count < 2) return;
+            _travelMultiplier = Mathf.Max(0.1f, speedMultiplier);
             StartCoroutine(MoveCoroutine(path));
         }
+
+        // Tek bir yürüyüşe özel hız çarpanı (haritadan seyahat). Yürüyüş bitince 1'e döner.
+        private float _travelMultiplier = 1f;
 
         private IEnumerator MoveCoroutine(List<HexCell> path)
         {
@@ -145,7 +158,8 @@ namespace TacticalRPG.Core
                 while (HorizontalSqrDistance(transform.position, targetXZ) > 0.0001f)
                 {
                     Vector3 curXZ  = new Vector3(transform.position.x, 0f, transform.position.z);
-                    Vector3 nextXZ = Vector3.MoveTowards(curXZ, targetXZ, _moveSpeed * Mathf.Max(0.1f, SpeedMultiplier) * Time.deltaTime);
+                    Vector3 nextXZ = Vector3.MoveTowards(curXZ, targetXZ,
+                        _moveSpeed * Mathf.Max(0.1f, SpeedMultiplier) * _travelMultiplier * Time.deltaTime);
 
                     float k = span > 0.0001f ? 1f - Vector3.Distance(nextXZ, targetXZ) / span : 1f;
                     float y = Mathf.Lerp(fromY, toY, Mathf.Clamp01(k));
@@ -160,7 +174,8 @@ namespace TacticalRPG.Core
                 OnMoved?.Invoke(CurrentCoord);
             }
 
-            IsMoving = false;
+            IsMoving          = false;
+            _travelMultiplier = 1f;   // hızlanma TEK yürüyüşe özeldi
         }
 
         /// <summary>Görüş baloncuğunu mevcut konumda yeniden kurar (sis kilidi değişince —

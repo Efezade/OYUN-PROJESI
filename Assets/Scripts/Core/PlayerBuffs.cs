@@ -30,10 +30,69 @@ namespace TacticalRPG.Core
             public int   movesLeft;
         }
 
+        [Header("Yol taşları (harita ekranından seyahat)")]
+        [Tooltip("TEST KOLAYLIĞI (kullanıcı isteği 2026-08-17): açıkken taşlar TÜKENMEZ ve sayaç " +
+                 "'sınırsız' gösterir. Gerçek ekonomi kurulurken KAPATILACAK.")]
+        [SerializeField] private bool _unlimitedTravelTokens = true;
+        [Tooltip("Oyuna kaç YOL TAŞI ile başlanır (sınırsız kapalıyken anlamlı).")]
+        [SerializeField, Min(0)] private int _startingRoadStones = 0;
+        [Tooltip("Oyuna kaç GÜÇLÜ YOL TAŞI ile başlanır.")]
+        [SerializeField, Min(0)] private int _startingPowerStones = 0;
+
         private readonly List<TimedBuff> _timed = new();
 
         /// <summary>Şu an aktif geçici etki sayısı (HUD göstergesi için).</summary>
         public int ActiveTimedCount => _timed.Count;
+
+        // ── Yol taşları ──────────────────────────────────────────────────────
+
+        /// <summary>İki taş türü. Tek bir sayaç dizisiyle tutuluyor: davranışları aynı
+        /// (kazan / harca / say), FARKI harcandıklarında ne yaptıklarında.</summary>
+        public enum TravelStone
+        {
+            Road  = 0,   // Yol Taşı — koşarak git, AP ve zaman NORMAL işler
+            Power = 1    // Güçlü Yol Taşı — mesafeye göre birkaç tane, ama AP/zaman HARCANMAZ
+        }
+
+        private readonly int[] _stones = new int[2];
+
+        /// <summary>Taşlar tükenmiyor mu? (test ayarı)</summary>
+        public bool UnlimitedTravelTokens => _unlimitedTravelTokens;
+
+        /// <summary>Taş sayısı değişti — harita ekranındaki sayaçlar dinler.</summary>
+        public event System.Action OnTravelStonesChanged;
+
+        public int Stones(TravelStone kind) => _stones[(int)kind];
+
+        /// <summary>Bu kadar taş var mı? (sınırsız modda hep true)</summary>
+        public bool HasStones(TravelStone kind, int count = 1)
+            => _unlimitedTravelTokens || _stones[(int)kind] >= count;
+
+        public void GrantStones(TravelStone kind, int count)
+        {
+            if (count <= 0) return;
+            _stones[(int)kind] += count;
+            OnTravelStonesChanged?.Invoke();
+        }
+
+        /// <summary>Taş harcar. Sınırsız modda düşmez ama yine true döner.</summary>
+        public bool TrySpendStones(TravelStone kind, int count)
+        {
+            if (count <= 0) return true;
+            if (_unlimitedTravelTokens) return true;
+            if (_stones[(int)kind] < count) return false;
+
+            _stones[(int)kind] -= count;
+            OnTravelStonesChanged?.Invoke();
+            return true;
+        }
+
+        private void Start()
+        {
+            _stones[(int)TravelStone.Road]  = _startingRoadStones;
+            _stones[(int)TravelStone.Power] = _startingPowerStones;
+            OnTravelStonesChanged?.Invoke();
+        }
 
         private void OnEnable()
         {
@@ -72,6 +131,15 @@ namespace TacticalRPG.Core
                         _timed.Add(new TimedBuff { kind = ShopEffectKind.MoveRange, rangeDelta = item.Magnitude, movesLeft = item.DurationMoves });
                     break;
                 }
+
+                // Süreli DEĞİL: envanterde dururlar, harita ekranından seyahat ederken harcanırlar.
+                case ShopEffectKind.FastTravelToken:
+                    GrantStones(TravelStone.Road, item.Magnitude);
+                    break;
+
+                case ShopEffectKind.PowerTravelToken:
+                    GrantStones(TravelStone.Power, item.Magnitude);
+                    break;
             }
         }
 

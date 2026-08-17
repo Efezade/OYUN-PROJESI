@@ -129,19 +129,64 @@ namespace TacticalRPG.Editor
             var genSO = new SerializedObject(gen);
             genSO.FindProperty("_grid").objectReferenceValue   = grid;
             genSO.FindProperty("_config").objectReferenceValue = terrainConfig;
-            genSO.FindProperty("_wallet").objectReferenceValue = FindComponentAnywhere<EssenceWallet>();
-            genSO.FindProperty("_ap").objectReferenceValue     = FindComponentAnywhere<ActionPointManager>();
             genSO.FindProperty("_player").objectReferenceValue = player;
             genSO.ApplyModifiedProperties();
 
-            // Oz toplama artik KARONUN KENDISINDEN → HUD'i uretici ile besle + OZ DEPOSU'nda
-            // bolum 1'in gercek ozlerini (Tas + Doga) goster.
+            // ── Oz yataklari (2026-08-17): haritaya 60-80 oz SACILIR + karo boyanir/konturlanir
+            //    + ustune hareketli kure konur. Once kure prefablari uretilir, sonra config'e yazilir.
+            EssenceOrbFactory.BuildAll(force: false);
+            EnsureEssenceStyles();
+            EssenceConfigSO essenceConfig =
+                AssetDatabase.LoadAssetAtPath<EssenceConfigSO>("Assets/Data/Config/EssenceConfig.asset");
+
+            var field = host.GetComponent<EssenceFieldManager>();
+            if (field == null) field = host.AddComponent<EssenceFieldManager>();
+            var fSO = new SerializedObject(field);
+            fSO.FindProperty("_grid").objectReferenceValue   = grid;
+            fSO.FindProperty("_map").objectReferenceValue    = gen;
+            fSO.FindProperty("_config").objectReferenceValue = essenceConfig;
+            fSO.FindProperty("_wallet").objectReferenceValue = FindComponentAnywhere<EssenceWallet>();
+            fSO.FindProperty("_ap").objectReferenceValue     = FindComponentAnywhere<ActionPointManager>();
+            fSO.FindProperty("_player").objectReferenceValue = player;
+            fSO.ApplyModifiedProperties();
+
+            // Oz sokulme gosterisi (goge solan isik huzmesi) — karodan oz alininca oynar.
+            var harvestFx = host.GetComponent<EssenceHarvestEffect>();
+            if (harvestFx == null) harvestFx = host.AddComponent<EssenceHarvestEffect>();
+
+            var fieldVis = host.GetComponent<EssenceFieldVisuals>();
+            if (fieldVis == null) fieldVis = host.AddComponent<EssenceFieldVisuals>();
+            var fvSO = new SerializedObject(fieldVis);
+            fvSO.FindProperty("_harvest").objectReferenceValue = harvestFx;
+            fvSO.FindProperty("_field").objectReferenceValue    = field;
+            fvSO.FindProperty("_grid").objectReferenceValue     = grid;
+            fvSO.FindProperty("_config").objectReferenceValue   = essenceConfig;
+            fvSO.FindProperty("_fog").objectReferenceValue      = FindComponentAnywhere<FogOfWarManager>();
+            fvSO.FindProperty("_state").objectReferenceValue    = state;
+            fvSO.FindProperty("_player").objectReferenceValue   = player;
+            fvSO.FindProperty("_collapse").objectReferenceValue = host.GetComponent<MapCollapseManager>();
+            fvSO.FindProperty("_ringMaterial").objectReferenceValue  = EssenceOrbFactory.RingMaterial();
+            fvSO.FindProperty("_drainMaterial").objectReferenceValue = EssenceOrbFactory.DrainMaterial();
+            fvSO.ApplyModifiedProperties();
+
+            // ── MINIHARITA (2026-08-17): HARITA ekranindaki gercek harita. Dokuyu VERIDEN boyar
+            //    (kamera + RenderTexture DEGIL) → sis bilgisini ve karo tiplerini dogrudan kullanir.
+            var minimap = host.GetComponent<MinimapRenderer>();
+            if (minimap == null) minimap = host.AddComponent<MinimapRenderer>();
+            var mmSO = new SerializedObject(minimap);
+            mmSO.FindProperty("_grid").objectReferenceValue  = grid;
+            mmSO.FindProperty("_fog").objectReferenceValue   = FindComponentAnywhere<FogOfWarManager>();
+            mmSO.FindProperty("_state").objectReferenceValue = state;
+            mmSO.FindProperty("_style").objectReferenceValue = EnsureMinimapStyle();
+            mmSO.ApplyModifiedProperties();
+
+            // HUD'i yataklarla besle + OZ DEPOSU'nda bolum 1'in gercek ozlerini (Tas + Doga) goster.
             var essHud = FindComponentAnywhere<TacticalRPG.UI.OverworldEssenceHUD>();
             if (essHud != null)
             {
                 var hudSO = new SerializedObject(essHud);
-                var prop  = hudSO.FindProperty("_terrain");
-                if (prop != null) prop.objectReferenceValue = gen;
+                var prop  = hudSO.FindProperty("_field");
+                if (prop != null) prop.objectReferenceValue = field;
                 var shown = hudSO.FindProperty("_shownTypes");
                 if (shown != null)
                 {
@@ -151,8 +196,6 @@ namespace TacticalRPG.Editor
                 }
                 hudSO.ApplyModifiedProperties();
             }
-
-            EnsureEssenceStyles();
 
             // ── TASK-006: harita dugumleri (zorunlu gorev / zindan / encounter / market / kule / boss)
             NodeConfigSO nodeConfig = EnsureNodeConfig();
@@ -371,8 +414,11 @@ namespace TacticalRPG.Editor
             return cfg;
         }
 
-        /// <summary>EssenceConfig'e bölüm 1'in öz türlerini (Taş, Doğa) ekler — YALNIZ YOKSA.
-        /// Eski Ateş/Su/Toprak girişlerine DOKUNULMAZ (silinmez).</summary>
+        /// <summary>EssenceConfig'te BEŞ öz türünün de stili bulunsun: eksik tür EKLENİR, var olanın
+        /// adı/rengi KORUNUR (kullanıcı tweak'i silinmesin) ama küre biçimi ve prefabı BOŞSA doldurulur.
+        ///
+        /// DİKKAT — <c>arraySize++</c> SON ELEMANI KOPYALAR: yeni girişte HER alan açıkça yazılmalı,
+        /// yoksa komşu girişten biçim/prefab miras alınır (CLAUDE.md tuzak notu).</summary>
         private static void EnsureEssenceStyles()
         {
             var cfg = AssetDatabase.LoadAssetAtPath<EssenceConfigSO>("Assets/Data/Config/EssenceConfig.asset");
@@ -382,29 +428,98 @@ namespace TacticalRPG.Editor
             var arr = so.FindProperty("_types");
             if (arr == null) return;
 
-            var wanted = new (EssenceType type, string name, Color color)[]
+            var wanted = new (EssenceType type, string name, Color color, EssenceOrbShape shape)[]
             {
-                (EssenceType.Tas,  "Taş",  new Color(0.62f, 0.60f, 0.56f)),
-                (EssenceType.Doga, "Doğa", new Color(0.36f, 0.62f, 0.32f)),
+                (EssenceType.Ates,   "Ateş",  new Color(0.95f, 0.35f, 0.14f), EssenceOrbShape.Alev),
+                (EssenceType.Su,     "Su",    new Color(0.24f, 0.58f, 0.95f), EssenceOrbShape.Su),
+                (EssenceType.Toprak, "Toprak",new Color(0.70f, 0.52f, 0.28f), EssenceOrbShape.Toz),
+                (EssenceType.Tas,    "Taş",   new Color(0.66f, 0.66f, 0.62f), EssenceOrbShape.Kristal),
+                (EssenceType.Doga,   "Doğa",  new Color(0.36f, 0.78f, 0.34f), EssenceOrbShape.Yaprak),
             };
 
             foreach (var w in wanted)
             {
-                bool exists = false;
+                SerializedProperty e = null;
                 for (int i = 0; i < arr.arraySize; i++)
                     if (arr.GetArrayElementAtIndex(i).FindPropertyRelative("type").enumValueIndex == (int)w.type)
-                    { exists = true; break; }
-                if (exists) continue;
+                    { e = arr.GetArrayElementAtIndex(i); break; }
 
-                arr.arraySize++;
-                var e = arr.GetArrayElementAtIndex(arr.arraySize - 1);
-                e.FindPropertyRelative("type").enumValueIndex     = (int)w.type;
-                e.FindPropertyRelative("displayName").stringValue = w.name;
-                e.FindPropertyRelative("color").colorValue        = w.color;
-                e.FindPropertyRelative("prefab").objectReferenceValue = null;
+                if (e == null)
+                {
+                    arr.arraySize++;
+                    e = arr.GetArrayElementAtIndex(arr.arraySize - 1);
+                    e.FindPropertyRelative("type").enumValueIndex     = (int)w.type;
+                    e.FindPropertyRelative("displayName").stringValue = w.name;
+                    e.FindPropertyRelative("color").colorValue        = w.color;
+                }
+
+                // Biçim: enum'un "boş" hâli olmadığı için her seferinde kanonik değere çekilir.
+                // Prefab: yalnız BOŞSA doldurulur — kullanıcı kendi modelini atadıysa ona dokunulmaz.
+                var shapeProp = e.FindPropertyRelative("orbShape");
+                if (shapeProp != null) shapeProp.enumValueIndex = (int)w.shape;
+
+                var prefabProp = e.FindPropertyRelative("prefab");
+                if (prefabProp != null && prefabProp.objectReferenceValue == null)
+                    prefabProp.objectReferenceValue = EssenceOrbFactory.PrefabFor(w.shape);
             }
+
+            // ── ESKİ VARSAYILANDAN GEÇİŞ (2026-08-17: "kontur bold olsun") ──────────────
+            // Asset bir kez üretildikten sonra C#'taki alan varsayılanı ARTIK OKUNMAZ — asset'te
+            // yazılı eski değer kazanır. Bu yüzden yalnız DEĞER HÂLÂ ESKİ VARSAYILANSA yükseltilir;
+            // kullanıcı elle başka bir değer verdiyse dokunulmaz.
+            MigrateDefault(so, "_outlineWidth", 0.085f, 0.18f);
+            MigrateDefault(so, "_glow",         2.4f,   3.0f);
+
+            // Kararmis karo COK KOYU idi, catlaklar icinde kayboluyordu (kullanici, 2026-08-17)
+            // → kurumus toprak tonuna acildi.
+            MigrateColor(so, "_drainCapColor", new Color(0.20f, 0.18f, 0.155f),  new Color(0.42f, 0.38f, 0.32f));
+            MigrateColor(so, "_drainedColor",  new Color(0.33f, 0.32f, 0.31f),   new Color(0.50f, 0.47f, 0.43f));
+            MigrateColor(so, "_crackColor",    new Color(0.045f, 0.038f, 0.032f),new Color(0.09f, 0.075f, 0.06f));
+
             so.ApplyModifiedProperties();
             EditorUtility.SetDirty(cfg);
+        }
+
+        /// <summary>Alan hâlâ ESKİ varsayılandaysa yenisine yükseltir (kullanıcı tweak'i korunur).</summary>
+        private static void MigrateDefault(SerializedObject so, string field, float oldDefault, float newDefault)
+        {
+            SerializedProperty p = so.FindProperty(field);
+            if (p == null || p.propertyType != SerializedPropertyType.Float) return;
+            if (Mathf.Abs(p.floatValue - oldDefault) > 0.0001f) return;
+
+            p.floatValue = newDefault;
+            Debug.Log($"[Oz] EssenceConfig.{field}: {oldDefault} → {newDefault} (eski varsayilandan yukseltildi).");
+        }
+
+        /// <summary>Renk alanının float karşılığı (kullanıcı elle değiştirdiyse dokunulmaz).</summary>
+        private static void MigrateColor(SerializedObject so, string field, Color oldDefault, Color newDefault)
+        {
+            SerializedProperty p = so.FindProperty(field);
+            if (p == null || p.propertyType != SerializedPropertyType.Color) return;
+
+            Color c = p.colorValue;
+            if (Mathf.Abs(c.r - oldDefault.r) > 0.002f ||
+                Mathf.Abs(c.g - oldDefault.g) > 0.002f ||
+                Mathf.Abs(c.b - oldDefault.b) > 0.002f) return;
+
+            p.colorValue = newDefault;
+            Debug.Log($"[Oz] EssenceConfig.{field}: {oldDefault} → {newDefault} (eski varsayilandan acildi).");
+        }
+
+        /// <summary>MinimapStyle.asset'i yükler; YOKSA varsayılanlarla oluşturur (varsa DOKUNMAZ —
+        /// kullanıcının çözünürlük/renk tweak'i TAM KURULUM'da silinmesin).</summary>
+        private static MinimapStyleSO EnsureMinimapStyle()
+        {
+            const string path = "Assets/Data/Config/MinimapStyle.asset";
+            var style = AssetDatabase.LoadAssetAtPath<MinimapStyleSO>(path);
+            if (style != null) return style;
+
+            style = ScriptableObject.CreateInstance<MinimapStyleSO>();
+            AssetDatabase.CreateAsset(style, path);   // alan varsayilanlari = MinimapStyleSO'daki degerler
+            EditorUtility.SetDirty(style);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[Minimap] Stil asset'i uretildi: {path}");
+            return style;
         }
 
         /// <summary>TerrainConfig.asset'i yükler; YOKSA varsayılanlarla oluşturur (varsa DOKUNMAZ).</summary>

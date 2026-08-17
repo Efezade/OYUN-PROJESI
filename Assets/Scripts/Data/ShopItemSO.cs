@@ -10,7 +10,16 @@ namespace TacticalRPG.Data
     {
         BonusAPNow = 0, // ANINDA +N AP (tek seferlik)
         MoveSpeed  = 1, // yürüme hızı çarpanı (+magnitude%) — geçici (durationMoves) ya da kalıcı
-        MoveRange  = 2  // tek tık hareket menzili +magnitude karo — geçici ya da kalıcı
+        MoveRange  = 2, // tek tık hareket menzili +magnitude karo — geçici ya da kalıcı
+        /// <summary>+magnitude YOL TAŞI. Harita ekranından seyahat etmenin ANAHTARI: bir taş
+        /// harcanır, yol koşarak kat edilir. AP ve zaman NORMAL işler — taş yalnız bekleme süresini
+        /// kısaltır ve haritadan gitme hakkını verir.</summary>
+        FastTravelToken = 3,
+
+        /// <summary>+magnitude GÜÇLÜ YOL TAŞI. Mesafeye göre BİRDEN ÇOK harcanır (her taş haritanın
+        /// dörtte biri kadar yol) ama karşılığında yolculuk BEDAVADIR: AP düşmez, zaman dilimi
+        /// ilerlemez, gün dönmez.</summary>
+        PowerTravelToken = 4
     }
 
     /// <summary>

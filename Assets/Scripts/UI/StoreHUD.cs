@@ -20,9 +20,14 @@ namespace TacticalRPG.UI
         [Tooltip("Opsiyonel — öz adlarını göstermek için (yoksa enum adı).")]
         [SerializeField] private EssenceConfigSO    _config;
 
-        private bool   _open;
-        private string _flash;   // son işlem geri bildirimi
-        private float  _flashUntil;
+        [Tooltip("Bakiyede gösterilecek öz türleri. Bölüm 1 = Taş + Doğa (GAME_DESIGN §3). " +
+                 "Kurulum aracı doldurur; yanlış tür yazarsa oyuncu 0 bakiye görüp 'param yok' sanır.")]
+        [SerializeField] private EssenceType[] _shownTypes = { EssenceType.Tas, EssenceType.Doga };
+
+        private bool    _open;
+        private string  _flash;   // son işlem geri bildirimi
+        private float   _flashUntil;
+        private Vector2 _scroll;  // katalog kaydırma konumu
 
         private void OnGUI()
         {
@@ -53,7 +58,11 @@ namespace TacticalRPG.UI
 
         private void DrawShop()
         {
-            const float w = 460f, h = 560f;
+            const float w = 460f;
+            // SABİT YÜKSEKLİK YAZMA: sanal ekran 1080 değil (~720, HudScale.UiScale'e bağlı).
+            // Panel ekrana sığmazsa alttaki "Kapat" düğmesi ekran dışında kalırdı.
+            float h = Mathf.Min(620f, HudScale.Height - 60f);
+
             var rect = new Rect((HudScale.Width - w) * 0.5f, (HudScale.Height - h) * 0.5f, w, h);
             ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
@@ -61,6 +70,11 @@ namespace TacticalRPG.UI
             GUILayout.Label("MAGAZA — oz harcayarak al");
             DrawBalance();
             GUILayout.Space(6);
+
+            // KATALOG KAYDIRILIR (2026-08-17 hata raporu): katalog büyüdükçe son öğenin
+            // "Satın Al" düğmesi panelin altında kalıp erişilemez oluyordu. Kaydırma alanı
+            // ARTAN yüksekliği kaplar, "Kapat" düğmesi hep dışarıda ve görünür kalır.
+            _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.ExpandHeight(true));
 
             var catalog = _store.Catalog;
             if (catalog != null)
@@ -73,7 +87,8 @@ namespace TacticalRPG.UI
                 }
             }
 
-            GUILayout.FlexibleSpace();
+            GUILayout.EndScrollView();
+
             if (_flash != null && Time.unscaledTime < _flashUntil)
                 GUILayout.Label(_flash);
             if (GUILayout.Button("Kapat", GUILayout.Height(30))) _open = false;
@@ -81,13 +96,21 @@ namespace TacticalRPG.UI
             GUILayout.EndArea();
         }
 
+        /// <summary>Öz bakiyesi. Türler Inspector'dan gelir — burada Ateş/Su/Toprak SABİT yazılıydı
+        /// ve bölüm 1 Taş+Doğa kullandığı için bakiye hep "0 0 0" görünüyordu (oyuncu parası varken
+        /// yokmuş sanıyordu).</summary>
         private void DrawBalance()
         {
             if (_wallet == null) return;
-            string a = Name(EssenceType.Ates), s = Name(EssenceType.Su), t = Name(EssenceType.Toprak);
-            GUILayout.Label($"Ozler:  {_wallet.Get(EssenceType.Ates)} {a}   " +
-                            $"{_wallet.Get(EssenceType.Su)} {s}   " +
-                            $"{_wallet.Get(EssenceType.Toprak)} {t}");
+
+            EssenceType[] types = (_shownTypes != null && _shownTypes.Length > 0)
+                ? _shownTypes
+                : new[] { EssenceType.Tas, EssenceType.Doga };
+
+            var sb = new System.Text.StringBuilder("Ozler: ");
+            foreach (EssenceType t in types)
+                sb.Append($"  {_wallet.Get(t)} {Name(t)}");
+            GUILayout.Label(sb.ToString());
         }
 
         private void DrawItemRow(ShopItemSO item)
