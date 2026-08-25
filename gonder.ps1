@@ -1,4 +1,4 @@
-# =====================================================================
+﻿# =====================================================================
 #  GONDER - yaptigin her seyi karsi PC'ye gonderir
 #
 #  Kullanim:
@@ -11,6 +11,11 @@
 
 param([string]$Mesaj)
 
+# NOT (2026-08-19): git'in NORMAL bilgi mesajlari da stderr'e gider ("Everything up-to-date",
+# "Locking support detected..."). PowerShell 5.1'de `2>&1` ile basarim akisina KARISTIRILIRSA
+# her satir ErrorRecord'a sarilir ve $ErrorActionPreference='Stop' yuzunden script exit 0 olsa
+# bile OLUR. O yuzden hicbir git cagrisinda stderr yonlendirilmiyor; sonuc $LASTEXITCODE'dan
+# okunuyor. (Ayni tuzak kurulum scriptlerinde 3a19345'te giderilmisti.)
 $ErrorActionPreference = 'Stop'
 $Proje = Split-Path -Parent $MyInvocation.MyCommand.Path
 
@@ -45,11 +50,11 @@ if (-not $durum) {
 
 # --- Once karsidan gelenleri al (cakisma olmasin) -------------------
 Bilgi "Karsi taraftan gelen var mi bakiliyor..."
-& git -C $Proje fetch origin 2>&1 | Out-Null
+& git -C $Proje fetch origin --quiet
 $geride = & git -C $Proje rev-list --count "HEAD..origin/main"
 if ([int]$geride -gt 0) {
     Bilgi "$geride yeni commit var, once onlar aliniyor..."
-    & git -C $Proje pull --rebase origin main 2>&1 | Out-String | Write-Host
+    & git -C $Proje pull --rebase origin main
     if ($LASTEXITCODE -ne 0) {
         Hata "CAKISMA VAR - otomatik birlestirilemedi."
         Write-Host "  Ayni dosyaya iki taraf da dokunmus. Cozmek icin:" -ForegroundColor Yellow
@@ -62,7 +67,7 @@ if ([int]$geride -gt 0) {
 
 # --- Gitea'ya gonder (ana sunucu) ----------------------------------
 Bilgi "Gitea'ya gonderiliyor..."
-& git -C $Proje push origin main 2>&1 | Out-String | Write-Host
+& git -C $Proje push origin main
 if ($LASTEXITCODE -eq 0) { Basari "Gitea'ya gonderildi" }
 else { Hata "Gitea'ya gonderilemedi - sunucu kapali olabilir"; exit 1 }
 
@@ -70,7 +75,7 @@ else { Hata "Gitea'ya gonderilemedi - sunucu kapali olabilir"; exit 1 }
 $github = & git -C $Proje remote 2>$null | Where-Object { $_ -eq 'github' }
 if ($github) {
     Bilgi "GitHub'a yedekleniyor..."
-    & git -C $Proje push github main 2>&1 | Out-Null
+    & git -C $Proje push github main --quiet
     if ($LASTEXITCODE -eq 0) { Basari "GitHub yedegi guncel" }
     else { Uyari "GitHub yedegi basarisiz (onemli degil, Gitea'da guvende)" }
 }

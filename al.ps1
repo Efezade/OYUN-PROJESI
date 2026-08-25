@@ -1,4 +1,4 @@
-# =====================================================================
+﻿# =====================================================================
 #  AL - karsi PC'de yapilan her seyi bu bilgisayara indirir
 #
 #  Kullanim:  .\al.ps1
@@ -8,6 +8,11 @@
 #         hafizasindaki eski hali diske geri yazar ve is kaybolur.
 # =====================================================================
 
+# NOT (2026-08-19): git'in NORMAL bilgi mesajlari da stderr'e gider ("Everything up-to-date",
+# "Locking support detected..."). PowerShell 5.1'de `2>&1` ile basarim akisina KARISTIRILIRSA
+# her satir ErrorRecord'a sarilir ve $ErrorActionPreference='Stop' yuzunden script exit 0 olsa
+# bile OLUR. O yuzden hicbir git cagrisinda stderr yonlendirilmiyor; sonuc $LASTEXITCODE'dan
+# okunuyor. (Ayni tuzak kurulum scriptlerinde 3a19345'te giderilmisti.)
 $ErrorActionPreference = 'Stop'
 $Proje = Split-Path -Parent $MyInvocation.MyCommand.Path
 
@@ -37,7 +42,7 @@ if ($durum) {
 
 # --- Yeni bir sey var mi? ------------------------------------------
 Bilgi "Sunucu kontrol ediliyor..."
-& git -C $Proje fetch origin 2>&1 | Out-Null
+& git -C $Proje fetch origin --quiet
 if ($LASTEXITCODE -ne 0) {
     Hata "Sunucuya ulasilamadi. Watson PC acik mi? Tailscale bagli mi?"
     Write-Host "  Kontrol: tailscale status" -ForegroundColor Yellow
@@ -56,7 +61,7 @@ Write-Host "`n  $yeni yeni commit geliyor:" -ForegroundColor White
 # --- Indir ----------------------------------------------------------
 Write-Host ""
 Bilgi "Indiriliyor..."
-& git -C $Proje pull --rebase origin main 2>&1 | Out-String | Write-Host
+& git -C $Proje pull --rebase origin main
 
 if ($LASTEXITCODE -ne 0) {
     Hata "CAKISMA - ayni dosyaya iki taraf da dokunmus."
