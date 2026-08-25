@@ -69,17 +69,12 @@ namespace TacticalRPG.Editor
                     new[] { new EssenceAmount(EssenceType.Tas, 4), new EssenceAmount(EssenceType.Doga, 3) },
                     ShopEffectKind.MoveRange, 1, permanent: true, durationMoves: 0),
 
-                // HIZ TOKENI (2026-08-17): harita ekranindan seyahatte yolu KOSARAK kat etme hakki.
-                // Fiyat TASLAK (kullanici: "simdilik rastgele bir oz fiyati") — potlarla ayni bantta.
-                EnsureShopItem("YolTasi",       "yol_tasi",      "Yol Taşı",
-                    "Haritadan seyahat etmeni sağlar (1 kullanım). Yolu koşarak kat edersin; " +
-                    "AP ve geçen zaman AYNI kalır — yalnız bekleme kısalır.",
-                    new[] { new EssenceAmount(EssenceType.Tas, 3), new EssenceAmount(EssenceType.Doga, 2) },
-                    ShopEffectKind.FastTravelToken, 1, permanent: false, durationMoves: 0),
+                // NOT (2026-08-19): ucuz "Yol Tasi" kullanici istegiyle KALDIRILDI — haritadan
+                // seyahatin tek yolu artik Guclu Yol Tasi. Asset dosyasi (YolTasi.asset) silinmedi,
+                // yalnizca katalogtan cikarildi (asset'ler silinmez kurali).
 
                 // GUCLU YOL TASI: mesafeye gore BIRDEN COK harcanir (her tas haritanin ~1/4'u)
-                // ama yolculuk BEDAVA — AP dusmez, zaman ilerlemez. Bu yuzden fiyati yol tasinin
-                // belirgin ustunde. TASLAK sayilar.
+                // ama yolculuk BEDAVA — AP dusmez, zaman ilerlemez. TASLAK sayilar.
                 EnsureShopItem("GucluYolTasi",  "guclu_yol_tasi", "Güçlü Yol Taşı",
                     "Haritanın dörtte biri kadar yol açar; uzak hedefler birden çok taş ister. " +
                     "Karşılığında yolculuk BEDAVADIR: AP harcanmaz, zaman dilimi ilerlemez.",

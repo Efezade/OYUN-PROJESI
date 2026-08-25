@@ -11,9 +11,11 @@ namespace TacticalRPG.Data
         BonusAPNow = 0, // ANINDA +N AP (tek seferlik)
         MoveSpeed  = 1, // yürüme hızı çarpanı (+magnitude%) — geçici (durationMoves) ya da kalıcı
         MoveRange  = 2, // tek tık hareket menzili +magnitude karo — geçici ya da kalıcı
-        /// <summary>+magnitude YOL TAŞI. Harita ekranından seyahat etmenin ANAHTARI: bir taş
-        /// harcanır, yol koşarak kat edilir. AP ve zaman NORMAL işler — taş yalnız bekleme süresini
-        /// kısaltır ve haritadan gitme hakkını verir.</summary>
+        /// <summary>EMEKLİ (2026-08-19) — ucuz "Yol Taşı". Dükkân kataloğundan çıkarıldı ve
+        /// <see cref="TacticalRPG.Core.PlayerBuffs"/> artık karşılık vermiyor; haritadan seyahatin
+        /// tek yolu <see cref="PowerTravelToken"/>. ÜYE SİLİNMEZ: ShopItemSO asset'leri etkiyi
+        /// İNDEKS olarak saklıyor, silmek sonraki etkilerin numarasını kaydırıp mevcut asset'leri
+        /// bozardı.</summary>
         FastTravelToken = 3,
 
         /// <summary>+magnitude GÜÇLÜ YOL TAŞI. Mesafeye göre BİRDEN ÇOK harcanır (her taş haritanın

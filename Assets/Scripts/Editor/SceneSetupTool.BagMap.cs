@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEditor;
 using TMPro;
@@ -262,7 +262,7 @@ namespace TacticalRPG.Editor
             var legendIcons = new Image[rows.Length];
             for (int i = 0; i < rows.Length; i++)
             {
-                // Satır aralığı sıkıldı: altta İKİ yol taşı düğmesi + sayaçları duracak.
+                // Satır aralığı sıkıldı: altta güçlü yol taşı düğmesi + sayacı duracak.
                 float y = 230f - i * 52f;
                 var icoGO = new GameObject("LegendIcon_" + rows[i].kind, typeof(RectTransform), typeof(Image));
                 icoGO.transform.SetParent(legend, false);
@@ -279,20 +279,13 @@ namespace TacticalRPG.Editor
             }
 
             CreateCenteredLabel(legend, "LegendNote",
-                "Sürükle: kaydır · +/−: yakınlaştır\nSeyahat için önce bir YOL TAŞI kullan.",
-                new Vector2(0.5f, 0f), new Vector2(0f, 250f), new Vector2(280f, 60f), InkSoft, 18f);
+                "Sürükle: kaydır · +/−: yakınlaştır\nSeyahat için GÜÇLÜ YOL TAŞI kullan.\n" +
+                "Rota yalnız KEŞFETTİĞİN karolardan geçer.",
+                new Vector2(0.5f, 0f), new Vector2(0f, 236f), new Vector2(280f, 80f), InkSoft, 18f);
 
-            // ── Yol taşları: seyahatin anahtarı ───────────────────────────────
-            // YOL TAŞI  → koşarak git, AP ve zaman normal işler (1 taş / yolculuk)
-            // GÜÇLÜ TAŞ → mesafeye göre birkaç taş, ama AP ve zaman HİÇ harcanmaz
-            TextMeshProUGUI roadLabel = CreateCenteredLabel(legend, "RoadStoneCount", "Yol taşı: 0",
-                new Vector2(0.5f, 0f), new Vector2(0f, 200f), new Vector2(280f, 30f),
-                new Color(0.42f, 0.34f, 0.22f), 20f);
-
-            Button roadButton = CreateUIButton(legend, "Btn_RoadStone", "YOL TAŞI KULLAN",
-                new Vector2(0.5f, 0f), new Vector2(0f, 158f), new Vector2(252f, 44f),
-                new Color(0.26f, 0.22f, 0.34f, 0.98f), 18f);
-
+            // ── Güçlü yol taşı: seyahatin tek anahtarı ────────────────────────
+            // Mesafeye göre birkaç taş harcanır, karşılığında AP ve zaman HİÇ harcanmaz.
+            // (Ucuz "Yol Taşı" düğmesi 2026-08-19'da kullanıcı isteğiyle kaldırıldı.)
             TextMeshProUGUI powerLabel = CreateCenteredLabel(legend, "PowerStoneCount", "Güçlü yol taşı: 0",
                 new Vector2(0.5f, 0f), new Vector2(0f, 104f), new Vector2(280f, 30f),
                 new Color(0.42f, 0.34f, 0.22f), 20f);
@@ -340,8 +333,13 @@ namespace TacticalRPG.Editor
             gso.FindProperty("_frame").objectReferenceValue   = frameT.GetComponent<Image>();
             gso.ApplyModifiedProperties();
 
+            // HIZLI SEYAHAT GÖSTERİSİ: yolculuk onaylanınca harita ekranı kapanmaz, yuva sol alt
+            // köşeye küçülüp saydamlaşır (kullanıcı isteği 2026-08-19). Küçülen parça yuvanın
+            // ÇERÇEVESİDİR (frameT) — parlama şeritleri onun çocuğu, birlikte gitsinler.
+            TravelPresenter presenter = WireTravelPresenter(panelGO, frameT, board, pan);
+
             WireTravelSelector(board, rawRT, travelRT, promptGO, costLabel, confirm, cancel,
-                               glow, roadButton, roadLabel, powerButton, powerLabel);
+                               glow, powerButton, powerLabel, presenter);
 
             WireMinimapView(panelGO, raw, iconRT, empty, pan, legendIcons, rows);
 
@@ -379,8 +377,8 @@ namespace TacticalRPG.Editor
                                                RectTransform markerLayer, GameObject prompt,
                                                TextMeshProUGUI costLabel, Button confirm, Button cancel,
                                                MinimapGlowEffect glow,
-                                               Button roadButton,  TextMeshProUGUI roadLabel,
-                                               Button powerButton, TextMeshProUGUI powerLabel)
+                                               Button powerButton, TextMeshProUGUI powerLabel,
+                                               TravelPresenter presenter)
         {
             var sel = board.gameObject.AddComponent<MinimapTravelSelector>();
             var so  = new SerializedObject(sel);
@@ -403,11 +401,57 @@ namespace TacticalRPG.Editor
 
             so.FindProperty("_buffs").objectReferenceValue       = FindComponentAnywhere<PlayerBuffs>();
             so.FindProperty("_glow").objectReferenceValue        = glow;
-            so.FindProperty("_roadButton").objectReferenceValue  = roadButton;
-            so.FindProperty("_roadLabel").objectReferenceValue   = roadLabel;
             so.FindProperty("_powerButton").objectReferenceValue = powerButton;
             so.FindProperty("_powerLabel").objectReferenceValue  = powerLabel;
+            so.FindProperty("_presenter").objectReferenceValue   = presenter;
             so.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// Seyahat gösterisini kurar: yolculuk boyunca panelin çerçevesi silinir, harita yuvası
+        /// sol alt köşeye küçülüp saydamlaşır, varışta geri büyür.
+        ///
+        /// KÜÇÜLEN PARÇA <paramref name="boardFrame"/>'dir (yuvanın çerçeve nesnesi), Fill DEĞİL:
+        /// parlama şeritleri ve maskeli harita onun altında duruyor, hepsi birlikte gitmeli.
+        /// </summary>
+        private static TravelPresenter WireTravelPresenter(GameObject panelGO, Transform boardFrame,
+                                                           RectTransform boardFill, MinimapPanZoom panZoom)
+        {
+            // Saydamlık için CanvasGroup — tek tek Image alfası yazmak haritanın üstündeki
+            // işaretleri kapsamazdı.
+            // `??` KULLANILMAZ: GetComponent bulamadığında SAHTE NULL döndürebiliyor, `??` onu
+            // "dolu" sayıp AddComponent'i hiç çağırmıyor (2026-08-19'da tam olarak bu yaşandı,
+            // bileşen sahneye hiç eklenmedi). Unity'nin == aşırı yüklemesi sahte null'ı bilir.
+            CanvasGroup group = boardFrame.GetComponent<CanvasGroup>();
+            if (group == null) group = boardFrame.gameObject.AddComponent<CanvasGroup>();
+
+            var presenter = panelGO.AddComponent<TravelPresenter>();
+            var pso = new SerializedObject(presenter);
+
+            pso.FindProperty("_orb").objectReferenceValue        = EnsureTravelOrb();
+            pso.FindProperty("_panZoom").objectReferenceValue    = panZoom;
+            pso.FindProperty("_panelRoot").objectReferenceValue  = panelGO.GetComponent<RectTransform>();
+            pso.FindProperty("_backdrop").objectReferenceValue   = panelGO.GetComponent<Image>();
+            pso.FindProperty("_board").objectReferenceValue      = boardFrame as RectTransform;
+            pso.FindProperty("_boardGroup").objectReferenceValue = group;
+
+            // Yuva grafikleri: koyu çerçeve + içindeki koyu zemin. İkisi de kapanınca geriye
+            // yalnız boyanmış harita ve işaretler kalır. Panelin üst katmanlarındaki parşömen
+            // TravelPresenter'ın zincir yürüyüşüyle kendiliğinden gizleniyor, burada sayılmıyor.
+            SetImageArray(pso.FindProperty("_boardChrome"),
+                          boardFrame.GetComponent<Image>(),
+                          boardFill.GetComponent<Image>());
+
+            pso.ApplyModifiedProperties();
+            return presenter;
+        }
+
+        private static void SetImageArray(SerializedProperty prop, params Image[] images)
+        {
+            // arraySize++ SON ELEMANI KOPYALAR — her eleman açıkça yazılır.
+            prop.arraySize = images.Length;
+            for (int i = 0; i < images.Length; i++)
+                prop.GetArrayElementAtIndex(i).objectReferenceValue = images[i];
         }
 
         /// <summary>Miniharita görüntüleyicisini kurar ve sahnedeki veri kaynaklarına bağlar.</summary>

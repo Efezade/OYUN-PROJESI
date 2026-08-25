@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -114,7 +114,12 @@ namespace TacticalRPG.Core
         {
             if (_fogManager == null) return;
             if ((transform.position - _lastFogSample).sqrMagnitude < 0.00005f) return;
-            _fogManager.UpdateFogAround(transform.position, _visionRange);
+
+            if (_revealFog) _fogManager.UpdateFogAround(transform.position, _visionRange);
+
+            // ÖRNEK KONUMU SİS KAPALIYKEN DE İLERLER. Aksi halde yolculuk biter bitmez konum
+            // ile örnek arasındaki fark bu satırı hedefte bir kez ateşler ve tam da engellemek
+            // istediğimiz açılmayı yapardı. Oyuncu normal bir adım atınca sis normale döner.
             _lastFogSample = transform.position;
         }
 
@@ -127,15 +132,25 @@ namespace TacticalRPG.Core
         /// <see cref="OnMoved"/> ile normal işler, yani bedel hiç değişmez (kullanıcı isteği
         /// 2026-08-17: "ap ve maliyet sistemi düzgün işlesin ama çok daha hızlı varsın").
         /// </summary>
-        public void MoveAlongPath(List<HexCell> path, float speedMultiplier = 1f)
+        /// <param name="revealFog">
+        /// Yürürken görüş baloncuğu sisi açsın mı? HIZLI SEYAHATTE <c>false</c> verilir
+        /// (kullanıcı kararı 2026-08-19): güçlü yol taşı yalnız TAŞIR, keşif yaptırmaz.
+        /// Rota zaten yalnız keşfedilmiş karolardan geçiyor ama karakter 3 karoluk görüşünü
+        /// yanında taşıdığı için koridorun sağı-solu bedavaya açılıyordu — taş, ödenmemiş bir
+        /// keşif avantajına dönüşüyordu.
+        /// </param>
+        public void MoveAlongPath(List<HexCell> path, float speedMultiplier = 1f, bool revealFog = true)
         {
             if (IsMoving || path == null || path.Count < 2) return;
             _travelMultiplier = Mathf.Max(0.1f, speedMultiplier);
+            _revealFog        = revealFog;
             StartCoroutine(MoveCoroutine(path));
         }
 
         // Tek bir yürüyüşe özel hız çarpanı (haritadan seyahat). Yürüyüş bitince 1'e döner.
         private float _travelMultiplier = 1f;
+        // Tek bir yürüyüşe özel: sis açılsın mı. Yürüyüş bitince true'ya döner.
+        private bool  _revealFog = true;
 
         private IEnumerator MoveCoroutine(List<HexCell> path)
         {
@@ -176,6 +191,7 @@ namespace TacticalRPG.Core
 
             IsMoving          = false;
             _travelMultiplier = 1f;   // hızlanma TEK yürüyüşe özeldi
+            _revealFog        = true; // sis kapatma da TEK yürüyüşe özeldi
         }
 
         /// <summary>Görüş baloncuğunu mevcut konumda yeniden kurar (sis kilidi değişince —

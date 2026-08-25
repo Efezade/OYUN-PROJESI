@@ -44,6 +44,15 @@ namespace TacticalRPG.Core
             foreach (var r in _modelRenderers) if (r != null) r.enabled = v;
         }
 
+        /// <summary>Modeli görünürlüğe ZORLAR ve tozu toplar. Gösteri yarıda kesilebiliyor
+        /// (seyahat iptal edildi, sahne değişti) — <see cref="Dissolve"/> modeli gizleyip
+        /// bıraktığı için, kesilme karakteri görünmez bırakmasın diye bu geri dönüş şart.</summary>
+        public void ForceModelVisible()
+        {
+            SetModelVisible(true);
+            HidePool();
+        }
+
         // ── Ayrışma ──────────────────────────────────────────────────────────
         public IEnumerator Dissolve()
         {

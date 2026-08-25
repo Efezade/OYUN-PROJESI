@@ -65,6 +65,11 @@ namespace TacticalRPG.Core
 
         private Color _color = Color.white;
         private float _glow  = 2f;
+
+        // Gökkuşağı (hızlı seyahat küresi). Kapalıyken Paint tek satır fazladan koşul öder —
+        // haritadaki 60-80 öz küresi bundan etkilenmez.
+        private bool  _rainbow;
+        private float _rainbowHue, _rainbowSpread = 1f, _rainbowSat = 0.85f;
         private float _phase;      // her küreye farklı faz → yan yana duranlar senkron olmasın
         private float _baseY;
         private float _fade = 1f;  // toplanma animasyonunda 1 → 0
@@ -92,6 +97,32 @@ namespace TacticalRPG.Core
             _baseY = transform.localPosition.y;
             Paint(1f);
         }
+
+        /// <summary>
+        /// GÖKKUŞAĞI MODU — her parça tonun FARKLI bir noktasını alır, ton da sürekli döner.
+        /// Tek renkli bir küre yalnızca "renk değiştiriyor" görünür; asıl RENGARENK hissi
+        /// parçaların AYNI ANDA farklı tonlarda olmasından gelir (harita ekranındaki
+        /// <c>MinimapGlowEffect</c> çerçeve şeritlerinde de aynı numara kullanılıyor).
+        /// Her kare çağrılabilir — yalnız alan yazar, <see cref="Update"/> zaten boyuyor.
+        /// </summary>
+        /// <param name="hue">Yelpazenin başlangıç tonu (0..1, döner).</param>
+        /// <param name="spread">Yelpazenin genişliği — 1 = parçalar tüm gökkuşağına yayılır.</param>
+        public void SetRainbow(float hue, float spread, float saturation, float glow)
+        {
+            _rainbow       = true;
+            _rainbowHue    = hue;
+            _rainbowSpread = spread;
+            _rainbowSat    = Mathf.Clamp01(saturation);
+            _glow          = Mathf.Max(0f, glow);
+        }
+
+        /// <summary>Gökkuşağını kapatır — küre <see cref="Apply"/> ile verilen tek renge döner.</summary>
+        public void ClearRainbow() => _rainbow = false;
+
+        /// <summary>Süzülmenin merkezini ŞU ANKİ yerel konumdan yeniden alır. Küre bir yere
+        /// YERLEŞTİRİLDİKTEN SONRA çağrılmalı: Instantiate sırasında Awake koşarken küre henüz
+        /// (0,0,0)'da olur, o değer kalırsa Update ilk karede küreyi oraya geri çeker.</summary>
+        public void RecenterFloat() => _baseY = transform.localPosition.y;
 
         /// <summary>
         /// TOPLANDI — "karonun ruhu çekiliyor". Küre hüzmeyle birlikte yukarı fırlar, küçülür ve
@@ -231,14 +262,15 @@ namespace TacticalRPG.Core
         {
             if (_renderers.Length == 0 || _mpb == null) return;
 
-            Color body = _color;
-            body.a = _color.a * _fade;
-            Color emis = _color * (_glow * pulse * _fade);
-
             for (int i = 0; i < _renderers.Length; i++)
             {
                 Renderer r = _renderers[i];
                 if (r == null) continue;
+
+                Color source = _rainbow ? RainbowColor(i) : _color;
+                Color body   = source;
+                body.a       = source.a * _fade;
+                Color emis   = source * (_glow * pulse * _fade);
 
                 // Kor daha parlak, kabuk daha sönük — derinlik hissi.
                 float k = (_core != null && r.transform == _core) ? 1.45f
@@ -250,6 +282,15 @@ namespace TacticalRPG.Core
                 _mpb.SetColor(EmissionId,  emis * k);
                 r.SetPropertyBlock(_mpb);
             }
+        }
+
+        /// <summary>Parçanın gökkuşağındaki tonu — indisine göre yelpazeye dağıtılır.</summary>
+        private Color RainbowColor(int index)
+        {
+            float step = _rainbowSpread / Mathf.Max(1, _renderers.Length);
+            Color c = Color.HSVToRGB(Mathf.Repeat(_rainbowHue + index * step, 1f), _rainbowSat, 1f);
+            c.a = _color.a;
+            return c;
         }
     }
 }

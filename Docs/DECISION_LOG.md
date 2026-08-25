@@ -16,6 +16,51 @@
 
 ---
 
+## 2026-08-19 — Hızlı seyahat elden geçirildi: sis kaçağı kapatıldı, tek taş kaldı, gösteri eklendi
+
+**KARAR 1 — Yol taşıyla giden karakter SİS AÇMAZ.**
+İki katman: (a) rota yalnız KEŞFEDİLMİŞ karolardan geçer, (b) yolculuk boyunca görüş baloncuğu
+tamamen kapalıdır, varışta da tazeleme yoktur.
+**NEDEN:** Eskiden yalnız HEDEF karonun keşfedilmiş olması aranıyordu; A* kestirmeyi sisin içinden
+buluyordu. (a) eklendikten sonra bile açılma sürdü, çünkü karakter 3 karoluk görüşünü yanında
+taşıyor — koridor keşfedilmiş olsa da sağı-solu bedavaya açılıyordu. Taş, ödenmemiş bir keşif
+avantajına dönüşüyordu. Kullanıcının alternatifi ("yalnız daha önce YÜRÜNEN karolardan geç") sisi
+tesadüfen açmazdı ama kalıcı ayak-izi verisi ister ve "görüp gitmediğin yere taşla gidilemez"
+kısıtı getirirdi; kural doğrudan uygulanınca ikisi de gerekmedi.
+**DERS:** `_lastFogSample` sis kapalıyken de ilerletilmeli. Aksi halde yolculuk biter bitmez
+`PlayerController.Update` hedefte bir kez ateşlenir; açılma engellenmez, sadece varış noktasına
+toplanır.
+
+**KARAR 2 — Ucuz "Yol Taşı" kaldırıldı, tek tür kaldı (Güçlü Yol Taşı).**
+**NEDEN:** İkisi de aynı işi yapıyordu, iki düğmeli seçim yalnız kafa karıştırıyordu (kullanıcı).
+`ShopEffectKind.FastTravelToken` enum üyesi DURUYOR — ShopItemSO asset'leri etkiyi İNDEKS olarak
+saklıyor, üyeyi silmek sonraki etkilerin numarasını kaydırırdı. `YolTasi.asset` de silinmedi,
+yalnız katalogdan çıkarıldı.
+
+**KARAR 3 — Yolculuk bir GÖSTERİ: harita köşeye yerleşir → karakter toza dönüşür → yol kat edilir.**
+Sırayı `TravelOrbVisual` (Player üstünde) yürütür, harita ekranı yalnız iki olayı dinler ve
+küçülme oturunca "hazırım" der.
+**NEDEN:** Sıra harita ekranında koşsaydı, oyuncu yol alırken ekranı kapattığında coroutine ölür,
+karakter toz hâlinde asılı kalırdı. Karakter hep sahnede.
+Görsellerin ikisi de projede vardı: toza ayrışma = `TeleportDustEffect` (silinen portal
+sisteminden kalmış, hiçbir yerden çağrılmıyordu), küre = `Oz_Toz.prefab`.
+Harita ekranı KAPANMAZ, küçülür — kapansaydı `MinimapView` devre dışı kalır, canlı oyuncu noktası
+ve sis tazelemesi tam da yolculuk sırasında dururdu.
+
+**KARAR 4 — Minihatita canlı.** Oyuncu imleci her kare, arazi ise yalnız sis değişince
+(`FogOfWarManager.ExplorationVersion`) ve en fazla 0.25 sn'de bir tazelenir. Yakınlaştırılmışken
+harita karakteri ÖLÜ BÖLGE kuralıyla takip eder (ortadayken kaymaz, kenara yaklaşınca kayar,
+sürüklerken susar).
+**NEDEN:** İşaretler yalnız panel açılırken kuruluyordu → nokta donuyordu. Arazi her kare yeniden
+boyanmak istenmez (550 karo taranıyor), sis sayacı "değişti mi?" sorusunu tek int'e indiriyor.
+
+**COMMIT:** `<bu commit>`
+
+**DERS (tuzak):** `GetComponent<T>() ?? AddComponent<T>()` GÜVENİLMEZ — GetComponent bulamadığında
+sahte null döndürebiliyor, `??` onu "dolu" sayıp AddComponent'i hiç çağırmıyor. CanvasGroup sahneye
+bu yüzden HİÇ eklenmemişti (sahne YAML'ında `_boardGroup: {fileID: 0}` ile yakalandı). Unity'nin
+`== null` aşırı yüklemesi sahte null'ı bilir; açık kontrol kullan.
+
 ## 2026-08-13 — Kam'ın büyüleri (5 aktif yetenek) + animasyon "zıplama" hatası
 
 **KARAR 1 — Davul draftına GARANTİ büyü.** Draft 3 karo + **1 büyü** = 4 kart oldu. Büyü kendi
@@ -907,6 +952,9 @@ Tarihsel gerekçeleri arşivde; burada sadece **hâlâ geçerli olan** hüküm v
   kurulum bekliyor.
 - **IMGUI ↔ uGUI çakışması:** menü açıkken IMGUI HUD'lar uGUI'nin üstüne çizer → `MenuState` statik
   bayrağıyla gizlenir; tık sızmasını `EventSystem.IsPointerOverGameObject` + `ImguiBlocker` engeller.
+- **`GetComponent<T>() ?? AddComponent<T>()` KULLANMA.** GetComponent bulamadığında sahte null
+  dönebiliyor; `??` onu "dolu" sayıp AddComponent'i atlıyor ve bileşen sahneye HİÇ eklenmiyor
+  (2026-08-19: CanvasGroup). Unity'nin `== null` aşırı yüklemesi sahte null'ı bilir — açık kontrol yaz.
 
 **Süreç / git**
 - Unity, `.controller` / TMP fallback / `.mat` dosyalarını kendiliğinden sık sık yeniden serileştirir →

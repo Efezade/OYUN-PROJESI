@@ -357,9 +357,10 @@ namespace TacticalRPG.Editor
                 camFollow.SnapToTarget();   // editorde de dogru cerceveyle gorunsun
             }
 
-            // Portal ışınlanma toz efekti (Endgame "toz olma") — modeli çocuklarından bulur.
-            if (playerGO.GetComponent<TeleportDustEffect>() == null)
-                playerGO.AddComponent<TeleportDustEffect>();
+            // HIZLI SEYAHAT KÜRESİ: güçlü yol taşı kullanılınca karakter toza ayrılıp rengarenk
+            // bir küreye dönüşür, yolu öyle kat eder (kullanıcı isteği 2026-08-19). Toza ayrışma
+            // efektini de o kurar — portal sisteminden kalan TeleportDustEffect yeniden kullanımda.
+            EnsureTravelOrb();
 
             // ── GameManager (MapInputHandler + ActionPointManager + MapCollapseManager) ──
             GameObject sceneRoot    = GameObject.Find(SceneRootName);
@@ -1758,6 +1759,51 @@ namespace TacticalRPG.Editor
         /// ekler, verilen euler ile döndürür, hedef boya auto-scale eder, ayağı parent orijinine oturtur.
         /// Edit-time çalışır → sahneye saklanır, editörde de görünür (Play gerekmez).
         /// </summary>
+        /// <summary>
+        /// HIZLI SEYAHAT KÜRESİNİ kurar (idempotent). Faz 1 oyuncuyu kurarken çağırır; harita
+        /// ekranı kurulumu da çağırır, çünkü o menü Faz 1 olmadan tek başına çalıştırılabiliyor —
+        /// bileşen orada da yoksa harita ekranı bağlanacak bir küre bulamazdı.
+        /// </summary>
+        private static TravelOrbVisual EnsureTravelOrb()
+        {
+            PlayerController player = FindComponentAnywhere<PlayerController>();
+            if (player == null) return null;
+
+            // `??` KULLANILMAZ — bkz WireTravelPresenter'daki not: GetComponent sahte null
+            // döndürdüğünde `??` AddComponent'i atlar.
+            GameObject playerGO = player.gameObject;
+            TravelOrbVisual orb = playerGO.GetComponent<TravelOrbVisual>();
+            if (orb == null) orb = playerGO.AddComponent<TravelOrbVisual>();
+
+            // Küre, öz kürelerinin TOZ biçimidir. Faz 1 küreleri üreten adımdan (SetupChapterWorld)
+            // ÖNCE koşuyor; prefab henüz yoksa burada üretilir — idempotent, var olanı ezmez.
+            GameObject orbPrefab = EssenceOrbFactory.PrefabFor(EssenceOrbShape.Toz);
+            if (orbPrefab == null)
+            {
+                EssenceOrbFactory.BuildAll(force: false);
+                orbPrefab = EssenceOrbFactory.PrefabFor(EssenceOrbShape.Toz);
+            }
+
+            // Toz gösterisi, kürenin toplanmasıyla AYNI tempoda olmalı: varsayılan 1 sn'lik
+            // ışınlanma temposu yeni akışta çok çabuk bitiyor ("yavaş yavaş dönüşsün").
+            TeleportDustEffect dust = playerGO.GetComponent<TeleportDustEffect>();
+            if (dust == null) dust = playerGO.AddComponent<TeleportDustEffect>();
+            var dustSO = new SerializedObject(dust);
+            dustSO.FindProperty("_duration").floatValue = 1.6f;
+            dustSO.FindProperty("_settle").floatValue   = 0.55f;
+            dustSO.ApplyModifiedProperties();
+
+            var so = new SerializedObject(orb);
+            so.FindProperty("_player").objectReferenceValue    = player;
+            so.FindProperty("_dust").objectReferenceValue      = dust;
+            so.FindProperty("_orbPrefab").objectReferenceValue = orbPrefab;
+            so.FindProperty("_characterModel").objectReferenceValue =
+                playerGO.transform.Find("Model");   // yoksa null — bileşen yedek yola düşer
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(orb);
+            return orb;
+        }
+
         private static void BakeCharacterModel(GameObject parent, GameObject fbx, Vector3 euler)
         {
             var mr = parent.GetComponent<MeshRenderer>(); if (mr != null) Object.DestroyImmediate(mr);

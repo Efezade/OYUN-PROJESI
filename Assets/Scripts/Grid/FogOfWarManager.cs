@@ -111,6 +111,7 @@ namespace TacticalRPG.Grid
         {
             if (_gridManager.Cells == null) return;
             _fading.Clear();
+            BumpExploration();
 
             // Sis kapalıysa (savaş haritası) hiç bulut ÜRETİLMEZ. Eskiden burada bulutlar kurulur,
             // hemen ardından RevealAll ile söndürülürdü → savaşın ilk yarım saniyesi sisli açılıyordu.
@@ -209,6 +210,7 @@ namespace TacticalRPG.Grid
                 SetCellBrightness(cell, _visibleBrightness);
                 MarkFade(cell);
             }
+            BumpExploration();
         }
 
         /// <summary>
@@ -248,7 +250,8 @@ namespace TacticalRPG.Grid
                 // KEŞİF KALICI: oyuncunun bir kez GÖRDÜĞÜ karo bir daha sislenmez — arkasında iz
                 // kapanmaz (kullanıcı isteği 2026-07-28). GAME_DESIGN §3 zaten bunu varsayıyordu:
                 // "sis zaten hiç geri kapanmıyor, kule sadece erken açma".
-                if (_permanentExploration && a <= 0.001f) _permanentReveals.Add(cell.Coordinate);
+                if (_permanentExploration && a <= 0.001f && _permanentReveals.Add(cell.Coordinate))
+                    _explorationVersion++;   // yeni karo açıldı → miniharita kendini tazelesin
 
                 // Kalıcı açılmış alan (keşif izi + gözetleme kulesi): sis bir daha kapanmaz.
                 if (_permanentReveals.Count > 0 && _permanentReveals.Contains(cell.Coordinate)) a = 0f;
@@ -273,6 +276,7 @@ namespace TacticalRPG.Grid
         public void SetFullReveal(bool revealed)
         {
             _fullyRevealed = revealed;
+            BumpExploration();
 
             // GECE ise "hepsini aç" YOK — karanlıkta kule bile uzağı göstermez; bunun yerine
             // gece tavanıyla (_nightRevealRadius) yeniden uygula.
@@ -289,6 +293,7 @@ namespace TacticalRPG.Grid
         {
             if (_nightMode == night) return;
             _nightMode = night;
+            BumpExploration();
 
             // Gece bitti + kule açık → adanın tam görüşü geri gelir.
             if (!night && _fullyRevealed) RevealAll();
@@ -324,10 +329,23 @@ namespace TacticalRPG.Grid
             foreach (var cell in _gridManager.Cells.Values)
                 if (center.DistanceTo(cell.Coordinate) <= radius)
                     _permanentReveals.Add(cell.Coordinate);
+            BumpExploration();
             RefreshFromLastPosition();
         }
 
         public bool IsPermanentlyRevealed(HexCoordinate coord) => _permanentReveals.Contains(coord);
+
+        /// <summary>
+        /// KEŞİF SAYACI — harita bilgisi her değiştiğinde (yeni karo açıldı, kule açtı, gece/gündüz
+        /// döndü, sis sıfırlandı) artar. Veriden çizen görüntüleyiciler "değişti mi?" sorusunu
+        /// bununla TEK int karşılaştırmasıyla sorar; alternatif her karede 550 karonun sis durumunu
+        /// taramaktı ki miniharita açıkken bedeli boşuna ödenirdi (bkz <c>MinimapView</c>).
+        /// </summary>
+        public int ExplorationVersion => _explorationVersion;
+        private int _explorationVersion;
+
+        /// <summary>Sis kuralı topluca değişti (kule/gece/sıfırlama) — dinleyenler yeniden çizsin.</summary>
+        private void BumpExploration() => _explorationVersion++;
 
         /// <summary>Yeni harita üretilince kalıcı açıklıklar sıfırlanır.</summary>
         public void ClearPermanentReveals() => _permanentReveals.Clear();

@@ -22,9 +22,18 @@ namespace TacticalRPG.Grid
         /// start'tan end'e en kısa yürünebilir yolu döner.
         /// Yol yoksa null döner.
         /// </summary>
-        public List<HexCell> FindPath(HexCell start, HexCell end, HexGridManager grid)
+        /// <param name="passable">
+        /// İSTEĞE BAĞLI EK KOŞUL. Verilirse yol yalnız bu koşulu SAĞLAYAN karolardan geçer
+        /// (yürünebilirlik zaten ayrıca aranır). Haritadan seyahat bunu "yalnız KEŞFEDİLMİŞ
+        /// karo" için kullanır: en kısa yol sanılan rota sisin içinden geçerse oyuncu keşfetmediği
+        /// araziden geçmiş olur ve sis mekaniği anlamını yitirir (kullanıcı kararı 2026-08-19).
+        /// Başlangıç karosu koşuldan MUAFTIR — oyuncu nerede duruyorsa oradan yola çıkar.
+        /// </param>
+        public List<HexCell> FindPath(HexCell start, HexCell end, HexGridManager grid,
+                                      System.Predicate<HexCell> passable = null)
         {
             if (start == null || end == null || !end.IsWalkable) return null;
+            if (passable != null && !passable(end)) return null;
 
             var open   = new List<Node>();
             var closed = new HashSet<HexCoordinate>();
@@ -46,6 +55,7 @@ namespace TacticalRPG.Grid
                 foreach (HexCell neighbor in grid.GetNeighbors(current.Cell.Coordinate))
                 {
                     if (!neighbor.IsWalkable)                      continue;
+                    if (passable != null && !passable(neighbor))   continue;
                     if (closed.Contains(neighbor.Coordinate))      continue;
 
                     int tentativeG = current.G + 1;

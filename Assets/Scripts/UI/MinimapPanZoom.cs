@@ -18,7 +18,8 @@ namespace TacticalRPG.UI
     /// sürükleme buraya baloncuklanır. Taşma <see cref="RectMask2D"/> ile kırpılır.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
-    public class MinimapPanZoom : MonoBehaviour, IBeginDragHandler, IDragHandler, IScrollHandler
+    public class MinimapPanZoom : MonoBehaviour,
+        IBeginDragHandler, IDragHandler, IEndDragHandler, IScrollHandler
     {
         [Header("Bağımlılıklar")]
         [Tooltip("Maskeli görüş alanı (genellikle bu nesnenin kendi RectTransform'u).")]
@@ -37,12 +38,22 @@ namespace TacticalRPG.UI
         [Tooltip("Bir kademede kaç kat yakınlaşılır (düğme ve tekerlek).")]
         [SerializeField, Min(1.05f)] private float _zoomStep = 1.35f;
 
+        [Header("Oyuncuyu takip (yakınlaştırılmışken)")]
+        [Tooltip("Karakter YÜRÜRKEN harita onu görüş alanında tutsun mu?")]
+        [SerializeField] private bool _followPlayer = true;
+        [Tooltip("ÖLÜ BÖLGE payı: nokta görüş alanının kenarından bu orana kadar yaklaşınca " +
+                 "harita kaymaya başlar. 0.22 = ortadaki %56'lık alanda hiç kaydırma yok.")]
+        [SerializeField, Range(0.05f, 0.45f)] private float _followMargin = 0.22f;
+        [Tooltip("Takibin yumuşaklığı — büyük değer daha çabuk yetişir.")]
+        [SerializeField, Min(1f)] private float _followSpeed = 8f;
+
         private Vector2 _baseSize;         // zoom 1'deki boyut (oranı korunmuş, viewport'a sığar)
         private float   _zoom = 1f;
         private Vector2 _pan;
 
         private Vector2 _dragStartLocal;   // sürüklemenin başladığı yerel nokta
         private Vector2 _panAtDragStart;
+        private bool    _dragging;         // sürüklerken takip susar — el ile çekişmesin
 
         private void Reset() => _viewport = GetComponent<RectTransform>();
 
@@ -96,6 +107,7 @@ namespace TacticalRPG.UI
 
         public void OnBeginDrag(PointerEventData e)
         {
+            _dragging       = true;
             _panAtDragStart = _pan;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 _viewport, e.position, e.pressEventCamera, out _dragStartLocal);
@@ -112,11 +124,64 @@ namespace TacticalRPG.UI
             Apply();
         }
 
+        public void OnEndDrag(PointerEventData e) => _dragging = false;
+
         public void OnScroll(PointerEventData e)
         {
             if (Mathf.Abs(e.scrollDelta.y) < 0.01f) return;
             ZoomBy(e.scrollDelta.y > 0f ? _zoomStep : 1f / _zoomStep);
         }
+
+        // ── Oyuncuyu görüş alanında tutma ────────────────────────────────────
+
+        /// <summary>
+        /// YAKINLAŞTIRILMIŞKEN KARAKTERİ TAKİP ET — nokta görüş alanının kenarına yaklaşınca harita
+        /// kendiliğinden kayar (kullanıcı isteği 2026-08-19). <paramref name="uv"/> oyuncunun
+        /// harita dokusundaki normalize konumudur.
+        ///
+        /// ÖLÜ BÖLGE (dead zone) kuralı: nokta ortadaki bölgedeyken HİÇ kaydırma yapılmaz. Sürekli
+        /// ortalasaydık harita karakterin her adımında sallanır, oyuncu haritayı okuyamazdı —
+        /// bu, kamera takibinde standart çözümdür. Nokta kenar bandına girince yalnız GİRDİĞİ KADAR
+        /// geri itilir, yani takip haritayı en az rahatsız edecek şekilde çalışır.
+        ///
+        /// İki güvenlik: (1) sürükleme sırasında susar, oyuncunun eliyle çekişmez; (2) yalnız
+        /// karakter HAREKET EDERKEN çağrılır (<see cref="MinimapView"/>) — duran karakterde
+        /// takip çalışsaydı, haritanın başka bir köşesini incelemek için yapılan her sürükleme
+        /// bırakılır bırakılmaz geri çekilirdi.
+        ///
+        /// Zoom 1'de kendiliğinden etkisiz: harita görüş alanına sığdığı için <see cref="Apply"/>
+        /// kaydırmayı zaten sıfıra kırpar.
+        /// </summary>
+        public void KeepVisible(Vector2 uv)
+        {
+            if (!_followPlayer || _dragging) return;
+            if (_content == null || _viewport == null) return;
+            if (_baseSize.x <= 0.01f || _baseSize.y <= 0.01f) return;
+
+            Rect    view  = _viewport.rect;
+            Vector2 size  = _content.sizeDelta;
+            Vector2 limit = new(view.width  * 0.5f * (1f - 2f * _followMargin),
+                                view.height * 0.5f * (1f - 2f * _followMargin));
+
+            // Noktanın GÖRÜŞ ALANI MERKEZİNE göre konumu: içerik merkezi _pan'da, nokta da
+            // içeriğin merkezinden (uv - 0.5) kadar uzakta.
+            Vector2 point = _pan + new Vector2((uv.x - 0.5f) * size.x, (uv.y - 0.5f) * size.y);
+
+            Vector2 target = new(_pan.x - Overflow(point.x, limit.x),
+                                 _pan.y - Overflow(point.y, limit.y));
+            if (target == _pan) return;                 // ölü bölgenin içinde — kaydırma yok
+
+            // Kare hızından bağımsız yumuşak yaklaşım. Menü açıkken oyun durdurulabildiği için
+            // unscaledDeltaTime.
+            _pan = Vector2.Lerp(_pan, target, 1f - Mathf.Exp(-_followSpeed * Time.unscaledDeltaTime));
+            Apply();
+        }
+
+        /// <summary>Değerin ±limit bandından NE KADAR taştığı (bandın içindeyse 0).</summary>
+        private static float Overflow(float value, float limit)
+            => value >  limit ? value - limit
+             : value < -limit ? value + limit
+             : 0f;
 
         // ── Uygulama ─────────────────────────────────────────────────────────
 

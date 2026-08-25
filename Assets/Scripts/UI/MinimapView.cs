@@ -47,6 +47,9 @@ namespace TacticalRPG.UI
         [SerializeField] private TextMeshProUGUI _emptyLabel;
         [Tooltip("Öz işaretleri düğüm işaretlerinden daha küçük çizilir — önem sırası okunsun.")]
         [SerializeField, Range(0.3f, 1f)] private float _essenceIconScale = 0.62f;
+        [Tooltip("ARAZİ/işaret tazeleme aralığı (sn). Oyuncu noktası bundan bağımsız, HER KARE " +
+                 "güncellenir; bu sınır yalnız dokuyu yeniden boyamak içindir.")]
+        [SerializeField, Min(0.05f)] private float _terrainRefreshInterval = 0.25f;
 
         [Header("Açıklama şeridi (legend)")]
         [SerializeField] private LegendRow[] _legend;
@@ -59,6 +62,13 @@ namespace TacticalRPG.UI
         }
 
         private readonly List<GameObject> _icons = new();
+
+        // Oyuncu imleci ayrı tutulur: diğer işaretler seyrek yeniden kurulurken bu HER KARE
+        // taşınır (aşağıdaki LateUpdate).
+        private RectTransform _playerIcon;
+        private Vector3       _playerIconWorld;
+        private int           _fogVersion;
+        private float         _nextTerrainRefresh;
 
         private void OnEnable()
         {
@@ -80,6 +90,61 @@ namespace TacticalRPG.UI
             if (_renderer != null) _renderer.Rebuild();
             BindTexture();
             RebuildIcons();
+
+            _fogVersion         = _fog != null ? _fog.ExplorationVersion : 0;
+            _nextTerrainRefresh = 0f;
+        }
+
+        /// <summary>
+        /// CANLI TAKİP (2026-08-19). Panel AÇIKKEN oyuncunun imleci her kare gerçek konumuna
+        /// taşınır. Eskiden işaretler yalnız panel açılırken kurulduğu için, yol taşıyla giderken
+        /// nokta panelin açıldığı andaki karoda DONUYORDU — ancak haritayı kapatıp açınca yerine
+        /// geliyordu (kullanıcı şikâyeti).
+        ///
+        /// Neden iki ayrı hız: imleç TEK bir RectTransform, her kare taşımak bedavaya yakın.
+        /// Arazi ise tam yeniden boyamadır (550 karo taranır, doku baştan yazılır) — o yüzden
+        /// yalnız SİS YENİ KARO AÇTIĞINDA ve en fazla <see cref="_terrainRefreshInterval"/>
+        /// sıklığında yapılır. Hızlandırılmış seyahatte sis neredeyse her kare değişiyor;
+        /// kısıt olmasa harita her karede yeniden boyanırdı (CLAUDE.md §6: her kare çalışan iş yok).
+        /// </summary>
+        private void LateUpdate()
+        {
+            TrackPlayer();
+            RefreshOnExploration();
+        }
+
+        private void TrackPlayer()
+        {
+            if (_playerIcon == null || _player == null || _renderer == null) return;
+
+            Vector3 world = _player.transform.position;
+            // Duran karakter için hiçbir şey yazma: anchor yazmak o RectTransform'un düzenini
+            // kirletir ve Canvas'ı yeniden kurdurur.
+            if ((world - _playerIconWorld).sqrMagnitude < 0.0001f) return;
+            if (!_renderer.TryGetUV(world, out Vector2 uv)) return;
+
+            _playerIconWorld = world;
+            PlaceAtUV(_playerIcon, uv);
+
+            // Yakınlaştırılmışken harita karakteri görüş alanında tutsun. YALNIZ BURADA çağrılır —
+            // yani karakter gerçekten kımıldadığında; duran karakterde takip oyuncunun elle
+            // yaptığı kaydırmayla çekişirdi.
+            if (_panZoom != null) _panZoom.KeepVisible(uv);
+        }
+
+        private void RefreshOnExploration()
+        {
+            if (_fog == null || _renderer == null || _renderer.Texture == null) return;
+
+            int version = _fog.ExplorationVersion;
+            if (version == _fogVersion) return;
+            if (Time.unscaledTime < _nextTerrainRefresh) return;
+
+            _fogVersion         = version;
+            _nextTerrainRefresh = Time.unscaledTime + _terrainRefreshInterval;
+
+            _renderer.Rebuild();
+            RebuildIcons();       // yeni açılan karodaki öz/düğüm işaretleri de belirsin
         }
 
         // ── Doku ─────────────────────────────────────────────────────────────
@@ -124,6 +189,7 @@ namespace TacticalRPG.UI
         {
             foreach (GameObject go in _icons) if (go != null) Destroy(go);
             _icons.Clear();
+            _playerIcon = null;
         }
 
         private void RebuildIcons()
@@ -189,13 +255,18 @@ namespace TacticalRPG.UI
         }
 
         // Oyuncu EN SON eklenir → her şeyin üstünde kalır. Konumu karo değil DÜNYA konumundan
-        // alınır: karolar arası yürürken de doğru yerde durur.
+        // alınır: karolar arası yürürken de doğru yerde durur. İmlecin tutamağı saklanır —
+        // <see cref="TrackPlayer"/> onu her kare taşır.
         private void AddPlayerIcon()
         {
             if (_player == null || _renderer == null) return;
-            if (!_renderer.TryGetUV(_player.transform.position, out Vector2 uv)) return;
 
-            SpawnIcon(uv, MinimapIconKind.Player, ColorOf(MinimapIconKind.Player), 1f, 1.15f);
+            Vector3 world = _player.transform.position;
+            if (!_renderer.TryGetUV(world, out Vector2 uv)) return;
+
+            GameObject go = SpawnIcon(uv, MinimapIconKind.Player, ColorOf(MinimapIconKind.Player), 1f, 1.15f);
+            _playerIcon      = (RectTransform)go.transform;
+            _playerIconWorld = world;
         }
 
         private void AddIcon(HexCoordinate coord, MinimapIconKind kind, Color color,
@@ -206,20 +277,13 @@ namespace TacticalRPG.UI
             SpawnIcon(uv, kind, color, alpha, scale);
         }
 
-        private void SpawnIcon(Vector2 uv, MinimapIconKind kind, Color color, float alpha, float scale)
+        private GameObject SpawnIcon(Vector2 uv, MinimapIconKind kind, Color color, float alpha, float scale)
         {
             var go = new GameObject($"Icon_{kind}", typeof(RectTransform), typeof(Image));
             var rt = (RectTransform)go.transform;
             rt.SetParent(_iconLayer, false);
-
-            // Anchor'ı UV'ye oturtmak, katman yeniden boyutlanınca işaretin de doğru yerde
-            // kalmasını sağlar (elle piksel hesabı gerekmez). Kırpma: oyuncu haritanın dış
-            // kenarındayken UV bir tık taşabilir, işaret panelin dışına kaçmasın.
-            uv.x = Mathf.Clamp01(uv.x);
-            uv.y = Mathf.Clamp01(uv.y);
-            rt.anchorMin = rt.anchorMax = uv;
             rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = Vector2.zero;
+            PlaceAtUV(rt, uv);
 
             float size = (_style != null ? _style.IconSize : 26f) * scale;
             rt.sizeDelta = new Vector2(size, size);
@@ -231,6 +295,19 @@ namespace TacticalRPG.UI
             img.raycastTarget = false;
 
             _icons.Add(go);
+            return go;
+        }
+
+        /// <summary>İşareti dokunun UV'sine oturtur. Anchor kullanılır (piksel DEĞİL): katman
+        /// yakınlaştırmayla yeniden boyutlanınca işaret kendiliğinden doğru yerde kalır,
+        /// üstelik <c>sizeDelta</c>'sını koruyup devleşmez. Kırpma: oyuncu haritanın dış
+        /// kenarındayken UV bir tık taşabilir, işaret panelin dışına kaçmasın.</summary>
+        private static void PlaceAtUV(RectTransform rt, Vector2 uv)
+        {
+            uv.x = Mathf.Clamp01(uv.x);
+            uv.y = Mathf.Clamp01(uv.y);
+            rt.anchorMin = rt.anchorMax = uv;
+            rt.anchoredPosition = Vector2.zero;
         }
 
         private bool IsKnown(HexCoordinate coord) => _fog == null || _fog.IsKnown(coord);

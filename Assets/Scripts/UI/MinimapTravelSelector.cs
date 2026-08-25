@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -17,12 +17,18 @@ namespace TacticalRPG.UI
     ///   2. Karo YÜRÜNEMEZSE (dağ, su) seçim iptal edilmez — en yakın YÜRÜNEBİLİR karoya kayar.
     ///      Böylece dağa tıklamak "hiçbir şey olmadı" hissi vermez, niyeti okur.
     ///   3. Hedef karo parlar, oraya giden EN KISA rota yarı saydam noktalarla çizilir.
-    ///   4. Altta bedel yazar: kaç karo, kaç AP, kaç zaman dilimi devirir.
-    ///   5. ONAYLA → oyuncu yürümeye başlar, harita ekranı kapanır.
+    ///   4. Altta bedel yazar: kaç karo, kaç güçlü yol taşı.
+    ///   5. ONAYLA → gösteri sırası başlar: harita ekranı köşeye yerleşir, karakter ağır ağır
+    ///      toza ayrılıp rengarenk bir küreye dönüşür, sonra yol hızlıca kat edilir
+    ///      (<see cref="TravelPresenter"/> + <c>TravelOrbVisual</c>).
     ///
-    /// SİS KURALI: yalnız KEŞFEDİLMİŞ karo hedef seçilebilir. Bu, 3B haritadaki kuralın aynısı
-    /// (<c>MapInputHandler._freeMoveOnExplored</c>: keşfedilmiş yere mesafe sınırsız, karanlığa
-    /// 2 karo). Karanlığa minihatitadan gidilemez — zaten orası çizilmiyor.
+    /// SİS KURALI (İKİ KATMANLI):
+    ///   • HEDEF yalnız KEŞFEDİLMİŞ karo olabilir. Bu, 3B haritadaki kuralın aynısı
+    ///     (<c>MapInputHandler._freeMoveOnExplored</c>: keşfedilmiş yere mesafe sınırsız).
+    ///   • ROTA da yalnız keşfedilmiş karolardan geçer (2026-08-19). Eskiden yalnız hedef
+    ///     denetleniyordu; A* kestirmeyi sisin içinden bulup karakteri hiç görmediği araziden
+    ///     geçiriyordu → sisi açmanın bir anlamı kalmıyordu. Artık "keşfedilmiş karolar arasında
+    ///     en kısa yol" aranır; keşif ağı kopuksa yolculuk hiç önerilmez, sebebi yazılır.
     ///
     /// Fare olayları maskeli harita yuvasına düşer; sürükleme <see cref="MinimapPanZoom"/>'un,
     /// tıklama bu bileşenin. İkisi aynı nesnede durur, biri diğerini bilmez.
@@ -37,6 +43,9 @@ namespace TacticalRPG.UI
         [SerializeField] private ActionPointManager _ap;
         [SerializeField] private GameStateManager   _state;
         [SerializeField] private ChapterRunManager  _run;
+        [Tooltip("Seyahat gösterisi: karakteri küreye çevirir, harita ekranını köşeye küçültür.")]
+        [SerializeField] private TravelPresenter    _presenter;
+        [Tooltip("YEDEK — gösterici bağlı değilse harita ekranı eskisi gibi tamamen kapatılır.")]
         [SerializeField] private MenuNavigator      _nav;
 
         [Header("Görsel")]
@@ -51,13 +60,11 @@ namespace TacticalRPG.UI
         [SerializeField] private Button          _confirmButton;
         [SerializeField] private Button          _cancelButton;
 
-        [Header("Yol taşları")]
+        [Header("Yol taşı")]
         [SerializeField] private PlayerBuffs       _buffs;
         [SerializeField] private MinimapGlowEffect _glow;
-        [Tooltip("YOL TAŞI: koşarak git, AP ve zaman normal işler. 1 taş / yolculuk.")]
-        [SerializeField] private Button            _roadButton;
-        [SerializeField] private TextMeshProUGUI   _roadLabel;
-        [Tooltip("GÜÇLÜ YOL TAŞI: mesafeye göre birkaç taş, ama AP ve zaman HARCANMAZ.")]
+        [Tooltip("GÜÇLÜ YOL TAŞI: mesafeye göre birkaç taş, ama AP ve zaman HARCANMAZ. " +
+                 "Haritadan seyahatin TEK yolu (normal 'Yol Taşı' 2026-08-19'da kaldırıldı).")]
         [SerializeField] private Button            _powerButton;
         [SerializeField] private TextMeshProUGUI   _powerLabel;
         [Tooltip("Bir GÜÇLÜ YOL TAŞI haritanın kaçta biri kadar yol açar. 4 = harita boyunca " +
@@ -97,7 +104,6 @@ namespace TacticalRPG.UI
         {
             if (_confirmButton != null) _confirmButton.onClick.AddListener(Confirm);
             if (_cancelButton  != null) _cancelButton.onClick.AddListener(Clear);
-            if (_roadButton    != null) _roadButton.onClick.AddListener(ToggleRoad);
             if (_powerButton   != null) _powerButton.onClick.AddListener(TogglePower);
             if (_buffs != null) _buffs.OnTravelStonesChanged += RefreshStoneUI;
 
@@ -111,7 +117,6 @@ namespace TacticalRPG.UI
         {
             if (_confirmButton != null) _confirmButton.onClick.RemoveListener(Confirm);
             if (_cancelButton  != null) _cancelButton.onClick.RemoveListener(Clear);
-            if (_roadButton    != null) _roadButton.onClick.RemoveListener(ToggleRoad);
             if (_powerButton   != null) _powerButton.onClick.RemoveListener(TogglePower);
             if (_buffs != null) _buffs.OnTravelStonesChanged -= RefreshStoneUI;
 
@@ -123,23 +128,24 @@ namespace TacticalRPG.UI
 
         /// <summary>
         /// Haritadan seyahat TAMAMEN TAŞA BAĞLI (kullanıcı kararı 2026-08-17): taş kullanmadan
-        /// harita ekranından yürünemez. Önce bir taş "kullan"ılır (ekran parlar), sonra hedef
-        /// seçilir, sonra onaylanır. Taş ONAY anında harcanır — vazgeçen oyuncu taşını yakmaz.
+        /// harita ekranından yürünemez. Önce taş "kullan"ılır (ekran parlar), sonra hedef seçilir,
+        /// sonra onaylanır. Taş ONAY anında harcanır — vazgeçen oyuncu taşını yakmaz.
+        ///
+        /// Tek taş türü var: GÜÇLÜ YOL TAŞI. Normal "Yol Taşı" (AP ve zamanı normal işleten ucuz
+        /// tür) 2026-08-19'da kullanıcı isteğiyle KALDIRILDI — iki taşlı seçim ekranı, ikisi de
+        /// aynı işi yaptığı için yalnız kafa karıştırıyordu.
         /// </summary>
-        private enum TravelMode { None = 0, Road = 1, Power = 2 }
+        private enum TravelMode { None = 0, Power = 1 }
 
         private TravelMode _mode = TravelMode.None;
-        private int        _stonesNeeded;   // Power modunda bu yolculuğun kaç taş ettiği
+        private int        _stonesNeeded;   // bu yolculuğun kaç taş ettiği
 
-        private void ToggleRoad()  => Toggle(TravelMode.Road,  PlayerBuffs.TravelStone.Road);
-        private void TogglePower() => Toggle(TravelMode.Power, PlayerBuffs.TravelStone.Power);
-
-        private void Toggle(TravelMode mode, PlayerBuffs.TravelStone stone)
+        private void TogglePower()
         {
-            if (_mode == mode) { SetMode(TravelMode.None); Clear(); return; }
-            if (_buffs != null && !_buffs.HasStones(stone)) return;   // elde taş yok
+            if (_mode == TravelMode.Power) { SetMode(TravelMode.None); Clear(); return; }
+            if (_buffs != null && !_buffs.HasStones()) return;   // elde taş yok
 
-            SetMode(mode);
+            SetMode(TravelMode.Power);
             Clear();                          // mod değişti → eski seçim/rota geçersiz
             if (_glow != null) _glow.Play();  // parlama gösterisi
         }
@@ -153,32 +159,22 @@ namespace TacticalRPG.UI
 
         private void RefreshStoneUI()
         {
-            PaintStoneButton(_roadButton,  _roadLabel,  PlayerBuffs.TravelStone.Road,
-                             TravelMode.Road,  "YOL TAŞI KULLAN",        "YOL TAŞI: AÇIK",        "Yol taşı");
-            PaintStoneButton(_powerButton, _powerLabel, PlayerBuffs.TravelStone.Power,
-                             TravelMode.Power, "GÜÇLÜ YOL TAŞI KULLAN",  "GÜÇLÜ YOL TAŞI: AÇIK",  "Güçlü yol taşı");
-        }
+            bool armed = _mode == TravelMode.Power;
 
-        private void PaintStoneButton(Button button, TextMeshProUGUI counter,
-                                      PlayerBuffs.TravelStone stone, TravelMode mode,
-                                      string idleText, string armedText, string counterName)
-        {
-            bool armed = _mode == mode;
-
-            if (button != null)
+            if (_powerButton != null)
             {
-                button.interactable = armed || _buffs == null || _buffs.HasStones(stone);
-                var label = button.GetComponentInChildren<TextMeshProUGUI>();
-                if (label != null) label.text = armed ? armedText : idleText;
+                _powerButton.interactable = armed || _buffs == null || _buffs.HasStones();
+                var label = _powerButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (label != null) label.text = armed ? "GÜÇLÜ YOL TAŞI: AÇIK" : "GÜÇLÜ YOL TAŞI KULLAN";
             }
 
-            if (counter == null) return;
+            if (_powerLabel == null) return;
 
             // "∞" YAZILMIYOR: yazı tipi atlasında bulunmayan karakter TMP'de kutu olarak çizilir.
             string count = _buffs == null ? "0"
                          : _buffs.UnlimitedTravelTokens ? "sınırsız"
-                         : _buffs.Stones(stone).ToString();
-            counter.text = $"{counterName}: {count}";
+                         : _buffs.Stones().ToString();
+            _powerLabel.text = $"Güçlü yol taşı: {count}";
         }
 
         /// <summary>Bir GÜÇLÜ YOL TAŞININ kaç karoluk yol açtığı — haritanın uzun kenarının
@@ -207,7 +203,7 @@ namespace TacticalRPG.UI
         {
             // TAŞSIZ SEYAHAT YOK: önce bir yol taşı kullanılmalı. Sessizce hiçbir şey yapmak
             // yerine sebebini yazıyoruz — yoksa oyuncu haritanın bozuk olduğunu sanır.
-            if (_mode == TravelMode.None) { ShowHint("Gitmek için önce bir YOL TAŞI kullan."); return; }
+            if (_mode == TravelMode.None) { ShowHint("Gitmek için önce GÜÇLÜ YOL TAŞI kullan."); return; }
 
             if (_renderer == null || _grid == null || _player == null) { Clear(); return; }
             if (_state != null && _state.State != GameState.Overworld) { Clear(); return; }
@@ -263,6 +259,11 @@ namespace TacticalRPG.UI
             return _grid.TryGetCell(c, out HexCell cell) && cell.IsWalkable;
         }
 
+        /// <summary>Rotanın üzerinden geçebileceği karo mu? Sis KALICI olduğu için bu "oyuncunun
+        /// bir kez gördüğü yer" demektir — yani rota hep bilinen araziyi izler.</summary>
+        private bool IsExplored(HexCell cell)
+            => _fog == null || _fog.IsKnown(cell.Coordinate);
+
         // ── Rota + istem ─────────────────────────────────────────────────────
 
         private void ShowRoute(HexCoordinate target)
@@ -272,8 +273,18 @@ namespace TacticalRPG.UI
             if (!_grid.TryGetCell(_player.CurrentCoord, out HexCell start) ||
                 !_grid.TryGetCell(target, out HexCell goal)) { Clear(); return; }
 
-            _path = _pathfinder.FindPath(start, goal, _grid);
-            if (_path == null || _path.Count < 2) { Clear(); return; }
+            // ROTA YALNIZ KEŞFEDİLMİŞ KAROLARDAN GEÇER (2026-08-19). Filtresiz A* kestirmeyi
+            // sisin içinden buluyor, karakter hiç görmediği araziden geçiyordu; o zaman da sisi
+            // açmanın oyun içinde bir karşılığı kalmıyordu.
+            _path = _pathfinder.FindPath(start, goal, _grid, IsExplored);
+            if (_path == null || _path.Count < 2)
+            {
+                // Hedef keşfedilmiş ama oraya keşfedilmiş karolardan gidilemiyor (arada sisli bir
+                // boğaz var, ya da kulenin açtığı bölge keşif izine hiç bağlanmamış). Sessizce
+                // hiçbir şey yapmak "harita bozuk" hissi verirdi.
+                ShowHint("Oraya keşfettiğin karolardan gidebileceğin bir yol yok.");
+                return;
+            }
 
             // Rota: ara karolar yarı saydam noktalarla. Başlangıç ve hedef dışarıda —
             // biri oyuncunun altında, öbürü seçim halkasıyla zaten işaretli.
@@ -303,11 +314,9 @@ namespace TacticalRPG.UI
         {
             if (_promptRoot != null) _promptRoot.SetActive(true);
 
-            _stonesNeeded = _mode == TravelMode.Power
-                ? Mathf.Max(1, Mathf.CeilToInt(moves / (float)TilesPerPowerStone()))
-                : 1;
+            _stonesNeeded = Mathf.Max(1, Mathf.CeilToInt(moves / (float)TilesPerPowerStone()));
 
-            bool affordable = _buffs == null || _buffs.HasStones(StoneOfMode(), _stonesNeeded);
+            bool affordable = _buffs == null || _buffs.HasStones(_stonesNeeded);
 
             if (_confirmButton != null)
             {
@@ -317,25 +326,11 @@ namespace TacticalRPG.UI
 
             if (_costLabel == null) return;
 
-            if (_mode == TravelMode.Power)
-            {
-                // GÜÇLÜ YOL TAŞI: yolculuk bedava — AP düşmez, zaman ilerlemez. Bedel yalnız taş.
-                _costLabel.text = affordable
-                    ? $"{moves} karo  ·  {_stonesNeeded} güçlü yol taşı  ·  AP ve zaman harcanmaz"
-                    : $"{moves} karo  ·  {_stonesNeeded} güçlü yol taşı gerekir — yeterli taşın yok";
-                return;
-            }
-
-            // YOL TAŞI: normal bedel işler, taş yalnız yolu koşarak kat ettirir.
-            if (_ap == null) { _costLabel.text = $"{moves} karo  ·  1 yol taşı"; return; }
-
-            _ap.PreviewCost(moves, out int apCost, out int slots);
-            string time = slots > 0 ? $"{slots} zaman dilimi" : "aynı zaman diliminde";
-            _costLabel.text = $"{moves} karo  ·  {apCost} AP  ·  {time}  ·  1 yol taşı";
+            // Yolculuk bedava — AP düşmez, zaman ilerlemez. Bedel yalnız taş.
+            _costLabel.text = affordable
+                ? $"{moves} karo  ·  {_stonesNeeded} güçlü yol taşı  ·  AP ve zaman harcanmaz"
+                : $"{moves} karo  ·  {_stonesNeeded} güçlü yol taşı gerekir — yeterli taşın yok";
         }
-
-        private PlayerBuffs.TravelStone StoneOfMode()
-            => _mode == TravelMode.Power ? PlayerBuffs.TravelStone.Power : PlayerBuffs.TravelStone.Road;
 
         private Image AddMarker(HexCoordinate coord, MinimapIconKind kind, Color color, float scale)
         {
@@ -397,8 +392,10 @@ namespace TacticalRPG.UI
 
         // ── Eylemler ─────────────────────────────────────────────────────────
 
-        /// <summary>ONAYLA: oyuncu rotayı HIZLANDIRILMIŞ yürüyüşle kat eder, harita ekranı kapanır
-        /// (yürüyüşü görsün). Hız yalnız görseldir — AP ve zaman karo başına normal harcanır.</summary>
+        /// <summary>ONAYLA: oyuncu rotayı HIZLANDIRILMIŞ yürüyüşle kat eder. Harita ekranı KAPANMAZ,
+        /// sol alt köşeye küçülüp saydamlaşır (<see cref="TravelPresenter"/>) — oyuncu hem küreye
+        /// dönüşmüş karakteri ana haritada izler hem minihatitadan nerede olduğunu görür.
+        /// Hız yalnız görseldir.</summary>
         public void Confirm()
         {
             if (_path == null || _path.Count < 2 || _player == null) { Clear(); return; }
@@ -406,7 +403,7 @@ namespace TacticalRPG.UI
             if (_mode == TravelMode.None) { Clear(); return; }
 
             // Taş BURADA harcanır (düğmeye basınca değil): seçimden vazgeçen oyuncu taşını yakmaz.
-            if (_buffs != null && !_buffs.TrySpendStones(StoneOfMode(), _stonesNeeded))
+            if (_buffs != null && !_buffs.TrySpendStones(_stonesNeeded))
             {
                 ShowHint("Yeterli taşın yok.");
                 return;
@@ -414,14 +411,25 @@ namespace TacticalRPG.UI
 
             List<HexCell> path  = _path;
             int           moves = path.Count - 1;
-            bool          free  = _mode == TravelMode.Power;
 
             // GÜÇLÜ YOL TAŞI: yolculuk boyunca AP düşmesin, zaman dilimi ilerlemesin, gün dönmesin.
             // Bedava hamle stoku hamle başına eriyor → yolculuk bitince kendiliğinden kapanıyor.
-            if (free && _ap != null) _ap.GrantFreeMoves(moves);
+            if (_ap != null) _ap.GrantFreeMoves(moves);
 
+            // Seçim ve mod ÖNCE temizlenir: gösterici ekranı küçültürken onay şeridi hâlâ açık
+            // olsaydı, "gizlemeden önce açıktı" diye kaydedilir ve varışta geri gelirdi.
             Clear();
             SetMode(TravelMode.None);
+
+            // HAREKETİ ARTIK BURASI BAŞLATMAZ: gösteri sırası (harita köşeye yerleşir → karakter
+            // ağır ağır küreye dönüşür → yol hızlıca kat edilir) TravelOrbVisual'da yürüyor.
+            if (_presenter != null)
+            {
+                _presenter.BeginTravel(path, _travelSpeedMultiplier);
+                return;
+            }
+
+            // Yedek: gösterici bağlı değilse eski davranış — ekran kapanır, yürüyüş hemen başlar.
             _player.MoveAlongPath(path, _travelSpeedMultiplier);
             if (_nav != null) _nav.CloseScreen();
         }
