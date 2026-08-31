@@ -56,7 +56,9 @@ namespace TacticalRPG.UI
 
             if (n.Completed) { GUILayout.Label($"{TitleOf(n.Type)} — TAMAMLANDI ({n.Value} öz)"); return; }
 
-            GUILayout.Label($"{TitleOf(n.Type)}");
+            GUILayout.Label(n.Type == MapNodeType.Mandatory && n.Tier > 0
+                            ? $"{TitleOf(n.Type)} — {n.Tier}. kademe"
+                            : $"{TitleOf(n.Type)}");
 
             string diff = _nodes.DifficultyLabel(n);
             if (!string.IsNullOrEmpty(diff)) GUILayout.Label($"Zorluk: {diff}");     // GÖRÜNÜR
@@ -83,6 +85,21 @@ namespace TacticalRPG.UI
             if (boss.Completed) { GUILayout.Label("Boss yenildi."); return; }
 
             GUILayout.Label($"Zorluk: {_nodes.DifficultyLabel(boss)} · {boss.APCost} AP");
+
+            // Boss taşı kapısı: neden giremediğini AÇIKÇA yaz (sessiz kilit yok).
+            if (_nodes.BossLockedByStone)
+            {
+                var warn = new GUIStyle(GUI.skin.label);
+                warn.normal.textColor = new Color(1f, 0.6f, 0.35f);
+                GUILayout.Label("BOSS TAŞI YOK — açık zorunlu görevlerin HEPSİNİ bitir.", warn);
+            }
+            else if (_nodes.BossStoneHeld)
+            {
+                var ok = new GUIStyle(GUI.skin.label);
+                ok.normal.textColor = new Color(1f, 0.85f, 0.2f);
+                GUILayout.Label("Boss taşı cebinde — dilediğin an gir.", ok);
+            }
+
             GUI.enabled = _nodes.CanEnter(boss);
             if (GUILayout.Button("BOSS'A GİR", GUILayout.Height(30))) _nodes.Enter(boss);
             GUI.enabled = true;

@@ -50,6 +50,7 @@ namespace TacticalRPG.Editor
             GameObject camp   = EnsureCampTile("Tile_kamp");
             GameObject quest  = EnsureQuestTile("Tile_gorev_alani");
             GameObject market = EnsureMarketTile("Tile_han");
+            GameObject done   = EnsureClearedQuestTile("Tile_gorev_tamam");
 
             // Yurunur karolarda yuzey yuksekligi ELLE TileHeight: birim karonun USTUNDE durur,
             // cadirin/kayanin tepesinde degil.
@@ -59,6 +60,7 @@ namespace TacticalRPG.Editor
                 (ChapterNodeManager.EncounterTileId,  camp,   HexMetrics.TileHeight),  // baskin kampi
                 (ChapterNodeManager.MandatoryTileId,  quest,  HexMetrics.TileHeight),  // dikilitas + sancak
                 (ChapterNodeManager.MarketTileId,     market, HexMetrics.TileHeight),  // ticaret hani
+                (ChapterNodeManager.ClearedMandatoryTileId, done, HexMetrics.TileHeight), // muhurlenmis altin karo
             };
 
             var so    = new SerializedObject(palette);
@@ -219,6 +221,39 @@ namespace TacticalRPG.Editor
             return SaveTile(go, name);
         }
 
+        /// <summary>
+        /// BİTMİŞ zorunlu görev karosu: dikilitaş/sancak YOK, karonun tamamı altına döner, üstünde
+        /// alçak bir mühür halkası kalır (kullanıcı isteği 2026-08-28: "modeller silinerek altın
+        /// rengine dönüşsün").
+        ///
+        /// Yüzey EMISSIVE: minimap dokusu karonun rengini paletteki prefabın MATERYALİNDEN okuyor —
+        /// mat bir sarı burada "kum" gibi görünürdü, parlak altın ise haritada da barizce ayrılır.
+        /// </summary>
+        private static GameObject EnsureClearedQuestTile(string name)
+        {
+            GameObject existing = Load(name);
+            if (existing != null) return existing;
+
+            GameObject go = NewTileBase(name);
+            if (go == null) return null;
+
+            Material gold = EnsureEmissiveMaterial("Terrain_QuestGold",    new Color(0.96f, 0.74f, 0.18f), 1.4f);
+            Material hot  = EnsureEmissiveMaterial("Terrain_QuestGoldHot", new Color(1.00f, 0.94f, 0.62f), 3.0f);
+
+            // Karonun KENDİ yüzeyi altına boyanır (taban dahil) — "yer mühürlendi".
+            foreach (MeshRenderer r in go.GetComponentsInChildren<MeshRenderer>(true))
+                r.sharedMaterial = gold;
+
+            // İç içe iki alçak halka: düz altın karo fazla boş kalmasın, "kazanıldı" okunsun.
+            float y = HexMetrics.TileHeight;
+            AddDecor(go.transform, PrimitiveType.Cylinder, new Vector3(0f, y + 0.015f, 0f),
+                new Vector3(0.66f, 0.015f, 0.66f), Quaternion.identity, hot);
+            AddDecor(go.transform, PrimitiveType.Cylinder, new Vector3(0f, y + 0.030f, 0f),
+                new Vector3(0.42f, 0.015f, 0.42f), Quaternion.identity, gold);
+
+            return SaveTile(go, name);
+        }
+
         /// <summary>Ticaret hanı / manav: tezgâh + çizgili tente + fıçılar + sandık.</summary>
         private static GameObject EnsureMarketTile(string name)
         {
@@ -314,6 +349,31 @@ namespace TacticalRPG.Editor
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);  // URP
             if (mat.HasProperty("_Color"))     mat.SetColor("_Color", color);      // Built-in yedek
             if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.08f);
+            AssetDatabase.CreateAsset(mat, path);
+            return mat;
+        }
+
+        /// <summary>Kendi ışığını yayan materyal (mühürlenmiş altın karo gibi "parlaması gereken"
+        /// yüzeyler için). Var olanı EZMEZ — kullanıcı tweak'i korunur.</summary>
+        private static Material EnsureEmissiveMaterial(string name, Color color, float intensity)
+        {
+            EnsureFolder(MatFolder);
+            string path = $"{MatFolder}/{name}.mat";
+            Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (existing != null) return existing;
+
+            Shader sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var mat = new Material(sh) { name = name };
+            if (mat.HasProperty("_BaseColor"))  mat.SetColor("_BaseColor", color);
+            if (mat.HasProperty("_Color"))      mat.SetColor("_Color", color);
+            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.45f);
+            if (mat.HasProperty("_Metallic"))   mat.SetFloat("_Metallic", 0.55f);
+            if (mat.HasProperty("_EmissionColor"))
+            {
+                mat.EnableKeyword("_EMISSION");
+                mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+                mat.SetColor("_EmissionColor", color * Mathf.Max(0f, intensity));
+            }
             AssetDatabase.CreateAsset(mat, path);
             return mat;
         }

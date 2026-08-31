@@ -1029,3 +1029,11 @@ MonoBehaviour:
     canEnterCombat: 0
     isStore: 0
     surfaceHeightOverride: 0.3
+  - id: gorev_tamam
+    displayName: "G\xF6rev Alan\u0131 (bitti)"
+    prefab: {fileID: 6251395319724669568, guid: 6ba18312998c0e347b2261de79d4b269, type: 3}
+    editorColor: {r: 1, g: 0.8, b: 0.24, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3

@@ -36,6 +36,9 @@ namespace TacticalRPG.Core
             public int           APCost;
             public bool          Completed;
             public bool          RewardKnown;  // girildikten SONRA true olur
+            /// <summary>ZORUNLU görevin kademesi (1-tabanlı). Ödül bu kademeden ÜSTEL büyür
+            /// (<see cref="MandatoryQuestConfigSO.RewardForTier"/>). Diğer türlerde 0.</summary>
+            public int           Tier;
         }
 
         [SerializeField] private HexGridManager       _grid;
@@ -54,6 +57,14 @@ namespace TacticalRPG.Core
         [SerializeField] private MapCollapseManager   _collapse;
         [Tooltip("Kule sisi açarken oynayan epik ışık efekti (eski oyundaki açılış animasyonu).")]
         [SerializeField] private TowerRevealEffect    _towerFx;
+        [Tooltip("ZORUNLU GÖREV ZİNCİRİ ayarları. ATANDIĞINDA zorunlu görevlerin sayısı, AP " +
+                 "maliyeti ve ÜSTEL ödül eğrisi buradan okunur — NodeConfig'teki karşılıkları " +
+                 "yok sayılır (iki doğruluk kaynağı olmasın). Boş bırakılırsa eski davranış sürer.")]
+        [SerializeField] private MandatoryQuestConfigSO _questConfig;
+        [Tooltip("Yeni zorunlu görev açılırken oynayan gökten düşüş animasyonu.")]
+        [SerializeField] private MandatoryQuestFallEffect _questFallFx;
+        [Tooltip("Zorunlu görev bitince karoyu mühürleyen ışık hüzmesi animasyonu.")]
+        [SerializeField] private MandatoryQuestClearEffect _questClearFx;
 
         [Header("İşaretler (whitebox — gerçek görsel gelince prefab atanır)")]
         [Tooltip("Zorunlu görev işareti bu yüksekliğe konur — sis bulutunun ÜSTÜNDE kalsın diye " +
@@ -144,7 +155,10 @@ namespace TacticalRPG.Core
             rnd.Shuffle(pool);
 
             int idx = 0;
-            Take(pool, ref idx, _config.MandatoryCount, MapNodeType.Mandatory,
+            // Zorunlu görev sayısı ZİNCİR ayarından gelir (varsayılan 2). Harita bu kadarıyla
+            // açılır; zincir kapanmadan açılış günü gelirse SpawnMandatory ile büyür.
+            int mandatoryStart = _questConfig != null ? _questConfig.InitialCount : _config.MandatoryCount;
+            Take(pool, ref idx, mandatoryStart, MapNodeType.Mandatory,
                  () => _config.MandatoryValue, () => _config.MandatoryAP, rnd);
             Take(pool, ref idx, _config.ZindanCount, MapNodeType.Zindan,
                  () => rnd.RandInt(_config.ZindanValue.x, _config.ZindanValue.y),
@@ -156,6 +170,10 @@ namespace TacticalRPG.Core
                  () => 0, () => 0, rnd);
             Take(pool, ref idx, _config.WatchtowerCount, MapNodeType.Watchtower,
                  () => 0, () => _config.WatchtowerAP, rnd);
+
+            // Zorunlu görevlere kademe (1..N) ve ÜSTEL ödül ver. Take() türden bağımsız olduğu için
+            // kademe burada, yerleşim sırasına göre atanır.
+            AssignMandatoryTiers();
 
             // Her düğümün karosunu KENDİ karo tipine çevir → palette'teki model render edilir
             // (mağara / kamp / görev alanı / ticaret hanı / kule) ve savaşlı olanlar canEnterCombat
@@ -194,6 +212,84 @@ namespace TacticalRPG.Core
                 });
         }
 
+        // ── Zorunlu görev zinciri ────────────────────────────────────────────
+
+        /// <summary>Zorunlu görevlere yerleşim sırasına göre kademe (1..N) ve ÜSTEL ödül verir.
+        /// Zincir ayarı atanmamışsa NodeConfig'in tek düz değeri korunur (eski davranış).</summary>
+        private void AssignMandatoryTiers()
+        {
+            int tier = 0;
+            foreach (var n in _nodes)
+            {
+                if (n.Type != MapNodeType.Mandatory) continue;
+                n.Tier = ++tier;
+                if (_questConfig == null) continue;
+                n.Value  = _questConfig.RewardForTier(n.Tier);
+                n.APCost = _questConfig.QuestAP;
+            }
+        }
+
+        /// <summary>
+        /// Zincir açılışında YENİ bir zorunlu görevi haritaya indirir: düğümü ekler, karoyu boyar,
+        /// sis'ten bağımsız işaretini kurar, çöküş muafiyetini tazeler ve düşüş animasyonunu oynatır.
+        ///
+        /// NEREYE ve NE ZAMAN düşeceğine <see cref="MandatoryQuestDirector"/> karar verir; burası
+        /// yalnız gerçekleştirir (karar ile uygulama ayrı kalsın).
+        /// </summary>
+        public bool SpawnMandatory(HexCoordinate coord, int tier)
+        {
+            if (_map == null || _grid == null) return false;
+            if (NodeAt(coord) != null) return false;      // üstünde düğüm varsa EZME
+
+            var n = new MapNode
+            {
+                Coord       = coord,
+                Type        = MapNodeType.Mandatory,
+                Tier        = tier,
+                Value       = _questConfig != null ? _questConfig.RewardForTier(tier) : _config.MandatoryValue,
+                APCost      = _questConfig != null ? _questConfig.QuestAP             : _config.MandatoryAP,
+                RewardKnown = true                        // zorunlu görevin ödülü GİZLİ değil
+            };
+            _nodes.Add(n);
+
+            _map.SetTile(coord, MandatoryTileId);
+            AddMarker(n);
+            PublishProtectedTiles();                      // yeni karo da çöküşten muaf olsun
+
+            if (_questFallFx != null && _grid.TryGetCell(coord, out HexCell cell))
+                _questFallFx.Play(cell.WorldPosition + Vector3.up * cell.SurfaceHeight);
+
+            OnNodesChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>Şu an ZORUNLU bir görevin savaşı sürüyor mu? Zincir açılışı bu sırada ERTELENİR
+        /// (bkz <see cref="MandatoryQuestDirector"/> kural 1).</summary>
+        public bool MandatoryCombatPending
+            => _pendingCombatNode != null && _pendingCombatNode.Type == MapNodeType.Mandatory;
+
+        // ── Boss taşı kapısı ─────────────────────────────────────────────────
+
+        /// <summary>Boss taşı cepte mi? <see cref="MandatoryQuestDirector"/> yazar.</summary>
+        public bool BossStoneHeld { get; private set; }
+
+        /// <summary>Kapı devrede mi? Yalnız yönetici <see cref="SetBossStone"/> çağırınca açılır —
+        /// yönetici sahnede YOKSA boss eskisi gibi taşsız girilebilir kalır, yoksa bölüm sessizce
+        /// bitirilemez hâle gelirdi.</summary>
+        private bool _bossGateActive;
+
+        /// <summary>Boss taşının durumunu yazar ve kapıyı devreye alır.</summary>
+        public void SetBossStone(bool held)
+        {
+            _bossGateActive = true;
+            if (BossStoneHeld == held) return;
+            BossStoneHeld = held;
+            OnNodesChanged?.Invoke();
+        }
+
+        /// <summary>Boss taşı olmadığı için boss kilitli mi? (HUD gerekçeyi yazsın diye)</summary>
+        public bool BossLockedByStone => _bossGateActive && !BossStoneHeld;
+
         // ── Sorgular ─────────────────────────────────────────────────────────
 
         // ── Düğüm KARO id'leri (palette'teki modellere bağlı) ───────────────
@@ -205,6 +301,11 @@ namespace TacticalRPG.Core
         public const string EncounterTileId  = "kamp";          // karşılaşma (baskın kampı)
         public const string MandatoryTileId  = "gorev_alani";   // zorunlu harita-kurtarma görevi
         public const string MarketTileId     = "magaza";        // ticaret hanı (StoreManager açar)
+        /// <summary>BİTMİŞ zorunlu görev: yapı modelleri yok, düz altın karo, <c>canEnterCombat</c>
+        /// TAŞIMAZ. Bitmiş göreve tekrar girilmesini gerçekten engelleyen şey budur — düğümü
+        /// "tamamlandı" işaretlemek YETMİYORDU, çünkü MissionManager düğümü değil KARONUN
+        /// bayrağını okuyor ve "yaklaş → Savaşa Gir" akışını oradan açıyor.</summary>
+        public const string ClearedMandatoryTileId = "gorev_tamam";
 
         /// <summary>Düğüm tipinin haritadaki karo id'si (yoksa null → karo boyanmaz).</summary>
         public static string TileIdOf(MapNodeType t) => t switch
@@ -277,6 +378,9 @@ namespace TacticalRPG.Core
         {
             if (n == null || n.Completed) return false;
             if (n.Type == MapNodeType.Market) return IsMarketOpen();
+            // Bossa yalnız BOSS TAŞI ile girilir. Taş, O AN AÇIK olan zorunlu görevlerin hepsi
+            // bitince verilir ve zincir kapanır (MandatoryQuestDirector). Taşı olan istediği an girer.
+            if (n.Type == MapNodeType.Boss && BossLockedByStone) return false;
             return _ap == null || _ap.CurrentAP >= EffectiveAPCost(n);
         }
 
@@ -369,10 +473,14 @@ namespace TacticalRPG.Core
             }
 
             // Savaştan overworld'e dönüldü → bekleyen düğümü tamamla + ödülü AÇIKLA.
+            // SIRA ÖNEMLİ: bekleyen düğüm ÖNCE temizlenir, sonra Complete çağrılır. Complete
+            // OnNodesChanged yayıyor; zincir yöneticisi o an hâlâ "zorunlu savaş sürüyor" görseydi
+            // ertelediği açılışı çözemez ve yeni görev sonsuza dek asılı kalırdı.
             if (s == GameState.Overworld && _pendingCombatNode != null)
             {
-                Complete(_pendingCombatNode);
+                MapNode finished   = _pendingCombatNode;
                 _pendingCombatNode = null;
+                Complete(finished);
             }
         }
 
@@ -389,7 +497,45 @@ namespace TacticalRPG.Core
 
             var marker = MarkerOf(n);
             if (marker != null) marker.SetActive(false);
+
+            if (n.Type == MapNodeType.Mandatory) SealMandatory(n);
+
             OnNodesChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Biten zorunlu görevin karosunu KAPATIR: gökten ışık hüzmesi iner, değdiği anda karodaki
+        /// yapı modelleri silinip yerini altın <see cref="ClearedMandatoryTileId"/> karosu alır.
+        ///
+        /// Bu yalnız kutlama değil, KURALIN kendisi: 'gorev_alani' karosu <c>canEnterCombat</c>
+        /// taşıyor ve <see cref="MissionManager"/> menzildeki böyle her karodan savaş açıyor —
+        /// düğüm "tamamlandı" olsa bile. Karo dönüşmeden bitmiş göreve tekrar girilebiliyordu.
+        /// </summary>
+        private void SealMandatory(MapNode n)
+        {
+            if (_map == null) return;
+
+            // Dönüşüm hüzme YERE VARDIĞI anda olur (efekt geri çağırır); efekt bağlı değilse
+            // anında olur — kural hiçbir koşulda görsele bağlı kalmasın.
+            void Seal()
+            {
+                _map.SetTile(n.Coord, ClearedMandatoryTileId);
+
+                // KEMER + KAYIŞ: hücrenin savaş bayrağı PALET GİRİŞİNDEN kopyalanıyor
+                // (HexGridManager.SpawnVisual). Giriş yoksa — editör kurulumu koşmamışsa —
+                // hiçbir alan yazılmaz ve bayrak ESKİ hâliyle AÇIK kalırdı: bitmiş göreve
+                // yine girilebilirdi. Kural bir editör adımına bağlı kalmasın diye burada da
+                // açıkça kapatılıyor.
+                if (_grid != null && _grid.TryGetCell(n.Coord, out HexCell sealedCell))
+                    sealedCell.CanEnterCombat = false;
+
+                OnNodesChanged?.Invoke();     // miniharita altın karoyu yeniden boyasın
+            }
+
+            if (_questClearFx != null && _grid != null && _grid.TryGetCell(n.Coord, out HexCell cell))
+                _questClearFx.Play(cell.WorldPosition + Vector3.up * cell.SurfaceHeight, Seal);
+            else
+                Seal();
         }
 
         // ── İşaretler (whitebox küreler) ─────────────────────────────────────
@@ -425,29 +571,34 @@ namespace TacticalRPG.Core
             // Artık HER düğümün kendi karo modeli var (mağara/kamp/görev alanı/han/kule), bu yüzden
             // işaret küresi YALNIZ ZORUNLU GÖREVLERDE kalıyor: onlar sis'ten BAĞIMSIZ görünmek
             // zorunda (TASK-006), karo modeli ise sisin altında kalır. Diğerleri normal keşifle bulunur.
-            foreach (var n in _nodes)
-            {
-                if (n.Type != MapNodeType.Mandatory) continue;
-                if (!_grid.TryGetCell(n.Coord, out HexCell cell)) continue;
+            foreach (var n in _nodes) AddMarker(n);
+        }
 
-                var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                go.name = $"Node_{n.Type}_{n.Coord.Q}_{n.Coord.R}";
-                go.transform.SetParent(_markersRoot, false);
-                Collider col = go.GetComponent<Collider>();          // tıklamayı engellemesin
-                if (col != null) { if (Application.isPlaying) Destroy(col); else DestroyImmediate(col); }
+        /// <summary>TEK düğümün işaret küresini kurar. Sonradan gökten DÜŞEN zorunlu görevler
+        /// (<see cref="SpawnMandatory"/>) de buradan geçer — işaret kökü yeniden kurulmaz.</summary>
+        private void AddMarker(MapNode n)
+        {
+            if (n.Type != MapNodeType.Mandatory) return;
+            if (_markersRoot == null || _grid == null || _markers.ContainsKey(n)) return;
+            if (!_grid.TryGetCell(n.Coord, out HexCell cell)) return;
 
-                float y = n.Type == MapNodeType.Mandatory ? _mandatoryMarkerHeight : _markerHeight;
-                go.transform.position   = cell.WorldPosition + Vector3.up * y;
-                go.transform.localScale = Vector3.one * _markerScale;
+            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.name = $"Node_{n.Type}_{n.Coord.Q}_{n.Coord.R}";
+            go.transform.SetParent(_markersRoot, false);
+            Collider col = go.GetComponent<Collider>();          // tıklamayı engellemesin
+            if (col != null) { if (Application.isPlaying) Destroy(col); else DestroyImmediate(col); }
 
-                var rend = go.GetComponent<Renderer>();
-                var mpb  = new MaterialPropertyBlock();
-                mpb.SetColor("_BaseColor", MarkerColors.TryGetValue(n.Type, out Color c) ? c : Color.white);
-                rend.SetPropertyBlock(mpb);
+            float y = n.Type == MapNodeType.Mandatory ? _mandatoryMarkerHeight : _markerHeight;
+            go.transform.position   = cell.WorldPosition + Vector3.up * y;
+            go.transform.localScale = Vector3.one * _markerScale;
 
-                _markers[n] = go;
-                go.SetActive(IsMarkerVisible(n));
-            }
+            var rend = go.GetComponent<Renderer>();
+            var mpb  = new MaterialPropertyBlock();
+            mpb.SetColor("_BaseColor", MarkerColors.TryGetValue(n.Type, out Color c) ? c : Color.white);
+            rend.SetPropertyBlock(mpb);
+
+            _markers[n] = go;
+            go.SetActive(IsMarkerVisible(n));
         }
 
         /// <summary>Sis açıldıkça işaretler görünür olur (zorunlu olanlar zaten hep açık).

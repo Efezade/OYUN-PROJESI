@@ -70,9 +70,26 @@ namespace TacticalRPG.UI
         private int           _fogVersion;
         private float         _nextTerrainRefresh;
 
+        // Düğüm listesi değişti mi (görev bitti / gökten YENİ zorunlu görev düştü)? İşaretler
+        // eskiden yalnız SİS yeni karo açınca tazeleniyordu; zincir açılışıyla gelen görev,
+        // oyuncu bir karo daha keşfedene ya da haritayı kapatıp açana kadar GÖRÜNMEZ kalırdı.
+        // Oysa düşüş animasyonu ekran dışında olabilir → minimap orada tek geri bildirim.
+        private bool _iconsDirty;
+
+        [Header("Bitmiş zorunlu görev karosu (akışkan altın)")]
+        [Tooltip("Karo kaç ikon boyutunda çizilsin (1 = ikonla aynı). Sembol DEĞİL, dolu karo.")]
+        [SerializeField] private float _clearedTileScale = 1.15f;
+        [SerializeField] private Color _goldDeep   = new(0.72f, 0.44f, 0.06f);
+        [SerializeField] private Color _goldBright = new(1.00f, 0.95f, 0.62f);
+
+        // Bitmiş zorunlu görev karoları — HER KARE rengi akar. Ayrı listede tutuluyor ki
+        // animasyon tüm ikon listesini taramasın.
+        private readonly List<Image> _goldTiles = new();
+
         private void OnEnable()
         {
             if (_renderer != null) _renderer.OnTextureRebuilt += BindTexture;
+            if (_nodes    != null) _nodes.OnNodesChanged      += MarkIconsDirty;
             PaintLegend();
             Refresh();
         }
@@ -80,8 +97,14 @@ namespace TacticalRPG.UI
         private void OnDisable()
         {
             if (_renderer != null) _renderer.OnTextureRebuilt -= BindTexture;
+            if (_nodes    != null) _nodes.OnNodesChanged      -= MarkIconsDirty;
             ClearIcons();
         }
+
+        /// <summary>Olay anında DEĞİL, bir sonraki LateUpdate'te kurulur: düğüm değişimi bir olay
+        /// zincirinin ortasında geliyor (Spawn → OnNodesChanged), UI'ı orada yeniden kurmak
+        /// zincirin geri kalanıyla çekişirdi.</summary>
+        private void MarkIconsDirty() => _iconsDirty = true;
 
         /// <summary>Haritayı yeniden boyar ve işaretleri yeniden kurar. Panel her açıldığında
         /// çağrılır — kapalıyken hiçbir şey hesaplanmaz.</summary>
@@ -111,6 +134,41 @@ namespace TacticalRPG.UI
         {
             TrackPlayer();
             RefreshOnExploration();
+
+            // Düğüm değişimi hem işaretleri hem ARAZİYİ tazeletir: biten görev karosu altına
+            // dönüşüyor ve o renk dokudan geliyor. Sis tazelemesinin aksine kısıt YOK — düğüm
+            // değişimi bölüm başına birkaç kez olur, sis ise neredeyse her adımda.
+            if (_iconsDirty)
+            {
+                _iconsDirty = false;
+                if (_renderer != null) _renderer.Rebuild();
+                RebuildIcons();
+            }
+
+            AnimateClearedTiles();
+        }
+
+        /// <summary>Bitmiş görev karolarının rengini akıtır. İki FARKLI hızda sinüs karıştırılıyor:
+        /// tek sinüs düzenli bir nabız verirdi, ikisi birlikte "akan" bir dalga hissi veriyor.
+        /// Yalnız RENK yazılır — <c>sizeDelta</c> yazmak Canvas'ı her karede yeniden kurdururdu.</summary>
+        private void AnimateClearedTiles()
+        {
+            if (_goldTiles.Count == 0) return;
+
+            float t = Time.unscaledTime;
+            for (int i = 0; i < _goldTiles.Count; i++)
+            {
+                Image img = _goldTiles[i];
+                if (img == null) continue;
+
+                float phase = i * 1.7f;                                   // karolar aynı anda atmasın
+                float fast  = 0.5f + 0.5f * Mathf.Sin(t * 2.4f + phase);
+                float slow  = 0.5f + 0.5f * Mathf.Sin(t * 1.05f + phase * 0.6f);
+
+                Color c = Color.Lerp(_goldDeep, _goldBright, fast * 0.65f + slow * 0.35f);
+                c.a = 0.78f + 0.22f * slow;
+                img.color = c;
+            }
         }
 
         private void TrackPlayer()
@@ -189,6 +247,7 @@ namespace TacticalRPG.UI
         {
             foreach (GameObject go in _icons) if (go != null) Destroy(go);
             _icons.Clear();
+            _goldTiles.Clear();     // yok edilen nesnelere referans kalmasın
             _playerIcon = null;
         }
 
@@ -211,6 +270,11 @@ namespace TacticalRPG.UI
 
             foreach (ChapterNodeManager.MapNode n in _nodes.Nodes)
             {
+                // BİTMİŞ ZORUNLU GÖREV: sembol tamamen SİLİNİR, yerine akışkan altın karo gelir
+                // (kullanıcı isteği 2026-08-28). Soluk bir görev sembolü bırakmak "hâlâ yapılacak
+                // iş var" diye okunuyordu; oysa o karo kapandı.
+                if (n.Type == MapNodeType.Mandatory && n.Completed) { AddClearedQuestTile(n.Coord); continue; }
+
                 if (!TryKindOf(n.Type, out MinimapIconKind kind)) continue;
                 if (!_nodes.IsMarkerVisible(n)) continue;   // sis kuralı (zorunlu görev muaf)
 
@@ -220,6 +284,30 @@ namespace TacticalRPG.UI
 
                 AddIcon(n.Coord, kind, ColorOf(kind), alpha, 1f);
             }
+        }
+
+        /// <summary>Bitmiş zorunlu görevin karosu: sprite'sız DOLU kare (ikon değil, karo rengi).
+        /// Rengi <see cref="AnimateClearedTiles"/> her karede akıtır.</summary>
+        private void AddClearedQuestTile(HexCoordinate coord)
+        {
+            if (!_renderer.TryGetUV(coord, out Vector2 uv)) return;
+
+            var go = new GameObject("Tile_GorevTamam", typeof(RectTransform), typeof(Image));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(_iconLayer, false);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            PlaceAtUV(rt, uv);
+
+            float size = (_style != null ? _style.IconSize : 26f) * _clearedTileScale;
+            rt.sizeDelta = new Vector2(size, size);
+
+            var img = go.GetComponent<Image>();
+            img.sprite        = null;      // sprite YOK → düz dolu kare
+            img.color         = _goldBright;
+            img.raycastTarget = false;
+
+            _icons.Add(go);
+            _goldTiles.Add(img);
         }
 
         // Elle BOYANMIŞ mağaza / savaş karoları — düğüm sisteminden gelmezler ama oyuncu için

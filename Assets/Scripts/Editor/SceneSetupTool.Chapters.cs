@@ -267,6 +267,8 @@ namespace TacticalRPG.Editor
             nhSO.FindProperty("_ap").objectReferenceValue     = FindComponentAnywhere<ActionPointManager>();
             nhSO.ApplyModifiedProperties();
 
+            SetupMandatoryQuestChain(host, grid, gen, player, state, nodes, run);
+
             var fog = FindComponentAnywhere<FogOfWarManager>();
 
             // ── MapCollapseManager — durum baglantisi
@@ -299,11 +301,17 @@ namespace TacticalRPG.Editor
 
             TileVisualFactory.BuildAll(force: false);
 
-            var defs = new (string id, string name, bool walkable, Color color)[]
+            // combat=false OLAN GİRİŞ ÖNEMLİ: "gorev_tamam" bitmiş zorunlu görevin karosu ve savaşa
+            // giris bayragi TASIMAZ. MissionManager menzildeki her canEnterCombat karosundan savas
+            // aciyor, dugumun "tamamlandi" olmasina BAKMIYOR — bayrak kalsaydi bitmis goreve
+            // tekrar tekrar girilebilirdi.
+            var defs = new (string id, string name, bool walkable, bool combat, Color color)[]
             {
-                (ChapterNodeManager.DungeonTileId,   "Mağara (zindan)",   true, new Color(0.34f, 0.30f, 0.34f)),
-                (ChapterNodeManager.EncounterTileId, "Kamp (karşılaşma)", true, new Color(0.72f, 0.45f, 0.24f)),
-                (ChapterNodeManager.MandatoryTileId, "Görev Alanı",       true, new Color(0.90f, 0.76f, 0.28f)),
+                (ChapterNodeManager.DungeonTileId,   "Mağara (zindan)",   true, true,  new Color(0.34f, 0.30f, 0.34f)),
+                (ChapterNodeManager.EncounterTileId, "Kamp (karşılaşma)", true, true,  new Color(0.72f, 0.45f, 0.24f)),
+                (ChapterNodeManager.MandatoryTileId, "Görev Alanı",       true, true,  new Color(0.90f, 0.76f, 0.28f)),
+                (ChapterNodeManager.ClearedMandatoryTileId,
+                                                     "Görev Alanı (bitti)", true, false, new Color(1.00f, 0.80f, 0.24f)),
             };
 
             var palSO    = new SerializedObject(palette);
@@ -325,7 +333,7 @@ namespace TacticalRPG.Editor
                 e.FindPropertyRelative("displayName").stringValue          = d.name;
                 e.FindPropertyRelative("prefab").objectReferenceValue      = null;  // model asagida atanir
                 e.FindPropertyRelative("isWalkable").boolValue             = d.walkable;
-                e.FindPropertyRelative("canEnterCombat").boolValue         = true;  // hepsi savasa giris karosu
+                e.FindPropertyRelative("canEnterCombat").boolValue         = d.combat;
                 e.FindPropertyRelative("isStore").boolValue                = false;
                 e.FindPropertyRelative("surfaceHeightOverride").floatValue = 0f;
                 e.FindPropertyRelative("editorColor").colorValue           = d.color;
@@ -396,6 +404,83 @@ namespace TacticalRPG.Editor
                     $"Seed {seed} ile uretildi ve sahneye uygulandi.\n\n" +
                     "Play'e basmadan da yeni harita gorunur. Farkli bir harita icin bu menuyu\n" +
                     "tekrar calistir (havuzdan baska bir seed secilir).", "Tamam");
+        }
+
+        /// <summary>
+        /// ZORUNLU GÖREV ZİNCİRİ'ni kurar (2026-08-28): ayar asset'i + gökten düşüş efekti +
+        /// yönetici + üstteki çizgi barı, hepsi birbirine bağlı.
+        ///
+        /// Yönetici sahneye girdiği anda <c>ChapterNodeManager</c>'ın BOSS TAŞI KAPISI da devreye
+        /// girer (<c>SetBossStone</c> ilk çağrıda kapıyı açar) — yani bu adım koşmazsa boss eski
+        /// hâliyle taşsız girilebilir kalır, bölüm sessizce bitirilemez hâle GELMEZ.
+        /// </summary>
+        private static void SetupMandatoryQuestChain(GameObject host, HexGridManager grid,
+                                                     ChapterMapGenerator gen, PlayerController player,
+                                                     GameStateManager state, ChapterNodeManager nodes,
+                                                     ChapterRunManager run)
+        {
+            MandatoryQuestConfigSO questCfg = EnsureMandatoryQuestConfig();
+
+            // Iki animasyon: gorev DUSER (acilis) / gorev MUHURLENIR (bitis). Ikisi de proseduel.
+            var fallFx = host.GetComponent<MandatoryQuestFallEffect>();
+            if (fallFx == null) fallFx = host.AddComponent<MandatoryQuestFallEffect>();
+            var clearFx = host.GetComponent<MandatoryQuestClearEffect>();
+            if (clearFx == null) clearFx = host.AddComponent<MandatoryQuestClearEffect>();
+
+            // Dugum yoneticisine zincir ayarini + efektleri tanit.
+            var nSO = new SerializedObject(nodes);
+            nSO.FindProperty("_questConfig").objectReferenceValue  = questCfg;
+            nSO.FindProperty("_questFallFx").objectReferenceValue  = fallFx;
+            nSO.FindProperty("_questClearFx").objectReferenceValue = clearFx;
+            nSO.ApplyModifiedProperties();
+
+            // Zincirin beyni.
+            var director = host.GetComponent<MandatoryQuestDirector>();
+            if (director == null) director = host.AddComponent<MandatoryQuestDirector>();
+            var dSO = new SerializedObject(director);
+            dSO.FindProperty("_nodes").objectReferenceValue  = nodes;
+            dSO.FindProperty("_ap").objectReferenceValue     = FindComponentAnywhere<ActionPointManager>();
+            dSO.FindProperty("_map").objectReferenceValue    = gen;
+            dSO.FindProperty("_grid").objectReferenceValue   = grid;
+            dSO.FindProperty("_player").objectReferenceValue = player;
+            dSO.FindProperty("_run").objectReferenceValue    = run;
+            dSO.FindProperty("_config").objectReferenceValue = questCfg;
+            dSO.ApplyModifiedProperties();
+
+            // Ustteki cizgi bari.
+            var bar = host.GetComponent<TacticalRPG.UI.MandatoryQuestBarHUD>();
+            if (bar == null) bar = host.AddComponent<TacticalRPG.UI.MandatoryQuestBarHUD>();
+            var bSO = new SerializedObject(bar);
+            bSO.FindProperty("_director").objectReferenceValue = director;
+            bSO.FindProperty("_state").objectReferenceValue    = state;
+            bSO.ApplyModifiedProperties();
+
+            Debug.Log($"[Kurulum] Zorunlu gorev zinciri hazir — baslangic {questCfg.InitialCount}, " +
+                      $"acilis gunleri {string.Join("/", AcilisGunleri(questCfg))}, " +
+                      $"en fazla {questCfg.MaxCount} gorev.");
+        }
+
+        private static string[] AcilisGunleri(MandatoryQuestConfigSO cfg)
+        {
+            var days = new string[cfg.UnlockCount];
+            for (int i = 0; i < days.Length; i++) days[i] = cfg.UnlockDay(i).ToString();
+            return days;
+        }
+
+        /// <summary>MandatoryQuestConfig.asset'i yükler; YOKSA varsayılanlarla oluşturur
+        /// (varsa DOKUNMAZ — playtest'te ayarlanan günler/ödüller TAM KURULUM'da ezilmesin).</summary>
+        private static MandatoryQuestConfigSO EnsureMandatoryQuestConfig()
+        {
+            const string path = "Assets/Data/Config/MandatoryQuestConfig.asset";
+            var cfg = AssetDatabase.LoadAssetAtPath<MandatoryQuestConfigSO>(path);
+            if (cfg != null) return cfg;
+
+            EnsureFolder("Assets/Data/Config");
+            cfg = ScriptableObject.CreateInstance<MandatoryQuestConfigSO>();
+            AssetDatabase.CreateAsset(cfg, path);   // alan varsayilanlari = 2 baslangic + gun 5/8/11
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+            return cfg;
         }
 
         /// <summary>NodeConfig.asset'i yükler; YOKSA varsayılanlarla oluşturur (varsa DOKUNMAZ —

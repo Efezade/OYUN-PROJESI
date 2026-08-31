@@ -14,8 +14,13 @@ namespace TacticalRPG.UI
     public static class HudLayout
     {
         // ── ÜST-ORTA yığını (yukarıdan aşağı) ────────────────────────────────
+        /// <summary>ZORUNLU GÖREV ZİNCİRİ barı — üst-ortanın EN ÜSTÜ. Oyunun ana kararı
+        /// ("zinciri şimdi mi kapatayım") buradan okunduğu için gün barının da üstünde durur.</summary>
+        public const float QuestBarY      = 8f;
+        public const float QuestBarHeight = 38f;
+
         /// <summary>Bölüm durum barı (Gün X/14 · çöküş bilgisi).</summary>
-        public const float RunBarY      = 8f;
+        public const float RunBarY      = QuestBarY + QuestBarHeight + 6f;   // 52
         public const float RunBarHeight = 30f;
 
         /// <summary>Gün barının hemen ALTI — üst-orta ikinci sıra (görev istemi vb.).</summary>

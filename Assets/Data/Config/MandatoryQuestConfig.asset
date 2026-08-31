@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b41a263f6a9455744bd112632fb7ceac, type: 3}
+  m_Name: MandatoryQuestConfig
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.MandatoryQuestConfigSO
+  _initialCount: 2
+  _unlockDays: 05000000080000000b000000
+  _baseReward: 20
+  _rewardRatio: 1.6
+  _questAP: 5
+  _warningAP: 24
+  _spawnDistance: {x: 6, y: 14}
+  _reachSafety: 0.5
