@@ -573,7 +573,9 @@ namespace TacticalRPG.Editor
             if (Mathf.Abs(p.floatValue - oldDefault) > 0.0001f) return;
 
             p.floatValue = newDefault;
-            Debug.Log($"[Oz] EssenceConfig.{field}: {oldDefault} → {newDefault} (eski varsayilandan yukseltildi).");
+            // Yardımcı artık EssenceConfig dışında da kullanılıyor (RouteMarker) → log nesneyi söylesin.
+            Debug.Log($"[Kurulum] {so.targetObject.GetType().Name}.{field}: {oldDefault} → {newDefault} " +
+                      "(eski varsayilandan yukseltildi).");
         }
 
         /// <summary>Renk alanının float karşılığı (kullanıcı elle değiştirdiyse dokunulmaz).</summary>

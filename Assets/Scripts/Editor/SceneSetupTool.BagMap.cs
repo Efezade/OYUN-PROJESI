@@ -278,6 +278,10 @@ namespace TacticalRPG.Editor
                     new Vector2(0f, 0.5f), new Vector2(74f, y), new Vector2(220f, 36f), Ink, 22f);
             }
 
+            // NOT ŞERİDİNE DOKUNULMADI: bu etiketlerin pivotu ALT kenar, yani metin YUKARI doğru
+            // büyür ve hemen üstünde işaret satırları duruyor — dördüncü bir satır onların içine
+            // taşardı. Yol belirlemenin anlatımı düğmenin kendi yazısında ve kip açılınca alttaki
+            // onay şeridinde veriliyor.
             CreateCenteredLabel(legend, "LegendNote",
                 "Sürükle: kaydır · +/−: yakınlaştır\nSeyahat için GÜÇLÜ YOL TAŞI kullan.\n" +
                 "Rota yalnız KEŞFETTİĞİN karolardan geçer.",
@@ -287,12 +291,20 @@ namespace TacticalRPG.Editor
             // Mesafeye göre birkaç taş harcanır, karşılığında AP ve zaman HİÇ harcanmaz.
             // (Ucuz "Yol Taşı" düğmesi 2026-08-19'da kullanıcı isteğiyle kaldırıldı.)
             TextMeshProUGUI powerLabel = CreateCenteredLabel(legend, "PowerStoneCount", "Güçlü yol taşı: 0",
-                new Vector2(0.5f, 0f), new Vector2(0f, 104f), new Vector2(280f, 30f),
+                new Vector2(0.5f, 0f), new Vector2(0f, RouteBarLayout.CountY), new Vector2(280f, 30f),
                 new Color(0.42f, 0.34f, 0.22f), 20f);
 
             Button powerButton = CreateUIButton(legend, "Btn_PowerStone", "GÜÇLÜ YOL TAŞI KULLAN",
-                new Vector2(0.5f, 0f), new Vector2(0f, 60f), new Vector2(252f, 44f),
+                new Vector2(0.5f, 0f), new Vector2(0f, RouteBarLayout.PowerY), new Vector2(252f, 44f),
                 new Color(0.20f, 0.30f, 0.36f, 0.98f), 17f);
+
+            // ── Yol belirle: taşın ALTINDAKİ ikinci bar (kullanıcı isteği 2026-09-01) ──
+            // Seyahatle aynı yere konuyor ama işi bambaşka: hiçbir kaynak harcamaz, kimseyi
+            // yürütmez — yalnız 3B haritada takip edilecek bir işaret bırakır. Rengi de ayrı
+            // (kızıl), çünkü açıkken harita kırmızımsı parlıyor.
+            Button routeButton = CreateUIButton(legend, "Btn_RouteMark", "YOL BELİRLE",
+                new Vector2(0.5f, 0f), new Vector2(0f, RouteBarLayout.RouteY), new Vector2(252f, 44f),
+                new Color(0.36f, 0.16f, 0.14f, 0.98f), 17f);
 
             // NOT: pusula ve "Bölüm 1 — …" başlığı 2026-08-17'de KALDIRILDI (kullanıcı isteği).
             // Bölüm adı TAB şeridinde duruyor; başlıksız ekran haritaya daha çok yer bırakıyor.
@@ -339,7 +351,7 @@ namespace TacticalRPG.Editor
             TravelPresenter presenter = WireTravelPresenter(panelGO, frameT, board, pan);
 
             WireTravelSelector(board, rawRT, travelRT, promptGO, costLabel, confirm, cancel,
-                               glow, powerButton, powerLabel, presenter);
+                               glow, powerButton, powerLabel, presenter, routeButton);
 
             WireMinimapView(panelGO, raw, iconRT, empty, pan, legendIcons, rows);
 
@@ -378,7 +390,7 @@ namespace TacticalRPG.Editor
                                                TextMeshProUGUI costLabel, Button confirm, Button cancel,
                                                MinimapGlowEffect glow,
                                                Button powerButton, TextMeshProUGUI powerLabel,
-                                               TravelPresenter presenter)
+                                               TravelPresenter presenter, Button routeButton)
         {
             var sel = board.gameObject.AddComponent<MinimapTravelSelector>();
             var so  = new SerializedObject(sel);
@@ -404,6 +416,10 @@ namespace TacticalRPG.Editor
             so.FindProperty("_powerButton").objectReferenceValue = powerButton;
             so.FindProperty("_powerLabel").objectReferenceValue  = powerLabel;
             so.FindProperty("_presenter").objectReferenceValue   = presenter;
+
+            // Yol işareti: düğme burada, işaretin kendisi GameManager'da (3B haritayı o çiziyor).
+            so.FindProperty("_routeButton").objectReferenceValue = routeButton;
+            so.FindProperty("_routeMarker").objectReferenceValue = EnsureRouteMarker();
             so.ApplyModifiedProperties();
         }
 

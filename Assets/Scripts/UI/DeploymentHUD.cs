@@ -61,7 +61,7 @@ namespace TacticalRPG.UI
 
             GUILayout.Space(8);
             GUILayout.Label("YERLEŞTİR — kart seç, mavi hex'e tıkla");
-            DrawCommanderLine();
+            DrawCommanderCard();
             DrawCardList();
 
             GUILayout.EndScrollView();
@@ -70,9 +70,21 @@ namespace TacticalRPG.UI
             GUILayout.Space(4);
             GUILayout.Label($"Yerlesen birim: {(_deployment != null ? _deployment.DeployedCount : 0)}");
 
-            GUI.enabled = _deployment != null && _deployment.DeployedCount > 0;
+            // KAM OLMADAN SAVAS BASLAMAZ. Dugmeyi sessizce kapatmak "oyun bozuk" hissi verirdi,
+            // sebebi yaziliyor. Kararin kendisi DeploymentManager.TryStartBattle'da.
+            // (IMGUI'nin gomulu fontu Turkce glif tasimiyor -> ekran metinleri ASCII.)
+            bool canStart = _deployment != null && _deployment.CanStartBattle;
+            if (!canStart)
+            {
+                Color prevWarn = GUI.color;
+                GUI.color = new Color(1f, 0.72f, 0.35f);
+                GUILayout.Label("Kam yerlesmeden savas baslamaz.");
+                GUI.color = prevWarn;
+            }
+
+            GUI.enabled = canStart;
             if (GUILayout.Button("SAVASI BASLAT", GUILayout.Height(34)))
-                _state.StartBattle();
+                _deployment.TryStartBattle();
             GUI.enabled = true;
 
             if (GUILayout.Button("Geri Don (Overworld)", GUILayout.Height(26)))
@@ -111,15 +123,39 @@ namespace TacticalRPG.UI
             }
         }
 
-        // Komutan (Kam) elle yerleştirilmez — otomatik + ücretsiz iner.
-        private void DrawCommanderLine()
+        /// <summary>Komutan karti: listenin EN USTUNDE durur, oz istemez, ZORUNLUDUR. Diger
+        /// kartlarla ayni sekilde secilip mavi hex'e konur; yerlestikten sonra dugme onu geri alir
+        /// (yanlis hucreye konan komutan icin tek cikis yolu "Geri Don" olmasin).</summary>
+        private void DrawCommanderCard()
         {
-            if (_party == null) return;
-            foreach (var card in _party.Party)
+            if (_party == null || _deployment == null) return;
+
+            CharacterCard card = _deployment.CommanderCard;
+            if (card == null)
             {
-                if (card == null || !card.IsCommander) continue;
-                GUILayout.Label($"Komutan: {card.Data.ClassName} — otomatik iner (ucretsiz)");
+                Color prev = GUI.color;
+                GUI.color = new Color(1f, 0.45f, 0.40f);
+                GUILayout.Label("Partide komutan (Kam) YOK - savas baslatilamaz.");
+                GUI.color = prev;
+                return;
             }
+
+            bool deployed = _deployment.IsCardDeployed(card);
+            bool selected = _deployment.SelectedCard == card;
+
+            string tag = deployed ? "  [yerlesti - kaldir]"
+                       : selected ? "  < secili, mavi hex'e tikla"
+                       : "";
+            string label = $"* {card.Data.ClassName} (KOMUTAN, ucretsiz){tag}";
+
+            Color prevColor = GUI.color;
+            GUI.color = deployed ? new Color(0.72f, 1f, 0.72f) : new Color(1f, 0.92f, 0.55f);
+            if (GUILayout.Button(label, GUILayout.Height(30)))
+            {
+                if (deployed) _deployment.TryUndeploy(card);
+                else          _deployment.SelectedCard = selected ? null : card;
+            }
+            GUI.color = prevColor;
         }
 
         private void DrawCardList()
@@ -128,19 +164,21 @@ namespace TacticalRPG.UI
 
             foreach (var card in _party.Party)
             {
-                if (card.IsCommander) continue; // komutan otomatik iner, listede gösterilmez
+                if (card.IsCommander) continue; // komutan YUKARIDA ayri cizilir (zorunlu birim) // komutan otomatik iner, listede gösterilmez
                 bool deployed = _deployment.IsCardDeployed(card);
                 bool selected = _deployment.SelectedCard == card;
 
-                string tag = deployed ? "  [yerlesti]"
+                string tag = deployed ? "  [yerlesti - kaldir]"
                            : selected ? "  ◄ secili"
                            : "";
                 string label = $"{card.Data.ClassName} Sv{card.Level}  HP{card.MaxHP}{tag}";
 
-                GUI.enabled = !deployed;
+                // Yerlesmis kart da tiklanabilir: yanlis hucreye konan birim geri alinabilsin.
                 if (GUILayout.Button(label, GUILayout.Height(28)))
-                    _deployment.SelectedCard = selected ? null : card;
-                GUI.enabled = true;
+                {
+                    if (deployed) _deployment.TryUndeploy(card);
+                    else          _deployment.SelectedCard = selected ? null : card;
+                }
             }
         }
     }

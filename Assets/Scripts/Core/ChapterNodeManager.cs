@@ -123,6 +123,7 @@ namespace TacticalRPG.Core
         {
             _nodes.Clear();
             Boss = null;
+            BossFightResolved = false;   // yeni harita → oyun sonu ekranı kapanır
             ClearMarkers();
             if (_fog != null) _fog.ClearPermanentReveals();
 
@@ -273,6 +274,10 @@ namespace TacticalRPG.Core
         /// <summary>Boss taşı cepte mi? <see cref="MandatoryQuestDirector"/> yazar.</summary>
         public bool BossStoneHeld { get; private set; }
 
+        /// <summary>BOSS SAVAŞI oynandı ve bitti (kazanıldı ya da kaybedildi) — oyun sonu ekranı
+        /// buna bakar. Harita yeniden üretilince sıfırlanır.</summary>
+        public bool BossFightResolved { get; private set; }
+
         /// <summary>Kapı devrede mi? Yalnız yönetici <see cref="SetBossStone"/> çağırınca açılır —
         /// yönetici sahnede YOKSA boss eskisi gibi taşsız girilebilir kalır, yoksa bölüm sessizce
         /// bitirilemez hâle gelirdi.</summary>
@@ -378,10 +383,22 @@ namespace TacticalRPG.Core
         {
             if (n == null || n.Completed) return false;
             if (n.Type == MapNodeType.Market) return IsMarketOpen();
+
             // Bossa yalnız BOSS TAŞI ile girilir. Taş, O AN AÇIK olan zorunlu görevlerin hepsi
             // bitince verilir ve zincir kapanır (MandatoryQuestDirector). Taşı olan istediği an girer.
-            if (n.Type == MapNodeType.Boss && BossLockedByStone) return false;
-            return _ap == null || _ap.CurrentAP >= EffectiveAPCost(n);
+            if (n.Type == MapNodeType.Boss)
+            {
+                if (BossLockedByStone) return false;
+                // TAŞ CEPTEYSE AP KAPISI YOK (kullanıcı kuralı 2026-09-01): bölümün finali
+                // saatin kaçta bittiğine takılmaz. Maliyet yine ödenir (Enter'da SpendAP).
+                return true;
+            }
+
+            // AP KAPISI DİLİM DEĞİL GÜN ÜZERİNDEN (2026-09-01'de bulunan hata). CurrentAP yalnız
+            // İÇİNDE BULUNULAN dilimin kalanıdır ve dilim başına AP 4. Boss 5, zorunlu görev 5,
+            // zindan 6 AP istiyor → bu düğümlerin düğmesi HİÇBİR ZAMAN açılmıyordu. Oysa SpendAP
+            // dilimleri devirerek harcıyor; kapı da harcamanın gerçekten yapabildiğini sormalı.
+            return _ap == null || _ap.APRemainingToday >= EffectiveAPCost(n);
         }
 
         // ── Eylemler ─────────────────────────────────────────────────────────
@@ -418,6 +435,14 @@ namespace TacticalRPG.Core
                 case MapNodeType.Boss:
                     // Savaşa yönlendir; ödül DÖNÜŞTE verilir (girmeden bilinmesin).
                     MissionData mission = _missions != null ? _missions.GetEnterableMission(n.Coord) : null;
+
+                    // BOSS KONUMSUZ: koordinatı yok (Hex(0,0) kalıyor), menzil aramasıyla görev
+                    // BULUNAMIYOR → düğüm sessizce "tamamlandı" sayılıp savaş HİÇ açılmıyordu.
+                    // Şimdilik NORMAL savaş alanına giriyor (kullanıcı kararı 2026-09-01):
+                    // varsayılan savaş görevi kullanılır, arena prosedürel olarak üretilir.
+                    if (mission == null && n.Type == MapNodeType.Boss && _missions != null)
+                        mission = _missions.DefaultCombatMission;
+
                     if (mission != null && _state != null)
                     {
                         _pendingCombatNode = n;
@@ -468,7 +493,7 @@ namespace TacticalRPG.Core
             // bir düğüm varsa onu bekleyen say → dönüşte tamamlanır ve ÖDÜLÜ verilir.
             if ((s == GameState.ConfirmMission || s == GameState.Combat) && _pendingCombatNode == null && _player != null)
             {
-                MapNode n = NodeForPlayer(_player.CurrentCoord);
+                MapNode n = NodeForCombatEntry(_player.CurrentCoord);
                 if (n != null && !n.Completed && IsCombatNode(n.Type)) _pendingCombatNode = n;
             }
 
@@ -481,7 +506,38 @@ namespace TacticalRPG.Core
                 MapNode finished   = _pendingCombatNode;
                 _pendingCombatNode = null;
                 Complete(finished);
+
+                // BOSS SAVAŞI BİTTİ → oyun sonu. Kazanmak da kaybetmek de bölümü BİTİRİYOR
+                // (kullanıcı kararı 2026-09-01: gerçek akışta zafer sonraki haritaya geçirecek,
+                // şimdilik iki sonuçta da "oyun bitti" ekranı çıkıyor).
+                if (finished.Type == MapNodeType.Boss)
+                {
+                    BossFightResolved = true;
+                    OnNodesChanged?.Invoke();
+                }
             }
+        }
+
+        /// <summary>
+        /// SAVAŞA GİRİLEN DÜĞÜM. Oyuncu düğümün ÜSTÜNDE durmak zorunda değil: savaş istemi
+        /// (<see cref="MissionManager"/>) menzil içindeki savaş karosunu da kabul ediyor.
+        /// Burada eskiden yalnız AYNI karoya bakılıyordu → yan karodan girilen görev dönüşte
+        /// tamamlanmıyor, karo mühürlenmiyor ve minihatitadaki sembolü silinmiyordu; aynı göreve
+        /// defalarca girilebiliyordu (2026-09-01 hata raporu).
+        ///
+        /// Yakınlık TAHMİN EDİLMEZ, görev sistemine SORULUR: hangi karodan savaş açılıyorsa o
+        /// karonun düğümü alınır. Aksi halde bitişikteki bir karşılaşmaya girmek, yanındaki
+        /// zorunlu görevi de bedavaya "tamamlanmış" sayardı.
+        /// </summary>
+        private MapNode NodeForCombatEntry(HexCoordinate playerCoord)
+        {
+            MapNode here = NodeAt(playerCoord);
+            if (here != null && IsCombatNode(here.Type)) return here;
+
+            if (_missions != null && _missions.TryGetEnterableTile(playerCoord, out HexCoordinate tile))
+                return NodeAt(tile);
+
+            return null;
         }
 
         private static bool IsCombatNode(MapNodeType t)
@@ -498,9 +554,26 @@ namespace TacticalRPG.Core
             var marker = MarkerOf(n);
             if (marker != null) marker.SetActive(false);
 
+            // BİTEN SAVAŞ DÜĞÜMÜNÜN KAROSU ARTIK SAVAŞ AÇMAZ. Düğümü "tamamlandı" işaretlemek
+            // YETMİYOR: savaş istemi düğüme değil karonun CanEnterCombat bayrağına bakıyor
+            // (MissionManager). Bayrak kapanmazsa bitmiş zindana/karşılaşmaya tekrar tekrar
+            // girilebiliyordu (2026-09-01 hata raporu; zorunlu görevde 2026-08-28'de aynı
+            // ders alınmıştı).
+            //   • Zorunlu görev: karo ALTIN 'gorev_tamam'a dönüşür (mühür + kutlama).
+            //   • Zindan/karşılaşma: mağara/kamp modeli MANZARA olarak kalır, yalnız kapı kapanır.
+            //   • Boss: karosu yok (konumsuz) — Hex(0,0)'daki masum karoya dokunulmaz.
             if (n.Type == MapNodeType.Mandatory) SealMandatory(n);
+            else if (n.Type == MapNodeType.Zindan || n.Type == MapNodeType.Encounter)
+                DisableCombatTile(n.Coord);
 
             OnNodesChanged?.Invoke();
+        }
+
+        /// <summary>Karonun savaş kapısını kapatır (model/görsel korunur).</summary>
+        private void DisableCombatTile(HexCoordinate coord)
+        {
+            if (_grid != null && _grid.TryGetCell(coord, out HexCell cell))
+                cell.CanEnterCombat = false;
         }
 
         /// <summary>
@@ -513,7 +586,14 @@ namespace TacticalRPG.Core
         /// </summary>
         private void SealMandatory(MapNode n)
         {
-            if (_map == null) return;
+            // Karo id'sini değiştirmek haritaya bağlı ama SAVAŞ BAYRAĞINI kapatmak değil:
+            // _map bağlı olmasa bile bitmiş göreve yeniden girilememeli.
+            if (_map == null)
+            {
+                if (_grid != null && _grid.TryGetCell(n.Coord, out HexCell bare))
+                    bare.CanEnterCombat = false;
+                return;
+            }
 
             // Dönüşüm hüzme YERE VARDIĞI anda olur (efekt geri çağırır); efekt bağlı değilse
             // anında olur — kural hiçbir koşulda görsele bağlı kalmasın.

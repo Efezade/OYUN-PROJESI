@@ -21,6 +21,10 @@ namespace TacticalRPG.UI
     /// İKİ MOD: <see cref="Play"/> tek seferlik gösteri (belirir → söner), <see cref="SetSustained"/>
     /// ise "hazır" durumunda sönük ama sürekli bir parıltı bırakır — token silahlandığı sürece
     /// ekran bunu göstererek durumu hatırlatır.
+    ///
+    /// TEK RENK KİPİ (<see cref="SetTint"/>, 2026-09-01): "YOL BELİRLE" açıkken ekran GÖKKUŞAĞI
+    /// DEĞİL kırmızımsı parlar — iki mod bakışta ayrılsın diye (kullanıcı isteği). Animasyon
+    /// aynı kalır: ton dönmek yerine PARLAKLIK aynı fazlarla kenarda dolaşır.
     /// </summary>
     public class MinimapGlowEffect : MonoBehaviour
     {
@@ -51,6 +55,9 @@ namespace TacticalRPG.UI
         private bool  _sustained;
         private bool  _painted;          // en son bir şey çizdik mi (0'a inince BİR KEZ temizlemek için)
         private Color _frameBase = Color.clear;
+        private bool  _tinted;           // true → gökkuşağı yok, tek renk dalgalanır
+        private Color _tint    = Color.red;
+        private Color _tintDim = Color.black;
 
         private void Awake()
         {
@@ -71,6 +78,18 @@ namespace TacticalRPG.UI
         /// <summary>"Hazır" parıltısı: token silahlıyken sönük ama sürekli.</summary>
         public void SetSustained(bool on) => _sustained = on;
 
+        /// <summary>TEK RENK kipi: gökkuşağı yerine bu tonun koyusu ↔ açığı arasında dalgalanır
+        /// ("YOL BELİRLE" için kırmızımsı). Aynı dolaşan-ışık animasyonu, tek renkle.</summary>
+        public void SetTint(Color tint)
+        {
+            _tinted = true;
+            _tint   = tint;
+            _tintDim = Color.Lerp(Color.black, tint, 0.30f);
+        }
+
+        /// <summary>Gökkuşağına döner (güçlü yol taşı kipi).</summary>
+        public void ClearTint() => _tinted = false;
+
         private void Update()
         {
             float intensity = Mathf.Max(BurstEnvelope(), SustainEnvelope());
@@ -84,26 +103,36 @@ namespace TacticalRPG.UI
             _painted = true;
             float hue = Mathf.Repeat(Time.unscaledTime * _hueSpeed, 1f);
 
-            // Çerçeve şeritleri: her biri turun farklı bir noktasında → renk kenarda dolaşır.
+            // Çerçeve şeritleri: her biri turun farklı bir noktasında → ışık kenarda dolaşır.
             if (_border != null)
                 for (int i = 0; i < _border.Length; i++)
                 {
                     if (_border[i] == null) continue;
-                    float h = Mathf.Repeat(hue + i / (float)_border.Length, 1f);
-                    Color c = Color.HSVToRGB(h, _saturation, 1f);
+                    Color c = Shade(hue + i / (float)_border.Length, 1f);
                     c.a = intensity;
                     _border[i].color = c;
                 }
 
             if (_surface != null)
             {
-                Color c = Color.HSVToRGB(Mathf.Repeat(hue + 0.5f, 1f), _saturation * 0.8f, 1f);
+                Color c = Shade(hue + 0.5f, 0.8f);
                 c.a = intensity * _surfaceStrength;
                 _surface.color = c;
             }
 
             if (_frame != null)
-                _frame.color = Color.Lerp(_frameBase, Color.HSVToRGB(hue, _saturation, 1f), intensity * 0.75f);
+                _frame.color = Color.Lerp(_frameBase, Shade(hue, 1f), intensity * 0.75f);
+        }
+
+        /// <summary>Fazın rengi. Gökkuşağı kipinde faz = TON; tek renk kipinde faz = PARLAKLIK
+        /// (aynı dolaşma hissi, tek tonla). Doygunluk çarpanı yalnız gökkuşağında anlamlı.</summary>
+        private Color Shade(float phase, float saturationScale)
+        {
+            phase = Mathf.Repeat(phase, 1f);
+            if (!_tinted) return Color.HSVToRGB(phase, _saturation * saturationScale, 1f);
+
+            float wave = (Mathf.Sin(phase * Mathf.PI * 2f) + 1f) * 0.5f;
+            return Color.Lerp(_tintDim, _tint, Mathf.Lerp(0.25f, 1f, wave));
         }
 
         // 0 → 1 → 0: gösteri belirir ve söner.

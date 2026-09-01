@@ -379,6 +379,17 @@ namespace TacticalRPG.Editor
             if (oldPreview != null) Object.DestroyImmediate(oldPreview);
             PathPreview pathPreview = gameManagerGO.AddComponent<PathPreview>();
 
+            // RouteMarker (harita ekranındaki YOL BELİRLE işareti) — aynı ev, ayrı iş: bu hiçbir
+            // hareket başlatmaz, yalnız seçilen karoya giden hayali çizgiyi çizer.
+            var oldRoute = gameManagerGO.GetComponent<RouteMarker>();
+            if (oldRoute != null) Object.DestroyImmediate(oldRoute);
+            RouteMarker routeMarker = gameManagerGO.AddComponent<RouteMarker>();
+            var routeSO = new SerializedObject(routeMarker);
+            routeSO.FindProperty("_grid").objectReferenceValue   = gridManager;
+            routeSO.FindProperty("_player").objectReferenceValue = playerCtrl;
+            routeSO.FindProperty("_fog").objectReferenceValue     = fogManager;
+            routeSO.ApplyModifiedProperties();
+
             // MapInputHandler
             var oldInput = gameManagerGO.GetComponent<MapInputHandler>();
             if (oldInput != null) Object.DestroyImmediate(oldInput);

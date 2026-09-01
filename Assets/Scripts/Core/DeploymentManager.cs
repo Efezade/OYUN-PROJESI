@@ -6,9 +6,18 @@ namespace TacticalRPG.Core
 {
     /// <summary>
     /// Savaş öncesi YERLEŞTİRME fazını yönetir: yerleştirme bölgesini vurgular,
-    /// seçili kartı öz harcayarak hex'e Unit olarak spawn eder.
+    /// seçili kartı hex'e Unit olarak indirir.
     /// GameStateManager.OnStateChanged'i dinler — Deployment'a girince kurar, çıkınca temizler.
     /// (Event-driven; durum makinesine tek yönlü bağlı.)
+    ///
+    /// KOMUTAN (KAM) ARTIK ELLE YERLEŞTİRİLİR (kullanıcı isteği 2026-09-01). Eskiden savaş
+    /// başında otomatik olarak alt-orta hücreye inerdi; oyuncu onu istediği yere koyamıyordu.
+    /// Yeni kural:
+    ///   • Kam yerleştirme listesinde HAZIR durur ve ÖZ İSTEMEZ — diğer sınıflar önce öz
+    ///     tarifiyle ÜRETİLİR, Kam ise partide zaten var (üretilmesi gerekmez).
+    ///   • İstenen hücreye, diğer kartlarla aynı yolla (kart seç → mavi hex'e tıkla) iner.
+    ///   • KAM OLMADAN SAVAŞ BAŞLAMAZ: kapı <see cref="TryStartBattle"/>'da, yalnız HUD'un
+    ///     düğmesini kapatmakla bırakılmadı (kritik kural kodda da açıkça yazılır).
     /// </summary>
     public class DeploymentManager : MonoBehaviour
     {
@@ -16,7 +25,7 @@ namespace TacticalRPG.Core
         [SerializeField] private GameStateManager _stateManager;
         [SerializeField] private HexGridManager    _grid;
         [SerializeField] private UnitManager       _unitManager;
-        [Tooltip("Komutanı (Kam) otomatik indirmek için parti kaynağı.")]
+        [Tooltip("Yerleştirilecek kartların kaynağı — komutan kartı da buradan bulunur.")]
         [SerializeField] private PartyManager      _party;
 
         [Header("Yerleştirme Bölgesi")]
@@ -37,12 +46,20 @@ namespace TacticalRPG.Core
         private readonly HashSet<CharacterCard> _deployedCards = new();
         private Transform _container;
         private Material  _zoneMat;
-        private Unit      _commanderUnit; // otomatik inen Kam (ücretsiz, zorunlu)
+        private Unit      _commanderUnit; // yerleştirilmiş Kam (yoksa null → savaş başlamaz)
 
         public IReadOnlyList<HexCoordinate> Zone => _zone;
         public int  DeployedCount => _deployed.Count;
-        public Unit CommanderUnit => _commanderUnit; // otomatik inen Kam (yoksa null)
+        /// <summary>Sahaya inmiş komutan (Kam). Yerleştirilmediyse null.</summary>
+        public Unit CommanderUnit => _commanderUnit;
+        /// <summary>Kam sahada mı? Savaşın başlaması buna bağlı.</summary>
+        public bool IsCommanderDeployed => _commanderUnit != null;
+        /// <summary>Savaş başlatılabilir mi? TEK KOŞUL: komutan sahada.</summary>
+        public bool CanStartBattle => IsCommanderDeployed;
         public bool IsCardDeployed(CharacterCard c) => c != null && _deployedCards.Contains(c);
+
+        /// <summary>Partideki komutan kartı (HUD listede en üste koyar). Yoksa null.</summary>
+        public CharacterCard CommanderCard => FindCommanderCard();
 
         private void OnEnable()
         {
@@ -71,7 +88,10 @@ namespace TacticalRPG.Core
             TeardownDeployment(); // önceki kalıntı varsa temizle
             BuildZone();
             ShowMarkers();
-            SpawnCommander();     // Kam zorunlu + ücretsiz iner
+            // Kam ARTIK OTOMATİK İNMEZ — oyuncu onu da elle yerleştirir (2026-09-01).
+            // Faz boyunca seçili kart olarak komutanla başlıyoruz: zorunlu birim ilk sırada,
+            // oyuncu ekrana girer girmez tek tıkla yerini seçebilir.
+            SelectedCard = FindCommanderCard();
         }
 
         // Pedleri kaldırır, yerleştirilen birimleri despawn eder, seçimi sıfırlar.
@@ -107,7 +127,6 @@ namespace TacticalRPG.Core
         {
             if (_stateManager == null || _stateManager.State != GameState.Deployment) return false;
             if (SelectedCard == null)              return false;
-            if (SelectedCard.IsCommander)          return false; // Kam otomatik iner, elle yerleştirilmez
             if (IsCardDeployed(SelectedCard))      return false;
             if (!_zone.Contains(coord))            return false;
             if (_unitManager != null && _unitManager.GetUnitAt(coord) != null) return false;
@@ -116,7 +135,9 @@ namespace TacticalRPG.Core
             Unit unit = SpawnUnit(coord, SelectedCard);
             _deployed.Add(unit);
             _deployedCards.Add(SelectedCard);
-            Debug.Log($"[Deployment] {SelectedCard.Data.ClassName} → {coord} yerleştirildi.");
+            if (SelectedCard.IsCommander) _commanderUnit = unit;   // savaş kapısı buna bakıyor
+            Debug.Log($"[Deployment] {SelectedCard.Data.ClassName} → {coord} yerleştirildi" +
+                      (SelectedCard.IsCommander ? " (komutan)." : "."));
 
             SelectedCard = null; // bir tıkta bir kart
             return true;
@@ -164,50 +185,57 @@ namespace TacticalRPG.Core
             return unit;
         }
 
-        // ── Komutan (Kam) — zorunlu + ücretsiz iniş ───────────────────────────
-
-        /// <summary>Partideki komutanı (Kam) öz harcamadan, yerleştirme bölgesine otomatik indirir.</summary>
-        private void SpawnCommander()
-        {
-            if (_party == null) return;
-
-            CharacterCard commander = FindCommanderCard();
-            if (commander == null) return;
-
-            if (!TryPickCommanderCell(out HexCoordinate cell))
-            {
-                Debug.LogWarning("[Deployment] Komutan için boş yerleştirme hücresi bulunamadı.");
-                return;
-            }
-
-            _commanderUnit = SpawnUnit(cell, commander);
-            _deployed.Add(_commanderUnit);
-            _deployedCards.Add(commander);
-            Debug.Log($"[Deployment] Komutan {commander.Data.ClassName} → {cell} otomatik indi (ücretsiz).");
-        }
+        // ── Komutan (Kam) + geri alma + savaş kapısı ──────────────────────────
 
         private CharacterCard FindCommanderCard()
         {
+            if (_party == null) return null;
             foreach (var c in _party.Party)
                 if (c != null && c.IsCommander) return c;
             return null;
         }
 
-        // Yerleştirme bölgesinde komutana en uygun boş hücreyi seç (alt-orta tercih edilir).
-        private bool TryPickCommanderCell(out HexCoordinate result)
+        /// <summary>
+        /// Yerleştirilmiş bir kartı geri alır (birim yok edilir, kart yeniden yerleştirilebilir).
+        /// GEREKLİ ÇÜNKÜ: Kam artık elle iniyor. Yanlış hücreye konan komutanı düzeltmenin tek
+        /// yolu "Geri Dön → savaşa yeniden gir" olsaydı, elle yerleştirme bir tuzağa dönerdi.
+        /// </summary>
+        public bool TryUndeploy(CharacterCard card)
         {
-            result = default;
-            int  centerQ = _grid != null ? _grid.Width / 2 : 5;
-            int  bestScore = int.MaxValue;
-            bool found = false;
+            if (_stateManager == null || _stateManager.State != GameState.Deployment) return false;
+            if (card == null || !_deployedCards.Contains(card)) return false;
 
-            foreach (var coord in _zone)
+            for (int i = _deployed.Count - 1; i >= 0; i--)
             {
-                if (_unitManager != null && _unitManager.GetUnitAt(coord) != null) continue;
-                int score = coord.R * 100 + Mathf.Abs(coord.Q - centerQ); // önce en alt satır, sonra merkez sütun
-                if (score < bestScore) { bestScore = score; result = coord; found = true; }
+                Unit u = _deployed[i];
+                if (u == null || u.Card != card) continue;
+
+                _deployed.RemoveAt(i);
+                if (u == _commanderUnit) _commanderUnit = null;
+                Destroy(u.gameObject);
             }
-            return found;
+
+            _deployedCards.Remove(card);
+            SelectedCard = card;          // hemen yeniden konabilsin
+            return true;
+        }
+
+        /// <summary>
+        /// SAVAŞ KAPISI — Kam sahada değilse savaş başlamaz (kullanıcı kuralı 2026-09-01).
+        /// Kural HUD'un düğmesini kapatmakla BIRAKILMADI: düğme yalnız geri bildirim, karar burada.
+        /// </summary>
+        public bool TryStartBattle()
+        {
+            if (_stateManager == null || _stateManager.State != GameState.Deployment) return false;
+
+            if (!IsCommanderDeployed)
+            {
+                Debug.LogWarning("[Deployment] Komutan (Kam) yerleştirilmeden savaş baslatilamaz.");
+                return false;
+            }
+
+            _stateManager.StartBattle();
+            return true;
         }
 
         // ── Görsel vurgulama ──────────────────────────────────────────────────

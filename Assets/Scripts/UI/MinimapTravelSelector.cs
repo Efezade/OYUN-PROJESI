@@ -30,6 +30,17 @@ namespace TacticalRPG.UI
     ///     geçiriyordu → sisi açmanın bir anlamı kalmıyordu. Artık "keşfedilmiş karolar arasında
     ///     en kısa yol" aranır; keşif ağı kopuksa yolculuk hiç önerilmez, sebebi yazılır.
     ///
+    /// İKİNCİ İŞ — YOL BELİRLE / DURAKLI ROTA (kullanıcı isteği 2026-09-01): aynı harita, aynı
+    /// tıklama boru hattı, TAMAMEN FARKLI amaç. Taş harcanmaz, kimse yürümez; konan duraklar
+    /// <see cref="RouteMarker"/>'a gider, o da 3B arazide karo karo giden patikayı çizer.
+    /// Ayrımlar bilinçli:
+    ///   • Seyahatin HEDEFİ tektir ve keşfedilmiş olmalıdır; rotanın DURAKLARI çok olabilir
+    ///     (Google Maps deseni) ve sisin içinde de durabilir — oraya gidilmiyor, oraya BAKILIYOR.
+    ///   • Seyahatte tık seçer, alttaki ONAYLA yürütür; rotada her tık bir durak EKLER, durağa
+    ///     tıklamak SİLER, şeritteki düğme hepsini birden temizler. Onay adımı yok.
+    ///   • Ekran parlaması seyahatte GÖKKUŞAĞI, yol belirlemede KIRMIZIMSI: hangi kipte olduğun
+    ///     haritanın kendisinden okunur.
+    ///
     /// Fare olayları maskeli harita yuvasına düşer; sürükleme <see cref="MinimapPanZoom"/>'un,
     /// tıklama bu bileşenin. İkisi aynı nesnede durur, biri diğerini bilmez.
     /// </summary>
@@ -71,6 +82,17 @@ namespace TacticalRPG.UI
                  "gitmek ~4 taş eder (kullanıcı isteği 2026-08-17).")]
         [SerializeField, Range(2, 12)] private int _powerStoneDivisions = 4;
 
+        [Header("Yol belirle (duraklı rota)")]
+        [Tooltip("Güçlü yol taşı düğmesinin ALTINDAKİ bar. Basınca harita kırmızımsı parlar; " +
+                 "her tık bir DURAK ekler, durağa tıklamak siler.")]
+        [SerializeField] private Button      _routeButton;
+        [Tooltip("Durakları tutan ve patikayı 3B haritada çizen bileşen (GameManager üstünde).")]
+        [SerializeField] private RouteMarker _routeMarker;
+        [Tooltip("Kip açıkken harita KIRMIZIMSI parlar — güçlü yol taşının gökkuşağından ayrılsın.")]
+        [SerializeField] private Color _routeGlowColor      = new(1f, 0.26f, 0.20f);
+        [Tooltip("Minihatitadaki durak bayrakları ve bacak noktalarının rengi.")]
+        [SerializeField] private Color _routeSelectionColor = new(1f, 0.48f, 0.40f);
+
         [Header("Ayarlar")]
         [Tooltip("Yürünemez karoya tıklanınca en yakın yürünebilir karo kaç halka içinde aranır.")]
         [SerializeField, Range(1, 8)] private int _nearestSearchRings = 4;
@@ -94,31 +116,46 @@ namespace TacticalRPG.UI
         private List<HexCell>  _path;
         private Image          _selectionImage;
         private GameObject     _selectionGO;
+        private Color          _pulseColor;      // seçim halkasının nabız rengi (kipe göre değişir)
+        // Rota işaretleri (duraklar + bacak noktaları) AYRI tutulur: _markers her seçimde
+        // silinir, rota ise kalıcı bir plandır — ekran açık kaldığı sürece durmalı.
+        private readonly List<(GameObject go, float scale)> _routeMarkers = new();
         private Vector2        _lastMarkerSize;
         private Vector2        _pressScreen;
         private HexPathfinder  _pathfinder;
 
-        private void Awake() => _pathfinder = new HexPathfinder();
+        private void Awake()
+        {
+            _pathfinder = new HexPathfinder();
+            // Kurulum bağlamayı atlamış olsa bile yol işareti çalışsın (bkz. CLAUDE.md: kritik
+            // bağ yalnız editör kurulumuna bırakılmaz).
+            if (_routeMarker == null) _routeMarker = FindFirstObjectByType<RouteMarker>();
+        }
 
         private void OnEnable()
         {
             if (_confirmButton != null) _confirmButton.onClick.AddListener(Confirm);
-            if (_cancelButton  != null) _cancelButton.onClick.AddListener(Clear);
+            if (_cancelButton  != null) _cancelButton.onClick.AddListener(OnCancel);
             if (_powerButton   != null) _powerButton.onClick.AddListener(TogglePower);
+            if (_routeButton   != null) _routeButton.onClick.AddListener(ToggleRoute);
             if (_buffs != null) _buffs.OnTravelStonesChanged += RefreshStoneUI;
+            if (_routeMarker != null) _routeMarker.OnChanged += RefreshRouteMarkers;
 
             // Ekran her açıldığında SİLAHSIZ başlar: bir önceki seferden kalan "hazır" durumuyla
             // farkında olmadan taş harcanmasın.
             SetMode(TravelMode.None);
             Clear();
+            RefreshRouteMarkers();     // duran rota ekran açılınca yine görünsün
         }
 
         private void OnDisable()
         {
             if (_confirmButton != null) _confirmButton.onClick.RemoveListener(Confirm);
-            if (_cancelButton  != null) _cancelButton.onClick.RemoveListener(Clear);
+            if (_cancelButton  != null) _cancelButton.onClick.RemoveListener(OnCancel);
             if (_powerButton   != null) _powerButton.onClick.RemoveListener(TogglePower);
+            if (_routeButton   != null) _routeButton.onClick.RemoveListener(ToggleRoute);
             if (_buffs != null) _buffs.OnTravelStonesChanged -= RefreshStoneUI;
+            if (_routeMarker != null) _routeMarker.OnChanged -= RefreshRouteMarkers;
 
             SetMode(TravelMode.None);
             Clear();
@@ -135,7 +172,7 @@ namespace TacticalRPG.UI
         /// tür) 2026-08-19'da kullanıcı isteğiyle KALDIRILDI — iki taşlı seçim ekranı, ikisi de
         /// aynı işi yaptığı için yalnız kafa karıştırıyordu.
         /// </summary>
-        private enum TravelMode { None = 0, Power = 1 }
+        private enum TravelMode { None = 0, Power = 1, Route = 2 }
 
         private TravelMode _mode = TravelMode.None;
         private int        _stonesNeeded;   // bu yolculuğun kaç taş ettiği
@@ -150,11 +187,69 @@ namespace TacticalRPG.UI
             if (_glow != null) _glow.Play();  // parlama gösterisi
         }
 
+        /// <summary>YOL BELİRLE barı: taş harcamaz, kimseyi yürütmez — durak koydurur.
+        /// Aynı düğme kipi açıp kapatır; kip açıkken her tık bir durak ekler ya da siler.
+        /// Kip kapansa bile ROTA DURUR: konan duraklar kalıcı bir plandır.</summary>
+        private void ToggleRoute()
+        {
+            if (_mode == TravelMode.Route) { SetMode(TravelMode.None); Clear(); return; }
+
+            SetMode(TravelMode.Route);
+            Clear();
+            if (_glow != null) _glow.Play();
+            ShowPromptText("Karoya tıkla: DURAK ekle (sisin içi de olur)  ·  durağa tıkla: sil  ·  " +
+                           "aşağıdaki düğme: rotayı temizle.");
+            RefreshRouteMarkers();
+        }
+
         private void SetMode(TravelMode mode)
         {
             _mode = mode;
-            if (_glow != null) _glow.SetSustained(mode != TravelMode.None);
+            if (_glow != null)
+            {
+                // Kip rengi: yol belirlemede tek renk (kırmızımsı), seyahatte gökkuşağı.
+                if (mode == TravelMode.Route) _glow.SetTint(_routeGlowColor);
+                else                          _glow.ClearTint();
+                _glow.SetSustained(mode != TravelMode.None);
+            }
             RefreshStoneUI();
+            RefreshRouteUI();
+        }
+
+        private void RefreshRouteUI()
+        {
+            bool armed = _mode == TravelMode.Route;
+            int  stops = _routeMarker != null ? _routeMarker.StopCount : 0;
+
+            if (_routeButton != null)
+            {
+                var label = _routeButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (label != null)
+                    label.text = armed     ? $"YOL BELİRLE: AÇIK ({stops} durak)"
+                               : stops > 0 ? $"YOL BELİRLE ({stops} durak)"
+                                           : "YOL BELİRLE";
+            }
+
+            // Şeritteki düğme kipe göre iş değiştirir: seyahatte seçimi bırakır, rota kipinde
+            // TÜM durakları siler. Yazısı da onu söylemeli, yoksa "vazgeç" yanlış vaat olur.
+            if (_cancelButton != null)
+            {
+                var cancelLabel = _cancelButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (cancelLabel != null)
+                    cancelLabel.text = armed && stops > 0 ? "ROTAYI SİL" : "VAZGEÇ";
+            }
+        }
+
+        /// <summary>Şeritteki düğme: rota kipinde TÜM durakları siler, değilse seçimi bırakır.</summary>
+        private void OnCancel()
+        {
+            if (_mode == TravelMode.Route && _routeMarker != null && _routeMarker.HasRoute)
+            {
+                _routeMarker.ClearAll();
+                ShowPromptText("Rota silindi. Karoya tıklayarak yeni durak ekleyebilirsin.");
+                return;
+            }
+            Clear();
         }
 
         private void RefreshStoneUI()
@@ -201,23 +296,18 @@ namespace TacticalRPG.UI
 
         private void SelectAt(PointerEventData e)
         {
+            if (_mode == TravelMode.Route) { MarkRouteAt(e); return; }
+
             // TAŞSIZ SEYAHAT YOK: önce bir yol taşı kullanılmalı. Sessizce hiçbir şey yapmak
             // yerine sebebini yazıyoruz — yoksa oyuncu haritanın bozuk olduğunu sanır.
-            if (_mode == TravelMode.None) { ShowHint("Gitmek için önce GÜÇLÜ YOL TAŞI kullan."); return; }
+            if (_mode == TravelMode.None) { ShowHint("Gitmek için GÜÇLÜ YOL TAŞI, yalnız işaret koymak için YOL BELİRLE kullan."); return; }
 
             if (_renderer == null || _grid == null || _player == null) { Clear(); return; }
             if (_state != null && _state.State != GameState.Overworld) { Clear(); return; }
             if (_run != null && _run.ChapterLost) { Clear(); return; }   // sert kesim: ilerleme yok
             if (_player.IsMoving) { Clear(); return; }
 
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    _content, e.position, e.pressEventCamera, out Vector2 local)) { Clear(); return; }
-
-            Rect r = _content.rect;
-            var uv = new Vector2((local.x - r.xMin) / r.width, (local.y - r.yMin) / r.height);
-            if (uv.x < 0f || uv.x > 1f || uv.y < 0f || uv.y > 1f) { Clear(); return; }
-
-            if (!_renderer.TryGetCoordAt(uv, out HexCoordinate clicked)) { Clear(); return; }
+            if (!TryCoordFromPointer(e, out HexCoordinate clicked)) { Clear(); return; }
 
             // Kendi karona tıklamak seçim değil, iptaldir. Aksi halde "en yakın geçerli karo"
             // araması rastgele bir komşuyu seçerdi — oyuncunun istemediği bir hamle.
@@ -226,6 +316,178 @@ namespace TacticalRPG.UI
             if (!TryResolveTarget(clicked, out HexCoordinate target)) { Clear(); return; }
 
             ShowRoute(target);
+        }
+
+        /// <summary>Tıklanan ekran noktasının karosu. Doku→UV→dünya→hex; 3B haritayla aynı dönüşüm.</summary>
+        private bool TryCoordFromPointer(PointerEventData e, out HexCoordinate coord)
+        {
+            coord = default;
+            if (_renderer == null || _content == null) return false;
+
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    _content, e.position, e.pressEventCamera, out Vector2 local)) return false;
+
+            Rect r = _content.rect;
+            var uv = new Vector2((local.x - r.xMin) / r.width, (local.y - r.yMin) / r.height);
+            if (uv.x < 0f || uv.x > 1f || uv.y < 0f || uv.y > 1f) return false;
+
+            return _renderer.TryGetCoordAt(uv, out coord);
+        }
+
+        // ── Rota / duraklar (YOL BELİRLE kipi) ──────────────────────────────
+
+        /// <summary>
+        /// YOL BELİRLE tıklaması — GOOGLE MAPS "durak ekle" deseni:
+        ///   • Boş bir karoya tık → SONA yeni durak eklenir (rota o sırayla gezilir).
+        ///   • Var olan durağa tık → o durak SİLİNİR. Ayrı bir silme düğmesi gerekmiyor.
+        ///   • Alttaki şeritteki "ROTAYI TEMİZLE" hepsini birden siler.
+        /// Seyahatten farkları: taş harcanmaz, kimse yürümez, sis denetlenmez (sisin içindeki
+        /// karo da durak olabilir). Yürünemez karoya tıklanırsa EN YAKIN yürünebilir karoya
+        /// kayar — Maps'in durağı en yakın yola oturtması gibi; yoksa oraya patika çizilemezdi.
+        ///
+        /// TEK TIK yeter (eski çift tık kaldırıldı): beş duraklı bir rota on isabetli tık
+        /// isterdi. Yanlışlıkla eklenen durak zaten tek tıkla siliniyor, sürükleme de
+        /// <see cref="_dragThreshold"/> ile tıklamadan ayrılıyor.
+        /// </summary>
+        private void MarkRouteAt(PointerEventData e)
+        {
+            if (_routeMarker == null)
+            { ShowHint("Rota bileşeni sahnede yok (RouteMarker)."); return; }
+
+            if (_grid == null || _renderer == null) return;
+            if (_state != null && _state.State != GameState.Overworld) return;
+
+            if (!TryCoordFromPointer(e, out HexCoordinate coord)) return;
+
+            // Kendi karona durak konmaz: "en yakın uygun karo" araması rastgele bir komşuyu
+            // seçip oyuncunun istemediği bir durak bırakırdı.
+            if (_player != null && coord.Equals(_player.CurrentCoord))
+            { ShowPromptText("Zaten oradasın — durak başka bir karoya konur."); return; }
+
+            // Var olan durağa tıklamak = silmek. Kaydırmadan ÖNCE bakılır, yoksa durağın
+            // yanına tıklayan oyuncu onu silmek yerine ikinci bir durak koymuş olurdu.
+            if (_routeMarker.IndexOf(coord) >= 0)
+            {
+                _routeMarker.RemoveStop(coord);
+                RouteFeedback("Durak silindi.");
+                return;
+            }
+
+            if (!TryResolveStopTile(coord, out HexCoordinate stop))
+            { ShowHint("Oraya durak konamaz — yakınında yürünebilir karo yok."); return; }
+
+            if (_routeMarker.IndexOf(stop) >= 0)
+            { _routeMarker.RemoveStop(stop); RouteFeedback("Durak silindi."); return; }
+
+            if (_routeMarker.IsFull)
+            { ShowHint($"En fazla {_routeMarker.MaxStops} durak konabilir."); return; }
+
+            _routeMarker.AddStop(stop);
+            RouteFeedback($"{_routeMarker.StopCount}. durak eklendi.");
+        }
+
+        /// <summary>Durak karosu: YÜRÜNEBİLİR olmalı (patika oradan geçecek) ama sisli olabilir.
+        /// Tıklanan karo uymuyorsa halka halka dışa doğru en yakın uygun karo aranır.</summary>
+        private bool TryResolveStopTile(HexCoordinate clicked, out HexCoordinate stop)
+        {
+            stop = clicked;
+            if (IsStopTile(clicked)) return true;
+
+            for (int radius = 1; radius <= _nearestSearchRings; radius++)
+            {
+                HexCoordinate c = clicked;
+                for (int i = 0; i < radius; i++) c = c.GetNeighbor(4);
+
+                for (int side = 0; side < 6; side++)
+                    for (int step = 0; step < radius; step++)
+                    {
+                        if (IsStopTile(c)) { stop = c; return true; }
+                        c = c.GetNeighbor(side);
+                    }
+            }
+            return false;
+        }
+
+        private bool IsStopTile(HexCoordinate c)
+            => !c.Equals(_player != null ? _player.CurrentCoord : default) &&
+               _grid.TryGetCell(c, out HexCell cell) && cell.IsWalkable;
+
+        /// <summary>Durak eklendi/silindi: şeritte özet, işaretler yeniden çizilir.
+        /// Kip AÇIK KALIR — arka arkaya durak eklemek Maps'te de tek akıştır.</summary>
+        private void RouteFeedback(string what)
+        {
+            // İşaretleri BURADA yenilemeye gerek yok: durak ekleme/silme RouteMarker.OnChanged'i
+            // tetikliyor, o da RefreshRouteMarkers'ı çağırıyor. İkinci kez çağırmak aynı
+            // nesneleri bir karede iki kez yok edip yeniden kurmak olurdu.
+            if (!_routeMarker.HasRoute) { ShowPromptText(what + " Rota boş."); return; }
+
+            string summary = $"{what}  ·  {_routeMarker.StopCount} durak  ·  {_routeMarker.TotalTiles} karo";
+            if (_routeMarker.HasEstimate) summary += "  ·  sisin ötesi TAHMİNİ";
+            ShowPromptText(summary + "  ·  haritayı kapat: patika arazide görünür.");
+        }
+
+        /// <summary>Rotanın minihatitadaki gösterimi: bacaklar nokta nokta, duraklar numaralı
+        /// bayrakla. Kip kapalıyken de durur — rota kalıcı bir plandır, bir seçim değil.</summary>
+        private void RefreshRouteMarkers()
+        {
+            foreach ((GameObject go, float _) in _routeMarkers) if (go != null) Destroy(go);
+            _routeMarkers.Clear();
+
+            if (_routeMarker == null || !_routeMarker.HasRoute) { RefreshRouteUI(); return; }
+
+            // Bacaklar: planın ara karoları. Duraklar ve oyuncunun karosu atlanır (birinin
+            // üstünde bayrak, öbüründe canlı oyuncu noktası var).
+            IReadOnlyList<RouteMarker.Step> plan = _routeMarker.Plan;
+            for (int i = 1; i < plan.Count; i++)
+            {
+                RouteMarker.Step step = plan[i];
+                if (_routeMarker.IndexOf(step.Coord) >= 0) continue;
+
+                Color dot = _routeSelectionColor;
+                dot.a = step.Estimated ? _pathAlpha * 0.5f : _pathAlpha;
+                AddRouteMarker(step.Coord, MinimapIconKind.PathDot, dot, _pathDotScale, null);
+            }
+
+            // Duraklar: bayrak + sıra numarası. Sıradaki durak tam parlak, sonrakiler sönük
+            // (Maps'in aktif bacağı vurgulaması).
+            IReadOnlyList<HexCoordinate> stops = _routeMarker.Stops;
+            for (int i = 0; i < stops.Count; i++)
+            {
+                Color c = _routeSelectionColor;
+                c.a = i == 0 ? 1f : 0.62f;
+                AddRouteMarker(stops[i], MinimapIconKind.Waypoint, c, 1f, (i + 1).ToString());
+            }
+
+            RefreshRouteUI();
+        }
+
+        /// <summary>Rota işareti ekler; isteğe bağlı numara etiketiyle.</summary>
+        private void AddRouteMarker(HexCoordinate coord, MinimapIconKind kind, Color color,
+                                    float scale, string number)
+        {
+            Image img = AddMarker(coord, kind, color, scale, track: false);
+            if (img == null) return;
+
+            if (number != null)
+            {
+                var lblGO = new GameObject("No", typeof(RectTransform));
+                var lblRT = (RectTransform)lblGO.transform;
+                lblRT.SetParent(img.rectTransform, false);
+                lblRT.anchorMin = lblRT.anchorMax = new Vector2(1f, 1f);
+                lblRT.pivot     = new Vector2(0f, 0f);
+                lblRT.anchoredPosition = Vector2.zero;
+                lblRT.sizeDelta = new Vector2(26f, 26f);
+
+                var tmp = lblGO.AddComponent<TextMeshProUGUI>();
+                tmp.text          = number;
+                tmp.fontSize      = 18f;
+                tmp.color         = new Color(1f, 0.96f, 0.88f, color.a);
+                tmp.alignment     = TextAlignmentOptions.Center;
+                tmp.fontStyle     = FontStyles.Bold;
+                tmp.raycastTarget = false;
+            }
+
+            _routeMarkers.Add((img.gameObject, scale));
         }
 
         /// <summary>Tıklanan karo geçerli hedef mi? Değilse (dağ/su/bilinmeyen) EN YAKIN geçerli
@@ -292,6 +554,7 @@ namespace TacticalRPG.UI
             for (int i = 1; i < _path.Count - 1; i++)
                 AddMarker(_path[i].Coordinate, MinimapIconKind.PathDot, dot, _pathDotScale);
 
+            _pulseColor     = _selectionColor;
             _selectionImage = AddMarker(target, MinimapIconKind.Selection, _selectionColor, 1f);
             _selectionGO    = _selectionImage != null ? _selectionImage.gameObject : null;
             _lastMarkerSize = MarkerSize();
@@ -304,7 +567,13 @@ namespace TacticalRPG.UI
         {
             ClearMarkers();
             _path = null;
+            ShowPromptText(message);
+        }
 
+        /// <summary>Şeride yalnız YAZI koyar — işaretlere dokunmaz. Yol belirleme kipinde seçim
+        /// halkası ekranda dururken açıklama yazmak gerekiyor.</summary>
+        private void ShowPromptText(string message)
+        {
             if (_promptRoot != null) _promptRoot.SetActive(true);
             if (_costLabel  != null) _costLabel.text = message;
             if (_confirmButton != null) _confirmButton.gameObject.SetActive(false);
@@ -332,15 +601,22 @@ namespace TacticalRPG.UI
                 : $"{moves} karo  ·  {_stonesNeeded} güçlü yol taşı gerekir — yeterli taşın yok";
         }
 
-        private Image AddMarker(HexCoordinate coord, MinimapIconKind kind, Color color, float scale)
+        /// <summary>Bayrak gibi ASİMETRİK simgelerin pivotu ortada olamaz: direğin DİBİ karonun
+        /// üstüne oturmalı, yoksa işaret komşu karoyu gösteriyormuş gibi durur. Desendeki direk
+        /// dibinin normalize konumu (11×11 desende ~2.5 sütun, en alt satır).</summary>
+        private static readonly Vector2 FlagPivot = new(0.22f, 0.06f);
+
+        private Image AddMarker(HexCoordinate coord, MinimapIconKind kind, Color color, float scale,
+                                bool track = true)
         {
-            if (_markerLayer == null || !_renderer.TryGetUV(coord, out Vector2 uv)) return null;
+            if (_markerLayer == null || _renderer == null ||
+                !_renderer.TryGetUV(coord, out Vector2 uv)) return null;
 
             var go = new GameObject($"Travel_{kind}", typeof(RectTransform), typeof(Image));
             var rt = (RectTransform)go.transform;
             rt.SetParent(_markerLayer, false);
             rt.anchorMin = rt.anchorMax = uv;
-            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.pivot = kind == MinimapIconKind.Waypoint ? FlagPivot : new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = Vector2.zero;
             rt.sizeDelta = MarkerSize() * scale;
 
@@ -349,7 +625,7 @@ namespace TacticalRPG.UI
             img.color         = color;
             img.raycastTarget = false;
 
-            _markers.Add(go);
+            if (track) _markers.Add(go);
             return img;
         }
 
@@ -367,7 +643,7 @@ namespace TacticalRPG.UI
         // Nabız + yakınlaştırmaya uyum. Yalnız seçim VARKEN çalışır (CLAUDE.md §6: boşta iş yok).
         private void Update()
         {
-            if (_markers.Count == 0) return;
+            if (_markers.Count == 0 && _routeMarkers.Count == 0) return;
 
             // Boyut YALNIZ değiştiyse yazılır. Her karede sizeDelta yazmak RectTransform'u kirletir
             // ve Canvas'ı her karede yeniden kurdurur — 30 rota noktasıyla bu boşuna bir maliyet.
@@ -381,11 +657,13 @@ namespace TacticalRPG.UI
                     float scale = go == _selectionGO ? 1f : _pathDotScale;
                     ((RectTransform)go.transform).sizeDelta = size * scale;
                 }
+                foreach ((GameObject go, float scale) in _routeMarkers)
+                    if (go != null) ((RectTransform)go.transform).sizeDelta = size * scale;
             }
 
             if (_selectionImage == null) return;
             float k = (Mathf.Sin(Time.time * (Mathf.PI * 2f / _pulsePeriod)) + 1f) * 0.5f;
-            Color c = _selectionColor;
+            Color c = _pulseColor;
             c.a = Mathf.Lerp(0.55f, 1f, k);
             _selectionImage.color = c;   // renk yazmak layout'u kirletmez, nabız serbest
         }

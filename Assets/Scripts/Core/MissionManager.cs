@@ -66,6 +66,10 @@ namespace TacticalRPG.Core
 
         public int EnterRange => _enterRange;
 
+        /// <summary>Karo eşlemesi olmayan savaşlar için varsayılan görev. KONUMSUZ düğümler
+        /// (ANA BOSS) menzil aramasıyla görev bulamadığı için buna düşer.</summary>
+        public MissionData DefaultCombatMission => _defaultCombatMission;
+
         public MissionData GetMissionAt(HexCoordinate coord)
         {
             foreach (var m in _missions)
@@ -76,19 +80,31 @@ namespace TacticalRPG.Core
         /// <summary>Verilen konuma _enterRange içindeki ilk görevi döndürür (yoksa null).
         /// Hem "savaşa gir" istemini hem de tıklama-onayını kapıya bağlamak için kullanılır.</summary>
         public MissionData GetEnterableMission(HexCoordinate from)
+            => TryGetEnterableTile(from, out HexCoordinate tile) ? GetMissionAt(tile) : null;
+
+        /// <summary>
+        /// Savaşın açılacağı KARO — yalnız görevi değil, HANGİ KARODAN girildiğini de bilmek
+        /// gerekiyor. Savaşa menzil içinden (varsayılan 1 karo) girilebildiği için, YAN KARODAN
+        /// girilen bir zorunlu görev <see cref="ChapterNodeManager"/> tarafında "bekleyen düğüm"
+        /// sayılmıyordu: dönüşte görev tamamlanmıyor, karo mühürlenmiyor, minihatitadaki sembolü
+        /// silinmiyordu — aynı göreve tekrar tekrar girilebiliyordu (2026-09-01 hata raporu).
+        /// Görev seçimi de artık bu tek arama üzerinden yürüyor ki ikisi ASLA ayrışmasın.
+        /// </summary>
+        public bool TryGetEnterableTile(HexCoordinate from, out HexCoordinate tile)
         {
             foreach (var m in _missions)
-                if (m.mission != null && from.DistanceTo(m.coord) <= _enterRange) return m.mission;
+                if (m.mission != null && from.DistanceTo(m.coord) <= _enterRange)
+                { tile = m.coord; return true; }
 
             // Boyalı savaş karoları: menzil içindeki ilk savaş alanı.
             if (_grid != null && _grid.Cells != null)
                 foreach (var cell in _grid.Cells.Values)
-                    if (cell.CanEnterCombat && from.DistanceTo(cell.Coordinate) <= _enterRange)
-                    {
-                        MissionData md = CombatTileMission(cell.Coordinate);
-                        if (md != null) return md;
-                    }
-            return null;
+                    if (cell.CanEnterCombat && from.DistanceTo(cell.Coordinate) <= _enterRange &&
+                        CombatTileMission(cell.Coordinate) != null)
+                    { tile = cell.Coordinate; return true; }
+
+            tile = default;
+            return false;
         }
 
         // Boyalı savaş karosu (palet canEnterCombat) → görev: önce karo id'sine özel eşleme

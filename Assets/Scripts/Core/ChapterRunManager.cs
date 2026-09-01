@@ -45,6 +45,9 @@ namespace TacticalRPG.Core
         /// <summary>Son oynanabilir gün (sert kesim). Config yoksa 14.</summary>
         public int HardCutDay => _collapseConfig != null ? _collapseConfig.HardCutDay : 14;
 
+        /// <summary>Son biten savaş kazanıldı mı? (oyun sonu ekranının metni için)</summary>
+        public bool LastCombatWon { get; private set; }
+
         /// <summary>Bölüm kaybedildi / yeniden başladı — UI dinler.</summary>
         public event System.Action OnChapterStateChanged;
 
@@ -69,6 +72,10 @@ namespace TacticalRPG.Core
 
         private void HandleCombatEnded(CombatResult result)
         {
+            // Son savaşın sonucu saklanır: oyun sonu ekranı "boss yenildi mi" diye soruyor
+            // (boss düğümü sonucu bilmiyor, kazanan da kaybeden de aynı yoldan dönüyor).
+            LastCombatWon = result == CombatResult.PlayerWon;
+
             // Kam düştü → aynı kural: SADECE bu bölüm baştan (tüm run değil).
             if (!ChapterLost && result == CombatResult.PlayerLost)
                 LoseChapter("Kam düştü — bölüm kaybedildi.");

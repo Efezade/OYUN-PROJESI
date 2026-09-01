@@ -14,7 +14,8 @@ namespace TacticalRPG.UI
         Essence    = 5, // öz yatağı
         Player     = 6, // oyuncunun konumu
         Selection  = 7, // seçilen hedef karo (altıgen halka)
-        PathDot    = 8  // hedefe giden rotanın ara karoları (dolu altıgen)
+        PathDot    = 8, // hedefe giden rotanın ara karoları (dolu altıgen)
+        Waypoint   = 9  // YOL BELİRLE ile konan işaret (3B haritada çizgiyle gösterilir)
     }
 
     /// <summary>
@@ -146,6 +147,21 @@ namespace TacticalRPG.UI
             "....ooo....",
         };
 
+        private static readonly string[] WaypointPattern =    // durak — direğe asılı üçgen flama
+        {
+            ".ooo.......",
+            ".oXXooo....",
+            ".oXXXXXoo..",
+            ".oXXXXXXXo.",
+            ".oXXXXXoo..",
+            ".oXXooo....",
+            ".oXo.......",
+            ".oXo.......",
+            ".oXo.......",
+            ".oXo.......",
+            ".ooo.......",
+        };
+
         /// <summary>İşaretin sprite'ı (ilk istendiğinde üretilir, sonra önbellekten).</summary>
         public static Sprite Get(MinimapIconKind kind)
         {
@@ -214,6 +230,7 @@ namespace TacticalRPG.UI
             MinimapIconKind.Mandatory  => MandatoryPattern,
             MinimapIconKind.Watchtower => WatchtowerPattern,
             MinimapIconKind.Essence    => EssencePattern,
+            MinimapIconKind.Waypoint   => WaypointPattern,
             _                          => PlayerPattern
         };
 
