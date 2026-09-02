@@ -495,6 +495,8 @@ namespace TacticalRPG.Editor
             collapseSO.FindProperty("_config").objectReferenceValue            = collapseConfig;
             collapseSO.FindProperty("_collapsedMaterial").objectReferenceValue = collapsedMat;
             collapseSO.FindProperty("_wave").objectReferenceValue              = waveEffect;
+            // Sisli bölgedeki uyarı bulutun ALTINDA kalıyordu → alarm bulutun kendisine yazılıyor.
+            collapseSO.FindProperty("_fog").objectReferenceValue               = fogManager;
             collapseSO.ApplyModifiedProperties();
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());

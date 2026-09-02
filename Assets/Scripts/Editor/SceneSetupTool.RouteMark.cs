@@ -26,11 +26,20 @@ namespace TacticalRPG.Editor
         internal static class RouteBarLayout
         {
             // DİKKAT: bu düğme/etiketlerin pivotu ALT kenar (anchor 0.5,0) — y değeri nesnenin
-            // ALTININ panel tabanından yüksekliğidir, merkezi değil. Düğme yüksekliği 44, sayaç
-            // 30; aralıklar buna göre seçildi ve üstteki not şeridinin altı (236) korunuyor.
-            public const float CountY = 152f;   // "Güçlü yol taşı: n"    → 152..182
-            public const float PowerY = 106f;   // GÜÇLÜ YOL TAŞI KULLAN  → 106..150
-            public const float RouteY =  58f;   // YOL BELİRLE (yeni bar) →  58..102
+            // ALTININ panel tabanından yüksekliğidir, merkezi değil. Üstteki not şeridinin altı
+            // (236) korunmak zorunda: yığın oraya değmemeli.
+            //
+            // 2026-09-02'de yığın 3 satırdan 5'e çıktı (YOLU SİL + KARO GERİ GETİR). Sığması için
+            // alttaki iki düğme daha alçak (34) tutuldu; yükseklikler burada duruyor ki yamalama
+            // da ilk kurulumla AYNI ölçüyü kullansın.
+            public const float CountY = 172f;   // "Güçlü yol taşı: n"      → 172..202
+            public const float PowerY = 126f;   // GÜÇLÜ YOL TAŞI KULLAN    → 126..166
+            public const float RouteY =  82f;   // YOL BELİRLE              →  82..122
+            public const float ClearY =  44f;   // YOLU SİL                 →  44.. 78
+            public const float RestoreY = 6f;   // KARO GERİ GETİR (madde10)→   6.. 40
+
+            public const float TallHeight  = 40f;   // taş + yol belirle
+            public const float ShortHeight = 34f;   // yolu sil + geri getir
         }
 
         [MenuItem("TacticalRPG/UI - Yol Belirle Barini Ekle (harita ekrani)", false, 23)]
@@ -39,7 +48,7 @@ namespace TacticalRPG.Editor
             bool ok = ApplyRouteBar();
             EditorUtility.DisplayDialog("Yol Belirle",
                 ok ? "Bar eklendi: harita ekranindaki 'GUCLU YOL TASI KULLAN' dugmesinin altinda " +
-                     "'YOL BELIRLE' duruyor, RouteMarker sahneye takildi.\n\n" +
+                     "'YOL BELIRLE', onun da altinda 'YOLU SIL' duruyor; RouteMarker sahneye takildi.\n\n" +
                      "SAHNEYI KAYDET (Ctrl+S) — degisiklikler acik sahnede duruyor."
                    : "Eklenemedi: sahnede harita ekrani (MinimapTravelSelector) bulunamadi. " +
                      "Once 'UI - Menu Iskeleti Kur'.",
@@ -91,38 +100,129 @@ namespace TacticalRPG.Editor
                 return false;
             }
 
-            // Mevcut iki satır yukarı kayar, altta yeni bara yer açılır.
+            // Mevcut iki satır yukarı kayar, altta yeni barlara yer açılır.
             MoveTo(legend.Find("PowerStoneCount"), RouteBarLayout.CountY);
-            MoveTo(legend.Find("Btn_PowerStone"),  RouteBarLayout.PowerY);
+            MoveTo(legend.Find("Btn_PowerStone"),  RouteBarLayout.PowerY, RouteBarLayout.TallHeight);
 
-            Transform existing = legend.Find("Btn_RouteMark");
-            Button routeButton = existing != null ? existing.GetComponent<Button>() : null;
-            if (routeButton == null)
-            {
-                routeButton = CreateUIButton(legend, "Btn_RouteMark", "YOL BELİRLE",
-                    new Vector2(0.5f, 0f), new Vector2(0f, RouteBarLayout.RouteY), new Vector2(252f, 44f),
-                    new Color(0.36f, 0.16f, 0.14f, 0.98f), 17f);
-            }
-            else
-            {
-                MoveTo(existing, RouteBarLayout.RouteY);
-            }
+            Button routeButton = EnsureBarButton(legend, "Btn_RouteMark", "YOL BELİRLE",
+                RouteBarLayout.RouteY, RouteBarLayout.TallHeight,
+                new Color(0.36f, 0.16f, 0.14f, 0.98f), 17f);
+
+            // YOLU SİL — YOL BELİRLE'nin hemen altı (kullanıcı isteği 2026-09-02).
+            Button clearButton = EnsureBarButton(legend, "Btn_RouteClear", "YOLU SİL",
+                RouteBarLayout.ClearY, RouteBarLayout.ShortHeight,
+                new Color(0.30f, 0.13f, 0.12f, 0.98f), 16f);
+
+            // KARO GERİ GETİR — tanrısal yerleştirme kipi (madde 10).
+            Button restoreButton = EnsureBarButton(legend, "Btn_TileRestore", "KARO GERİ GETİR",
+                RouteBarLayout.RestoreY, RouteBarLayout.ShortHeight,
+                new Color(0.13f, 0.30f, 0.19f, 0.98f), 16f);
 
             RouteMarker marker = EnsureRouteMarker();
             if (marker == null) return false;   // sebebi EnsureRouteMarker yazdı
 
+            TileRecoveryManager recovery = EnsureTileRecovery();
+
             var so = new SerializedObject(selector);
-            so.FindProperty("_routeButton").objectReferenceValue = routeButton;
-            so.FindProperty("_routeMarker").objectReferenceValue = marker;
+            so.FindProperty("_routeButton").objectReferenceValue      = routeButton;
+            so.FindProperty("_routeClearButton").objectReferenceValue = clearButton;
+            so.FindProperty("_restoreButton").objectReferenceValue    = restoreButton;
+            so.FindProperty("_routeMarker").objectReferenceValue      = marker;
+            so.FindProperty("_recovery").objectReferenceValue         = recovery;
             so.ApplyModifiedProperties();
 
             EditorUtility.SetDirty(selector);
             EditorUtility.SetDirty(routeButton);
+            EditorUtility.SetDirty(clearButton);
+            EditorUtility.SetDirty(restoreButton);
             EditorSceneManager.MarkSceneDirty(selector.gameObject.scene);
 
-            Debug.Log("[YolBelirle] Bar hazir: Btn_RouteMark + RouteMarker bagli " +
-                      $"({marker.gameObject.name} uzerinde).");
+            Debug.Log("[YolBelirle] Bar hazir: Btn_RouteMark + Btn_RouteClear + Btn_TileRestore + " +
+                      $"RouteMarker/TileRecoveryManager bagli ({marker.gameObject.name} uzerinde).");
             return true;
+        }
+
+        /// <summary>Bardaki bir düğme: varsa yerine oturtulur, yoksa yaratılır. İkisi de AYNI
+        /// ölçüyü kullansın diye tek yerden geçiyor — yükseklik iki yerde ayrı yazılsaydı
+        /// yamalanan sahnede düğmeler üst üste binerdi.</summary>
+        private static Button EnsureBarButton(Transform parent, string name, string label,
+                                              float y, float height, Color color, float fontSize)
+        {
+            Transform existing = parent.Find(name);
+            Button button = existing != null ? existing.GetComponent<Button>() : null;
+            if (button == null)
+            {
+                button = CreateUIButton(parent, name, label,
+                    new Vector2(0.5f, 0f), new Vector2(0f, y), new Vector2(252f, height),
+                    color, fontSize);
+            }
+            else
+            {
+                MoveTo(existing, y, height);
+            }
+            return button;
+        }
+
+        /// <summary>Karo geri getirme bileşeni sahnede TEK olmalı — RouteMarker ile aynı ev
+        /// (GameManager). Bağları koddan yazılır ki editör kurulumu atlanmış olsa da çalışsın.</summary>
+        private static TileRecoveryManager EnsureTileRecovery()
+        {
+            var recovery = FindInSceneIncludingInactive<TileRecoveryManager>();
+            if (recovery == null)
+            {
+                var collapse = FindInSceneIncludingInactive<MapCollapseManager>();
+                GameObject host = collapse != null ? collapse.gameObject
+                                : FindInSceneIncludingInactive<MapInputHandler>()?.gameObject;
+                if (host == null)
+                {
+                    Debug.LogWarning("[YolBelirle] TileRecoveryManager takilacak nesne yok — " +
+                                     "geri getirme kipi bagli degil.");
+                    return null;
+                }
+                recovery = host.AddComponent<TileRecoveryManager>();
+            }
+
+            var rso = new SerializedObject(recovery);
+            rso.FindProperty("_grid").objectReferenceValue     = FindInSceneIncludingInactive<HexGridManager>();
+            rso.FindProperty("_collapse").objectReferenceValue = FindInSceneIncludingInactive<MapCollapseManager>();
+            rso.FindProperty("_player").objectReferenceValue   = FindInSceneIncludingInactive<PlayerController>();
+            rso.FindProperty("_fog").objectReferenceValue      = FindInSceneIncludingInactive<FogOfWarManager>();
+            rso.FindProperty("_wallet").objectReferenceValue   = FindInSceneIncludingInactive<EssenceWallet>();
+            rso.FindProperty("_ap").objectReferenceValue       = FindInSceneIncludingInactive<ActionPointManager>();
+            rso.ApplyModifiedProperties();
+
+            // ÇÖKÜŞ ↔ SİS BAĞI: aynı hata raporundan (2026-09-02) — işaretli karonun bulutu kızıl
+            // yansın diye MapCollapseManager'ın sis referansı gerekiyor. Burada yazılıyor çünkü
+            // Faz 1'i yeniden koşturmak çöküş bileşenini SIFIRDAN kurar ve Efe'nin tweaklerini siler.
+            var collapseMgr = FindInSceneIncludingInactive<MapCollapseManager>();
+            if (collapseMgr != null)
+            {
+                var cso = new SerializedObject(collapseMgr);
+                cso.FindProperty("_fog").objectReferenceValue = FindInSceneIncludingInactive<FogOfWarManager>();
+                cso.ApplyModifiedProperties();
+                EditorUtility.SetDirty(collapseMgr);
+            }
+
+            EnsureTileRecoveryHUD(recovery);
+            return recovery;
+        }
+
+        /// <summary>Arazideki çukur istemi (RİSKE GİR / ÖZ ÖDE). Diğer IMGUI HUD'larla aynı
+        /// nesnede yaşasın diye OverworldCombatHUD'un evine takılır.</summary>
+        private static void EnsureTileRecoveryHUD(TileRecoveryManager recovery)
+        {
+            var hud = FindInSceneIncludingInactive<TileRecoveryHUD>();
+            if (hud == null)
+            {
+                var sibling = FindInSceneIncludingInactive<OverworldCombatHUD>();
+                if (sibling == null) return;                 // HUD iskeleti yok — sessizce atla
+                hud = sibling.gameObject.AddComponent<TileRecoveryHUD>();
+            }
+
+            var hso = new SerializedObject(hud);
+            hso.FindProperty("_recovery").objectReferenceValue = recovery;
+            hso.FindProperty("_state").objectReferenceValue    = FindInSceneIncludingInactive<GameStateManager>();
+            hso.ApplyModifiedProperties();
         }
 
         /// <summary>Yol işaretini tutan bileşen sahnede TEK olmalı — varsa bulur, yoksa
@@ -171,6 +271,16 @@ namespace TacticalRPG.Editor
             if (t == null) return;
             var rt = (RectTransform)t;
             rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, y);
+        }
+
+        /// <summary>Konumla BİRLİKTE yüksekliği de yazar. Yığın 5 satıra çıkınca eski 44'lük
+        /// düğmeler sığmıyor; yalnız konumu taşımak onları bir üsttekinin içine sokardı.</summary>
+        private static void MoveTo(Transform t, float y, float height)
+        {
+            if (t == null) return;
+            var rt = (RectTransform)t;
+            rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, y);
+            rt.sizeDelta        = new Vector2(rt.sizeDelta.x, height);
         }
 
         /// <summary>Sahnedeki bileşeni KAPALI nesnelerde de bulur. Harita/çanta panelleri

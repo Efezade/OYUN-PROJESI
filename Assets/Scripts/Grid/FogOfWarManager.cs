@@ -52,6 +52,26 @@ namespace TacticalRPG.Grid
                  "karolar karanlıkta kalır. Karanlık zorunlu sınır.")]
         [SerializeField] private float _nightRevealRadius = 3f;
 
+        [Header("Çöküş alarmı (sisin altındaki uyarı görünsün)")]
+        [Tooltip("Çökecek karonun ÜSTÜNDEKİ bulutun rengi. Kırmızı çerçeve ve sayaç bulutun " +
+                 "ALTINDA kaldığı için sisli bölgede uyarı görünmüyordu (2026-09-02 hata raporu): " +
+                 "yıldırım çakıyor, sonra hiçbir şey olmuyordu. Artık bulutun kendisi yanıyor.")]
+        [SerializeField] private Color _alarmColor = new(1f, 0.20f, 0.12f);
+        [Tooltip("Alarm renginin bulutun kendi rengine karışma oranı (1 = tamamen kızıl).")]
+        [SerializeField, Range(0f, 1f)] private float _alarmStrength = 0.8f;
+
+        [Header("Sis kenarı ipucu (kullanıcı isteği 2026-09-02)")]
+        [Tooltip("Görüşün ÖTESİNDE kaç karo genişliğinde 'ipucu bandı' olsun. Bu banttaki karolar " +
+                 "kapkaranlık değil: bulut incelir, arazinin uçları ve baskın rengi sızar — oyuncu " +
+                 "ne olduğunu TAHMİN eder ama bilgi (ikon/düğüm/minimap) almaz. 0 = kapalı (eski sis).")]
+        [SerializeField, Range(0f, 4f)] private float _edgeHintTiles = 1.2f;
+        [Tooltip("İpucu bandındaki bulutun EN FAZLA opaklığı (1 = tam opak). Düşürmek araziyi daha " +
+                 "çok gösterir; 0.55-0.7 arası 'siluet görünür, detay görünmez' aralığıdır.")]
+        [SerializeField, Range(0.1f, 1f)] private float _edgeHintAlpha = 0.62f;
+        [Tooltip("İpucu bandındaki karonun EN AZ parlaklığı — baskın rengi okunsun diye taban. " +
+                 "Gizli karo 0.05'te kapkara; burada 0.3 civarı 'rengi belli, detayı değil' verir.")]
+        [SerializeField, Range(0f, 1f)] private float _edgeHintBrightness = 0.3f;
+
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor"); // URP/Lit
         private static readonly int ColorId     = Shader.PropertyToID("_Color");     // Standard yedek
         private MaterialPropertyBlock _block;
@@ -81,6 +101,7 @@ namespace TacticalRPG.Grid
             public float          target;
             public Vector3        basePos;   // rüzgar salınımının merkez konumu
             public float          phase;     // her buluta farklı faz (senkron olmasınlar)
+            public bool           alarm;     // ALTINDAKİ KARO ÇÖKECEK → bulut kızıl yanar
         }
 
         private Transform _fogRoot;
@@ -240,6 +261,8 @@ namespace TacticalRPG.Grid
             float spacing = Mathf.Sqrt(3f) * Mathf.Max(0.01f, _gridManager.HexSize); // komşu karo mesafesi
             float band    = Mathf.Max(0.01f, _fogFalloff);
 
+            float hintEdge = radius + band + _edgeHintTiles;   // ipucu bandının dış sınırı
+
             foreach (var cell in _gridManager.Cells.Values)
             {
                 float dx = worldPos.x - cell.WorldPosition.x;
@@ -256,16 +279,33 @@ namespace TacticalRPG.Grid
                 // Kalıcı açılmış alan (keşif izi + gözetleme kulesi): sis bir daha kapanmaz.
                 if (_permanentReveals.Count > 0 && _permanentReveals.Contains(cell.Coordinate)) a = 0f;
 
+                // ── SİS KENARI İPUCU (kullanıcı isteği 2026-09-02, madde 3) ──────────────
+                // Görüşün hemen ÖTESİNDEKİ karolar, oyuncuya YAKIN taraftan, ne olduklarını
+                // sızdırır: bulut incelir (arazinin uçları — ağaç/dağ tepeleri — görünür) ve karo
+                // baskın rengini okunacak kadar korur. Ötesi eskisi gibi kapkaranlık.
+                //
+                // MANTIK DEĞİŞMEZ: `a` bozulmuyor, ipucu YALNIZ GÖRSELE (bulut opaklığı + karo
+                // parlaklığı) uygulanıyor. Bu yüzden ipuçlu karo hâlâ Hidden'dır → minimapte
+                // ikonu çıkmaz, rota onu "bilinen arazi" saymaz, kalıcı keşfe de girmez.
+                // Sızan tek şey renk ve siluet, tam bilgi değil.
+                float visualAlpha = a;
+                bool  hinted      = _edgeHintTiles > 0f && a > 0.001f && d <= hintEdge;
+                if (hinted) visualAlpha = Mathf.Min(a, _edgeHintAlpha * _hiddenAlpha);
+
                 if (_caps.TryGetValue(cell.Coordinate, out Cap cap) && cap != null &&
-                    !Mathf.Approximately(cap.target, a))
+                    !Mathf.Approximately(cap.target, visualAlpha))
                 {
-                    cap.target = a;
+                    cap.target = visualAlpha;
                     _fading.Add(cell.Coordinate);
                 }
 
-                // Mantık durumu + ikinci katman karartma (sürekli).
+                // Mantık durumu HAM alfadan gelir (ipucu bandı Hidden kalsın).
                 cell.FogState = a < _hiddenAlpha * 0.5f ? FogState.Visible : FogState.Hidden;
-                SetCellBrightness(cell, Mathf.Lerp(_visibleBrightness, _hiddenBrightness, a / Mathf.Max(0.001f, _hiddenAlpha)));
+
+                float brightness = Mathf.Lerp(_visibleBrightness, _hiddenBrightness,
+                                              visualAlpha / Mathf.Max(0.001f, _hiddenAlpha));
+                if (hinted) brightness = Mathf.Max(brightness, _edgeHintBrightness);
+                SetCellBrightness(cell, brightness);
             }
         }
 
@@ -440,12 +480,46 @@ namespace TacticalRPG.Grid
 
         // Örtüye opaklığı yaz (MPB) + GERÇEK karoyu aç/kapat: örtü opaksa gerçek karo GİZLİ (kahverengi
         // görünür), örtü yeterince solunca gerçek karo (ağaçlar dahil) BELİRİR → "var oluyor" hissi.
+        /// <summary>Bulutun O ANKİ temel rengi — alarm açıksa kızıla karışmış hâli. Hem
+        /// <see cref="ApplyCapAlpha"/> hem <see cref="TintCloud"/> buradan okur; yoksa çöküş
+        /// dalgası geçip kendi rengine döndürdüğünde alarm silinir ve uyarı yine kaybolurdu.</summary>
+        private Color CapBaseColor(Cap cap)
+            => cap.alarm ? Color.Lerp(cap.baseColor, _alarmColor, _alarmStrength) : cap.baseColor;
+
+        /// <summary>
+        /// Bu karonun bulutunu ÇÖKÜŞ ALARMINA alır (ya da alarmı kaldırır).
+        ///
+        /// NEDEN VAR (2026-09-02 hata raporu — "sisli yerlere ışık hüzmesi düşüyor ama hiçbir şey
+        /// olmuyor"): çökecek karo yıldırımla işaretleniyor, uyarısı ise karonun YÜZEYİNE çizilen
+        /// kırmızı çerçeve. Bulut karonun ÜSTÜNDE ve opak olduğu için sisli bölgede o çerçeve
+        /// hiç görünmüyordu; oyuncuya yalnız sebepsiz bir yıldırım kalıyordu. Alarm, uyarıyı
+        /// görünen katmana — bulutun kendisine — taşıyor.
+        /// </summary>
+        public void SetCloudAlarm(HexCoordinate coord, bool on)
+        {
+            if (!_caps.TryGetValue(coord, out Cap cap) || cap == null || cap.alarm == on) return;
+            cap.alarm = on;
+            ApplyCapAlpha(cap);      // bulut sabit duruyorsa (fade yok) rengi ŞİMDİ yazılmalı
+        }
+
+        /// <summary>Tüm çöküş alarmlarını kaldırır (yeni harita / çöküş sıfırlama).</summary>
+        public void ClearCloudAlarms()
+        {
+            foreach (var kv in _caps)
+            {
+                Cap cap = kv.Value;
+                if (cap == null || !cap.alarm) continue;
+                cap.alarm = false;
+                ApplyCapAlpha(cap);
+            }
+        }
+
         private void ApplyCapAlpha(Cap cap)
         {
             if (cap.rends == null) return;
             _block ??= new MaterialPropertyBlock();
 
-            Color c = cap.baseColor;
+            Color c = CapBaseColor(cap);
             c.a = cap.alpha;
             bool coverVisible = cap.alpha > 0.001f;
 
@@ -479,7 +553,7 @@ namespace TacticalRPG.Grid
             if (!_caps.TryGetValue(coord, out Cap cap) || cap == null || cap.rends == null) return;
             if (cap.alpha <= 0.01f) return;                    // bulut zaten görünmez
             _block ??= new MaterialPropertyBlock();
-            Color c = Color.Lerp(cap.baseColor, tint, Mathf.Clamp01(t));
+            Color c = Color.Lerp(CapBaseColor(cap), tint, Mathf.Clamp01(t));
             c.a = cap.alpha;
             foreach (var r in cap.rends)
             {

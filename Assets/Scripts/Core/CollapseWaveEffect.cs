@@ -65,6 +65,11 @@ namespace TacticalRPG.Core
         [Tooltip("Aynı anda en fazla kaç dalga (fazlası sessizce atlanır; reveal'lar yıldırıma düşer).")]
         [SerializeField] private int _maxWaves = 10;
 
+        // MENZİL SINIRI YOK — BİLİNÇLİ. 2026-09-02'de "dalga tüm haritayı geçmesin" diye bir
+        // sınır eklenmişti; meğer Efe'nin şikayet ettiği ışık çöküş dalgası DEĞİLMİŞ. Sınır aynı
+        // gün KALDIRILDI: çöküş dalgasının haritanın öbür ucuna kadar yayılması İSTENEN
+        // davranıştır (kıyamet bütün haritayı sarsar). Tekrar sınırlamadan önce Efe'ye sor.
+
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId     = Shader.PropertyToID("_Color");
         private MaterialPropertyBlock _mpb;
@@ -81,8 +86,22 @@ namespace TacticalRPG.Core
         }
 
         private void OnEnable()  { if (_grid != null) _grid.OnGridRegenerated += BumpVersion; }
-        private void OnDisable() { if (_grid != null) _grid.OnGridRegenerated -= BumpVersion; }
-        private void BumpVersion() => _gridVersion++;
+
+        private void OnDisable()
+        {
+            if (_grid != null) _grid.OnGridRegenerated -= BumpVersion;
+            // Dalga yarıda kesildi (savaşa giriş / sahne kapanışı): kaldırılmış karolar havada
+            // kalmasın — koroutin durduğu için kendi geri koyma adımına ASLA ulaşmaz.
+            RestoreBobbedTiles();
+            _activeWaves = 0;
+        }
+
+        private void BumpVersion()
+        {
+            _gridVersion++;
+            // Harita yenilendi: eski karo transformları geçersiz, saklanan tabanlar da öyle.
+            _bobBase.Clear();
+        }
 
         /// <summary>Dalgayı başlat (reveal'sız). center ada dışı sanal nokta olabilir.</summary>
         public void Play(Vector3 center, float delay = 0f) =>
@@ -142,11 +161,16 @@ namespace TacticalRPG.Core
                 tiles.Add(new WTile { t = cell.Visual.transform, basePos = p, dist = d, cell = cell });
                 if (d > maxDist) maxDist = d;
             }
-            if (tiles.Count == 0) { _activeWaves--; yield break; }
+            if (tiles.Count == 0)
+            {
+                _activeWaves--;
+                if (_activeWaves <= 0) RestoreBobbedTiles();
+                yield break;
+            }
             minX -= _edgeMargin; maxX += _edgeMargin;
             minZ -= _edgeMargin; maxZ += _edgeMargin;
 
-            float outerRadius = maxDist + _bandWidth;
+            float outerRadius = maxDist + _bandWidth;   // haritanın EN UZAK karosuna kadar
             float ringLife    = outerRadius / Mathf.Max(1f, _waveSpeed);
 
             // Reveal hedefleri: cephe (lider halka) uzaklıklarına ulaşınca yıldırım + callback.
@@ -225,7 +249,13 @@ namespace TacticalRPG.Core
                         if (trail > presence) presence = trail;
                     }
 
-                    tile.t.position = tile.basePos +
+                    // Taban konum ORTAK sözlükten okunur, dalganın kendi kopyasından DEĞİL.
+                    // Neden: bir günde 10+ karo çöküyor → 10 dalga aynı anda koşuyor. Her dalga
+                    // karonun O ANKİ (başka bir dalga tarafından KALDIRILMIŞ) konumunu kendi
+                    // "taban"ı sanıyordu; sonuncusu bittiğinde karoyu o yükseğe geri koyuyordu.
+                    // Karolar kalıcı olarak farklı yüksekliklerde kalıyor, Kam'ın modeli de
+                    // karonun içine gömülüyordu (2026-09-02 hata raporu).
+                    tile.t.position = BobBase(tile.t) +
                         Vector3.up * (Mathf.Sin(presence * Mathf.PI * 0.5f) * _bobHeight);
 
                     if (presence > 0.001f) { TintTile(tile.cell, presence); tile.tinted = true; }
@@ -234,21 +264,56 @@ namespace TacticalRPG.Core
                 yield return null;
             }
 
-            // Açıklanmamış reveal kalmasın (dalga iptal olsa bile veri görseli gelsin).
+            // Açıklanmamış reveal kalmasın (dalga menzille sınırlı ya da iptal olsa bile veri
+            // görseli gelsin). Menzil dışında kalanlara yıldırım da çakılır: uyarının kendisi
+            // dalgadan bağımsızdır, karo nerede olursa olsun işaretlendiği görülmelidir.
             if (pending != null && !aborted)
-                foreach (var p in pending) onReveal?.Invoke(p.cell);
+                foreach (var p in pending)
+                {
+                    if (p.cell != null)
+                        StartCoroutine(StrikeRoutine(p.cell.WorldPosition + Vector3.up * p.cell.SurfaceHeight));
+                    onReveal?.Invoke(p.cell);
+                }
 
             for (int i = 0; i < tiles.Count; i++)
-            {
-                if (tiles[i].t != null) tiles[i].t.position = tiles[i].basePos;
                 if (tiles[i].tinted) RestoreTile(tiles[i].cell);
-            }
+
             for (int i = 0; i < _ringCount; i++)
             {
                 if (rings[i]    != null) Destroy(rings[i].gameObject);
                 if (ringMats[i] != null) Destroy(ringMats[i]);
             }
+
             _activeWaves--;
+            // Konumları YALNIZ son dalga bitince geri koy: erken geri koymak, hâlâ koşan bir
+            // dalganın kaldırdığı karoyu yere indirip titretirdi.
+            if (_activeWaves <= 0) RestoreBobbedTiles();
+        }
+
+        // ── Karo yükseltme (bob) — ORTAK taban ───────────────────────────────
+        // Aynı anda birden çok dalga koşabildiği için karonun gerçek taban konumu TEK bir yerde
+        // tutulur. Dalgalar yalnız üstüne offset yazar; taban asla dalga sırasında güncellenmez.
+        private readonly Dictionary<Transform, Vector3> _bobBase = new();
+
+        private Vector3 BobBase(Transform t)
+        {
+            if (!_bobBase.TryGetValue(t, out Vector3 p)) { p = t.position; _bobBase[t] = p; }
+            return p;
+        }
+
+        /// <summary>Karonun DALGADAN ETKİLENMEMİŞ gerçek konumu. Çöküş depremi (MapCollapseManager)
+        /// bunu sorar: kendi başladığı andaki konumu taban sayarsa, o an bir dalga tarafından
+        /// kaldırılmış karoyu havada bırakır.</summary>
+        public Vector3 BasePositionOf(Transform t)
+        {
+            if (t == null) return Vector3.zero;
+            return _bobBase.TryGetValue(t, out Vector3 p) ? p : t.position;
+        }
+
+        private void RestoreBobbedTiles()
+        {
+            foreach (var kv in _bobBase) if (kv.Key != null) kv.Key.position = kv.Value;
+            _bobBase.Clear();
         }
 
         // ── Yıldırım: gökten karoya titrek kırmızı huzme ─────────────────────

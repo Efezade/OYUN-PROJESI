@@ -295,7 +295,8 @@ namespace TacticalRPG.Editor
                 new Color(0.42f, 0.34f, 0.22f), 20f);
 
             Button powerButton = CreateUIButton(legend, "Btn_PowerStone", "GÜÇLÜ YOL TAŞI KULLAN",
-                new Vector2(0.5f, 0f), new Vector2(0f, RouteBarLayout.PowerY), new Vector2(252f, 44f),
+                new Vector2(0.5f, 0f), new Vector2(0f, RouteBarLayout.PowerY),
+                new Vector2(252f, RouteBarLayout.TallHeight),
                 new Color(0.20f, 0.30f, 0.36f, 0.98f), 17f);
 
             // ── Yol belirle: taşın ALTINDAKİ ikinci bar (kullanıcı isteği 2026-09-01) ──
@@ -303,8 +304,24 @@ namespace TacticalRPG.Editor
             // yürütmez — yalnız 3B haritada takip edilecek bir işaret bırakır. Rengi de ayrı
             // (kızıl), çünkü açıkken harita kırmızımsı parlıyor.
             Button routeButton = CreateUIButton(legend, "Btn_RouteMark", "YOL BELİRLE",
-                new Vector2(0.5f, 0f), new Vector2(0f, RouteBarLayout.RouteY), new Vector2(252f, 44f),
+                new Vector2(0.5f, 0f), new Vector2(0f, RouteBarLayout.RouteY),
+                new Vector2(252f, RouteBarLayout.TallHeight),
                 new Color(0.36f, 0.16f, 0.14f, 0.98f), 17f);
+
+            // Hemen ALTINDA YOLU SİL (kullanıcı isteği 2026-09-02): tek tıkla duraklar,
+            // minihatita işaretleri ve 3B patika birden gider. Ayrı düğme, çünkü rota kip
+            // kapalıyken de duruyor — silmek için önce YOL BELİRLE'yi açmak saçmaydı.
+            Button routeClearButton = CreateUIButton(legend, "Btn_RouteClear", "YOLU SİL",
+                new Vector2(0.5f, 0f), new Vector2(0f, RouteBarLayout.ClearY),
+                new Vector2(252f, RouteBarLayout.ShortHeight),
+                new Color(0.30f, 0.13f, 0.12f, 0.98f), 16f);
+
+            // EN ALTTA KARO GERİ GETİR (madde 10): çukurun kenarında kazanılan hak burada,
+            // tanrısal bakışla, haritanın istenen çukuruna harcanır.
+            Button tileRestoreButton = CreateUIButton(legend, "Btn_TileRestore", "KARO GERİ GETİR",
+                new Vector2(0.5f, 0f), new Vector2(0f, RouteBarLayout.RestoreY),
+                new Vector2(252f, RouteBarLayout.ShortHeight),
+                new Color(0.13f, 0.30f, 0.19f, 0.98f), 16f);
 
             // NOT: pusula ve "Bölüm 1 — …" başlığı 2026-08-17'de KALDIRILDI (kullanıcı isteği).
             // Bölüm adı TAB şeridinde duruyor; başlıksız ekran haritaya daha çok yer bırakıyor.
@@ -351,7 +368,8 @@ namespace TacticalRPG.Editor
             TravelPresenter presenter = WireTravelPresenter(panelGO, frameT, board, pan);
 
             WireTravelSelector(board, rawRT, travelRT, promptGO, costLabel, confirm, cancel,
-                               glow, powerButton, powerLabel, presenter, routeButton);
+                               glow, powerButton, powerLabel, presenter, routeButton, routeClearButton,
+                               tileRestoreButton);
 
             WireMinimapView(panelGO, raw, iconRT, empty, pan, legendIcons, rows);
 
@@ -390,7 +408,8 @@ namespace TacticalRPG.Editor
                                                TextMeshProUGUI costLabel, Button confirm, Button cancel,
                                                MinimapGlowEffect glow,
                                                Button powerButton, TextMeshProUGUI powerLabel,
-                                               TravelPresenter presenter, Button routeButton)
+                                               TravelPresenter presenter, Button routeButton,
+                                               Button routeClearButton, Button tileRestoreButton)
         {
             var sel = board.gameObject.AddComponent<MinimapTravelSelector>();
             var so  = new SerializedObject(sel);
@@ -418,8 +437,13 @@ namespace TacticalRPG.Editor
             so.FindProperty("_presenter").objectReferenceValue   = presenter;
 
             // Yol işareti: düğme burada, işaretin kendisi GameManager'da (3B haritayı o çiziyor).
-            so.FindProperty("_routeButton").objectReferenceValue = routeButton;
-            so.FindProperty("_routeMarker").objectReferenceValue = EnsureRouteMarker();
+            so.FindProperty("_routeButton").objectReferenceValue      = routeButton;
+            so.FindProperty("_routeClearButton").objectReferenceValue = routeClearButton;
+            so.FindProperty("_routeMarker").objectReferenceValue      = EnsureRouteMarker();
+
+            // Karo geri getirme (madde 10): düğme burada, hak/onarım GameManager'daki bileşende.
+            so.FindProperty("_restoreButton").objectReferenceValue    = tileRestoreButton;
+            so.FindProperty("_recovery").objectReferenceValue         = EnsureTileRecovery();
             so.ApplyModifiedProperties();
         }
 

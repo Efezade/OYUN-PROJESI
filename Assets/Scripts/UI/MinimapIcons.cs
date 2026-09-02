@@ -15,7 +15,8 @@ namespace TacticalRPG.UI
         Player     = 6, // oyuncunun konumu
         Selection  = 7, // seçilen hedef karo (altıgen halka)
         PathDot    = 8, // hedefe giden rotanın ara karoları (dolu altıgen)
-        Waypoint   = 9  // YOL BELİRLE ile konan işaret (3B haritada çizgiyle gösterilir)
+        Waypoint   = 9, // YOL BELİRLE ile konan işaret (3B haritada çizgiyle gösterilir)
+        Collapsed  = 10 // çökmüş karo — geri getirilebilir çukur (madde 10)
     }
 
     /// <summary>
@@ -162,6 +163,21 @@ namespace TacticalRPG.UI
             ".ooo.......",
         };
 
+        private static readonly string[] CollapsedPattern =   // çukur — kırık kenarlı boşluk
+        {
+            "...........",
+            "..oo...oo..",
+            ".oX#ooo#Xo.",
+            "oX##...##Xo",
+            "oX#.....#Xo",
+            "o#.......#o",
+            "oX#.....#Xo",
+            "oX##...##Xo",
+            ".oX#ooo#Xo.",
+            "..oo...oo..",
+            "...........",
+        };
+
         /// <summary>İşaretin sprite'ı (ilk istendiğinde üretilir, sonra önbellekten).</summary>
         public static Sprite Get(MinimapIconKind kind)
         {
@@ -231,6 +247,7 @@ namespace TacticalRPG.UI
             MinimapIconKind.Watchtower => WatchtowerPattern,
             MinimapIconKind.Essence    => EssencePattern,
             MinimapIconKind.Waypoint   => WaypointPattern,
+            MinimapIconKind.Collapsed  => CollapsedPattern,
             _                          => PlayerPattern
         };
 

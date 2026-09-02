@@ -51,9 +51,13 @@ namespace TacticalRPG.Core
         [Tooltip("En fazla kaç durak konabilir. Google Maps 9-10 ile kapatıyor; okunabilirlik " +
                  "sınırı da benzer — 9 durak minihatitada hâlâ ayırt edilebiliyor.")]
         [SerializeField, Range(2, 12)] private int _maxStops = 9;
-        [Tooltip("Sıradaki durağın karosuna basıldığında o durak DÜŞER (Maps'te varılan durağın " +
+        [Tooltip("Sıradaki durağa VARILDIĞINDA o durak DÜŞER (Maps'te varılan durağın " +
                  "listeden çıkması gibi). Kapatılırsa duraklar elle silinene kadar durur.")]
         [SerializeField] private bool _popStopOnArrival = true;
+        [Tooltip("VARIŞ YARIÇAPI (kullanıcı isteği 2026-09-02): durak bayrağı, karonun TAM " +
+                 "üstüne basmayı beklemeden bu kadar karo yaklaşınca düşer. 1 = durak + 6 " +
+                 "komşusu, yani 7 karoluk alan. 0 = eski davranış (tam o karo).")]
+        [SerializeField, Range(0, 3)] private int _arrivalRadius = 1;
 
         [Header("Plan")]
         [Tooltip("AÇIK: yol sisin içinden de gerçek arazi üzerinden hesaplanır (keşfedilmemiş " +
@@ -217,12 +221,23 @@ namespace TacticalRPG.Core
         }
 
         /// <summary>Sıradaki durağa VARILDIĞINDA o durak düşer (Maps'te varılan durağın listeden
-        /// çıkması gibi). Sonraki duraklar durur, rota kendiliğinden bir sonraki bacağa geçer.</summary>
+        /// çıkması gibi). Sonraki duraklar durur, rota kendiliğinden bir sonraki bacağa geçer.
+        ///
+        /// VARIŞ = YAKINLIK, TAM KARO DEĞİL (kullanıcı şikayeti 2026-09-02): bayrak yalnız o
+        /// karoya basınca silinince işaret, oyuncuyu hedefin TAM üstüne çıkmaya zorluyordu —
+        /// oysa durak bir "şuraya git" işaretidir, bir kilit değil. Artık <see cref="_arrivalRadius"/>
+        /// karo yaklaşmak yetiyor (varsayılan 1 → durak + 6 komşusu = 7 karo).
+        ///
+        /// DÖNGÜ, TEK KONTROL DEĞİL: yarıçap 1 olunca birbirine komşu iki durak aynı adımda
+        /// karşılanabilir; baştan tek tek düşürülmezse ikincisi geride kalıp rotayı geri
+        /// çevirirdi.</summary>
         private void OnPlayerMoved(HexCoordinate coord)
         {
-            if (_popStopOnArrival && _stops.Count > 0 && _stops[0].Equals(coord))
+            if (_popStopOnArrival && _stops.Count > 0 &&
+                _stops[0].DistanceTo(coord) <= _arrivalRadius)
             {
-                _stops.RemoveAt(0);
+                while (_stops.Count > 0 && _stops[0].DistanceTo(coord) <= _arrivalRadius)
+                    _stops.RemoveAt(0);
                 Invalidate();
                 return;
             }

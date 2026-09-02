@@ -86,12 +86,27 @@ namespace TacticalRPG.UI
         [Tooltip("Güçlü yol taşı düğmesinin ALTINDAKİ bar. Basınca harita kırmızımsı parlar; " +
                  "her tık bir DURAK ekler, durağa tıklamak siler.")]
         [SerializeField] private Button      _routeButton;
+        [Tooltip("YOL BELİRLE'nin ALTINDAKİ düğme (kullanıcı isteği 2026-09-02): tek tıkla " +
+                 "duraklar, minihatita işaretleri ve 3B patika birden silinir. Kip açık " +
+                 "olmasa da çalışır — rota kalıcıdır, silmesi de her an mümkün olmalı.")]
+        [SerializeField] private Button      _routeClearButton;
         [Tooltip("Durakları tutan ve patikayı 3B haritada çizen bileşen (GameManager üstünde).")]
         [SerializeField] private RouteMarker _routeMarker;
         [Tooltip("Kip açıkken harita KIRMIZIMSI parlar — güçlü yol taşının gökkuşağından ayrılsın.")]
         [SerializeField] private Color _routeGlowColor      = new(1f, 0.26f, 0.20f);
         [Tooltip("Minihatitadaki durak bayrakları ve bacak noktalarının rengi.")]
         [SerializeField] private Color _routeSelectionColor = new(1f, 0.48f, 0.40f);
+
+        [Header("Karo geri getirme (tanrısal yerleştirme)")]
+        [Tooltip("KARO GERİ GETİR barı: kip açılınca haritadaki tüm çukurlar işaretlenir ve " +
+                 "tıklananı hak harcayarak geri getirir (kullanıcı isteği 2026-09-02, madde 10).")]
+        [SerializeField] private Button              _restoreButton;
+        [Tooltip("Hakları tutan ve geri getirmeyi yapan bileşen (GameManager üstünde).")]
+        [SerializeField] private TileRecoveryManager _recovery;
+        [Tooltip("Kip açıkken haritanın parlama rengi — yeşilimsi 'onarım' tonu.")]
+        [SerializeField] private Color _restoreGlowColor      = new(0.35f, 1f, 0.55f);
+        [Tooltip("Çukur işaretlerinin rengi.")]
+        [SerializeField] private Color _restoreSelectionColor = new(0.55f, 1f, 0.70f);
 
         [Header("Ayarlar")]
         [Tooltip("Yürünemez karoya tıklanınca en yakın yürünebilir karo kaç halka içinde aranır.")]
@@ -120,6 +135,9 @@ namespace TacticalRPG.UI
         // Rota işaretleri (duraklar + bacak noktaları) AYRI tutulur: _markers her seçimde
         // silinir, rota ise kalıcı bir plandır — ekran açık kaldığı sürece durmalı.
         private readonly List<(GameObject go, float scale)> _routeMarkers = new();
+        // Çukur işaretleri: yalnız GERİ GETİR kipi açıkken durur (kip kapanınca harita
+        // temizlenmeli, yoksa oyuncu her açtığında haritayı çukur ikonlarıyla dolu bulur).
+        private readonly List<(GameObject go, float scale)> _restoreMarkers = new();
         private Vector2        _lastMarkerSize;
         private Vector2        _pressScreen;
         private HexPathfinder  _pathfinder;
@@ -130,6 +148,7 @@ namespace TacticalRPG.UI
             // Kurulum bağlamayı atlamış olsa bile yol işareti çalışsın (bkz. CLAUDE.md: kritik
             // bağ yalnız editör kurulumuna bırakılmaz).
             if (_routeMarker == null) _routeMarker = FindFirstObjectByType<RouteMarker>();
+            if (_recovery    == null) _recovery    = FindFirstObjectByType<TileRecoveryManager>();
         }
 
         private void OnEnable()
@@ -138,8 +157,11 @@ namespace TacticalRPG.UI
             if (_cancelButton  != null) _cancelButton.onClick.AddListener(OnCancel);
             if (_powerButton   != null) _powerButton.onClick.AddListener(TogglePower);
             if (_routeButton   != null) _routeButton.onClick.AddListener(ToggleRoute);
+            if (_routeClearButton != null) _routeClearButton.onClick.AddListener(ClearRoute);
+            if (_restoreButton    != null) _restoreButton.onClick.AddListener(ToggleRestore);
             if (_buffs != null) _buffs.OnTravelStonesChanged += RefreshStoneUI;
             if (_routeMarker != null) _routeMarker.OnChanged += RefreshRouteMarkers;
+            if (_recovery    != null) _recovery.OnChanged    += RefreshRestoreMarkers;
 
             // Ekran her açıldığında SİLAHSIZ başlar: bir önceki seferden kalan "hazır" durumuyla
             // farkında olmadan taş harcanmasın.
@@ -154,6 +176,9 @@ namespace TacticalRPG.UI
             if (_cancelButton  != null) _cancelButton.onClick.RemoveListener(OnCancel);
             if (_powerButton   != null) _powerButton.onClick.RemoveListener(TogglePower);
             if (_routeButton   != null) _routeButton.onClick.RemoveListener(ToggleRoute);
+            if (_routeClearButton != null) _routeClearButton.onClick.RemoveListener(ClearRoute);
+            if (_restoreButton    != null) _restoreButton.onClick.RemoveListener(ToggleRestore);
+            if (_recovery         != null) _recovery.OnChanged -= RefreshRestoreMarkers;
             if (_buffs != null) _buffs.OnTravelStonesChanged -= RefreshStoneUI;
             if (_routeMarker != null) _routeMarker.OnChanged -= RefreshRouteMarkers;
 
@@ -172,7 +197,7 @@ namespace TacticalRPG.UI
         /// tür) 2026-08-19'da kullanıcı isteğiyle KALDIRILDI — iki taşlı seçim ekranı, ikisi de
         /// aynı işi yaptığı için yalnız kafa karıştırıyordu.
         /// </summary>
-        private enum TravelMode { None = 0, Power = 1, Route = 2 }
+        private enum TravelMode { None = 0, Power = 1, Route = 2, Restore = 3 }
 
         private TravelMode _mode = TravelMode.None;
         private int        _stonesNeeded;   // bu yolculuğun kaç taş ettiği
@@ -198,8 +223,32 @@ namespace TacticalRPG.UI
             Clear();
             if (_glow != null) _glow.Play();
             ShowPromptText("Karoya tıkla: DURAK ekle (sisin içi de olur)  ·  durağa tıkla: sil  ·  " +
-                           "aşağıdaki düğme: rotayı temizle.");
+                           "YOLU SİL: rotanın tamamını temizler.");
             RefreshRouteMarkers();
+        }
+
+        /// <summary>KARO GERİ GETİR barı (madde 10): kip açılınca haritadaki BÜTÜN çukurlar
+        /// işaretlenir — "tanrısal bakış". Tıklanan çukur bir hak harcayarak geri gelir.
+        /// Hak yoksa kip açılmaz: boş bir kipe girip neden çalışmadığını aramak kötü UI.</summary>
+        private void ToggleRestore()
+        {
+            if (_mode == TravelMode.Restore) { SetMode(TravelMode.None); Clear(); return; }
+
+            if (_recovery == null)
+            { ShowHint("Geri getirme bileşeni sahnede yok (TileRecoveryManager)."); return; }
+
+            if (_recovery.Credits <= 0)
+            { ShowHint("Karo geri getirme hakkın yok — çökmüş bir karonun kenarında kazanılır."); return; }
+
+            SetMode(TravelMode.Restore);
+            Clear();
+            if (_glow != null) _glow.Play();
+
+            int holes = _recovery.RestorableTiles().Count;
+            ShowPromptText(holes > 0
+                ? $"{holes} çukur işaretlendi  ·  hak: {_recovery.Credits}  ·  " +
+                  "geri getirmek istediğin çukura tıkla."
+                : "Haritada geri getirilebilecek çukur yok (sisin içindekiler sayılmaz).");
         }
 
         private void SetMode(TravelMode mode)
@@ -207,13 +256,15 @@ namespace TacticalRPG.UI
             _mode = mode;
             if (_glow != null)
             {
-                // Kip rengi: yol belirlemede tek renk (kırmızımsı), seyahatte gökkuşağı.
-                if (mode == TravelMode.Route) _glow.SetTint(_routeGlowColor);
-                else                          _glow.ClearTint();
+                // Kip rengi: yol belirlemede kırmızımsı, geri getirmede yeşilimsi, seyahatte gökkuşağı.
+                if      (mode == TravelMode.Route)   _glow.SetTint(_routeGlowColor);
+                else if (mode == TravelMode.Restore) _glow.SetTint(_restoreGlowColor);
+                else                                 _glow.ClearTint();
                 _glow.SetSustained(mode != TravelMode.None);
             }
             RefreshStoneUI();
             RefreshRouteUI();
+            RefreshRestoreMarkers();   // kip kapandıysa çukur işaretlerini de toplar
         }
 
         private void RefreshRouteUI()
@@ -230,6 +281,16 @@ namespace TacticalRPG.UI
                                            : "YOL BELİRLE";
             }
 
+            // YOLU SİL: rota varken açık, yokken sönük — basacak bir şey olmadığında düğmenin
+            // tepki vermemesi, "bastım ama olmadı" duygusundan iyidir.
+            if (_routeClearButton != null)
+            {
+                _routeClearButton.interactable = stops > 0;
+                var clearLabel = _routeClearButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (clearLabel != null)
+                    clearLabel.text = stops > 0 ? $"YOLU SİL ({stops} durak)" : "YOLU SİL";
+            }
+
             // Şeritteki düğme kipe göre iş değiştirir: seyahatte seçimi bırakır, rota kipinde
             // TÜM durakları siler. Yazısı da onu söylemeli, yoksa "vazgeç" yanlış vaat olur.
             if (_cancelButton != null)
@@ -238,6 +299,24 @@ namespace TacticalRPG.UI
                 if (cancelLabel != null)
                     cancelLabel.text = armed && stops > 0 ? "ROTAYI SİL" : "VAZGEÇ";
             }
+        }
+
+        /// <summary>YOLU SİL düğmesi (kullanıcı isteği 2026-09-02): rotaya ait HER ŞEYİ siler —
+        /// duraklar, minihatitadaki bayrak/nokta işaretleri ve 3B haritadaki patika + bayraklar.
+        /// Kip açık olmasa da çalışır: rota kalıcı bir plan olduğu için silmek de her an
+        /// mümkün olmalı, önce YOL BELİRLE'yi açmak zorunda kalmadan.</summary>
+        private void ClearRoute()
+        {
+            if (_routeMarker == null || !_routeMarker.HasRoute)
+            {
+                ShowHint("Silinecek rota yok.");
+                return;
+            }
+
+            // ClearAll → OnChanged → RefreshRouteMarkers: minihatita işaretleri ve 3B patika
+            // (RouteMarker durak listesi boşalınca kendini gizler) birlikte gider.
+            _routeMarker.ClearAll();
+            ShowPromptText("Yol silindi — haritada ve arazide rota işareti kalmadı.");
         }
 
         /// <summary>Şeritteki düğme: rota kipinde TÜM durakları siler, değilse seçimi bırakır.</summary>
@@ -296,7 +375,8 @@ namespace TacticalRPG.UI
 
         private void SelectAt(PointerEventData e)
         {
-            if (_mode == TravelMode.Route) { MarkRouteAt(e); return; }
+            if (_mode == TravelMode.Route)   { MarkRouteAt(e);  return; }
+            if (_mode == TravelMode.Restore) { RestoreTileAt(e); return; }
 
             // TAŞSIZ SEYAHAT YOK: önce bir yol taşı kullanılmalı. Sessizce hiçbir şey yapmak
             // yerine sebebini yazıyoruz — yoksa oyuncu haritanın bozuk olduğunu sanır.
@@ -490,6 +570,75 @@ namespace TacticalRPG.UI
             _routeMarkers.Add((img.gameObject, scale));
         }
 
+        // ── Karo geri getirme (KARO GERİ GETİR kipi, madde 10) ──────────────
+
+        /// <summary>
+        /// Tanrısal yerleştirme tıklaması: tıklanan karo bir ÇUKURSA hak harcanıp geri getirilir.
+        ///
+        /// EN YAKINA KAYMA YOK (rotadaki <see cref="TryResolveStopTile"/>'ın tersine): burada
+        /// yanlış karoyu onarmak geri alınamaz bir kaynak harcamasıdır. Işıksız bir tıklama
+        /// sessizce komşu çukuru onarsaydı, oyuncu hakkını istemediği yere yakmış olurdu.
+        /// </summary>
+        private void RestoreTileAt(PointerEventData e)
+        {
+            if (_recovery == null)
+            { ShowHint("Geri getirme bileşeni sahnede yok (TileRecoveryManager)."); return; }
+
+            if (!TryCoordFromPointer(e, out HexCoordinate coord)) return;
+
+            if (!_recovery.TryRestore(coord, out string message))
+            {
+                ShowHint(message);
+                return;
+            }
+
+            int left = _recovery.Credits;
+            if (left <= 0)
+            {
+                // Hak bitti → kipte kalmanın anlamı yok, kendiliğinden kapanır.
+                SetMode(TravelMode.None);
+                ShowPromptText(message);
+                return;
+            }
+            ShowPromptText($"{message}  ·  başka bir çukura tıklayabilirsin.");
+        }
+
+        /// <summary>Çukur işaretleri: YALNIZ kip açıkken çizilir. Kip kapalıyken harita
+        /// temiz kalır — çukurlar zaten arazide gözle görünüyor.</summary>
+        private void RefreshRestoreMarkers()
+        {
+            foreach ((GameObject go, float _) in _restoreMarkers) if (go != null) Destroy(go);
+            _restoreMarkers.Clear();
+
+            if (_mode == TravelMode.Restore && _recovery != null)
+            {
+                IReadOnlyList<HexCoordinate> holes = _recovery.RestorableTiles();
+                Color c = _restoreSelectionColor;
+                for (int i = 0; i < holes.Count; i++)
+                {
+                    Image img = AddMarker(holes[i], MinimapIconKind.Collapsed, c, 1f, track: false);
+                    if (img != null) _restoreMarkers.Add((img.gameObject, 1f));
+                }
+            }
+
+            RefreshRestoreUI();
+        }
+
+        private void RefreshRestoreUI()
+        {
+            if (_restoreButton == null) return;
+
+            int credits = _recovery != null ? _recovery.Credits : 0;
+            bool armed  = _mode == TravelMode.Restore;
+
+            _restoreButton.interactable = credits > 0 || armed;
+            var label = _restoreButton.GetComponentInChildren<TextMeshProUGUI>();
+            if (label != null)
+                label.text = armed      ? $"GERİ GETİR: AÇIK ({credits} hak)"
+                           : credits > 0 ? $"KARO GERİ GETİR ({credits})"
+                                         : "KARO GERİ GETİR";
+        }
+
         /// <summary>Tıklanan karo geçerli hedef mi? Değilse (dağ/su/bilinmeyen) EN YAKIN geçerli
         /// karoya kayar — halka halka dışa doğru aranır, ilk bulunan en yakınıdır.</summary>
         private bool TryResolveTarget(HexCoordinate clicked, out HexCoordinate target)
@@ -643,7 +792,7 @@ namespace TacticalRPG.UI
         // Nabız + yakınlaştırmaya uyum. Yalnız seçim VARKEN çalışır (CLAUDE.md §6: boşta iş yok).
         private void Update()
         {
-            if (_markers.Count == 0 && _routeMarkers.Count == 0) return;
+            if (_markers.Count == 0 && _routeMarkers.Count == 0 && _restoreMarkers.Count == 0) return;
 
             // Boyut YALNIZ değiştiyse yazılır. Her karede sizeDelta yazmak RectTransform'u kirletir
             // ve Canvas'ı her karede yeniden kurdurur — 30 rota noktasıyla bu boşuna bir maliyet.
@@ -658,6 +807,8 @@ namespace TacticalRPG.UI
                     ((RectTransform)go.transform).sizeDelta = size * scale;
                 }
                 foreach ((GameObject go, float scale) in _routeMarkers)
+                    if (go != null) ((RectTransform)go.transform).sizeDelta = size * scale;
+                foreach ((GameObject go, float scale) in _restoreMarkers)
                     if (go != null) ((RectTransform)go.transform).sizeDelta = size * scale;
             }
 

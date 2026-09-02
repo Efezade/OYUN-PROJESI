@@ -29,6 +29,11 @@ namespace TacticalRPG.UI
         /// <summary>Üst-orta üçüncü sıra (dükkân paneli gibi büyük kutular).</summary>
         public const float ThirdRowY = SecondRowY + 86f;                // 134
 
+        /// <summary>Üst-orta dördüncü sıra — çukur (çökmüş karo) istemi. Dükkân paneli üçüncü
+        /// sırada 140 piksele kadar büyüyebiliyor; çukurun kenarında dükkâna da girilebildiği
+        /// için istem onun ALTINA kondu.</summary>
+        public const float FourthRowY = ThirdRowY + 150f;               // 284
+
         // ── SAĞ-ÜST yığını ───────────────────────────────────────────────────
         public const float RightMargin  = 12f;
         /// <summary>Öz deposu paneli.</summary>

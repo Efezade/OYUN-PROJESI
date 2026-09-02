@@ -30,6 +30,9 @@ namespace TacticalRPG.Core
         [Tooltip("Çöküş anında kırmızı su-dalgası efekti (göle taş atma). Atanmazsa dalga çizilmez " +
                  "(çöküş yine olur).")]
         [SerializeField] private CollapseWaveEffect _wave;
+        [Tooltip("SİSLİ bölgedeki uyarı görünsün diye: işaretli karonun BULUTU kızıl yanar. " +
+                 "Atanmazsa uyarı yalnız yüzeydeki kırmızı çerçeveyle kalır (sisin altında görünmez).")]
+        [SerializeField] private FogOfWarManager    _fog;
 
         [Header("Çöküş Görseli")]
         [SerializeField] private Material _collapsedMaterial;
@@ -60,6 +63,9 @@ namespace TacticalRPG.Core
         public bool IsCollapseActive  { get; private set; }
         public event Action<int, int> OnTileCollapsed;
 
+        /// <summary>Bir karo çöküşten GERİ GETİRİLDİ (madde 10). Minihatita ve HUD bunu dinler.</summary>
+        public event Action<HexCoordinate> OnTileRestored;
+
         private int _lastProcessedDay = 0;
 
         // ── Çöküş durumu (1 bölüm = 1 harita → tek durum) ────────────────────
@@ -69,6 +75,11 @@ namespace TacticalRPG.Core
         // _collapsed = kalıcı silinmiş karolar (savaştan dönünce yeniden uygulanır)
         private readonly List<(HexCoordinate coord, int removeDay)> _doomed = new();
         private readonly HashSet<HexCoordinate> _collapsed = new();
+
+        // ÇÖKÜŞ ÖNCESİ HÂL (madde 10 — geri getirme): karo çökerken tipi ve materyali ÜZERİNE
+        // yazılıyor. Geri getirme bunları geri koyamazsa karo "yürünebilir ama çökmüş görünen"
+        // bir hayalete dönerdi; o yüzden silmeden önce burada saklanıyor.
+        private readonly Dictionary<HexCoordinate, (CellType type, Material mat, bool combat)> _preCollapse = new();
 
         private bool IsDoomed(HexCoordinate c)
         {
@@ -93,6 +104,8 @@ namespace TacticalRPG.Core
         private void Awake()
         {
             if (_camera == null) _camera = Camera.main;
+            // Kurulum atlanmış eski sahnelerde de alarm çalışsın (CLAUDE.md: kritik bağ koddan da).
+            if (_fog == null) _fog = FindFirstObjectByType<FogOfWarManager>();
             _outlineRoot = new GameObject("CollapseWarnings").transform;
             _outlineRoot.SetParent(transform, false);
         }
@@ -192,6 +205,28 @@ namespace TacticalRPG.Core
                 if (_wave != null) _wave.StrikeSeries(newDoomed, RevealDoomedTile);
                 else foreach (var c in newDoomed) RevealDoomedTile(c);
             }
+
+            // 4) HÂLÂ İŞARETLİ olan (vadesi gelmemiş) karoların çerçevesini geri koy.
+            //    (2) numaralı adımdaki ClearOutlines TÜM çerçeveleri siliyor — yalnız çökenlerin
+            //    değil. Geri konmazsa dün işaretlenmiş ama yarın düşecek karo uyarısını KAYBEDER;
+            //    oyuncuya "eski işaretler kayboldu, sayaç yeni karolara geçti" gibi görünür
+            //    (2026-09-02 hata raporu: "countdown'u yeni karolar sahipleniyor").
+            RestoreRemainingOutlines();
+        }
+
+        /// <summary>Vadesi gelmemiş her işaretli karonun çerçevesi dursun. Yıldırımı henüz
+        /// çakmamış olanlar (<see cref="_pendingReveal"/>) atlanır — onların açıklaması
+        /// dalgayla gelecek.</summary>
+        private void RestoreRemainingOutlines()
+        {
+            if (!InOverworld || _gridManager == null) return;
+
+            foreach (var (coord, _) in _doomed)
+            {
+                if (_pendingReveal.Contains(coord)) continue;
+                if (_outlines.ContainsKey(coord))   continue;
+                if (_gridManager.TryGetCell(coord, out HexCell cell)) CreateOutline(cell);
+            }
         }
 
         // Yeni işaretlenecek karoları SEÇER (veri: _doomed + _pendingReveal). Kırmızı çerçeve /
@@ -200,8 +235,17 @@ namespace TacticalRPG.Core
         // removeDay = bu karoların SİLİNECEĞİ gün (bugün + uyarı süresi).
         private List<HexCell> PickDoomed(int count, int removeDay, HashSet<HexCoordinate> alsoExclude)
         {
-            HexCoordinate playerCoord = _player != null ? _player.CurrentCoord : default;
-            var candidates = new List<HexCell>();
+            bool          hasPlayer   = _player != null;
+            HexCoordinate playerCoord = hasPlayer ? _player.CurrentCoord : default;
+
+            // BASKI KURALI (kullanıcı isteği 2026-09-02): çöküş TÜM haritadan rastgele seçilince
+            // çökenlerin çoğu oyuncunun görmediği sisli bölgede kalıyor ve kıyamet hiç
+            // HİSSEDİLMİYORDU ("bazen oluyor bazen olmuyor" şikayetinin ikinci yarısı).
+            // Artık iki havuz var: YAKIN (oyuncunun çevresi) ve UZAK. Seçim her iki havuzda da
+            // rastgele — değişen tek şey, günün payının bir kısmının garantiyle dipte olması.
+            var near = new List<HexCell>();
+            var far  = new List<HexCell>();
+
             foreach (HexCell cell in _gridManager.Cells.Values)
             {
                 if (!cell.IsWalkable)                        continue;
@@ -212,20 +256,45 @@ namespace TacticalRPG.Core
                 if (alsoExclude != null && alsoExclude.Contains(cell.Coordinate)) continue;
                 // ZORUNLU GÖREV karoları asla silinmez (TASK-007) — bölüm bitirilemez hale gelmesin.
                 if (_protectedTiles.Contains(cell.Coordinate)) continue;
-                candidates.Add(cell);
+
+                if (!hasPlayer) { far.Add(cell); continue; }
+
+                int dist = playerCoord.DistanceTo(cell.Coordinate);
+                // Dipteki halka muaf: oyuncunun bastığı karonun komşuları da çökerse oyuncu
+                // kapana kısılırdı (hiçbir yöne yürüyemez, bölüm sert kesime kadar donar).
+                if (dist <= MinPlayerDistance) continue;
+                if (dist <= NearPlayerRadius) near.Add(cell); else far.Add(cell);
             }
 
             var picked = new List<HexCell>();
-            for (int i = 0; i < count && candidates.Count > 0; i++)
+            int nearWanted = Mathf.RoundToInt(count * NearPlayerShare);
+
+            // Havuzlardan biri yetmezse eksik pay ÖBÜRÜNDEN tamamlanır — günün karo sayısı
+            // (CollapseConfig eğrisi) her hâlükârda tutmalı, yoksa "bazen olmuyor" geri gelir.
+            TakeRandom(near, nearWanted,            removeDay, picked);
+            TakeRandom(far,  count - picked.Count,  removeDay, picked);
+            TakeRandom(near, count - picked.Count,  removeDay, picked);
+
+            return picked;
+        }
+
+        private float NearPlayerShare   => _config != null ? _config.NearPlayerShare   : 0.6f;
+        private int   NearPlayerRadius  => _config != null ? _config.NearPlayerRadius  : 7;
+        private int   MinPlayerDistance => _config != null ? _config.MinPlayerDistance : 2;
+
+        /// <summary>Havuzdan rastgele <paramref name="wanted"/> karo çeker, işaretler ve
+        /// <paramref name="into"/>'ya ekler. Çekilen karo havuzdan düşer (aynı karo iki kez seçilmez).</summary>
+        private void TakeRandom(List<HexCell> pool, int wanted, int removeDay, List<HexCell> into)
+        {
+            for (int i = 0; i < wanted && pool.Count > 0; i++)
             {
-                int idx = UnityEngine.Random.Range(0, candidates.Count);
-                HexCell cell = candidates[idx];
-                candidates.RemoveAt(idx);
+                int idx = UnityEngine.Random.Range(0, pool.Count);
+                HexCell cell = pool[idx];
+                pool.RemoveAt(idx);
                 _doomed.Add((cell.Coordinate, removeDay));
                 _pendingReveal.Add(cell.Coordinate);
-                picked.Add(cell);
+                into.Add(cell);
             }
-            return picked;
         }
 
         // Dalga cephesi işaretli karonun üstünden geçti → yıldırım çaktı → çerçeve + sayaç
@@ -261,15 +330,22 @@ namespace TacticalRPG.Core
         {
             _doomed.Clear();
             _collapsed.Clear();
+            _preCollapse.Clear();
             _pendingReveal.Clear();
             TotalRemovedTiles = 0;
             _lastProcessedDay = 0;
             ClearOutlines();
+            // Bulut önbelleği harita değişse de duruyor → eski haritanın alarmları taşınmasın.
+            if (_fog != null) _fog.ClearCloudAlarms();
         }
 
         // ── Kırmızı hex çizgisi ──────────────────────────────────────────────
         private void CreateOutline(HexCell cell)
         {
+            // Aynı karoya ikinci çerçeve çizilmesin: sözlüğe üzerine yazmak eski LineRenderer'ı
+            // sahnede ÖKSÜZ bırakır (görünmeye devam eder, kimse silmez).
+            if (_outlines.ContainsKey(cell.Coordinate)) return;
+
             if (_lineMat == null)
             {
                 Shader sh = Shader.Find("Universal Render Pipeline/Unlit")
@@ -298,11 +374,19 @@ namespace TacticalRPG.Core
                 lr.SetPosition(i, baseP + new Vector3(c.x, 0f, c.z));
             }
             _outlines[cell.Coordinate] = lr;
+
+            // Çerçeve karonun YÜZEYİNDE; sisli bölgede bulutun altında kalıyor. Uyarıyı görünen
+            // katmana da yaz: o karonun bulutu kızıl yansın (2026-09-02 hata raporu).
+            if (_fog != null) _fog.SetCloudAlarm(cell.Coordinate, true);
         }
 
         private void ClearOutlines()
         {
-            foreach (var kv in _outlines) if (kv.Value != null) Destroy(kv.Value.gameObject);
+            foreach (var kv in _outlines)
+            {
+                if (kv.Value != null) Destroy(kv.Value.gameObject);
+                if (_fog != null) _fog.SetCloudAlarm(kv.Key, false);
+            }
             _outlines.Clear();
         }
 
@@ -310,7 +394,14 @@ namespace TacticalRPG.Core
         private IEnumerator ShakeAndRemove(HexCell cell)
         {
             Transform vis = cell.Visual != null ? cell.Visual.transform : null;
-            Vector3 basePos = vis != null ? vis.position : cell.WorldPosition;
+
+            // TABAN KONUM DALGADAN SORULUR: deprem başladığı anda karo, aynı anda koşan bir çöküş
+            // dalgası tarafından kaldırılmış olabilir. O konumu "taban" saysaydık karo sarsıntı
+            // bitince havada kalırdı — karolar farklı yüksekliklerde donuyor, Kam'ın modeli de
+            // yarısı gömülü duruyordu (2026-09-02 hata raporu).
+            Vector3 basePos = vis == null ? cell.WorldPosition
+                            : _wave != null ? _wave.BasePositionOf(vis)
+                            : vis.position;
 
             float t = 0f;
             while (t < _shakeDuration && vis != null)
@@ -334,13 +425,72 @@ namespace TacticalRPG.Core
 
         private void RemoveTile(HexCell cell)
         {
+            // Çöküş öncesi hâli SAKLA (madde 10). Yalnız gerçekten ayakta olan karo için: bu metot
+            // savaştan dönüşte de çağrılıyor (ApplyCollapseStateForCurrentMap) ve orada karo
+            // yeniden üretilmiş, yani ORİJİNAL hâlinde oluyor — çökmüş hâli kaydetmiş olmayalım.
+            if (cell.IsWalkable)
+                _preCollapse[cell.Coordinate] =
+                    (cell.CellType,
+                     cell.MeshRenderer != null ? cell.MeshRenderer.sharedMaterial : null,
+                     cell.CanEnterCombat);
+
             cell.IsWalkable = false;
             cell.CellType   = CellType.Obstacle;
+            // Çökmüş karoda savaş kapısı KALMAMALI: menzilden görev açan tarama (MissionManager)
+            // karonun bayrağına bakıyor, çukura girilmesin.
+            cell.CanEnterCombat = false;
 
             if (cell.MeshRenderer != null && _collapsedMaterial != null)
                 cell.MeshRenderer.sharedMaterial = _collapsedMaterial;
             else if (cell.Visual != null)
                 cell.Visual.SetActive(false);
+        }
+
+        // ── GERİ GETİRME (madde 10) ─────────────────────────────────────────
+
+        /// <summary>Bu karo kalıcı olarak çökmüş mü?</summary>
+        public bool IsCollapsed(HexCoordinate coord) => _collapsed.Contains(coord);
+
+        /// <summary>Kalıcı çökmüş karoların listesi (geri getirme ekranı bunu gezer).</summary>
+        public IReadOnlyCollection<HexCoordinate> CollapsedTiles => _collapsed;
+
+        /// <summary>
+        /// Çökmüş bir karoyu GERİ GETİRİR (madde 10): yürünebilirlik, karo tipi, savaş bayrağı ve
+        /// materyali çöküş öncesi hâline döner. Çökmemiş ya da hâlâ İŞARETLİ (kırmızı, düşmek
+        /// üzere) bir karo geri getirilemez — işaretliyi geri getirmek "iki gün sonra yine
+        /// düşecek" bir karoyu satmak olurdu.
+        /// </summary>
+        /// <returns>false = karo çökmemiş, işaretli ya da grid'de yok.</returns>
+        public bool RestoreTile(HexCoordinate coord)
+        {
+            if (!_collapsed.Contains(coord)) return false;
+            if (IsDoomed(coord))             return false;
+            if (_gridManager == null || !_gridManager.TryGetCell(coord, out HexCell cell)) return false;
+
+            _collapsed.Remove(coord);
+            TotalRemovedTiles = Mathf.Max(0, TotalRemovedTiles - 1);
+
+            if (_preCollapse.TryGetValue(coord, out var before))
+            {
+                cell.CellType       = before.type;
+                cell.CanEnterCombat = before.combat;
+                if (cell.MeshRenderer != null && before.mat != null)
+                    cell.MeshRenderer.sharedMaterial = before.mat;
+                _preCollapse.Remove(coord);
+            }
+            else
+            {
+                // Kayıt yoksa (eski kayıttan yüklenmiş durum) en güvenli varsayım: sıradan karo.
+                cell.CellType = CellType.Normal;
+            }
+
+            cell.IsWalkable = true;
+            if (cell.Visual != null && !cell.Visual.activeSelf) cell.Visual.SetActive(true);
+
+            OnTileRestored?.Invoke(coord);
+            OnTileCollapsed?.Invoke(0, TotalRemovedTiles);   // HUD sayacı tazelensin
+            Debug.Log($"[Collapse] Karo geri getirildi: {coord} | Kalan silinmis: {TotalRemovedTiles}");
+            return true;
         }
 
         // ── Karo üstü "kalan AP" etiketi (işaretli karolar) ─────────────────
@@ -358,11 +508,21 @@ namespace TacticalRPG.Core
             // Sanal 1920x1080 ekrana çiz → sayaç yazısı her çözünürlükte aynı oranda.
             using var _scale = HudScale.Scaled();
 
-            int ap = _apManager.APRemainingToday;
-            foreach (var (coord, _) in _doomed)
+            // HER KARO KENDİ SAYACINI GÖSTERİR (2026-09-02 düzeltmesi). Önceden bütün işaretli
+            // karolara AYNI sayı (bugünün kalan AP'si) yazılıyordu: yarın düşecek karo ile üç gün
+            // sonra düşecek karo aynı sayıyı taşıyor, gün dönünce hepsi birden başa sarıyordu.
+            // Oyuncuya "sayaç bitti ama karo gitmedi, yeniden saymaya başladı" gibi görünüyordu.
+            int today    = _apManager.CurrentDay;
+            int apToday  = _apManager.APRemainingToday;
+            int apPerDay = Mathf.Max(1, _apManager.SlotsPerDay * _apManager.MaxAP);
+
+            foreach (var (coord, removeDay) in _doomed)
             {
                 if (_pendingReveal.Contains(coord)) continue;   // yıldırım çakana dek sayaç gizli
                 if (!_gridManager.TryGetCell(coord, out HexCell cell)) continue;
+
+                // Karo, removeDay'in BAŞINDA (gün sınırında) düşer → o ana kadarki toplam AP.
+                int ap = apToday + Mathf.Max(0, removeDay - today - 1) * apPerDay;
                 Vector3 world = cell.WorldPosition + Vector3.up * (cell.SurfaceHeight + 0.5f);
                 Vector3 sp = _camera.WorldToScreenPoint(world);
                 if (sp.z <= 0f) continue;                            // kamera arkası
