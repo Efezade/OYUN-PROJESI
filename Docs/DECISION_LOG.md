@@ -16,6 +16,113 @@
 
 ---
 
+## 2026-09-06 — Yürüyüş iptali + KİTAP'ta karakter sayfası + ÇANTA sekmeleri
+
+**KARAR 1 — Uzun yürüyüş SAĞ TIKLA iptal edilir; iptal KARO SINIRINDA işler.**
+`PlayerController.RequestStop()` bayrak koyar, `MoveCoroutine` o karoyu bitirip çıkar.
+**NEDEN:** Keşfedilmiş bölgede menzil sınırsız olduğu için tek tıkla onlarca karoluk yolculuk
+başlıyor ve oyuncu yolun ortasında fikrini değiştiremiyordu (Efe'nin raporu). Yolun ORTASINDA
+kesmek karakteri iki hex arasında bırakır, `CurrentCoord` yalan söylerdi.
+**EKONOMİ KIRILMADI:** AP zaten karo başına, VARIŞTA ödeniyor (`OnMoved`) — yolculuk 20 karoluk
+tek işlem değil, 20 küçük işlem. Yürünen karo ödenmiş, kalan hiç ödenmemiş olur; iade/borç
+hesabı gerekmez. Öz de etkilenmez (varılmayan karonun özü yerinde kalır).
+**YAN KURAL:** Güçlü Yol Taşı ile başlayan yolculuk iptal edilirse kalan bedava hamleler SİLİNİR
+(`ActionPointManager.ClearFreeMoves`) — yoksa taş alınıp 2 karo gidilip iptal edilerek kalan
+hamleler istenen yöne harcanabilirdi. Savaşa girişteki temizlikle aynı kural.
+**GÖRÜNÜRLÜK:** Yürürken ekranın altında "YÜRÜYOR · N karo kaldı — SAĞ TIK: dur" şeridi; iptal
+var olduğu söylenmezse kimse sağ tıklamayı denemez.
+
+**KARAR 2 — KİTAP'ın "SINIFLAR" ızgarası KARAKTER sayfasına dönüştü: bir karakter = bir açılış.**
+7 karakter (Kam hariç), sol sayfada büst + ad + hikaye, sağ sayfada ÜRETİM BEDELİ + statlar,
+altta ÖNCEKİ/SONRAKİ + "3 / 7".
+**NEDEN:** Eski ızgarada dört kutu vardı, ikisi "kilitli" yer tutucuydu; ne büst sığıyordu ne
+maliyet okunuyordu. Liste ELLE YAZILMIYOR — `Assets/Data/Recipes` taranıyor, yani savaşta
+gerçekten üretilebilen birimler; yeni tarif eklenince kitap kendiliğinden büyür. Maliyet de
+tarifin kendisinden okunuyor: kitaptaki sayı savaşta ödenecek sayının TA KENDİSİ (ikinci liste yok).
+**BÜSTLER:** `InkArtFactory.Bust` ile prosedürel KAMEA (dolu silüet + oyulmuş detay + yandaki
+alet). İlk deneme ince konturlarla "çöp adam" gibi çıkmıştı; dolu silüet tek renk mürekkeple
+çok daha okunur. Gerçek splash art gelince tek iş girdinin `_bust` alanını değiştirmek.
+
+**KARAR 3 — ÇANTA: yalnız EŞYALAR ve POTLAR sekmesi; ÖZ sekme DEĞİL, köşede sabit şerit.**
+**NEDEN (Efe):** "okçuya bakarken öz deposunu görmek gereksiz" → ÖZ, KİTAP'tan alındı; ama
+"açılır kapanır bir sekme de olmasın, çantayı açınca hep yazsın" → sayfa köklerinin DIŞINDA,
+valizin sağ üst köşesinde duruyor. BÜYÜ/ZIRH sekmeleri kaldırıldı: sistemleri yok, boş sekme
+"bozuk mu" hissi veriyordu. Sekme geçişi kitaptaki `BookmarkPager`'ın aynısı — ikinci bir
+mekanizma yazılmadı.
+
+**DERSLER (bu oturumda üçü de gerçek hataya mal oldu):**
+- **Enum üyesi `///` yorumuyla AYNI SATIRA yazılmaz** — yorum satırın kalanını yutar, enum boş
+  kalır (`InkBust` bir tur derlenmedi).
+- **`[Tooltip("a" "b")]` derlenmez** — bitişik string literalleri C#'ta birleşmez, `+` şart.
+- **Ok glifi (U+25C0/25B6) TMP'nin varsayılan fontunda YOK** → boş kutu (tofu). Düğmelerde
+  kelime kullan.
+
+## 2026-09-04 — Kam'ın yetenek ağacı (KİTAP) + el çizimi mürekkep UI dili
+
+**KARAR 1 — Ağaç HAVUZU belirler, davul draftı yine RASTGELE seçer.**
+Açılan büyü draft havuzuna girer, yükseltilen büyü daha güçlü kartla çıkar; seçim rastgele kalır.
+**NEDEN:** Alternatif ("ağaçtan alınan büyü savaşta hep elde durur") davulun "şimdi mi patlatayım,
+tahtayı mı kurayım" gerilimini öldürüyordu — büyü kartı garantiyse draftın yarısı boşa düşer. Bu
+kuralla ağaç sürprizi değil HAVUZUN KALİTESİNİ değiştirir. (Efe'nin kararı, iki seçenek sunuldu.)
+
+**KARAR 2 — Seviye, katalog girdisinin ÜSTÜNE binen bir değiştiricidir.**
+`KamSkillProgress.Scaled` katalog girdisinin KOPYASINI üretir (güç/yarıçap/itme/sersemletme +N).
+**NEDEN:** Her seviye için ayrı katalog girdisi 15 büyü × 3 seviye = 45 girdi ve 45 denge sayısı
+demekti. Statik `KamSkillCatalog` girdisini DEĞİŞTİRMEK ise savaşlar arası taşınır ve geri
+alınamazdı — o yüzden kopya. Ağaç ölünce sıfırlanır (`ChapterRunManager.RestartChapter`).
+
+**KARAR 3 — Ağaç KİTAP'ın bir sayfası, ayrı menü değil.** `BookmarkPager` ile yer imi.
+**NEDEN:** Efe'nin isteği. Mockup (game UI.pdf s.6) ağacı ÇANTA'ya koyuyor; taşımak istenirse
+sayfayı Panel_Bag'e kurmak yeterli, çizim kodu aynen çalışır.
+
+**KARAR 4 — UI sanatı PROSEDÜREL ÜRETİLİR (`InkArtFactory`), PNG olarak diske yazılır.**
+Dalgalı çerçeve, çift konturlu daire düğüm, gövdeden dallanan ağaç ve 14 çizgi ikon kodla
+çiziliyor; `Assets/Art/UI/Ink/*.png` olarak kaydedilip Sprite import ediliyor.
+**NEDEN:** Unity'nin built-in sprite'ları (Background.psd/Knob.psd) pürüzsüz ve düzgün — mockup'ın
+el çizimi diline hiç benzemiyordu, sonuç "programcı çizimi" duruyordu (Efe: "profesyonel
+gözüksün"). Elle çizilmiş atlas gelene kadar fark kodla kapatıldı; karo/küre fabrikalarıyla aynı
+desen. **DERS:** bellekte üretilen `Texture2D` sahne yeniden açılınca kaybolur → UI'da eksik
+sprite kalırdı; üretilen sanat gerçek asset olarak yazılmalı. Çizim seed'i ADINDAN türetilir
+(aynı ad → aynı çizgi), dosya varsa yeniden üretilmez.
+
+**KARAR 5 — Katalog 5'ten 15 büyüye çıktı, YENİ MEKANİK YOK.** Yeni büyüler var olan beş etkiyi
+(Meteor/Heal/Push/Petrify/Pull) farklı alan-güç dengesiyle kullanır: dar olan SERT, geniş olan
+YUMUŞAK vurur. Ağaç beş dala ayrıldı (ateş · şifa · yel · bağlama · girdap), her dal üç basamak.
+**NEDEN:** Ağacın "profesyonel" görünmesi için düğüm sayısı gerekiyordu; yeni etki türü yazmak
+savaş kodunu büyütürdü. Sayılar TASLAK (denge durdurulmuş — CLAUDE.md §9).
+
+**MİNİMAP'E DOKUNULMADI** (Efe'nin sınırı): HARİTA ekranı eski `FramedPanel`/`Sliced`
+yardımcılarını kullanmaya devam ediyor, o yüzden eski yardımcılar SİLİNMEDİ.
+
+## 2026-09-03 — Zorunlu görev artık dünyada duyuruluyor + Kam çöken karodan itiliyor (B1, B2)
+
+**KARAR 1 — Yeni zorunlu görevin duyurusu ANİMASYON DEĞİL, KALICI FENER + EKRAN KENARI PUSULASI.**
+`MandatoryQuestBeacon` açık her zorunlu görevin karosunda altın gök sütunu tutar (2 gün kalın +
+nabızlı, sonra ince ve sabit); `QuestBeaconCompassHUD` ekran DIŞINDA kalan feneri kenarda ok +
+karo mesafesiyle gösterir.
+**NEDEN:** `MandatoryQuestFallEffect` bir KEZ oynar ve menzillidir — görüş dışında düşen görev
+hiç fark edilmiyordu, geri bildirim yalnız minimap ikonu + üst barda kalıyordu, yani UI takibi
+zorunluydu (kullanıcı isteği: "UI'a bakmadan haberdar olsun"). Kalıcı iz + ekran dışı yön
+göstergesi bu iki boşluğu birlikte kapatır; ikisi de aynı veriyi (fener listesi) okur, pusula
+kendi arama yapmaz.
+**REDDEDİLEN:** "kameranın bir saniyelik bakışı" (kamerayı oyuncunun elinden alır) ve "yönü belli
+ses" (projede ses katmanı yok) — ikisi de fikir listesindeydi, alınmadı.
+
+**KARAR 2 — Kam çöken karodan SİLME ANINDA itilir; bedeli AP DEĞİLDİR.**
+`MapCollapseManager.ShovePlayerToSafety` günün çökenleri belirlenince, deprem başlamadan önce
+oyuncuyu komşu güvenli karoya iter (`PlayerController.ForceShiftTo`, halka halka arama, yalnız
+yürünür karolardan). Muafiyet `ActionPointManager.GrantForcedMove()` ile verilir.
+**NEDEN:** `PickDoomed`'un "oyuncunun çevresi muaf" kuralı SEÇİM anında çalışıyor; uyarı 2 gün
+önceden konduğu için oyuncu işaretli karoya sonradan yürüyebiliyor ve karo altından çekiliyordu.
+AP muafiyeti çağıranda değil AP yöneticisinde tutuldu ki `OnMoved` normal aksın — sis, işaretler
+ve rota da böylece kendiliğinden tazeleniyor. `GrantFreeMoves` gibi "en büyüğü kalsın" değil
+EKLEYEN bir metot yazıldı: itilme, oyuncunun parayla aldığı Güçlü Yol Taşı stokunu yememeli.
+**Kaçacak yer yoksa** karo o gün silinmez, bir gün ertelenir (kapana kısılmak yerine).
+
+**DERS:** `MaterialPropertyBlock`'u MonoBehaviour'da ALAN/STATİK BAŞLATICIDA üretme — Unity
+"CreateImpl is not allowed…" atar, tip başlatıcı patlar ve `AddComponent` bileşeni alanları
+SIFIR serileşmiş hâlde ekler (sahnede `_height: 0` → fener görünmez, hata sessiz). Tembel üret.
+
 ## 2026-08-19 — Hızlı seyahat elden geçirildi: sis kaçağı kapatıldı, tek taş kaldı, gösteri eklendi
 
 **KARAR 1 — Yol taşıyla giden karakter SİS AÇMAZ.**
@@ -888,6 +995,13 @@ Tarihsel gerekçeleri arşivde; burada sadece **hâlâ geçerli olan** hüküm v
 ## Tuzaklar / Dersler
 
 > Sihirli sabitler ve tekrar etmemesi gereken hatalar. **Bu bölüm arşive taşınmaz.**
+
+**Unity API**
+- **`MaterialPropertyBlock` (ve motora inen her `CreateImpl` yapıcısı) MonoBehaviour'un alan ya da
+  statik başlatıcısında ÜRETİLEMEZ** (2026-09-03). Unity `UnityException: CreateImpl is not allowed
+  to be called from a MonoBehaviour constructor` atar; tip başlatıcı patlayınca `AddComponent`
+  bileşeni yine ekler ama **alan başlatıcıları koşmaz** → sahneye sıfır değerler serileşir ve
+  bileşen sessizce hiçbir şey yapmaz. Awake'te veya ilk kullanımda (`??=`) üret.
 
 **Karo / FBX**
 - **Ham tasarımcı FBX'i doğrudan grid karosu OLARAK KULLANILAMAZ.** v1 karoları ölçüldüğünde: her biri

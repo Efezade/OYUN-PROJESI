@@ -77,6 +77,56 @@ namespace TacticalRPG.Grid
             E("kara_kasirga", "Kara Kasırga",
               "5 karo çapında bir kasırga: alandaki HERKES merkeze doğru çekilir — dost, düşman fark etmez.",
               KamSkillEffect.Pull, 2, 0, 0.55f, 0.48f, 0.72f),
+
+            // ── DALLARIN ÜST BASAMAKLARI (2026-09-04) ────────────────────────
+            // Yetenek ağacı beş dala ayrılıyor (ateş / şifa / yel / bağlama / girdap) ve her dalın
+            // üç basamağı var. Yeni büyüler YENİ MEKANİK GETİRMEZ: hepsi var olan beş etkiyi farklı
+            // ALAN-GÜÇ dengesiyle kullanır. Kural: dar olan SERT, geniş olan YUMUŞAK vurur —
+            // yükseltme "her yönden daha iyi" olmasın, oyuncu dar/geniş arasında seçsin.
+
+            E("kor_yagmuru", "Kor Yağmuru",
+              "Tek karonun üstüne kor yağar: 3 karo çapındaki alandaki HERKES 13 hasar alır. " +
+              "Dar ama acımasız.",
+              KamSkillEffect.Meteor, 1, 13, 1.00f, 0.30f, 0.10f),
+
+            E("yildiz_dusumu", "Yıldız Düşümü",
+              "Gökten bir yıldız iner: 7 karo çapındaki alandaki HERKES 6 hasar alır. " +
+              "Geniş ama yumuşak.",
+              KamSkillEffect.Meteor, 3, 6, 1.00f, 0.62f, 0.24f),
+
+            E("ak_sut", "Ak Süt",
+              "Ak süt dökülür: 3 karo çapındaki alandaki HERKES 11 can yeniler — düşman dahil.",
+              KamSkillEffect.Heal, 1, 11, 0.96f, 0.96f, 0.88f),
+
+            E("yasam_agaci", "Yaşam Ağacı",
+              "Kökler yayılır: 7 karo çapındaki alandaki HERKES 8 can yeniler — düşman dahil.",
+              KamSkillEffect.Heal, 3, 8, 0.72f, 0.90f, 0.55f),
+
+            E("yel_kamcisi", "Yel Kamçısı",
+              "Tek noktadan kamçı gibi bir rüzgâr: 3 karo çapındaki HERKES alanın dışına, oradan " +
+              "4 karo daha savrulur.",
+              KamSkillEffect.Push, 1, 0, 0.70f, 0.92f, 0.98f, 4),
+
+            E("boran", "Boran",
+              "Bütün tahtayı süpüren bir boran: 7 karo çapındaki HERKES alanın dışına, oradan " +
+              "1 karo daha savrulur.",
+              KamSkillEffect.Push, 3, 0, 0.52f, 0.78f, 0.90f, 1),
+
+            E("buz_bagi", "Buz Bağı",
+              "3 karo çapındaki alan buz tutar: içerideki HERKES 2 tur sersemler.",
+              KamSkillEffect.Petrify, 1, 0, 0.62f, 0.82f, 0.92f, 0, 2),
+
+            E("kok_zinciri", "Kök Zinciri",
+              "Kökler 7 karo çapındaki alanı sarar: içerideki HERKES 1 tur sersemler.",
+              KamSkillEffect.Petrify, 3, 0, 0.55f, 0.62f, 0.42f, 0, 1),
+
+            E("girdap", "Girdap",
+              "Dar ve derin bir girdap: 3 karo çapındaki HERKES merkeze çekilir.",
+              KamSkillEffect.Pull, 1, 0, 0.42f, 0.38f, 0.62f),
+
+            E("ruh_cagrisi", "Ruh Çağrısı",
+              "Atalar çağırır: 7 karo çapındaki HERKES merkeze doğru çekilir — dost, düşman fark etmez.",
+              KamSkillEffect.Pull, 3, 0, 0.66f, 0.58f, 0.82f),
         };
 
         public static Entry Get(string id)

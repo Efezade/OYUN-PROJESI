@@ -68,12 +68,17 @@ namespace TacticalRPG.Editor
             bar.transform.SetParent(canvasGO.transform, false);
             StretchFull(bar.GetComponent<RectTransform>());
 
-            Color tabBg = new Color(0.16f, 0.13f, 0.10f, 0.92f);
-
-            Button bookTab = CreateUIButton(bar.transform, "Tab_Book",  "KİTAP",  new Vector2(1f, 0f), new Vector2(-340f, 40f), new Vector2(130f, 130f), tabBg, 26f);
-            Button bagTab  = CreateUIButton(bar.transform, "Tab_Bag",   "ÇANTA",  new Vector2(1f, 0f), new Vector2(-190f, 40f), new Vector2(130f, 130f), tabBg, 26f);
-            Button mapTab  = CreateUIButton(bar.transform, "Tab_Map",   "HARİTA", new Vector2(1f, 0f), new Vector2(-40f,  40f), new Vector2(130f, 130f), tabBg, 24f);
-            Button setBtn  = CreateUIButton(bar.transform, "Btn_Settings", "⚙",   new Vector2(1f, 1f), new Vector2(-40f, -40f), new Vector2(100f, 100f), tabBg, 48f);
+            // Sekmeler mockup'taki gibi ÇİZİLMİŞ İKON + altında ad (game UI.pdf s.1). Eskiden koyu
+            // dikdörtgen + yazıydı; oyunun geri kalanı el çizimi mürekkep diliyken tek başına
+            // "editör düğmesi" gibi duruyordu.
+            Button bookTab = InkTabButton(bar.transform, "Tab_Book", "KİTAP",  InkIcon.Book,
+                                          new Vector2(1f, 0f), new Vector2(-330f, 34f));
+            Button bagTab  = InkTabButton(bar.transform, "Tab_Bag",  "ÇANTA",  InkIcon.Bag,
+                                          new Vector2(1f, 0f), new Vector2(-190f, 34f));
+            Button mapTab  = InkTabButton(bar.transform, "Tab_Map",  "HARİTA", InkIcon.Scroll,
+                                          new Vector2(1f, 0f), new Vector2(-50f,  34f));
+            Button setBtn  = InkTabButton(bar.transform, "Btn_Settings", "",    InkIcon.Gear,
+                                          new Vector2(1f, 1f), new Vector2(-60f, -60f), 78f);
 
             // ── Navigator (hepsini bağlar)
             MenuNavigator nav = canvasGO.AddComponent<MenuNavigator>();
@@ -127,61 +132,132 @@ namespace TacticalRPG.Editor
             Transform t = panelGO.transform;
 
             // ── Açık KİTAP gövdesi (çerçeveli krem parşömen) ───────────────────
-            RectTransform book = FramedPanel(t, "BookBody", new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -10f), new Vector2(1500f, 780f), 14f);
+            // Kitap gövdesi de el çizimi mürekkep (game UI.pdf s.3) — düz 9-slice dikdörtgen
+            // yerine dalgalı kontur + köşe süsleri.
+            RectTransform book = InkPanel(t, "BookBody", new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -10f), new Vector2(1500f, 780f), 30);
             Transform b = book;
 
             // İki sayfa ayrımı (spine) — orta dikey mürekkep çizgisi
             Line(b, "Spine", new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(6f, 700f),
                 new Color(FrameDark.r, FrameDark.g, FrameDark.b, 0.55f));
 
-            // ── ÖZ DEPOSU süslü şeridi (üst-orta) + 3 CANLI sayaç ──────────────
-            RectTransform banner = FramedPanel(b, "OzBanner", new Vector2(0.5f, 1f),
-                new Vector2(0f, 42f), new Vector2(640f, 150f), 8f, ParchmentHi, FrameDark);
-            SectionHeader(banner, "OzTitle", "ÖZ DEPOSU", new Vector2(0.5f, 1f),
-                new Vector2(0f, -8f), 360f, 30f);
+            // ── YER İMLERİ (2026-09-04): kitap artık İKİ sayfa takımı taşıyor ────
+            // Yetenek ağacı ayrı bir tam-ekran menü DEĞİL, kitabın bir sayfası (Efe'nin kararı).
+            // Sayfa takımları aynı gövdenin içinde; kenardaki yer imleri arasında geçiş yapılır.
+            RectTransform pageClasses = PageRoot(b, "Page_Classes");
+            RectTransform pageSkills  = PageRoot(b, "Page_Skills");
 
-            CreateEssenceCounter(banner, new Vector2(-190f, -46f), out var amtA, out var nameA, out var swA);
-            CreateEssenceCounter(banner, new Vector2(   0f, -46f), out var amtS, out var nameS, out var swS);
-            CreateEssenceCounter(banner, new Vector2( 190f, -46f), out var amtT, out var nameT, out var swT);
+            Image bmClassesBg;
+            Button bmClasses = Bookmark(b, "Bookmark_Classes", "KARAKTER",  110f, out bmClassesBg);
+            Image bmSkillsBg;
+            Button bmSkills  = Bookmark(b, "Bookmark_Skills",  "YETENEK",  -110f, out bmSkillsBg);
 
-            EssenceWallet   wallet = FindComponentAnywhere<EssenceWallet>();
-            EssenceConfigSO config = FindEssenceConfig();
+            // Sınıf sayfası ARTIK kitap gövdesine değil, kendi sayfa köküne çizilir.
+            b = pageClasses;
 
-            EssenceStorageView view = panelGO.AddComponent<EssenceStorageView>();
-            var vso = new SerializedObject(view);
-            vso.FindProperty("_wallet").objectReferenceValue = wallet;
-            vso.FindProperty("_config").objectReferenceValue = config;
-            SerializedProperty counters = vso.FindProperty("_counters");
-            counters.arraySize = 3;
-            WireEssenceCounter(counters.GetArrayElementAtIndex(0), EssenceType.Ates,   amtA, nameA, swA);
-            WireEssenceCounter(counters.GetArrayElementAtIndex(1), EssenceType.Su,     amtS, nameS, swS);
-            WireEssenceCounter(counters.GetArrayElementAtIndex(2), EssenceType.Toprak, amtT, nameT, swT);
-            vso.ApplyModifiedProperties();
+            // ÖZ DEPOSU BURADAN KALDIRILDI (2026-09-06, Efe): "okçuya bakarken kese sayacını
+            // görmek gereksiz". Sayaclar ÇANTA'ya taşındı (Panel_Bag → ÖZ sekmesi) — eşya
+            // ekonomisi zaten orada duruyor.
 
-            // ── Sınıf bölümleri (mockup: sol WARRIOR/HEALER, sağ MAGE/RANGER) ──
-            CharacterClassData warrior = AssetDatabase.LoadAssetAtPath<CharacterClassData>(WarriorClassPath);
-            CharacterClassData ranger  = AssetDatabase.LoadAssetAtPath<CharacterClassData>(RangerClassPath);
-
-            CreateClassEntry(b, "WARRIOR", warrior, new Vector2(-372f,  128f));
-            CreateClassEntry(b, "HEALER",  null,    new Vector2(-372f, -112f)); // henüz yok → kilitli
-            CreateClassEntry(b, "MAGE",    null,    new Vector2( 372f,  128f)); // henüz yok → kilitli
-            CreateClassEntry(b, "RANGER",  ranger,  new Vector2( 372f, -112f));
+            // ── KARAKTERLER: bir karakter = bir kitap açılışı, sayfa sayfa çevrilir ──
+            // (2026-09-06, Efe'nin isteği). Eski dört kutuluk ızgara kaldırıldı: ikisi "kilitli"
+            // yer tutucuydu, büst de maliyet de sığmıyordu.
+            PopulateCharacterPage(b, panelGO);
 
             // ── Sağ kenar EVRİM yer imi (dışa taşan sekme — placeholder) ───────
-            RectTransform evo = FramedPanel(b, "EvoBookmark", new Vector2(1f, 0.5f),
-                new Vector2(122f, 120f), new Vector2(150f, 300f), 8f, ParchmentLo, FrameDark);
+            RectTransform evo = InkPanel(b, "EvoBookmark", new Vector2(1f, 0.5f),
+                new Vector2(122f, 120f), new Vector2(150f, 300f), 14, 0.9f);
             CreateCenteredLabel(evo, "EvoLabel", "LEVEL\nEVRİM\nÖRG\n———\n+4",
                 new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(130f, 260f), Ink, 26f);
 
-            // Sayfa numaraları (kitap alt köşeleri)
-            CreateCenteredLabel(b, "PageL", "1", new Vector2(0f, 0f), new Vector2(70f, 44f), new Vector2(60f, 50f), InkSoft, 34f);
-            CreateCenteredLabel(b, "PageR", "2", new Vector2(1f, 0f), new Vector2(-70f, 44f), new Vector2(60f, 50f), InkSoft, 34f);
+            // (Alt köşedeki sabit "1 / 2" sayfa numaraları kaldırıldı: karakter sayfası artık
+            //  GERÇEK sayfa sayacı gösteriyor — iki sayı yan yana kafa karıştırıyordu.)
 
             CreateCenteredLabel(t, "BookHint",
                 "ÖZ DEPOSU canlı · evrim/kart etkileşimi sonraki adım · Kapat: Esc",
                 new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(1300f, 40f),
                 new Color(0.62f, 0.57f, 0.48f), 24f);
+
+            // ── İkinci sayfa takımı: KAM'IN YETENEK AĞACI ─────────────────────
+            PopulateSkillPage(pageSkills, panelGO);
+
+            // Yer imi çevirici (hangi sayfa takımı görünür).
+            var pager = panelGO.AddComponent<BookmarkPager>();
+            var pso = new SerializedObject(pager);
+            SerializedProperty pages = pso.FindProperty("_pages");
+            pages.arraySize = 2;
+            WireBookmark(pages.GetArrayElementAtIndex(0), pageClasses.gameObject, bmClasses, bmClassesBg);
+            WireBookmark(pages.GetArrayElementAtIndex(1), pageSkills.gameObject,  bmSkills,  bmSkillsBg);
+            pso.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// Mockup'taki alt sekme: çizilmiş mürekkep ikon + altında ad. Arkasında ÇOK SOLUK bir
+        /// kâğıt lekesi var — mockup'ta yok ama orada zemin beyaz; oyunda ikon 3B haritanın
+        /// üstüne düşüyor ve leke olmadan koyu arazide kayboluyor.
+        /// </summary>
+        private static Button InkTabButton(Transform parent, string name, string label,
+            InkIcon icon, Vector2 anchor, Vector2 pos, float iconSize = 92f)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            go.transform.SetParent(parent, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = rt.pivot = anchor;
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = new Vector2(iconSize + 28f, iconSize + (string.IsNullOrEmpty(label) ? 24f : 56f));
+
+            Image bg = go.GetComponent<Image>();
+            bg.sprite = InkArtFactory.Paper("paper_soft", 96, 96, Color.white);
+            bg.type   = Image.Type.Sliced;
+            bg.color  = new Color(ParchmentHi.r, ParchmentHi.g, ParchmentHi.b, 0.55f);
+            bg.raycastTarget = true;
+
+            Button btn = go.GetComponent<Button>();
+            btn.targetGraphic = bg;
+            ColorBlock cb = btn.colors;
+            cb.normalColor      = Color.white;
+            cb.highlightedColor = new Color(1.08f, 1.05f, 1.00f);
+            cb.pressedColor     = new Color(0.85f, 0.80f, 0.72f);
+            cb.fadeDuration     = 0.08f;
+            btn.colors = cb;
+
+            InkImage(go.transform, "Icon", InkArtFactory.Icon(icon, 128), new Vector2(0.5f, 1f),
+                     new Vector2(0f, -8f), new Vector2(iconSize, iconSize), Ink);
+
+            if (!string.IsNullOrEmpty(label))
+                CreateCenteredLabel(go.transform, "Label", label, new Vector2(0.5f, 0f),
+                    new Vector2(0f, 6f), new Vector2(iconSize + 24f, 32f), Ink, 22f);
+
+            return btn;
+        }
+
+        /// <summary>Kitabın içindeki bir SAYFA TAKIMI kökü (gövdeyi tam kaplar, görünürlüğü
+        /// <see cref="BookmarkPager"/> çevirir).</summary>
+        private static RectTransform PageRoot(Transform book, string name)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(book, false);
+            var rt = go.GetComponent<RectTransform>();
+            StretchFull(rt);
+            return rt;
+        }
+
+        /// <summary>Kitabın SOL kenarından dışa taşan yer imi düğmesi. Sağ kenar DOLU
+        /// (EVRİM yer imi orada) — iki yer imi üst üste binmesin.</summary>
+        private static Button Bookmark(Transform book, string name, string label, float y, out Image background)
+        {
+            Button btn = CreateUIButton(book, name, label, new Vector2(0f, 0.5f),
+                new Vector2(-96f, y), new Vector2(150f, 150f), ParchmentLo, 22f);
+            background = btn.GetComponent<Image>();
+            return btn;
+        }
+
+        private static void WireBookmark(SerializedProperty el, GameObject root, Button bookmark, Image bg)
+        {
+            el.FindPropertyRelative("_root").objectReferenceValue               = root;
+            el.FindPropertyRelative("_bookmark").objectReferenceValue           = bookmark;
+            el.FindPropertyRelative("_bookmarkBackground").objectReferenceValue = bg;
         }
 
         /// <summary>Bir öz madalyonu (renkli daire + üstünde miktar + altında ad). Ref'leri out ile döner.</summary>
@@ -217,14 +293,14 @@ namespace TacticalRPG.Editor
         /// dekoratif kart yuva sırası + (data null → KİLİTLİ kaplaması). ClassBookEntry bağlanır.</summary>
         private static void CreateClassEntry(Transform parent, string header, CharacterClassData data, Vector2 anchoredPos)
         {
-            RectTransform box = FramedPanel(parent, "Class_" + header, new Vector2(0.5f, 0.5f),
-                anchoredPos, new Vector2(660f, 210f), 6f, ParchmentLo, FrameDark);
+            RectTransform box = InkPanel(parent, "Class_" + header, new Vector2(0.5f, 0.5f),
+                anchoredPos, new Vector2(660f, 210f), 16, 0.92f);
 
             SectionHeader(box, "Header", header, new Vector2(0.5f, 1f), new Vector2(0f, -6f), 300f, 28f);
 
             // Portre çerçevesi (mürekkep kenar + iç portre görseli ClassBookEntry'nin boyadığı)
-            RectTransform pf = FramedPanel(box, "PortraitFrame", new Vector2(0f, 0.5f),
-                new Vector2(22f, -14f), new Vector2(132f, 132f), 5f, Parchment, FrameDark);
+            RectTransform pf = InkPanel(box, "PortraitFrame", new Vector2(0f, 0.5f),
+                new Vector2(22f, -14f), new Vector2(132f, 132f), 12);
             Image portrait = CreateImage(pf, "Portrait", new Vector2(0.5f, 0.5f),
                 Vector2.zero, new Vector2(120f, 120f), Color.gray, false);
             var prt = portrait.rectTransform; prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0.5f);

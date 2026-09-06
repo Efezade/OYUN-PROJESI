@@ -95,6 +95,23 @@ namespace TacticalRPG.Core
         /// <summary>Kalan bedava hamle (HUD/teşhis).</summary>
         public int FreeMovesLeft => _freeMoves;
 
+        /// <summary>
+        /// Oyuncunun İRADESİ DIŞINDA yapılan tek hamle (çöken karodan itilme, 2026-09-03) — bir
+        /// sonraki <see cref="PlayerController.OnMoved"/> AP harcamasın, zaman ilerlemesin.
+        ///
+        /// <see cref="GrantFreeMoves"/> gibi "en büyüğü kalsın" DEĞİL, EKLER: oyuncunun parayla
+        /// aldığı Güçlü Yol Taşı stokunu, kendi seçmediği bir itilme yemeliydi yoksa.
+        /// </summary>
+        public void GrantForcedMove() => _freeMoves++;
+
+        /// <summary>
+        /// Bedava hamle stokunu BOŞALTIR. Güçlü Yol Taşı ile başlayan yolculuk YARIDA KESİLİNCE
+        /// çağrılır: taş "şu yolculuğu" satın alıyor, kalan hak başka yöne yürümek için cebe
+        /// atılmamalı — yoksa taş, iptal edilerek her yöne bedava adıma çevrilebilirdi.
+        /// (Savaşa girişte de aynı temizlik yapılıyor, bkz <see cref="SetFrozen"/>.)
+        /// </summary>
+        public void ClearFreeMoves() => _freeMoves = 0;
+
         private void HandlePlayerMoved(HexCoordinate newCoord)
         {
             if (_freeMoves > 0)

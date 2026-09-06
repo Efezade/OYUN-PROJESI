@@ -43,6 +43,11 @@ namespace TacticalRPG.Core
         [SerializeField] private float  _outlineLift  = 0.06f;
         [SerializeField] private Color  _labelColor   = new Color(1f, 0.35f, 0.25f);
 
+        [Header("Kam'ı itme (çöken karodan kaçış)")]
+        [Tooltip("Ayağının altındaki karo çökerken kaç halka uzağa kadar güvenli karo aranır. " +
+                 "1 = yalnız komşular. Büyütmek Kam'ı daha uzağa ışınlanmış gibi gösterir.")]
+        [SerializeField] private int _escapeRings = 3;
+
         [Header("Deprem (bölgesel sarsıntı — aktif adada silinen karo)")]
         [SerializeField] private float _shakeDuration  = 0.7f;
         [SerializeField] private float _shakeMagnitude = 0.12f;
@@ -148,6 +153,17 @@ namespace TacticalRPG.Core
             for (int i = _doomed.Count - 1; i >= 0; i--)
                 if (_doomed[i].removeDay <= day) { todays.Add(_doomed[i].coord); _doomed.RemoveAt(i); }
             todays.Reverse();                        // işaretlenme sırası korunsun
+
+            // 0.5) KAM ÇÖKEN KARODA KALMASIN (B2, 2026-09-03). Güvenlik SİLME ANINDA kurulur:
+            //      PickDoomed'un "oyuncunun 2 karo çevresi muaf" kuralı SEÇİM anında çalışır, ama
+            //      işaret 2 gün önceden konduğu için oyuncu o karoya sonradan yürüyebiliyor.
+            //      Kaçacak yer bulunamazsa karo bugün SİLİNMEZ (kapana kısılmaktansa ertelenir).
+            if (todays.Count > 0 && InOverworld && !ShovePlayerToSafety(todays, day))
+            {
+                HexCoordinate stuck = _player.CurrentCoord;
+                todays.Remove(stuck);
+            }
+
             if (todays.Count > 0) ClearOutlines();   // çökenlerin eski kırmızı çerçeveleri
 
             // 1) İLERİDE (day + TelegraphDays) çökecek YENİ karoları ŞİMDİ seç — veri hemen
@@ -228,6 +244,94 @@ namespace TacticalRPG.Core
                 if (_gridManager.TryGetCell(coord, out HexCell cell)) CreateOutline(cell);
             }
         }
+
+        // ── KAM'I ÇÖKEN KARODAN İTME (B2, 2026-09-03) ───────────────────────
+
+        /// <summary>
+        /// Oyuncu bugün çökecek bir karonun üstündeyse yanındaki GÜVENLİ karoya iter.
+        ///
+        /// NEDEN SEÇİMDE DEĞİL DE BURADA: <see cref="PickDoomed"/> zaten oyuncunun
+        /// <see cref="CollapseConfig.MinPlayerDistance"/> halkasını muaf tutuyor — ama o kural
+        /// karo SEÇİLİRKEN işler. Uyarı <see cref="TelegraphDays"/> gün önceden konduğu için
+        /// oyuncu işaretli karoya sonradan yürüyebiliyor ve karo altından çekiliyordu (kullanıcı
+        /// raporu 2026-09-02: "bir an boşlukta duruyor gibi").
+        /// </summary>
+        /// <returns>false = kaçacak yer YOK; karo bugün silinmemeli (çağıran listeden düşürür).</returns>
+        private bool ShovePlayerToSafety(List<HexCoordinate> falling, int day)
+        {
+            if (_player == null || _gridManager == null) return true;
+
+            HexCoordinate at = _player.CurrentCoord;
+            if (!falling.Contains(at)) return true;                 // oyuncu zaten güvende
+
+            // Önce TERTEMİZ karo aranır (işaretsiz); bulunamazsa işaretli ama BUGÜN düşmeyecek
+            // karo da kabul edilir — iki gün sonra düşecek bir karo, hiç kaçamamaktan iyidir.
+            if (!TryFindEscapeTile(at, falling, false, out HexCell escape) &&
+                !TryFindEscapeTile(at, falling, true,  out escape))
+            {
+                // Ada tamamen kapalı: karoyu bugün SİLME, bir gün ertele. Kıyametin beklemesi,
+                // oyuncuyu boşlukta bırakmaktan ucuz.
+                // (Zaten çökmüş karoda sıkışmışsa yeniden işaretlemenin anlamı yok — o karo
+                //  bir daha silinemez, yalnız geri getirme kurtarır.)
+                if (!_collapsed.Contains(at)) _doomed.Add((at, day + 1));
+                Debug.LogWarning($"[Collapse] {at} cokecekti ama Kam'in kacacak yeri yok — " +
+                                 "silme 1 gun ertelendi.");
+                return false;
+            }
+
+            // İtilme oyuncunun HAMLESİ DEĞİL → AP yazmasın (kural AP yöneticisinde kalsın).
+            if (_apManager != null) _apManager.GrantForcedMove();
+            _player.ForceShiftTo(escape);
+            Debug.Log($"[Collapse] Kam coken karodan itildi: {at} -> {escape.Coordinate}");
+            return true;
+        }
+
+        /// <summary>Oyuncunun çevresinde halka halka güvenli karo arar (yakın halka önce).
+        /// Arama YÜRÜNÜR karolardan geçer — su/dağ üstünden atlayıp karşı kıyıya konmasın.</summary>
+        private bool TryFindEscapeTile(HexCoordinate from, List<HexCoordinate> falling,
+                                       bool allowDoomed, out HexCell result)
+        {
+            result = null;
+            var visited  = new HashSet<HexCoordinate> { from };
+            var frontier = new List<HexCoordinate> { from };
+            var ring     = new List<HexCoordinate>();
+
+            for (int r = 1; r <= EscapeRings; r++)
+            {
+                ring.Clear();
+                foreach (HexCoordinate c in frontier)
+                    for (int d = 0; d < 6; d++)
+                    {
+                        HexCoordinate n = c.GetNeighbor(d);
+                        if (!visited.Add(n)) continue;
+                        if (!_gridManager.TryGetCell(n, out HexCell cell) || !cell.IsWalkable) continue;
+                        ring.Add(n);
+                    }
+
+                // Halka içinde RASTGELE: Kam hep aynı yöne itilip desen olmasın.
+                for (int i = ring.Count - 1; i > 0; i--)
+                {
+                    int j = UnityEngine.Random.Range(0, i + 1);
+                    (ring[i], ring[j]) = (ring[j], ring[i]);
+                }
+
+                foreach (HexCoordinate c in ring)
+                {
+                    if (falling.Contains(c))        continue;
+                    if (_collapsed.Contains(c))     continue;
+                    if (!allowDoomed && IsDoomed(c)) continue;
+                    if (!_gridManager.TryGetCell(c, out HexCell cell)) continue;
+                    result = cell;
+                    return true;
+                }
+
+                frontier.Clear();
+                frontier.AddRange(ring);
+            }
+            return false;
+        }
+
+        private int EscapeRings => Mathf.Max(1, _escapeRings);
 
         // Yeni işaretlenecek karoları SEÇER (veri: _doomed + _pendingReveal). Kırmızı çerçeve /
         // sayaç BURADA ÇİZİLMEZ — dalga cephesi karonun üstünden geçerken yıldırımla açıklanır
@@ -323,6 +427,15 @@ namespace TacticalRPG.Core
             foreach (var (coord, _) in _doomed)
                 if (_gridManager.TryGetCell(coord, out HexCell cell))
                     CreateOutline(cell);
+
+            // SAVAŞTA GÜN DÖNDÜYSE karo VERİ olarak silinmiş, oyuncu da hâlâ onun üstünde olabilir
+            // (yukarıdaki döngü karoyu şimdi yürünemez yaptı). Dönüşte Kam çukurun içinde durmasın.
+            if (_player != null && _gridManager.TryGetCell(_player.CurrentCoord, out HexCell standing)
+                && !standing.IsWalkable)
+            {
+                var here = new List<HexCoordinate> { _player.CurrentCoord };
+                ShovePlayerToSafety(here, _apManager != null ? _apManager.CurrentDay : 0);
+            }
         }
 
         /// <summary>Yeni bölüm/harita başlarken çöküş durumunu tamamen sıfırlar (TASK-007 retry).</summary>

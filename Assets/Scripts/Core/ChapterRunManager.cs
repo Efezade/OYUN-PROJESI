@@ -32,6 +32,10 @@ namespace TacticalRPG.Core
         [Tooltip("Yeniden başlarken çöküş sayacı/işaretleri sıfırlansın diye.")]
         [SerializeField] private MapCollapseManager  _collapse;
 
+        [Tooltip("KAM'IN YETENEK AĞACI — Efe'nin kuralı: ağaç ÖLÜNCE SIFIRLANIR. Atanmazsa " +
+                 "ilerleme yeni bölüme taşınır (eski davranış).")]
+        [SerializeField] private KamSkillProgress    _skills;
+
         [Tooltip("Bölüm kaybedilince sıfırlanan ÖZ türleri — bölümün ham özü. Kalıcı birime dönüşmüş " +
                  "öz zaten roster'da, etkilenmez.")]
         [SerializeField] private EssenceType[] _chapterEssences = { EssenceType.Tas, EssenceType.Doga };
@@ -107,6 +111,11 @@ namespace TacticalRPG.Core
             // 4) Harita havuzdan FARKLI bir seed ile yeniden üretilir → düğümler/sis sıfırlanır
             //    (ChapterNodeManager ve MapCollapseManager OnMapGenerated/OnGridRegenerated dinliyor).
             if (_map != null) _map.GenerateNew();
+
+            // 5) YETENEK AĞACI SIFIRLANIR (Efe'nin kuralı 2026-09-02): ağaç ölünce silinir,
+            //    yalnız "açık başlar" düğümleri kalır. Harcanmış öz geri GELMEZ — bu bir
+            //    sıfırlama, geri alma değil. Kalıcı avantaj (meta ekonomi) ayrı katman olacak.
+            if (_skills != null) _skills.ResetProgress();
 
             ChapterLost = false;
             LossReason  = "";

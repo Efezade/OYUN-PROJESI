@@ -40,52 +40,129 @@ namespace TacticalRPG.Editor
         private static void PopulateBagScreen(GameObject panelGO)
         {
             Transform t = panelGO.transform;
+            GameObject bagRoot = panelGO;      // sayfa çevirici ve öz görünümü buraya takılır
 
-            // ── Valiz gövdesi ──────────────────────────────────────────────────
-            RectTransform bag = FramedPanel(t, "BagBody", new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -6f), new Vector2(1440f, 690f), 14f);
+            // ── Valiz gövdesi (el çizimi mürekkep — game UI.pdf s.5) ──────────
+            RectTransform bag = InkPanel(t, "BagBody", new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -6f), new Vector2(1440f, 690f), 26);
 
             // Sap (üstte yatay bar + iki kayış)
             Sliced(bag, "HandleBar",  new Vector2(0.5f, 1f), new Vector2(0f, 66f), new Vector2(360f, 28f), FrameDark);
             Sliced(bag, "HandleL",    new Vector2(0.5f, 1f), new Vector2(-150f, 34f), new Vector2(28f, 74f), FrameDark);
             Sliced(bag, "HandleR",    new Vector2(0.5f, 1f), new Vector2( 150f, 34f), new Vector2(28f, 74f), FrameDark);
 
-            // Sol dikey sekmeler (dışa taşar; aktif = KART)
-            string[] tabs = { "KART", "POT", "BÜYÜ", "ZIRH" };
-            for (int i = 0; i < tabs.Length; i++)
-            {
-                Color fill = i == 0 ? ParchmentHi : ParchmentLo;
-                RectTransform tab = FramedPanel(bag, "Tab_" + tabs[i], new Vector2(0f, 0.5f),
-                    new Vector2(-36f, 210f - i * 128f), new Vector2(96f, 112f), 5f, fill, FrameDark);
-                CreateCenteredLabel(tab, "L", tabs[i], new Vector2(0.5f, 0.5f), Vector2.zero,
-                    new Vector2(90f, 40f), Ink, 22f);
-            }
+            // ── SEKMELER: yalnız EŞYALAR ve POTLAR (Efe, 2026-09-06) ──────────
+            // BÜYÜ/ZIRH kaldırıldı: sistemleri yok, boş sekme "bozuk mu" hissi veriyordu.
+            // ÖZ de sekme DEĞİL — çantanın köşesinde her sekmede görünen küçük bir şerit
+            // ("açılır kapanır olmasın, hep yazsın").
+            RectTransform pageItems = BagPageRoot(bag, "Page_Items");
+            RectTransform pagePots  = BagPageRoot(bag, "Page_Pots");
 
-            // Orta noktalı ayraç
-            for (float y = 244f; y >= -244f; y -= 34f)
-                Sliced(bag, "Dot", new Vector2(0.5f, 0.5f), new Vector2(0f, y), new Vector2(6f, 18f), InkSoft);
+            Image itemsTabBg, potsTabBg;
+            Button itemsTab = BagTab(bag, "EŞYALAR", InkIcon.Bag,  150f, out itemsTabBg);
+            Button potsTab  = BagTab(bag, "POTLAR",  InkIcon.Drop,  16f, out potsTabBg);
 
-            // ── Sol sütun: POTLAR (placeholder — envanter yok) ─────────────────
-            SectionHeader(bag, "PotsHeader", "POTLAR", new Vector2(0.5f, 0.5f), new Vector2(-360f, 244f), 340f, 30f);
-            Circle(bag, "PotEmblem", new Vector2(0.5f, 0.5f), new Vector2(-360f, 168f), 70f, ParchmentLo);
-            CreatePotRow(bag, "ŞİFA",  "×15", new Color(0.66f, 0.26f, 0.22f), new Vector2(-470f, 78f));
-            CreatePotRow(bag, "MANA",  "×00", new Color(0.26f, 0.36f, 0.62f), new Vector2(-470f, -8f));
-            CreatePotRow(bag, "?????", "×??", new Color(0.34f, 0.30f, 0.24f), new Vector2(-470f, -94f));
+            var pager = bagRoot.AddComponent<TacticalRPG.UI.BookmarkPager>();
+            var pgSO = new SerializedObject(pager);
+            SerializedProperty pages = pgSO.FindProperty("_pages");
+            pages.arraySize = 2;
+            WireBookmark(pages.GetArrayElementAtIndex(0), pageItems.gameObject, itemsTab, itemsTabBg);
+            WireBookmark(pages.GetArrayElementAtIndex(1), pagePots.gameObject,  potsTab,  potsTabBg);
+            pgSO.ApplyModifiedProperties();
 
-            // ── Sağ sütun: KAM KARTLARI (gerçek büyü verisi) ───────────────────
-            SectionHeader(bag, "CardsHeader", "KAM KARTLARI", new Vector2(0.5f, 0.5f), new Vector2(360f, 244f), 420f, 30f);
+            // ÖZ ŞERİDİ: sayfa köklerinin DIŞINDA, doğrudan valiz gövdesinde → sekme değişse de
+            // durur. Sağ üst köşe: sap ile çakışmıyor, içerik alanının dışında kalıyor.
+            CreateEssenceStrip(bag, bagRoot);
+
+            // ── EŞYALAR sayfası: Kam kartları (gerçek veri) + boş eşya yuvaları ──
+            SectionHeader(pageItems, "CardsHeader", "KAM KARTLARI", new Vector2(0.5f, 0.5f),
+                new Vector2(-330f, 232f), 420f, 30f);
             for (int i = 0; i < 5; i++) // 3 gerçek + 2 boş
             {
                 KamAbilityData data = i < KamAbilityPaths.Length
                     ? AssetDatabase.LoadAssetAtPath<KamAbilityData>(KamAbilityPaths[i])
                     : null;
-                CreateAbilityCardRow(bag, data, new Vector2(360f, 150f - i * 96f));
+                CreateAbilityCardRow(pageItems, data, new Vector2(-330f, 140f - i * 96f));
             }
 
+            SectionHeader(pageItems, "GearHeader", "EŞYA YUVALARI", new Vector2(0.5f, 0.5f),
+                new Vector2(370f, 232f), 420f, 30f);
+            for (int i = 0; i < 6; i++)   // envanter sistemi yok → boş yuvalar (yer tutucu)
+            {
+                var slot = InkPanel(pageItems, $"Slot{i}", new Vector2(0.5f, 0.5f),
+                    new Vector2(230f + (i % 3) * 140f, 110f - (i / 3) * 150f),
+                    new Vector2(120f, 120f), 12, 0.75f);
+                CreateCenteredLabel(slot, "Q", "?", new Vector2(0.5f, 0.5f), Vector2.zero,
+                    new Vector2(100f, 60f), new Color(0.62f, 0.57f, 0.48f), 34f);
+            }
+
+            // ── POTLAR sayfası ────────────────────────────────────────────────
+            SectionHeader(pagePots, "PotsHeader", "POTLAR", new Vector2(0.5f, 0.5f),
+                new Vector2(0f, 232f), 380f, 32f);
+            Circle(pagePots, "PotEmblem", new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), 78f, ParchmentLo);
+            CreatePotRow(pagePots, "ŞİFA",  "×15", new Color(0.66f, 0.26f, 0.22f), new Vector2(-160f, 40f));
+            CreatePotRow(pagePots, "MANA",  "×00", new Color(0.26f, 0.36f, 0.62f), new Vector2(-160f, -60f));
+            CreatePotRow(pagePots, "?????", "×??", new Color(0.34f, 0.30f, 0.24f), new Vector2(-160f, -160f));
+
             CreateCenteredLabel(t, "BagHint",
-                "KAM KARTLARI canlı · potlar/skill-tree envanter sistemiyle gelecek · Kapat: Esc",
+                "KAM KARTLARI ve ÖZ canlı · eşya yuvaları/potlar envanter sistemiyle gelecek · Kapat: Esc",
                 new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(1400f, 40f),
                 new Color(0.62f, 0.57f, 0.48f), 24f);
+        }
+
+        /// <summary>Valizin içindeki bir SAYFA TAKIMI kökü (gövdeyi kaplar, görünürlüğü pager çevirir).</summary>
+        private static RectTransform BagPageRoot(Transform bag, string name)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(bag, false);
+            var rt = go.GetComponent<RectTransform>();
+            StretchFull(rt);
+            return rt;
+        }
+
+        /// <summary>Valizin sol kenarındaki ikonlu sekme.</summary>
+        private static Button BagTab(Transform bag, string label, InkIcon icon, float y, out Image background)
+        {
+            RectTransform tab = InkPanel(bag, "Tab_" + label, new Vector2(0f, 0.5f),
+                new Vector2(-36f, y), new Vector2(96f, 112f), 12);
+            InkImage(tab, "Icon", InkArtFactory.Icon(icon, 64), new Vector2(0.5f, 1f),
+                new Vector2(0f, -10f), new Vector2(46f, 46f), Ink);
+            CreateCenteredLabel(tab, "L", label, new Vector2(0.5f, 0f), new Vector2(0f, 8f),
+                new Vector2(90f, 30f), Ink, 18f);
+
+            background = tab.GetComponent<Image>();
+            var btn = tab.gameObject.AddComponent<Button>();
+            btn.targetGraphic = background;
+            return btn;
+        }
+
+        /// <summary>
+        /// ÖZ ŞERİDİ (2026-09-06, Efe): çantanın sağ üst köşesinde HER SEKMEDE duran küçük sayaç.
+        /// Sekme yapılmadı — "açılır kapanır olmasın, çantayı açınca hep yazsın". KİTAP'tan
+        /// kaldırıldı çünkü karakter sayfasında kese bilgisi ilgisizdi.
+        /// </summary>
+        private static void CreateEssenceStrip(Transform bag, GameObject bagRoot)
+        {
+            RectTransform strip = InkPanel(bag, "OzStrip", new Vector2(1f, 1f),
+                new Vector2(-28f, -24f), new Vector2(360f, 122f), 14, 0.95f);
+
+            CreateCenteredLabel(strip, "OzTitle", "ÖZ", new Vector2(0.5f, 1f),
+                new Vector2(0f, -6f), new Vector2(200f, 30f), InkSoft, 20f);
+
+            CreateEssenceCounter(strip, new Vector2(-80f, -18f), out var amtA, out var nameA, out var swA);
+            CreateEssenceCounter(strip, new Vector2( 80f, -18f), out var amtS, out var nameS, out var swS);
+
+            var view = bagRoot.GetComponent<EssenceStorageView>();
+            if (view == null) view = bagRoot.AddComponent<EssenceStorageView>();
+
+            var vso = new SerializedObject(view);
+            vso.FindProperty("_wallet").objectReferenceValue = FindComponentAnywhere<EssenceWallet>();
+            vso.FindProperty("_config").objectReferenceValue = FindEssenceConfig();
+            SerializedProperty counters = vso.FindProperty("_counters");
+            counters.arraySize = 2;
+            WireEssenceCounter(counters.GetArrayElementAtIndex(0), EssenceType.Tas,  amtA, nameA, swA);
+            WireEssenceCounter(counters.GetArrayElementAtIndex(1), EssenceType.Doga, amtS, nameS, swS);
+            vso.ApplyModifiedProperties();
         }
 
         private static void CreatePotRow(Transform parent, string name, string count, Color potColor, Vector2 pos)
@@ -100,11 +177,11 @@ namespace TacticalRPG.Editor
         /// <summary>Bir Kam kartı SATIRI (thumb + ad + stat), AbilityCardView'e bağlı.</summary>
         private static void CreateAbilityCardRow(Transform parent, KamAbilityData data, Vector2 pos)
         {
-            RectTransform row = FramedPanel(parent, "Card", new Vector2(0.5f, 0.5f),
-                pos, new Vector2(600f, 90f), 5f, Parchment, FrameDark);
+            RectTransform row = InkPanel(parent, "Card", new Vector2(0.5f, 0.5f),
+                pos, new Vector2(600f, 90f), 14);
 
-            RectTransform thumb = FramedPanel(row, "Thumb", new Vector2(0f, 0.5f),
-                new Vector2(20f, 0f), new Vector2(78f, 78f), 4f, ParchmentLo, FrameDark);
+            RectTransform thumb = InkPanel(row, "Thumb", new Vector2(0f, 0.5f),
+                new Vector2(20f, 0f), new Vector2(78f, 78f), 10, 0.85f);
             Image icon = CreateImage(thumb, "Icon", new Vector2(0.5f, 0.5f), Vector2.zero,
                 new Vector2(66f, 66f), Color.gray, false);
 

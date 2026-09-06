@@ -24,6 +24,11 @@ namespace TacticalRPG.Core
         [Tooltip("Karakterin yüzeye göre dikey ofseti (ayak payı). Ayağı-orijinde bake edilmiş " +
                  "modelde TileHeight (clearance 0 → ayak yüzeye basar); kapsül fallback'inde daha büyük.")]
         [SerializeField] private float _heightOffset = 0.15f;
+        [Tooltip("Çöken karodan komşu karoya İTİLME hızı (m/sn). Normal yürüyüşten hızlıdır: " +
+                 "oyuncu bunu kendi hamlesi değil, kaçış olarak okumalı.")]
+        [SerializeField] private float _shoveSpeed = 7f;
+        [Tooltip("İtilirken atılan küçük sıçramanın yüksekliği (m).")]
+        [SerializeField] private float _shoveHop   = 0.45f;
 
         [Header("Görüş")]
         [Tooltip("Kam'ın bulunduğu karodan kaç karo uzağa kadar bulutsuz gördüğü (hex adımı). " +
@@ -37,6 +42,19 @@ namespace TacticalRPG.Core
 
         public HexCoordinate CurrentCoord { get; private set; }
         public bool          IsMoving     { get; private set; }
+
+        /// <summary>Süren yürüyüşte kaç karo kaldı (HUD "N karo kaldı" yazar). Dururken 0.</summary>
+        public int StepsRemaining { get; private set; }
+
+        /// <summary>Oyuncu duruşu istedi mi (sağ tık) — HUD "duruluyor" diyebilsin.</summary>
+        public bool StopRequested => _stopRequested;
+
+        // Yürüyüş İPTALİ (2026-09-06, Efe'nin isteği): uzun yollarda oyuncu fikrini
+        // değiştirebilmeli. İptal KARO SINIRINDA işler, yürüyüşün ortasında DEĞİL — aksi halde
+        // karakter iki karo arasında kalır ve CurrentCoord yalan söylerdi.
+        // Bedel sorunu YOK: AP zaten karo başına, varışta ödeniyor (OnMoved) — yani oyuncu
+        // yalnız GERÇEKTEN yürüdüğü karoların bedelini ödemiş oluyor, iade/borç hesabı gerekmiyor.
+        private bool _stopRequested;
 
         /// <summary>Yürüme hızı çarpanı (mağaza "Hızlı Yürüme" iksiri/çizmeleri buradan artırır).
         /// PlayerBuffs yönetir; 1 = normal.</summary>
@@ -144,7 +162,76 @@ namespace TacticalRPG.Core
             if (IsMoving || path == null || path.Count < 2) return;
             _travelMultiplier = Mathf.Max(0.1f, speedMultiplier);
             _revealFog        = revealFog;
-            StartCoroutine(MoveCoroutine(path));
+            _stopRequested    = false;          // yeni yürüyüş, eski iptal isteği taşınmaz
+            _moveRoutine      = StartCoroutine(MoveCoroutine(path));
+        }
+
+        /// <summary>
+        /// YÜRÜYÜŞÜ DURDUR (sağ tık). Karakter sıradaki karoya varınca durur — yolun ortasında
+        /// kesilmez. Zaten yürünmüş karoların AP'si harcanmış kalır (yolculuk geri alınmaz,
+        /// yarıda bırakılır); kalan karoların bedeli hiç ödenmez.
+        /// </summary>
+        public void RequestStop()
+        {
+            if (IsMoving) _stopRequested = true;
+        }
+
+        // Yürüyen/itilen TEK coroutine. Elde tutulur ki itilme (ForceShiftTo) yarıda kalmış bir
+        // yürüyüşü kesebilsin — StopAllCoroutines burada YANLIŞ olurdu, başka işleri de keserdi.
+        private Coroutine _moveRoutine;
+
+        /// <summary>
+        /// ZORLA KAYDIRMA — ayağının altındaki karo çökerken Kam komşu karoya İTİLİR
+        /// (kullanıcı isteği 2026-09-02, B2). Karo silinmeden hemen önce çağrılır; sürmekte olan
+        /// yürüyüş varsa KESİLİR, çünkü hedefi artık var olmayan bir karo olabilir.
+        ///
+        /// BEDEL: bu oyuncunun hamlesi DEĞİL → AP yazmaz. Muafiyet burada değil çağıranda:
+        /// <see cref="MapCollapseManager"/> itmeden önce <see cref="ActionPointManager.GrantForcedMove"/>
+        /// çağırır. Böylece AP kuralı tek yerde (AP yöneticisinde) kalır ve
+        /// <see cref="OnMoved"/> dinleyicilerinin hepsi (sis, işaretler, rota) normal işler.
+        /// </summary>
+        /// <returns>false = hedef karo yok ya da yürünemez (çağıran başka karo denemeli).</returns>
+        public bool ForceShiftTo(HexCell target)
+        {
+            if (target == null || !target.IsWalkable) return false;
+
+            if (_moveRoutine != null) StopCoroutine(_moveRoutine);
+            _travelMultiplier = 1f;
+            _revealFog        = true;
+            _moveRoutine      = StartCoroutine(ShoveCoroutine(target));
+            return true;
+        }
+
+        /// <summary>İtilme animasyonu: normal yürüyüşten hızlı, küçük bir sıçrama yayıyla —
+        /// oyuncu "kendim yürümedim, atladım" diye okusun.</summary>
+        private IEnumerator ShoveCoroutine(HexCell target)
+        {
+            IsMoving = true;                       // itilirken yeni yol emri alınmasın
+            Vector3 from = transform.position;
+            Vector3 to   = GroundedAt(target);
+
+            float span = Mathf.Max(0.01f, Vector3.Distance(new Vector3(from.x, 0f, from.z),
+                                                           new Vector3(to.x,   0f, to.z)));
+            float dur  = span / Mathf.Max(0.1f, _shoveSpeed);
+
+            for (float t = 0f; t < dur; t += Time.deltaTime)
+            {
+                float k = Mathf.Clamp01(t / dur);
+                Vector3 p = Vector3.Lerp(from, to, k);
+                p.y += Mathf.Sin(k * Mathf.PI) * _shoveHop;
+                transform.position = p;
+                yield return null;
+            }
+
+            transform.position = to;
+            CurrentCoord       = target.Coordinate;
+            StepsRemaining     = 0;
+            _stopRequested     = false;
+            IsMoving           = false;
+            _moveRoutine       = null;
+
+            OnMoved?.Invoke(CurrentCoord);
+            RefreshVision();
         }
 
         // Tek bir yürüyüşe özel hız çarpanı (haritadan seyahat). Yürüyüş bitince 1'e döner.
@@ -160,6 +247,7 @@ namespace TacticalRPG.Core
             {
                 HexCell from   = path[i - 1];
                 HexCell target = path[i];
+                StepsRemaining = path.Count - i;
 
                 Vector3 fromXZ   = new Vector3(from.WorldPosition.x,   0f, from.WorldPosition.z);
                 Vector3 targetXZ = new Vector3(target.WorldPosition.x, 0f, target.WorldPosition.z);
@@ -187,9 +275,16 @@ namespace TacticalRPG.Core
 
                 // Sis Update()'te canlı konumla sürekli güncellenir; burada sadece tur/olay eventi.
                 OnMoved?.Invoke(CurrentCoord);
+
+                // İPTAL yalnız BURADA, karo sınırında işler: karakter tam bir karonun üstünde,
+                // AP'si ödenmiş ve CurrentCoord doğru. Bir sonraki karo hiç başlamaz.
+                if (_stopRequested) break;
             }
 
+            StepsRemaining    = 0;
+            _stopRequested    = false;
             IsMoving          = false;
+            _moveRoutine      = null;
             _travelMultiplier = 1f;   // hızlanma TEK yürüyüşe özeldi
             _revealFog        = true; // sis kapatma da TEK yürüyüşe özeldi
         }

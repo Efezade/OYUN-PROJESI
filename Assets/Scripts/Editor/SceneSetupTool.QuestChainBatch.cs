@@ -87,9 +87,18 @@ namespace TacticalRPG.Editor
             var bar      = nodes.GetComponent<TacticalRPG.UI.MandatoryQuestBarHUD>();
             var fallFx   = nodes.GetComponent<MandatoryQuestFallEffect>();
             var clearFx  = nodes.GetComponent<MandatoryQuestClearEffect>();
+            var beacon   = nodes.GetComponent<MandatoryQuestBeacon>();
+            var compass  = nodes.GetComponent<TacticalRPG.UI.QuestBeaconCompassHUD>();
             Debug.Log($"[Gorev] DOGRULAMA — yonetici:{(director != null)} bar:{(bar != null)} " +
                       $"dususFx:{(fallFx != null)} muhurFx:{(clearFx != null)} " +
                       $"ayar:{(director != null && director.Config != null)}");
+
+            // B1 (2026-09-03): fener + pusula. Kamerasiz pusula sessizce hicbir sey cizmez —
+            // "kuruldu" deyip gecmesin.
+            bool compassCam = compass != null &&
+                              new SerializedObject(compass).FindProperty("_camera").objectReferenceValue != null;
+            Debug.Log($"[Gorev] DOGRULAMA — fener:{(beacon != null)} pusula:{(compass != null)} " +
+                      $"pusula-kamera:{compassCam}");
 
             // Bitmis gorev karosu GERCEKTEN savas disi mi? Bayrak acik kalirsa bitmis goreve
             // tekrar girilebilir — sessizce gecmesin.

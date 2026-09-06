@@ -245,7 +245,11 @@ namespace TacticalRPG.Editor
             {
                 var miSO = new SerializedObject(mapInput);
                 var runProp = miSO.FindProperty("_run");
-                if (runProp != null) { runProp.objectReferenceValue = run; miSO.ApplyModifiedProperties(); }
+                if (runProp != null) runProp.objectReferenceValue = run;
+                // Sag tikla iptal edilen yolculugun kalan bedava hamlesi temizlensin.
+                var apProp = miSO.FindProperty("_ap");
+                if (apProp != null) apProp.objectReferenceValue = FindComponentAnywhere<ActionPointManager>();
+                miSO.ApplyModifiedProperties();
             }
 
             var runHud = host.GetComponent<TacticalRPG.UI.ChapterRunHUD>();
@@ -256,6 +260,7 @@ namespace TacticalRPG.Editor
             rhSO.FindProperty("_ap").objectReferenceValue             = FindComponentAnywhere<ActionPointManager>();
             rhSO.FindProperty("_collapseConfig").objectReferenceValue = collapseCfg;
             rhSO.FindProperty("_state").objectReferenceValue          = state;
+            rhSO.FindProperty("_player").objectReferenceValue         = player;   // "SAG TIK: dur" seridi
             rhSO.ApplyModifiedProperties();
 
             var nodeHud = host.GetComponent<TacticalRPG.UI.ChapterNodeHUD>();
@@ -446,6 +451,41 @@ namespace TacticalRPG.Editor
             dSO.FindProperty("_run").objectReferenceValue    = run;
             dSO.FindProperty("_config").objectReferenceValue = questCfg;
             dSO.ApplyModifiedProperties();
+
+            // FENER + PUSULA (B1, 2026-09-03): gorevin gokten dustugu ana haritada UI'a bakmadan
+            // fark edilsin. Fener dunyada duran altin sutun, pusula onun ekran DISI uzantisi.
+            var beacon = host.GetComponent<MandatoryQuestBeacon>();
+            // SIFIR SERILESME ONARIMI (2026-09-03): bir bilesen eklenirken tip baslaticisi
+            // patlarsa Unity bileseni yine de ekler ama ALAN BASLATICILARI kosmaz — sahneye
+            // _height:0, _color:(0,0,0,0) diye yazilir ve fener HIC cizilmez. Sifir yukseklik
+            // gecerli bir ayar degil → bileseni tazele, varsayilanlar SINIFTAN gelsin
+            // (varsayilanlari burada tekrar yazmak iki dogruluk kaynagi olurdu).
+            if (beacon != null &&
+                new SerializedObject(beacon).FindProperty("_height").floatValue <= 0f)
+            {
+                Object.DestroyImmediate(beacon);
+                beacon = null;
+                Debug.LogWarning("[Gorev] Fener bileseni sifir serilesmis bulundu — tazelendi.");
+            }
+            if (beacon == null) beacon = host.AddComponent<MandatoryQuestBeacon>();
+            var beSO = new SerializedObject(beacon);
+            beSO.FindProperty("_nodes").objectReferenceValue = nodes;
+            beSO.FindProperty("_grid").objectReferenceValue  = grid;
+            beSO.FindProperty("_ap").objectReferenceValue    = FindComponentAnywhere<ActionPointManager>();
+            beSO.FindProperty("_map").objectReferenceValue   = gen;
+            beSO.FindProperty("_state").objectReferenceValue = state;
+            beSO.ApplyModifiedProperties();
+
+            var compass = host.GetComponent<TacticalRPG.UI.QuestBeaconCompassHUD>();
+            if (compass == null) compass = host.AddComponent<TacticalRPG.UI.QuestBeaconCompassHUD>();
+            var cSO = new SerializedObject(compass);
+            cSO.FindProperty("_beacons").objectReferenceValue = beacon;
+            cSO.FindProperty("_player").objectReferenceValue  = player;
+            cSO.FindProperty("_state").objectReferenceValue   = state;
+            cSO.FindProperty("_camera").objectReferenceValue  = Camera.main != null
+                                                             ? Camera.main
+                                                             : FindComponentAnywhere<Camera>();
+            cSO.ApplyModifiedProperties();
 
             // Ustteki cizgi bari.
             var bar = host.GetComponent<TacticalRPG.UI.MandatoryQuestBarHUD>();

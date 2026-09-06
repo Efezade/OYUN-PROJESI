@@ -66,6 +66,11 @@ namespace TacticalRPG.Core
         [Tooltip("Büyü kartı seçilince hedeflemeyi bu bileşen devralır. Boşsa büyü kartı çıkmaz.")]
         [SerializeField] private KamSkillCaster _skills;
 
+        [Tooltip("KAM'IN YETENEK AĞACI (2026-09-04). Atanırsa draft havuzu YALNIZ ağaçtan " +
+                 "açılmış büyülerden kurulur ve kartlar o büyünün SEVİYESİYLE sunulur. " +
+                 "Atanmazsa eski davranış sürer: katalogdaki her büyü çıkabilir.")]
+        [SerializeField] private KamSkillProgress _skillTree;
+
         // ── Durum ────────────────────────────────────────────────────────────
         private readonly List<DraftCard>            _choices   = new();
         private readonly List<HexCoordinate>        _validCells = new();
@@ -209,18 +214,29 @@ namespace TacticalRPG.Core
             _choices.Add(new DraftCard(pool[Random.Range(0, pool.Count)]));
         }
 
-        /// <summary>Bu savaşta henüz kullanılmamış bir büyü seçer (hepsi kullanıldıysa havuz
-        /// sıfırlanır — savaş uzarsa oyuncu büyüsüz kalmasın).</summary>
+        /// <summary>
+        /// Bu savaşta henüz kullanılmamış bir büyü seçer (hepsi kullanıldıysa havuz sıfırlanır —
+        /// savaş uzarsa oyuncu büyüsüz kalmasın).
+        ///
+        /// HAVUZU AĞAÇ BELİRLER (Efe'nin kararı 2026-09-04): yalnız KİTAP'tan açılmış büyüler
+        /// çıkar ve girdi o büyünün SEVİYESİYLE ölçeklenmiş kopyadır. Seçim yine RASTGELE —
+        /// ağaç draftın sürprizini değil, havuzun kalitesini değiştirir. Ağaç atanmamışsa
+        /// (eski sahne / savaş sandbox'ı) katalogdaki her büyüye geri düşülür.
+        /// </summary>
         private KamSkillCatalog.Entry PickSkill()
         {
+            var all = new List<KamSkillCatalog.Entry>();
+            if (_skillTree != null) _skillTree.FillUnlockedPool(all);
+            if (all.Count == 0) all.AddRange(KamSkillCatalog.All);
+
             var pool = new List<KamSkillCatalog.Entry>();
-            foreach (var s in KamSkillCatalog.All)
+            foreach (var s in all)
                 if (!_usedIds.Contains(s.Id)) pool.Add(s);
 
             if (pool.Count == 0)
             {
-                foreach (var s in KamSkillCatalog.All) _usedIds.Remove(s.Id);
-                pool.AddRange(KamSkillCatalog.All);
+                foreach (var s in all) _usedIds.Remove(s.Id);
+                pool.AddRange(all);
             }
             return pool.Count > 0 ? pool[Random.Range(0, pool.Count)] : null;
         }

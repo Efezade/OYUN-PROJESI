@@ -39,6 +39,9 @@ namespace TacticalRPG.Core
         [SerializeField] private FogOfWarManager _fogManager;
         [Tooltip("Opsiyonel — atanmışsa tıklanan yol önce çizgiyle gösterilir (ÇİFT TIK = yürü).")]
         [SerializeField] private PathPreview _preview;
+        [Tooltip("Opsiyonel — yürüyüş SAĞ TIKLA iptal edilince Güçlü Yol Taşı'nın kalan bedava " +
+                 "hamleleri burada temizlenir (yarıda kesilen yolculuğun hakkı cebe atılmasın).")]
+        [SerializeField] private ActionPointManager _ap;
 
         [Header("Raycast")]
         [SerializeField] private LayerMask _clickableLayers = ~0;
@@ -72,6 +75,9 @@ namespace TacticalRPG.Core
         {
             _pathfinder = new HexPathfinder();
             if (_camera == null) _camera = Camera.main;
+            // Kurulum atlanmış eski sahnelerde de iptal temizliği çalışsın (CLAUDE.md: kritik bağ
+            // koddan da kurulur). Awake dışında Find YASAK — burada bir kez, güvenlik ağı olarak.
+            if (_ap == null) _ap = FindFirstObjectByType<ActionPointManager>();
         }
 
         private void Update()
@@ -81,6 +87,12 @@ namespace TacticalRPG.Core
             if (_hasPending &&
                 ((_stateManager != null && _stateManager.State != GameState.Overworld) || _player.IsMoving))
                 ClearPreview();
+
+            // ── YÜRÜYÜŞÜ İPTAL: SAĞ TIK (2026-09-06, Efe'nin isteği) ─────────
+            // Uzun yollarda (keşfedilmiş bölgede menzil sınırsız) oyuncu yolun ortasında fikrini
+            // değiştirebilmeli. İptal, PlayerController'da KARO SINIRINDA işler — bedel karo
+            // başına ödendiği için ne iade ne borç doğar.
+            if (Input.GetMouseButtonDown(1)) { CancelWalk(); return; }
 
             if (!Input.GetMouseButtonDown(0)) return;
 
@@ -182,6 +194,21 @@ namespace TacticalRPG.Core
             _pendingPath  = reachable ? found : null;
             _hasPending   = true;
             if (_preview != null) _preview.Show(found, reachable);
+        }
+
+        /// <summary>Süren yürüyüşü durdurur (sağ tık). Yürünmüyorsa yalnız önizlemeyi kapatır —
+        /// sağ tık her durumda "vazgeçtim" demenin yolu olsun.</summary>
+        private void CancelWalk()
+        {
+            if (_stateManager != null && _stateManager.State != GameState.Overworld) return;
+
+            ClearPreview();
+            if (_player == null || !_player.IsMoving) return;
+
+            _player.RequestStop();
+            // Yol taşıyla giden bir yolculuk yarıda kesildi → kalan bedava hamle taşınmasın.
+            if (_ap != null) _ap.ClearFreeMoves();
+            Debug.Log("[Harita] Yuruyus iptal edildi — Kam siradaki karoda duracak.");
         }
 
         private void ClearPreview()

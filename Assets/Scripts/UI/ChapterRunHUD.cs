@@ -22,6 +22,14 @@ namespace TacticalRPG.UI
         [SerializeField] private ActionPointManager  _ap;
         [SerializeField] private CollapseConfig      _collapseConfig;
         [SerializeField] private GameStateManager    _state;
+        [Tooltip("Opsiyonel — atanmışsa yürürken ekranın altında 'SAĞ TIK: dur' ipucu çıkar.")]
+        [SerializeField] private PlayerController    _player;
+
+        private void Awake()
+        {
+            // Yürüyüş ipucu, kurulum tazelenmemiş sahnede de görünsün (bir kez, Awake'te).
+            if (_player == null) _player = FindFirstObjectByType<PlayerController>();
+        }
 
         private void OnGUI()
         {
@@ -35,6 +43,33 @@ namespace TacticalRPG.UI
             if (_state != null && _state.State != GameState.Overworld) return;
 
             DrawPressureStrip();
+            DrawWalkStrip();
+        }
+
+        /// <summary>
+        /// Yürürken ekranın altında duran şerit: kalan karo + "SAĞ TIK: dur" (2026-09-06).
+        /// Keşfedilmiş bölgede menzil sınırsız olduğu için yolculuk onlarca karo sürebiliyor;
+        /// iptalin VAR OLDUĞU oyuncuya söylenmezse kimse sağ tıklamayı denemez.
+        /// </summary>
+        private void DrawWalkStrip()
+        {
+            if (_player == null || !_player.IsMoving) return;
+
+            int left = _player.StepsRemaining;
+            string msg = _player.StopRequested
+                       ? "DURULUYOR — Kam sıradaki karoda duracak"
+                       : $"YÜRÜYOR · {left} karo kaldı — SAĞ TIK: dur";
+
+            const float w = 520f, h = 34f;
+            var rect = new Rect((HudScale.Width - w) * 0.5f, HudScale.Height - 132f, w, h);
+            // ImguiBlocker'a KAYIT YOK: bu şerit bilgi veriyor, tıklamayı yutmamalı — altındaki
+            // karoya tıklamak (ya da sağ tıkla durdurmak) engellenmemeli.
+
+            var style = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.MiddleCenter, fontSize = 17 };
+            style.normal.textColor = _player.StopRequested
+                                   ? new Color(1f, 0.72f, 0.35f)
+                                   : new Color(0.88f, 0.9f, 0.95f);
+            GUI.Box(rect, msg, style);
         }
 
         /// <summary>Üst orta: gün / son gün / çöküş uyarısı.</summary>

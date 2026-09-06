@@ -84,6 +84,79 @@ namespace TacticalRPG.Editor
         private static Image Line(Transform parent, string name, Vector2 anchor, Vector2 pos, Vector2 size, Color color)
             => Sliced(parent, name, anchor, pos, size, color);
 
+        // ── EL ÇİZİMİ MÜREKKEP KATMANI (2026-09-04) ──────────────────────────
+        // game UI.pdf'in dili: krem kâğıt + dalgalı mürekkep kontur + ikonlu daireler. Aşağıdaki
+        // üç yardımcı, çizimi InkArtFactory'den alır. ESKİ yardımcılar (Sliced/FramedPanel)
+        // DURUYOR: HARİTA ekranı onları kullanıyor ve minimap'e dokunulmayacak (Efe, 2026-09-04).
+
+        /// <summary>Verilen sprite'ı taşıyan basit Image (ikon/dal/daire).</summary>
+        private static Image InkImage(Transform parent, string name, Sprite sprite, Vector2 anchor,
+            Vector2 pos, Vector2 size, Color color, bool raycast = false)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = rt.pivot = anchor;
+            rt.anchoredPosition = pos; rt.sizeDelta = size;
+
+            var img = go.GetComponent<Image>();
+            img.sprite = sprite;
+            img.type   = Image.Type.Simple;
+            img.color  = color;
+            img.raycastTarget = raycast;
+            return img;
+        }
+
+        /// <summary>
+        /// El çizimi panel: kâğıt zemin + TAM O ÖLÇÜDE üretilmiş dalgalı mürekkep çerçeve.
+        /// Çerçeve 9-slice ile GERİLMEZ — gerilen dalgalı çizgi "yayılmış" görünüyordu; her ölçü
+        /// için kendi PNG'si üretilir (dosyalar ölçüye göre önbelleklenir).
+        /// İÇERİK EBEVEYNİ olarak panelin kendi RectTransform'u döner.
+        /// </summary>
+        private static RectTransform InkPanel(Transform parent, string name, Vector2 anchor,
+            Vector2 pos, Vector2 size, int radius, float alpha = 1f)
+        {
+            int w = Mathf.Max(32, Mathf.RoundToInt(size.x));
+            int h = Mathf.Max(32, Mathf.RoundToInt(size.y));
+
+            Image paper = InkImage(parent, name, InkArtFactory.Paper("paper_soft", 96, 96, Color.white),
+                                   anchor, pos, size,
+                                   new Color(ParchmentHi.r, ParchmentHi.g, ParchmentHi.b, alpha), raycast: true);
+            paper.type = Image.Type.Sliced;
+
+            // KÖŞE SÜSLERİ YALNIZ BÜYÜK PANELLERDE: küçük kart/düğme/rozetlerde süsler içeri taşıp
+            // yazının üstünden geçiyordu (YÜKSELT düğmesinin üstünde çarpı gibi duruyordu).
+            bool flourish = w >= 460 && h >= 400;
+            Image frame = InkImage(paper.transform, "InkFrame",
+                                   InkArtFactory.Frame($"frame_{w}x{h}_r{radius}", w, h, radius,
+                                                       flourish: flourish),
+                                   new Vector2(0.5f, 0.5f), Vector2.zero, size, InkArtFactory.Ink);
+            frame.raycastTarget = false;
+
+            return paper.rectTransform;
+        }
+
+        /// <summary>El çizimi düğme: kâğıt + çerçeve + mürekkep etiket.</summary>
+        private static Button InkButton(Transform parent, string name, string label,
+            Vector2 anchor, Vector2 pos, Vector2 size, float fontSize = 26f)
+        {
+            RectTransform panel = InkPanel(parent, name, anchor, pos, size, 16);
+
+            var btn = panel.gameObject.AddComponent<Button>();
+            btn.targetGraphic = panel.GetComponent<Image>();
+            ColorBlock cb = btn.colors;
+            cb.normalColor      = Color.white;
+            cb.highlightedColor = new Color(1.06f, 1.04f, 1.00f);
+            cb.pressedColor     = new Color(0.86f, 0.82f, 0.74f);
+            cb.disabledColor    = new Color(0.80f, 0.78f, 0.74f, 0.55f);
+            cb.fadeDuration     = 0.08f;
+            btn.colors = cb;
+
+            CreateCenteredLabel(panel, "Label", label, new Vector2(0.5f, 0.5f), Vector2.zero,
+                                new Vector2(size.x - 24f, size.y - 18f), Ink, fontSize);
+            return btn;
+        }
+
         /// <summary>Süslü bölüm başlığı: krem şerit + iki yan çizgi + koyu mürekkep metin. Ortalanmış.</summary>
         private static void SectionHeader(Transform parent, string name, string text, Vector2 anchor,
             Vector2 pos, float width, float fontSize)

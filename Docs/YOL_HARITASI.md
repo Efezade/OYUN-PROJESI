@@ -36,7 +36,7 @@ yazılır, buraya değil.
 | 1 | Karodan öz tipinin anlaşılması + tıkla-incele | Kısmen (öz sistemi var, görsel dil yok) | Birlikte (modeller Efe) |
 | 2 | Karakter/öz sinematikleri | Yok | Sistem birlikte, içerik Efe |
 | 3 | Savaş sisi kenarında ipucu | **YAPILDI 2026-09-02** | — |
-| 4 | Skill tree → Kam'ın yetenekleri | Yok (UI taslağı var) | Birlikte |
+| 4 | Skill tree → Kam'ın yetenekleri | **BÜYÜK ÖLÇÜDE YAPILDI 2026-09-04** (KİTAP'ta ağaç, 15 büyü / 5 dal, öz ile açma+yükseltme, ölünce sıfırlanma, draft havuzu bağlı). Eksik: roguelike META EKONOMİ, map'e özgü dallar | Birlikte |
 | 5 | Zorunlu görev zinciri (sayaç, tip çeşitliliği, ekonomiye bağlı sayı) | **Büyük ölçüde var** | Birlikte |
 | 6 | Kam: yüksek can + kalıcı hasar + can kazanma | Yok | Birlikte |
 | 7 | Her map'te Kam'ın ANA mekaniği değişir | Yok — **omurga** | Birlikte |
@@ -301,10 +301,10 @@ hiçbir yöne yürüyemeyip sert kesime kadar donardı. Yine de 2 günlük uyar�
 çökmekte olan bir bölgeye YÜRÜYEBİLİR — bu bilinçli bir risk, kaçış kapısı madde 10'daki karo
 geri getirme hakkı.
 
-## BEKLEYEN İŞLER (Efe 2026-09-02'de istedi, gelecek oturumda uygulanacak)
+## BEKLEYEN İŞLER — İKİSİ DE YAPILDI (2026-09-03)
 
-Efe oturumu kapatırken bunları sıraya koydu: **gelecek oturumda "nerede kaldık" denince bu liste
-hatırlatılacak, "uygula" denince yapılacak.**
+Efe 2026-09-02'de sıraya koymuştu, 2026-09-03'te "uygula" dedi. Aşağıdaki iki maddenin
+İSTEK metni olduğu gibi duruyor; her birinin sonuna **NE YAPILDI** bloğu eklendi.
 
 ### B1 — Zorunlu görev geldiğini ana haritada FARK ETMEK
 
@@ -324,6 +324,22 @@ Düşünülecek fikirler (hiçbiri onaylanmadı):
 - **Kameranın kısa bir "bakış"ı:** düşüş anında kamera oraya bir saniye kayıp geri döner.
 - **Duyulur işaret:** yönü belli olan bir gök gürültüsü/çan sesi.
 
+**NE YAPILDI (2026-09-03):** ilk iki fikir BİRLİKTE uygulandı — biri dünyada, öbürü ekran
+kenarında; üçüncüsü (kamera bakışı) kamerayı oyuncunun elinden aldığı için, dördüncüsü (ses)
+projede ses katmanı olmadığı için alınmadı.
+
+- **`MandatoryQuestBeacon` (fener).** Açık her zorunlu görevin karosunda duran altın gök sütunu.
+  İki kademe: görev düştüğü günden `_freshDays` (2) gün sonrasına kadar KALIN ve nabız gibi atar
+  ("bir şey oldu"), sonra görev bitene kadar İNCE ve sabit kalır ("şurada hâlâ bir görev var").
+  Beş görev birden açıkken ekranı altına boğmasın diye incelme şart. Prosedürel — düşüş
+  efektiyle aynı desen, prefab istemez. Görev bitince/harita yenilenince söner.
+- **`QuestBeaconCompassHUD` (pusula).** Fener EKRAN DIŞINDAYSA ekran kenarında yön oku + karo
+  cinsinden mesafe. Yeni görev = parlak ok + "ZORUNLU GÖREV" yazısı, eskiyen = soluk ok + yalnız
+  mesafe. Kameranın arkasında kalan hedef aynalanır (yoksa ok ters yönü gösterirdi). Veriyi
+  üretmez, feneri okur.
+- Kurulum `SetupMandatoryQuestChain` içinde (TAM KURULUM zincirinde) + `SetupQuestChainBatch`
+  doğrulaması: `fener:True pusula:True pusula-kamera:True`.
+
 ### B2 — Kam çöken karonun üstünde kalmasın
 
 **Hata (Efe, doğrulanmış):** karo tam silinirken Kam o karonun üstüne yürüyebiliyor. Oyun
@@ -337,6 +353,23 @@ boşlukta durur gibi görünmemeli.
 Not: `PickDoomed` zaten oyuncunun O ANKİ karosunu ve 2 karo çevresini muaf tutuyor — ama işaret
 2 gün önceden konuyor, oyuncu o süre içinde işaretli karoya YÜRÜYEBİLİYOR. Yani çözüm seçimde
 değil, **silme anında** olmalı.
+
+**NE YAPILDI (2026-09-03):** güvenlik tam da silme anına kondu.
+
+- `MapCollapseManager.DayBoundaryRoutine` günün çökenlerini topladıktan HEMEN SONRA, deprem
+  başlamadan `ShovePlayerToSafety` çalışır: oyuncu bugün çökecek bir karodaysa halka halka
+  (`_escapeRings` = 3) güvenli karo aranır — arama yalnız YÜRÜNÜR karolardan geçer, su/dağ
+  üstünden atlayıp karşı kıyıya konmaz. Halka içinde seçim rastgele (hep aynı yöne itilme deseni
+  olmasın). Önce tertemiz karo aranır; yoksa işaretli ama BUGÜN düşmeyecek karo kabul edilir.
+- `PlayerController.ForceShiftTo` → küçük bir sıçrama yayıyla hızlı kaçış (`_shoveSpeed` 7,
+  `_shoveHop` 0.45). Süren yürüyüş varsa KESİLİR — hedefi artık var olmayan bir karo olabilir.
+- **İtilme AP yemez:** `ActionPointManager.GrantForcedMove()` (bedava hamle stokuna EKLER, Güçlü
+  Yol Taşı stokunu yemez). Kural AP yöneticisinde kaldı, `OnMoved` normal aktığı için sis /
+  işaretler / rota da normal tazelenir.
+- **Kaçacak yer hiç yoksa** karo o gün SİLİNMEZ, bir gün ertelenir — oyuncuyu boşlukta bırakmak
+  ya da kapana kıstırmaktansa kıyamet bir gün bekler.
+- Savaştan dönüş yolu da kapatıldı: `ApplyCollapseStateForCurrentMap` sonunda oyuncunun karosu
+  yürünemez hâle gelmişse aynı itme çalışır (savaşta gün dönmüşse karo veri olarak silinmiş olur).
 
 ## Çapraz riskler (birbirine değen maddeler)
 
@@ -373,7 +406,11 @@ değil, **silme anında** olmalı.
 - (11) Ton alanı + bölüme bağlı metin havuzu
 
 **Faz 4 — derinlik**
-- (4) Skill tree (Efe: tüm oyunu kapsar, ölünce sıfırlanır, map'e özgü dallar + meta ekonomi)
+- ~~(4) Skill tree~~ → **ÇEKİRDEĞİ 2026-09-04'te YAPILDI** (Efe istedi, sıradan öne alındı):
+  `KamSkillTreeSO` + `KamSkillProgress` + KİTAP'ta yer imli ağaç sayfası + `InkArtFactory` ile
+  el çizimi UI. Ağaç HAVUZU belirler, davul draftı rastgele seçmeye devam eder; ölünce sıfırlanır.
+  **Kalan:** roguelike meta ekonomi (her yeniden başlayışta avantaj) ve map'e ÖZGÜ dallar —
+  ikisi de Faz 2 omurgasına (ChapterRulesSO) yaslanacak.
 - (9) Geçici özler + transfer kuyuları
 - ~~(10) Karo geri getirme~~ → Faz 0'a çekildi, YAPILDI
 
