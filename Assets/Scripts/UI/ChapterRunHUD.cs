@@ -24,11 +24,32 @@ namespace TacticalRPG.UI
         [SerializeField] private GameStateManager    _state;
         [Tooltip("Opsiyonel — atanmışsa yürürken ekranın altında 'SAĞ TIK: dur' ipucu çıkar.")]
         [SerializeField] private PlayerController    _player;
+        [Tooltip("Yürüyüş bir olay yüzünden durunca sebebin ekranda kalma süresi (sn).")]
+        [SerializeField] private float _interruptNoticeSeconds = 3f;
+
+        private string _interruptReason = "";
+        private float  _interruptUntil;
 
         private void Awake()
         {
             // Yürüyüş ipucu, kurulum tazelenmemiş sahnede de görünsün (bir kez, Awake'te).
             if (_player == null) _player = FindFirstObjectByType<PlayerController>();
+        }
+
+        private void OnEnable()
+        {
+            if (_player != null) _player.OnWalkInterrupted += HandleWalkInterrupted;
+        }
+
+        private void OnDisable()
+        {
+            if (_player != null) _player.OnWalkInterrupted -= HandleWalkInterrupted;
+        }
+
+        private void HandleWalkInterrupted(string reason)
+        {
+            _interruptReason = reason;
+            _interruptUntil  = Time.unscaledTime + _interruptNoticeSeconds;
         }
 
         private void OnGUI()
@@ -53,20 +74,33 @@ namespace TacticalRPG.UI
         /// </summary>
         private void DrawWalkStrip()
         {
-            if (_player == null || !_player.IsMoving) return;
+            if (_player == null) return;
+
+            // Yürüyüş BİR OLAY yüzünden durduysa sebep birkaç saniye ekranda kalır — oyuncu
+            // "neden durdum" diye şaşırmasın (otomatik durdurma, 2026-10-03).
+            bool notice = !_player.IsMoving && Time.unscaledTime < _interruptUntil;
+            if (!_player.IsMoving && !notice) return;
 
             int left = _player.StepsRemaining;
-            string msg = _player.StopRequested
-                       ? "DURULUYOR — Kam sıradaki karoda duracak"
-                       : $"YÜRÜYOR · {left} karo kaldı — SAĞ TIK: dur";
+            string msg;
+            if (notice)
+                msg = $"DURDU — {_interruptReason}";
+            else if (_player.StopRequested)
+                msg = string.IsNullOrEmpty(_player.StopReason)
+                    ? "DURULUYOR — Kam sıradaki karoda duracak"
+                    : $"DURULUYOR — {_player.StopReason}";
+            else if (_player.IsFastTravel)
+                msg = $"YOLCULUK · {left} karo kaldı — SAĞ TIK / ESC: dur";
+            else
+                msg = $"YÜRÜYOR · {left} karo kaldı — SAĞ TIK / ESC: dur · SOL TIK: yeni hedef";
 
-            const float w = 520f, h = 34f;
+            const float w = 640f, h = 34f;
             var rect = new Rect((HudScale.Width - w) * 0.5f, HudScale.Height - 132f, w, h);
             // ImguiBlocker'a KAYIT YOK: bu şerit bilgi veriyor, tıklamayı yutmamalı — altındaki
             // karoya tıklamak (ya da sağ tıkla durdurmak) engellenmemeli.
 
             var style = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.MiddleCenter, fontSize = 17 };
-            style.normal.textColor = _player.StopRequested
+            style.normal.textColor = _player.StopRequested || notice
                                    ? new Color(1f, 0.72f, 0.35f)
                                    : new Color(0.88f, 0.9f, 0.95f);
             GUI.Box(rect, msg, style);

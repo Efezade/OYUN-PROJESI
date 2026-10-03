@@ -12,7 +12,8 @@ namespace TacticalRPG.UI
     {
         [Header("Bağımlılıklar")]
         [SerializeField] private AbilityCaster  _caster;
-        [SerializeField] private KamManaManager _kamMana;
+        [UnityEngine.Serialization.FormerlySerializedAs("_kamMana")]
+        [SerializeField] private KamMechanicHost _kam;
         [SerializeField] private UnitManager    _unitManager;
 
         private string _lastMessage = "";
@@ -66,8 +67,8 @@ namespace TacticalRPG.UI
             }
 
             GUILayout.Space(4f);
-            if (_kamMana != null)
-                GUILayout.Label($"Mana: {_kamMana.CurrentMana}/{_kamMana.MaxMana}");
+            if (_kam != null)
+                GUILayout.Label($"{_kam.ResourceName}: {_kam.Current}/{_kam.Max}");
 
             if (_caster != null)
                 GUILayout.Label(_caster.HasArmedAbility

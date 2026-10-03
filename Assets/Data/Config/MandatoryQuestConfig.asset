@@ -17,6 +17,9 @@ MonoBehaviour:
   _baseReward: 20
   _rewardRatio: 1.6
   _questAP: 5
+  _questKinds:
+  - {fileID: 11400000, guid: 7fe2c690f5aeac045b9010f282f537fd, type: 2}
+  _economyThresholds: 50000000a0000000
   _warningAP: 24
   _spawnDistance: {x: 6, y: 14}
   _reachSafety: 0.5

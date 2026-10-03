@@ -16,6 +16,57 @@
 
 ---
 
+## 2026-10-03 — Faz 2 omurgası (kural seti + Kam mekaniği) + Faz 1 (görev tipi, takvim, ekonomi) + yürüyüş soruları
+
+**KARAR 1 — Her bölümün kimliği TEK bir `ChapterRulesSO`'da; bölüm listesi (`ChapterConfigSO`)
+girişi ona bakar, sistemler `ChapterProgress.CurrentRules`'tan okur.**
+Kural seti: Kam mekaniği · yetenek ağacı · zorunlu görev zinciri · ham öz listesi · ödül özü · ton.
+**NEDEN:** "MAP = KURAL SETİ" (YOL_HARITASI madde 7). Artık dört sistem map'e göre değişmek
+istiyordu; omurga olmadan her biri `if (bolum == n)` yazacaktı. **BOŞ ALAN = ESKİ DAVRANIŞ:** her
+tüketici kendi Inspector yedeğine düşer, yarım doldurulmuş kural seti oyunu kırmaz.
+`Bolum1_Kurallar.asset` bugünkü davranışın birebir aynısı.
+
+**KARAR 2 — Kam'ın kaynağı `IKamMechanic` arayüzü; ilk uygulama MANA (`ManaMechanicSO`).**
+Ayar SO'da, değişen durum `CreateRuntime()`'ın ürettiği düz C# nesnesinde (SO runtime'da
+değişmez). Sahnedeki kapı `KamMechanicHost` — eski `KamManaManager` dosyası **GUID'i korunarak**
+yeniden adlandırıldı: sahnedeki bileşen ve ona bakan tüm referanslar kendiliğinden yeni sınıfa
+geçti; alan adları `FormerlySerializedAs` ile taşındı. Büyü kasterleri "mana mı can mı" diye
+sormaz: `CanPay/TryPay/Restore` + eşik etkisi için `ModifyPower`. Mekanik harita üretilince TAZE
+kurulur (ölüp yeniden başlayınca mana dolu başlar — eskiden önceki denemeden taşınıyordu).
+**FÜZYON BİLEREK YOK:** Efe'nin whitelist kararı gereği ayrı çift tarifleri olacak; tekil
+mekanik sınıfı onun için değişmeyecek.
+
+**KARAR 3 — Zorunlu görevin TİPİ `QuestKindSO`; savaş dışı tipleri bir `QuestKindRunner` işler.**
+Savaş özel tip: çekirdek akış zaten var (durum makinesi + karo üstü "Savaşa Gir"), runner istemez.
+Savaşsız tipte görev karosunun `CanEnterCombat` bayrağı kapatılır ve `IsCombatNode` onu saymaz —
+yoksa yanındaki savaşa girmek onu bedavaya "tamamlanmış" sayardı. Uçtan uca kanıt için en küçük
+savaşsız tip **ADAK** (öz ada → görev biter) yazıldı; hiçbir bölümün havuzunda YOK, zincir
+ayarının `_questKinds` listesine sürüklenince devreye girer.
+**NEDEN:** Bulmaca ve "yeni mekanik" görevlerin tasarımı yok; ama onları eklemek düğüm
+yöneticisini yamamak olmasın. Runner AP harcanmadan ÖNCE `CanBegin` ile sorulur.
+
+**KARAR 4 — Ekonomiye bağlı açılış: açılabilecek görev = geçilen gün + geçilen öz eşiği (tavanlı).**
+Eşikler BÖLÜM İÇİ kazanılan öze bakar (`EssenceWallet.TotalGained` − bölüm başı taban; harcamak
+düşürmez). **Ekonomi yeni görev uydurmaz, takvimi öne çeker** — tavan (başlangıç + açılış günü
+sayısı) sabit, hızlı büyüyen oyuncu büyük ödüllü görevleri erken görür ama boss taşı da erken
+pahalanır. Örnek eşikler 80/160 (haritadaki hasadın ~yarısı/tamamı) — SAYI ÖRNEK.
+**TAKVİM SAYACI:** barda açılmamış her görev için "G8" kutusu; alt yazı gün cinsinden + "ya da N
+öz daha kazan".
+
+**KARAR 5 — Yürüyüş soruları (Efe cevapsız bıraktı, varsayılan EVET verildi):**
+- Yürürken **SOL TIK = yeni hedef**: Kam sıradaki karoda durur, oradan yeni hedefe ikinci onaysız
+  yürür. Yol taşı yolculuğunda YOK (rota/bedava hamle o akışın).
+- **Olayda otomatik durma** (`WalkInterruptor`): yeni zorunlu görev düştü, gece çöktü (gün doğuşu
+  varsayılan kapalı). HUD sebebi 3 sn yazar. Hızlı seyahate karışmaz.
+- **ESC de durdurur** — menü gezgini aynı karede ayar ekranı açmasın diye Esc sahiplenilir
+  (`EscapeKeyClaim`, `MapInputHandler` erken çalışır).
+- Ek güvenlik: önündeki karo çökmüşse Kam boşluğa basmaz, durur ("önündeki karo çöktü").
+
+**COMMIT:** (bu girişle aynı commit)
+
+**AÇIK KALAN:** KİTAP'taki ağaç sayfası kurulumda ÇİZİLİYOR — map'e özgü dallı bir ağaç atanırsa
+sayfa yeniden kurulmalı (otomatik değil). Meta ekonomi ve füzyon whitelist'i yazılmadı.
+
 ## 2026-09-06 — Yürüyüş iptali + KİTAP'ta karakter sayfası + ÇANTA sekmeleri
 
 **KARAR 1 — Uzun yürüyüş SAĞ TIKLA iptal edilir; iptal KARO SINIRINDA işler.**

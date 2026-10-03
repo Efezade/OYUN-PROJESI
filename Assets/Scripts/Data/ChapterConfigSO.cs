@@ -24,6 +24,10 @@ namespace TacticalRPG.Data
             [Tooltip("Teması/adı henüz TASARLANMADI mı? İşaretliyse HARİTA ekranında taslak sayılır — " +
                      "uydurulmuş içerik gerçek karar sanılmasın diye.")]
             public bool isPlaceholder = false;
+
+            [Tooltip("Bölümün KURAL SETİ (Faz 2 omurgası): Kam mekaniği, görev zinciri, öz türleri, " +
+                     "yetenek ağacı. Boş = her sistem kendi yedeğiyle çalışır.")]
+            public ChapterRulesSO rules;
         }
 
         [Tooltip("Sıra = bölüm numarası (index 0 = Bölüm 1). GAME_DESIGN.md §3'e göre 8 bölüm.")]
@@ -40,6 +44,9 @@ namespace TacticalRPG.Data
             ChapterEntry e = Get(chapter);
             return e != null && !string.IsNullOrEmpty(e.displayName) ? e.displayName : $"Bölüm {chapter}";
         }
+
+        /// <summary>Bölümün kural seti — atanmamışsa null.</summary>
+        public ChapterRulesSO RulesOf(int chapter) => Get(chapter)?.rules;
 
         public string ThemeOf(int chapter)
         {

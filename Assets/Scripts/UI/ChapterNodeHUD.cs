@@ -60,6 +60,14 @@ namespace TacticalRPG.UI
                             ? $"{TitleOf(n.Type)} — {n.Tier}. kademe"
                             : $"{TitleOf(n.Type)}");
 
+            // Görev TİPİ (Faz 1): savaş dışı tiplerde oyuncu ne yapacağını burada okur.
+            if (n.Type == MapNodeType.Mandatory && n.Kind != null)
+            {
+                GUILayout.Label($"Tip: {n.Kind.DisplayName}");
+                if (!string.IsNullOrEmpty(n.Kind.Description))
+                    GUILayout.Label(n.Kind.Description, new GUIStyle(GUI.skin.label) { wordWrap = true, fontSize = 12 });
+            }
+
             string diff = _nodes.DifficultyLabel(n);
             if (!string.IsNullOrEmpty(diff)) GUILayout.Label($"Zorluk: {diff}");     // GÖRÜNÜR
             GUILayout.Label($"Ödül:   {_nodes.RewardLabel(n)}");                     // GİZLİ olabilir
@@ -69,8 +77,16 @@ namespace TacticalRPG.UI
                 GUILayout.Label("(yanındaki kule)");
 
             GUI.enabled = _nodes.CanEnter(n);
-            if (GUILayout.Button(EnterLabel(n.Type), GUILayout.Height(28))) _nodes.Enter(n);
+            if (GUILayout.Button(EnterLabel(n), GUILayout.Height(28))) _nodes.Enter(n);
             GUI.enabled = true;
+
+            string blocked = _nodes.EnterBlockReason(n);
+            if (!string.IsNullOrEmpty(blocked))
+            {
+                var warn = new GUIStyle(GUI.skin.label) { wordWrap = true };
+                warn.normal.textColor = new Color(1f, 0.6f, 0.35f);
+                GUILayout.Label(blocked, warn);
+            }
 
             if (n.Type == MapNodeType.Market && !_nodes.IsMarketOpen())
                 GUILayout.Label("Gündüz dilimlerinde tekrar gel.");
@@ -116,10 +132,11 @@ namespace TacticalRPG.UI
             _                      => "DÜĞÜM"
         };
 
-        private static string EnterLabel(MapNodeType t) => t switch
+        private static string EnterLabel(ChapterNodeManager.MapNode n) => n.Type switch
         {
             MapNodeType.Watchtower => "KULEYE ÇIK (sisi kalıcı aç)",
             MapNodeType.Market     => "MARKETE GİR",
+            MapNodeType.Mandatory when ChapterNodeManager.UsesRunner(n) => $"{n.Kind.DisplayName.ToUpperInvariant()} — BAŞLA",
             _                      => "GİR"
         };
     }

@@ -10,15 +10,17 @@ namespace TacticalRPG.Core
     /// Kam'ın (komutan) savaştaki büyü kasteri.
     /// Origin = komutan BİRİMİNİN hex konumu (PlayerController değil); yetenekler komutanın
     /// kartından okunur. Büyü, Kam'ın TUR EYLEMİDİR: yalnızca Kam'ın sırasında ve eylemi
-    /// harcanmamışken 1/2/3 ile hazırlanır, hedefe tıklanınca uygulanır. Mana KamManaManager'dan
-    /// düşer; başarı sonrası TurnManager'a eylem bildirilir (win/lose + otomatik tur sonu).
-    /// (Event-driven; bağımlılık tek yönlü: AbilityCaster → TurnManager/UnitManager/KamMana.)
+    /// harcanmamışken 1/2/3 ile hazırlanır, hedefe tıklanınca uygulanır. Bedel Kam'ın AKTİF MEKANİĞİNDEN
+    /// (<see cref="KamMechanicHost"/>) düşer — mana mı, can mı bilmez; gücü de eşik etkisinden geçer.
+    /// Başarı sonrası TurnManager'a eylem bildirilir (win/lose + otomatik tur sonu).
+    /// (Event-driven; bağımlılık tek yönlü: AbilityCaster → TurnManager/UnitManager/KamMechanicHost.)
     /// </summary>
     public class AbilityCaster : MonoBehaviour
     {
         [Header("Bağımlılıklar")]
         [SerializeField] private TurnManager    _turnManager;
-        [SerializeField] private KamManaManager _kamMana;
+        [UnityEngine.Serialization.FormerlySerializedAs("_kamMana")]
+        [SerializeField] private KamMechanicHost _kam;
         [SerializeField] private UnitManager    _unitManager;
 
         public KamAbilityData ArmedAbility    { get; private set; }
@@ -108,25 +110,31 @@ namespace TacticalRPG.Core
             int dist = cmd.Coordinate.DistanceTo(targetCoord);
             if (dist > ability.Range) { Message($"Menzil disi ({dist} > {ability.Range})."); return false; }
 
-            if (_kamMana == null || !_kamMana.CanCast(ability.ManaCost))
-            { Message($"Yetersiz mana ({ability.ManaCost} gerek)."); return false; }
+            if (_kam == null || !_kam.CanPay(ability.ManaCost))
+            {
+                string res = _kam != null ? _kam.ResourceName : "mana";
+                Message($"Yetersiz {res} ({ability.ManaCost} gerek)."); return false;
+            }
 
-            _kamMana.TrySpendMana(ability.ManaCost);
-            ApplyEffect(ability, target);
-            Message($"{ability.DisplayName} -> {target.DisplayName}  ({ability.Effect} {ability.Power})");
+            _kam.TryPay(ability.ManaCost);
+            // EŞİK ETKİSİ: güç, bedel ÖDENDİKTEN sonra okunur — "kaynağın azaldıkça güçlenirsin"
+            // türü bir mekanikte son ödenen bedel de eşiğe sayılmalı.
+            int power = _kam.ModifyPower(ability.Power);
+            ApplyEffect(ability, target, power);
+            Message($"{ability.DisplayName} -> {target.DisplayName}  ({ability.Effect} {power})");
 
             Disarm();
             _turnManager.RegisterCommanderAction(); // eylemi tüket + win/lose + otomatik tur sonu
             return true;
         }
 
-        private static void ApplyEffect(KamAbilityData ability, Unit target)
+        private static void ApplyEffect(KamAbilityData ability, Unit target, int power)
         {
             switch (ability.Effect)
             {
-                case AbilityEffectType.Damage: target.TakeDamage(ability.Power); break;
-                case AbilityEffectType.Heal:   target.Heal(ability.Power);       break;
-                case AbilityEffectType.Buff:   target.AddShield(ability.Power);  break;
+                case AbilityEffectType.Damage: target.TakeDamage(power); break;
+                case AbilityEffectType.Heal:   target.Heal(power);       break;
+                case AbilityEffectType.Buff:   target.AddShield(power);  break;
             }
         }
 

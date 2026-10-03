@@ -12,7 +12,15 @@ namespace TacticalRPG.Core
     /// ile gösterir, aynı karoya 2. tık yürütür. Farklı karo yeni önizleme açar, boşluk iptal eder.
     /// Menzil (<see cref="_maxMoveRange"/>) yalnız SAVAŞ SİSİ VARKEN uygulanır; sis kule ile
     /// kalıcı kaldırılmışsa serbest yürüyüş.
+    ///
+    /// YÜRÜRKEN (2026-10-03, Efe'nin cevapsız kalan üç sorusu): SAĞ TIK ve ESC yürüyüşü durdurur;
+    /// SOL TIK yeni hedef seçer — Kam sıradaki karoda durur ve oradan yeni hedefe yürür (yolda
+    /// ikinci onay istenmez, oyuncu zaten yürüyor). Hızlı seyahatte (yol taşı) yeniden hedefleme
+    /// yoktur; o yolculuk yalnız durdurulabilir.
+    ///
+    /// Esc'yi menü gezgininden ÖNCE okumak için erken çalışır (bkz <see cref="EscapeKeyClaim"/>).
     /// </summary>
+    [DefaultExecutionOrder(-10)]
     public class MapInputHandler : MonoBehaviour
     {
         [Header("Bağımlılıklar")]
@@ -64,6 +72,10 @@ namespace TacticalRPG.Core
         private List<HexCell> _pendingPath;   // menzil dışıysa null → 2. tık yürütmez, iptal eder
         private bool          _hasPending;
 
+        // Yürürken SOL TIK = yeni hedef. Kam karo sınırında durunca buradan yürümeye devam eder.
+        private HexCoordinate _queuedCoord;
+        private bool          _hasQueued;
+
         /// <summary>Mağaza "Menzil" iksiri/pusulası buradan tek-tık menzilini artırır (PlayerBuffs yönetir).</summary>
         public int BonusMoveRange { get; set; }
 
@@ -93,6 +105,18 @@ namespace TacticalRPG.Core
             // değiştirebilmeli. İptal, PlayerController'da KARO SINIRINDA işler — bedel karo
             // başına ödendiği için ne iade ne borç doğar.
             if (Input.GetMouseButtonDown(1)) { CancelWalk(); return; }
+
+            // ESC de durdurur — ama yalnız gerçekten yürürken ve menü kapalıyken. Esc sahiplenilir
+            // ki aynı karede menü gezgini ayar ekranını açmasın.
+            if (Input.GetKeyDown(KeyCode.Escape) && !MenuState.IsAnyOpen && IsOverworldWalk())
+            {
+                CancelWalk();
+                EscapeKeyClaim.Claim();
+                return;
+            }
+
+            // Bekleyen yeni hedef: Kam karo sınırında durdu → yeni yola çık.
+            if (_hasQueued && !_player.IsMoving) StartQueuedWalk();
 
             if (!Input.GetMouseButtonDown(0)) return;
 
@@ -136,10 +160,17 @@ namespace TacticalRPG.Core
 
             // Diğer savaş/onay durumlarında harita tıklaması işlenmez (akış HUD'larca yönetilir).
             if (_stateManager != null && _stateManager.State != GameState.Overworld) return;
-            if (_player.IsMoving) return;
             // SERT KESİM (TASK-007): bölüm kaybedildiyse harita ARTIK İLERLENEMEZ — yalnız
             // "Yeniden Başla" düğmesi çalışır (ChapterRunHUD).
             if (_run != null && _run.ChapterLost) return;
+
+            // YÜRÜRKEN SOL TIK = YENİ HEDEF.
+            if (_player.IsMoving)
+            {
+                if (!_player.IsFastTravel && TryGetClickedCoord(out HexCoordinate redirect))
+                    RedirectWalk(redirect);
+                return;
+            }
 
             // Boşluğa tıklama → önizleme varsa iptal.
             if (!TryGetClickedCoord(out HexCoordinate coord)) { ClearPreview(); return; }
@@ -196,13 +227,40 @@ namespace TacticalRPG.Core
             if (_preview != null) _preview.Show(found, reachable);
         }
 
-        /// <summary>Süren yürüyüşü durdurur (sağ tık). Yürünmüyorsa yalnız önizlemeyi kapatır —
+        private bool IsOverworldWalk()
+            => _player != null && _player.IsMoving
+            && (_stateManager == null || _stateManager.State == GameState.Overworld);
+
+        /// <summary>Yürürken yeni hedef: Kam sıradaki karoda durur, sonra oradan hedefe yürür.</summary>
+        private void RedirectWalk(HexCoordinate coord)
+        {
+            if (_gridManager.TryGetCell(coord, out HexCell target) && !target.IsWalkable) return;
+            _queuedCoord = coord;
+            _hasQueued   = true;
+            _player.RequestStop();   // sebepsiz: oyuncunun kendi kararı, bildirim çıkmaz
+        }
+
+        /// <summary>Bekleyen hedefe yol kurar. Menzil kuralı normal tıktaki gibi işler; hedef
+        /// menzil dışıysa yürümez, yolu kırmızı önizler (oyuncu ne olduğunu görsün).</summary>
+        private void StartQueuedWalk()
+        {
+            _hasQueued = false;
+            if (_stateManager != null && _stateManager.State != GameState.Overworld) return;
+            if (_run != null && _run.ChapterLost) return;
+
+            HandleMoveClick(_queuedCoord);                     // yolu kur + önizle
+            if (_hasPending && _pendingCoord.Equals(_queuedCoord) && _pendingPath != null)
+                HandleMoveClick(_queuedCoord);                 // erişilebilirse hemen onayla
+        }
+
+        /// <summary>Süren yürüyüşü durdurur (sağ tık / Esc). Yürünmüyorsa yalnız önizlemeyi kapatır —
         /// sağ tık her durumda "vazgeçtim" demenin yolu olsun.</summary>
         private void CancelWalk()
         {
             if (_stateManager != null && _stateManager.State != GameState.Overworld) return;
 
             ClearPreview();
+            _hasQueued = false;                                // durdurma, bekleyen hedefi de siler
             if (_player == null || !_player.IsMoving) return;
 
             _player.RequestStop();

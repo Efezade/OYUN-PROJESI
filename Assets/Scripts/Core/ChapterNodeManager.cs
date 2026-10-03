@@ -39,6 +39,9 @@ namespace TacticalRPG.Core
             /// <summary>ZORUNLU görevin kademesi (1-tabanlı). Ödül bu kademeden ÜSTEL büyür
             /// (<see cref="MandatoryQuestConfigSO.RewardForTier"/>). Diğer türlerde 0.</summary>
             public int           Tier;
+            /// <summary>Zorunlu görevin TİPİ (Faz 1). null ya da savaş tipi = yerleşik savaş akışı;
+            /// başka tip = <see cref="QuestKindRunner"/> işler. Diğer düğüm türlerinde null.</summary>
+            public QuestKindSO   Kind;
         }
 
         [SerializeField] private HexGridManager       _grid;
@@ -61,10 +64,15 @@ namespace TacticalRPG.Core
                  "maliyeti ve ÜSTEL ödül eğrisi buradan okunur — NodeConfig'teki karşılıkları " +
                  "yok sayılır (iki doğruluk kaynağı olmasın). Boş bırakılırsa eski davranış sürer.")]
         [SerializeField] private MandatoryQuestConfigSO _questConfig;
+        [Tooltip("Bölümün kural seti: zincir ayarını ve ödül özünü seçer. Atanmazsa yedekler kullanılır.")]
+        [SerializeField] private ChapterProgress _progress;
         [Tooltip("Yeni zorunlu görev açılırken oynayan gökten düşüş animasyonu.")]
         [SerializeField] private MandatoryQuestFallEffect _questFallFx;
         [Tooltip("Zorunlu görev bitince karoyu mühürleyen ışık hüzmesi animasyonu.")]
         [SerializeField] private MandatoryQuestClearEffect _questClearFx;
+        [Tooltip("SAVAŞ DIŞI görev tiplerini işleyen bileşenler (adak, ileride bulmaca ...). " +
+                 "Savaş tipi runner istemez — yerleşik akış.")]
+        [SerializeField] private List<QuestKindRunner> _questRunners = new();
 
         [Header("İşaretler (whitebox — gerçek görsel gelince prefab atanır)")]
         [Tooltip("Zorunlu görev işareti bu yüksekliğe konur — sis bulutunun ÜSTÜNDE kalsın diye " +
@@ -76,6 +84,12 @@ namespace TacticalRPG.Core
         private readonly List<MapNode> _nodes = new();
         private Transform _markersRoot;
         private readonly Dictionary<MapNode, GameObject> _markers = new();
+
+        /// <summary>Aktif zincir ayarı: bölümün kural seti seçtiyse o, yoksa <see cref="_questConfig"/>.</summary>
+        public MandatoryQuestConfigSO QuestConfig
+            => Rules != null && Rules.QuestChain != null ? Rules.QuestChain : _questConfig;
+
+        private ChapterRulesSO Rules => _progress != null ? _progress.CurrentRules : null;
 
         /// <summary>Konumdan bağımsız ana boss (haritaya yerleştirilmez).</summary>
         public MapNode Boss { get; private set; }
@@ -158,7 +172,7 @@ namespace TacticalRPG.Core
             int idx = 0;
             // Zorunlu görev sayısı ZİNCİR ayarından gelir (varsayılan 2). Harita bu kadarıyla
             // açılır; zincir kapanmadan açılış günü gelirse SpawnMandatory ile büyür.
-            int mandatoryStart = _questConfig != null ? _questConfig.InitialCount : _config.MandatoryCount;
+            int mandatoryStart = QuestConfig != null ? QuestConfig.InitialCount : _config.MandatoryCount;
             Take(pool, ref idx, mandatoryStart, MapNodeType.Mandatory,
                  () => _config.MandatoryValue, () => _config.MandatoryAP, rnd);
             Take(pool, ref idx, _config.ZindanCount, MapNodeType.Zindan,
@@ -184,6 +198,7 @@ namespace TacticalRPG.Core
             {
                 string tileId = TileIdOf(n.Type);
                 if (!string.IsNullOrEmpty(tileId)) _map.SetTile(n.Coord, tileId);
+                if (UsesRunner(n)) DisableCombatTile(n.Coord);   // savaşsız görev "Savaşa Gir" açmasın
             }
 
             // Boss: KONUMDAN BAĞIMSIZ — havuzdan karo almaz, haritada işareti yoktur.
@@ -224,9 +239,10 @@ namespace TacticalRPG.Core
             {
                 if (n.Type != MapNodeType.Mandatory) continue;
                 n.Tier = ++tier;
-                if (_questConfig == null) continue;
-                n.Value  = _questConfig.RewardForTier(n.Tier);
-                n.APCost = _questConfig.QuestAP;
+                if (QuestConfig == null) continue;
+                n.Kind   = QuestConfig.KindForTier(n.Tier);
+                n.Value  = QuestConfig.RewardForTier(n.Tier);
+                n.APCost = QuestConfig.QuestAP;
             }
         }
 
@@ -247,13 +263,15 @@ namespace TacticalRPG.Core
                 Coord       = coord,
                 Type        = MapNodeType.Mandatory,
                 Tier        = tier,
-                Value       = _questConfig != null ? _questConfig.RewardForTier(tier) : _config.MandatoryValue,
-                APCost      = _questConfig != null ? _questConfig.QuestAP             : _config.MandatoryAP,
+                Kind        = QuestConfig != null ? QuestConfig.KindForTier(tier) : null,
+                Value       = QuestConfig != null ? QuestConfig.RewardForTier(tier) : _config.MandatoryValue,
+                APCost      = QuestConfig != null ? QuestConfig.QuestAP             : _config.MandatoryAP,
                 RewardKnown = true                        // zorunlu görevin ödülü GİZLİ değil
             };
             _nodes.Add(n);
 
             _map.SetTile(coord, MandatoryTileId);
+            if (UsesRunner(n)) DisableCombatTile(coord);
             AddMarker(n);
             PublishProtectedTiles();                      // yeni karo da çöküşten muaf olsun
 
@@ -384,6 +402,14 @@ namespace TacticalRPG.Core
             if (n == null || n.Completed) return false;
             if (n.Type == MapNodeType.Market) return IsMarketOpen();
 
+            // SAVAŞSIZ görev tipi: runner'ı girebilir diyorsa (örn. adak için öz yetiyorsa).
+            // AP harcanmadan ÖNCE sorulur — girilemeyen göreve bedel ödetilmez.
+            if (UsesRunner(n))
+            {
+                QuestKindRunner runner = RunnerFor(n.Kind);
+                if (runner == null || !runner.CanBegin(n.Kind, out _)) return false;
+            }
+
             // Bossa yalnız BOSS TAŞI ile girilir. Taş, O AN AÇIK olan zorunlu görevlerin hepsi
             // bitince verilir ve zincir kapanır (MandatoryQuestDirector). Taşı olan istediği an girer.
             if (n.Type == MapNodeType.Boss)
@@ -399,6 +425,29 @@ namespace TacticalRPG.Core
             // zindan 6 AP istiyor → bu düğümlerin düğmesi HİÇBİR ZAMAN açılmıyordu. Oysa SpendAP
             // dilimleri devirerek harcıyor; kapı da harcamanın gerçekten yapabildiğini sormalı.
             return _ap == null || _ap.APRemainingToday >= EffectiveAPCost(n);
+        }
+
+        /// <summary>Düğüme NEDEN girilemediği (panelde gösterilir). Girilebiliyorsa boş.</summary>
+        public string EnterBlockReason(MapNode n)
+        {
+            if (n == null || n.Completed || !UsesRunner(n)) return "";
+            QuestKindRunner runner = RunnerFor(n.Kind);
+            if (runner == null) return $"'{n.Kind.DisplayName}' tipini işleyen bileşen kurulmamış.";
+            return runner.CanBegin(n.Kind, out string reason) ? "" : reason;
+        }
+
+        // ── Görev tipleri ────────────────────────────────────────────────────
+
+        /// <summary>Bu düğüm savaş DIŞI bir görev tipi mi (runner işler)?</summary>
+        public static bool UsesRunner(MapNode n)
+            => n != null && n.Type == MapNodeType.Mandatory && n.Kind != null && !n.Kind.IsCombat;
+
+        private QuestKindRunner RunnerFor(QuestKindSO kind)
+        {
+            if (kind == null || _questRunners == null) return null;
+            foreach (var r in _questRunners)
+                if (r != null && r.Handles(kind)) return r;
+            return null;
         }
 
         // ── Eylemler ─────────────────────────────────────────────────────────
@@ -427,6 +476,16 @@ namespace TacticalRPG.Core
                     // dükkân). Düğüm TÜKENMEZ — markete tekrar tekrar girilebilir.
                     PublishMarketNodes();
                     OnNodesChanged?.Invoke();
+                    return true;
+
+                case MapNodeType.Mandatory when UsesRunner(n):
+                    // SAVAŞSIZ görev: tipin runner'ı işler, sonucu bildirir. Başarı → tamamlanır
+                    // (ödül + mühür + zincir ilerler); başarısızlık → düğüm açık kalır.
+                    RunnerFor(n.Kind).Begin(n.Kind, n.Coord, success =>
+                    {
+                        if (success && !n.Completed) Complete(n);
+                        else OnNodesChanged?.Invoke();
+                    });
                     return true;
 
                 case MapNodeType.Mandatory:
@@ -494,7 +553,7 @@ namespace TacticalRPG.Core
             if ((s == GameState.ConfirmMission || s == GameState.Combat) && _pendingCombatNode == null && _player != null)
             {
                 MapNode n = NodeForCombatEntry(_player.CurrentCoord);
-                if (n != null && !n.Completed && IsCombatNode(n.Type)) _pendingCombatNode = n;
+                if (n != null && !n.Completed && IsCombatNode(n)) _pendingCombatNode = n;
             }
 
             // Savaştan overworld'e dönüldü → bekleyen düğümü tamamla + ödülü AÇIKLA.
@@ -532,7 +591,7 @@ namespace TacticalRPG.Core
         private MapNode NodeForCombatEntry(HexCoordinate playerCoord)
         {
             MapNode here = NodeAt(playerCoord);
-            if (here != null && IsCombatNode(here.Type)) return here;
+            if (here != null && IsCombatNode(here)) return here;
 
             if (_missions != null && _missions.TryGetEnterableTile(playerCoord, out HexCoordinate tile))
                 return NodeAt(tile);
@@ -540,16 +599,19 @@ namespace TacticalRPG.Core
             return null;
         }
 
-        private static bool IsCombatNode(MapNodeType t)
-            => t == MapNodeType.Zindan || t == MapNodeType.Encounter
-            || t == MapNodeType.Mandatory || t == MapNodeType.Boss;
+        /// <summary>Savaşla çözülen düğüm mü? Savaşsız tipteki zorunlu görev DEĞİLDİR — yanındaki
+        /// başka bir savaşa girmek onu bedavaya "tamamlanmış" saymasın.</summary>
+        private static bool IsCombatNode(MapNode n)
+            => n != null && !UsesRunner(n)
+            && (n.Type == MapNodeType.Zindan || n.Type == MapNodeType.Encounter
+             || n.Type == MapNodeType.Mandatory || n.Type == MapNodeType.Boss);
 
         private void Complete(MapNode n)
         {
             n.Completed   = true;
             n.RewardKnown = true;                       // ödül ARTIK görünür
             if (n.Value > 0 && _wallet != null)
-                _wallet.Gain(EssenceType.Doga, n.Value); // TODO(Sherlock): ödül öz TÜRÜ kararlaştırılmadı
+                _wallet.Gain(Rules != null ? Rules.RewardEssence : EssenceType.Doga, n.Value);
 
             var marker = MarkerOf(n);
             if (marker != null) marker.SetActive(false);

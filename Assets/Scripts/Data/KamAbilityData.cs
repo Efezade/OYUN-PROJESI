@@ -29,7 +29,7 @@ namespace TacticalRPG.Data
         [SerializeField] private Sprite _icon;
 
         [Header("Maliyet ve Menzil")]
-        [Tooltip("Büyüyü kullanmak için gereken Kam manası (KamManaManager.TrySpendMana).")]
+        [Tooltip("Büyüyü kullanmak için gereken Kam manası (KamMechanicHost.TryPay — bölümün aktif mekaniği öder).")]
         [SerializeField, Min(0)] private int _manaCost = 1;
         [Tooltip("Hedefe en fazla kaç hex uzaktan kullanılabilir (HexCoordinate.DistanceTo).")]
         [SerializeField, Min(0)] private int _range = 1;

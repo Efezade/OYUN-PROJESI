@@ -29,6 +29,8 @@ namespace TacticalRPG.Core
         [Header("Bağımlılıklar")]
         [SerializeField] private KamSkillTreeSO _tree;
         [SerializeField] private EssenceWallet  _wallet;
+        [Tooltip("Bölümün kural seti ağacı değiştirebilir (map'e özgü dallar). Atanmazsa hep _tree.")]
+        [SerializeField] private ChapterProgress _progress;
 
         /// <summary>Bir düğüm açıldı/yükseldi (KİTAP ekranı ve HUD dinler).</summary>
         public event System.Action OnChanged;
@@ -36,7 +38,11 @@ namespace TacticalRPG.Core
         // id → seviye. Sözlükte OLMAYAN düğüm kilitlidir (seviye 0).
         private readonly Dictionary<string, int> _levels = new();
 
-        public KamSkillTreeSO Tree => _tree;
+        /// <summary>Aktif ağaç: bölümün kural seti seçtiyse o (map'e özgü dallar), yoksa varsayılan.
+        /// İlerleme id → seviye sözlüğünde tutulduğu için ağaç değişse de açılmış büyüler kalır.</summary>
+        public KamSkillTreeSO Tree
+            => _progress != null && _progress.CurrentRules != null && _progress.CurrentRules.SkillTree != null
+               ? _progress.CurrentRules.SkillTree : _tree;
 
         private void Start() => ResetProgress();
 
@@ -84,7 +90,7 @@ namespace TacticalRPG.Core
         /// <returns>false = ön koşul kapalı, tavana gelinmiş ya da öz yetersiz.</returns>
         public bool TryAdvance(string skillId)
         {
-            KamSkillTreeSO.Node node = _tree != null ? _tree.Find(skillId) : null;
+            KamSkillTreeSO.Node node = Tree != null ? Tree.Find(skillId) : null;
             if (node == null || _wallet == null) return false;
             if (!PrerequisiteMet(node)) return false;
 
@@ -105,8 +111,8 @@ namespace TacticalRPG.Core
         public void ResetProgress()
         {
             _levels.Clear();
-            if (_tree != null)
-                foreach (var n in _tree.Nodes)
+            if (Tree != null)
+                foreach (var n in Tree.Nodes)
                     if (n != null && n.UnlockedAtStart && n.Catalog != null) _levels[n.SkillId] = 1;
             OnChanged?.Invoke();
         }
@@ -121,9 +127,9 @@ namespace TacticalRPG.Core
         {
             if (into == null) return;
             into.Clear();
-            if (_tree == null) return;
+            if (Tree == null) return;
 
-            foreach (var n in _tree.Nodes)
+            foreach (var n in Tree.Nodes)
             {
                 if (n == null || !IsUnlocked(n.SkillId)) continue;
                 KamSkillCatalog.Entry e = n.Catalog;
@@ -135,7 +141,7 @@ namespace TacticalRPG.Core
         public KamSkillCatalog.Entry Scaled(string skillId)
         {
             KamSkillCatalog.Entry e = KamSkillCatalog.Get(skillId);
-            KamSkillTreeSO.Node   n = _tree != null ? _tree.Find(skillId) : null;
+            KamSkillTreeSO.Node   n = Tree != null ? Tree.Find(skillId) : null;
             return e == null ? null : Scaled(e, n, Mathf.Max(1, LevelOf(skillId)));
         }
 

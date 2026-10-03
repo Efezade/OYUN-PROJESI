@@ -102,7 +102,7 @@ namespace TacticalRPG.Editor
             aSO.FindProperty("_turns").objectReferenceValue = turns;
             aSO.FindProperty("_state").objectReferenceValue = state;
             aSO.FindProperty("_fx").objectReferenceValue    = fx;
-            aSO.FindProperty("_mana").objectReferenceValue  = FindComponentAnywhere<KamManaManager>();
+            aSO.FindProperty("_kam").objectReferenceValue   = FindComponentAnywhere<KamMechanicHost>();
             aSO.ApplyModifiedProperties();
 
             // ── 5b) KAM BUYULERI: hedefleme + gosterge + animasyon ───────────

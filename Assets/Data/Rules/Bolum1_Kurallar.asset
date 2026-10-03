@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 558125ebf478b9049816c7bf570402e3, type: 3}
+  m_Name: Bolum1_Kurallar
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.ChapterRulesSO
+  _kamMechanic: {fileID: 11400000, guid: a0d76f5e1d0ef9f4ca4012f06acd1263, type: 2}
+  _skillTree: {fileID: 11400000, guid: 167b153f780281544a1d1abddbe0a1fb, type: 2}
+  _questChain: {fileID: 11400000, guid: 6a447aa8755c3e449b45b0aa3bbdd38c, type: 2}
+  _chapterEssences: 0300000004000000
+  _rewardEssence: 4
+  _tone: 0
+  _designNote: "B\xF6l\xFCm 1 \u2014 Ta\u015F & Do\u011Fa. \xD6\u011Fretici map:
+    Kam klasik mana kullan\u0131r, zincir 2 g\xF6revle a\xE7\u0131l\u0131r (g\xFCn
+    5/8/11 + ekonomi e\u015Fikleri). Bug\xFCne kadarki davran\u0131\u015F\u0131n
+    birebir ayn\u0131s\u0131."

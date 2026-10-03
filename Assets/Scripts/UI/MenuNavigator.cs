@@ -82,6 +82,8 @@ namespace TacticalRPG.UI
             // savaşta/yerleştirmede ⚙ düğmesine ulaşılamıyor, ayarlar (ses/parlaklık/kamera zoom)
             // erişilemez oluyordu. Esc her durumda ayarları açar.
             if (!Input.GetKeyDown(KeyCode.Escape)) return;
+            // Yürürken Esc yürüyüşü durdurur (MapInputHandler sahiplenir) — ayarlar açılmasın.
+            if (EscapeKeyClaim.ClaimedThisFrame) return;
             if (IsMenuOpen) CloseScreen();
             else            OpenScreen(MenuScreen.Settings);
         }

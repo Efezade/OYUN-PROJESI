@@ -18,7 +18,8 @@ namespace TacticalRPG.UI
         [SerializeField] private ActionPointManager  _apManager;
         [SerializeField] private MapCollapseManager  _collapseManager;
         [SerializeField] private EssenceWallet       _wallet;
-        [SerializeField] private KamManaManager      _kamMana;
+        [UnityEngine.Serialization.FormerlySerializedAs("_kamMana")]
+        [SerializeField] private KamMechanicHost     _kam;
 
         [Header("UI Etiketleri")]
         [SerializeField] private TextMeshProUGUI _timeLabel;
@@ -49,8 +50,8 @@ namespace TacticalRPG.UI
                 _collapseManager.OnTileCollapsed += HandleTileCollapsed;
             if (_wallet != null)
                 _wallet.OnChanged += HandleEssenceChanged;
-            if (_kamMana != null)
-                _kamMana.OnManaChanged += HandleManaChanged;
+            if (_kam != null)
+                _kam.OnResourceChanged += HandleManaChanged;
             if (_state != null)
                 _state.OnStateChanged += HandleStateChanged;
         }
@@ -66,8 +67,8 @@ namespace TacticalRPG.UI
                 _collapseManager.OnTileCollapsed -= HandleTileCollapsed;
             if (_wallet != null)
                 _wallet.OnChanged -= HandleEssenceChanged;
-            if (_kamMana != null)
-                _kamMana.OnManaChanged -= HandleManaChanged;
+            if (_kam != null)
+                _kam.OnResourceChanged -= HandleManaChanged;
             if (_state != null)
                 _state.OnStateChanged -= HandleStateChanged;
         }
@@ -80,7 +81,7 @@ namespace TacticalRPG.UI
             if (_essenceLabel != null)
                 _essenceLabel.gameObject.SetActive(_wallet != null);
             if (_kamManaLabel != null)
-                _kamManaLabel.gameObject.SetActive(_kamMana != null);
+                _kamManaLabel.gameObject.SetActive(_kam != null);
 
             // Başlangıç değerlerini doldur
             if (_apManager != null)
@@ -91,8 +92,8 @@ namespace TacticalRPG.UI
             }
             if (_wallet != null)
                 HandleEssenceChanged();
-            if (_kamMana != null)
-                HandleManaChanged(_kamMana.CurrentMana, _kamMana.MaxMana);
+            if (_kam != null)
+                HandleManaChanged(_kam.Current, _kam.Max);
 
             // Başlangıç görünürlüğü — event kaçırılsa bile state'le senkron
             HandleStateChanged(_state != null ? _state.State : GameState.Overworld);
@@ -138,7 +139,7 @@ namespace TacticalRPG.UI
         {
             if (_kamManaLabel == null) return;
             _sb.Clear();
-            _sb.Append("Mana  ");
+            _sb.Append(_kam != null ? _kam.ResourceName : "Mana").Append("  ");
             for (int i = 0; i < max; i++)
                 _sb.Append(i < current ? "◆" : "◇");
             _sb.Append("  ").Append(current).Append('/').Append(max);

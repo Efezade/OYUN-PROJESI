@@ -37,9 +37,9 @@ yazılır, buraya değil.
 | 2 | Karakter/öz sinematikleri | Yok | Sistem birlikte, içerik Efe |
 | 3 | Savaş sisi kenarında ipucu | **YAPILDI 2026-09-02** | — |
 | 4 | Skill tree → Kam'ın yetenekleri | **BÜYÜK ÖLÇÜDE YAPILDI 2026-09-04** (KİTAP'ta ağaç, 15 büyü / 5 dal, öz ile açma+yükseltme, ölünce sıfırlanma, draft havuzu bağlı). Eksik: roguelike META EKONOMİ, map'e özgü dallar | Birlikte |
-| 5 | Zorunlu görev zinciri (sayaç, tip çeşitliliği, ekonomiye bağlı sayı) | **Büyük ölçüde var** | Birlikte |
+| 5 | Zorunlu görev zinciri (sayaç, tip çeşitliliği, ekonomiye bağlı sayı) | **YAPILDI 2026-10-03** (takvim sayacı, `QuestKindSO` + runner, ekonomi eşikleri). Eksik: bulmaca tipinin kendisi | Birlikte |
 | 6 | Kam: yüksek can + kalıcı hasar + can kazanma | Yok | Birlikte |
-| 7 | Her map'te Kam'ın ANA mekaniği değişir | Yok — **omurga** | Birlikte |
+| 7 | Her map'te Kam'ın ANA mekaniği değişir | **OMURGA YAPILDI 2026-10-03** (`ChapterRulesSO` + `IKamMechanic`, ilk uygulama mana). Eksik: 2. map'in mekaniği | Birlikte |
 | 8 | İlk map'te mekanik kazanma + mekanik füzyonu | Yok — 7'ye bağlı | Birlikte |
 | 9 | Map'e özgü geçici özler + transfer kuyuları | Yok | Birlikte |
 | 10 | Silinen karoları geri getirme (tanrısal yerleştirme) | **YAPILDI 2026-09-02** (çöküşün kendisinde bug var) | — |
@@ -129,6 +129,12 @@ mühürleniyor. Boss'a girmek zaten oyuncunun kararı ve erken/geç fark etmiyor
 
 **İlk adım:** (2) ile başla — sayaç ve ekonomi ölçeği onun üstüne kolay oturur.
 
+**NE YAPILDI (2026-10-03):** üçü de. (1) Barda açılmamış her görev için "G8" kutusu + alt yazıda
+gün cinsinden geri sayım. (2) `QuestKindSO` (savaş = yerleşik akış) + savaş dışı tipler için
+`QuestKindRunner`; kanıt olarak ADAK tipi (havuzda değil, listeye sürüklenince açılır). (3) Zincir
+ayarında öz eşikleri: bölüm içi kazanılan öz eşiği geçince sıradaki görev takvimi beklemeden düşer
+(tavan sabit — ekonomi takvimi öne çeker). Ayrıntı: DECISION_LOG 2026-10-03.
+
 ## 6) Kam'ın canı: kalıcı hasar + can kazanma
 
 **İstenen:** Kam yüksek canlı; hasar aldıkça **kalıcı hasar** birikiyor. Ana haritada bazı
@@ -161,6 +167,13 @@ yaklaştıkça yetenek güçlenir.
 - `IKamMechanic` — küçük bir arayüz (kaynak nedir, maliyeti kim öder, eşikte ne değişir).
   Her map'in mekaniği ayrı bir sınıf; çekirdek kod hiçbirini bilmez.
 - Yetenek maliyetleri "can mı, mana mı, öz mü" diye SORMAZ; aktif mekanikten **kaynak** ister.
+
+**NE YAPILDI (2026-10-03):** omurga kuruldu. `ChapterRulesSO` (Kam mekaniği · yetenek ağacı ·
+görev zinciri · öz listesi · ödül özü · ton) bölüm listesinden bağlanır, boş alan eski davranışa
+düşer. `IKamMechanic` + `KamMechanicSO` fabrikası; sahnedeki kapı `KamMechanicHost` (eski
+`KamManaManager`, GUID korundu). İlk ve tek uygulama MANA — bugünkü davranışın birebir aynısı.
+2. map'in mekaniği (örn. "can = öz") artık yeni bir `KamMechanicSO` alt sınıfı + kural setinde
+bir alan.
 
 ## 8) Mekanik kazanma + füzyon
 

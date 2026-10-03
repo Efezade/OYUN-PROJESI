@@ -40,6 +40,13 @@ namespace TacticalRPG.Core
                  "öz zaten roster'da, etkilenmez.")]
         [SerializeField] private EssenceType[] _chapterEssences = { EssenceType.Tas, EssenceType.Doga };
 
+        [Tooltip("Bölümün kural seti ham öz listesini seçer; boşsa yukarıdaki yedek liste.")]
+        [SerializeField] private ChapterProgress _progress;
+
+        private EssenceType[] ChapterEssences
+            => _progress != null && _progress.CurrentRules != null && _progress.CurrentRules.ChapterEssences != null
+               ? _progress.CurrentRules.ChapterEssences : _chapterEssences;
+
         /// <summary>Bölüm kaybedildi mi? (true iken harita ilerlenemez — sert kesim)</summary>
         public bool ChapterLost { get; private set; }
 
@@ -100,7 +107,7 @@ namespace TacticalRPG.Core
         public void RestartChapter()
         {
             // 1) HAM öz kaybolur (harcanmamış taş/doğa). Roster'a DOKUNULMAZ.
-            if (_wallet != null) _wallet.ClearTypes(_chapterEssences);
+            if (_wallet != null) _wallet.ClearTypes(ChapterEssences);
 
             // 2) Zaman motoru 1. güne sarılır (tüm run değil, bu bölümün sayacı).
             if (_ap != null) { _ap.SetFrozen(false); _ap.ResetTime(); }

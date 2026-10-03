@@ -28,6 +28,13 @@ namespace TacticalRPG.Core
         /// <summary>Oyuncunun şu an içinde olduğu bölüm (1-tabanlı).</summary>
         public int CurrentChapter { get; private set; } = 1;
 
+        /// <summary>
+        /// İçinde bulunulan bölümün KURAL SETİ (Faz 2 omurgası). Atanmamışsa null — tüketiciler
+        /// o durumda kendi Inspector yedeklerine düşer. Bölüm değişince
+        /// <see cref="OnProgressChanged"/> yayılır; kural seti de onunla birlikte değişmiş olur.
+        /// </summary>
+        public ChapterRulesSO CurrentRules => _config != null ? _config.RulesOf(CurrentChapter) : null;
+
         /// <summary>Toplam bölüm sayısı — config yoksa tasarım varsayılanı 8.</summary>
         public int ChapterCount => (_config != null && _config.Count > 0) ? _config.Count : 8;
 

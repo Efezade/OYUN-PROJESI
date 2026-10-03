@@ -49,6 +49,19 @@ namespace TacticalRPG.Core
         /// <summary>Oyuncu duruşu istedi mi (sağ tık) — HUD "duruluyor" diyebilsin.</summary>
         public bool StopRequested => _stopRequested;
 
+        /// <summary>Duruşun sebebi (HUD yazar). Oyuncunun kendi iptalinde boş.</summary>
+        public string StopReason { get; private set; } = "";
+
+        /// <summary>Hızlı seyahat mi (yol taşı / haritadan seyahat)? Otomatik durdurma ve yeniden
+        /// hedefleme bu yolculuklara KARIŞMAZ — rota ve bedava hamleler o akışın elinde.</summary>
+        public bool IsFastTravel => IsMoving && (_travelMultiplier > 1f || !_revealFog);
+
+        /// <summary>
+        /// Yürüyüş bir SEBEPLE yarıda kaldı (otomatik durdurma ya da yol koptu) — HUD kısa bir
+        /// bildirim gösterir. Oyuncunun kendi iptalinde (sebepsiz) yayılmaz: ne yaptığını biliyor.
+        /// </summary>
+        public event Action<string> OnWalkInterrupted;
+
         // Yürüyüş İPTALİ (2026-09-06, Efe'nin isteği): uzun yollarda oyuncu fikrini
         // değiştirebilmeli. İptal KARO SINIRINDA işler, yürüyüşün ortasında DEĞİL — aksi halde
         // karakter iki karo arasında kalır ve CurrentCoord yalan söylerdi.
@@ -163,17 +176,21 @@ namespace TacticalRPG.Core
             _travelMultiplier = Mathf.Max(0.1f, speedMultiplier);
             _revealFog        = revealFog;
             _stopRequested    = false;          // yeni yürüyüş, eski iptal isteği taşınmaz
+            StopReason        = "";
             _moveRoutine      = StartCoroutine(MoveCoroutine(path));
         }
 
         /// <summary>
-        /// YÜRÜYÜŞÜ DURDUR (sağ tık). Karakter sıradaki karoya varınca durur — yolun ortasında
-        /// kesilmez. Zaten yürünmüş karoların AP'si harcanmış kalır (yolculuk geri alınmaz,
-        /// yarıda bırakılır); kalan karoların bedeli hiç ödenmez.
+        /// YÜRÜYÜŞÜ DURDUR (sağ tık / Esc / yeni hedef / otomatik). Karakter sıradaki karoya varınca
+        /// durur — yolun ortasında kesilmez. Zaten yürünmüş karoların AP'si harcanmış kalır
+        /// (yolculuk geri alınmaz, yarıda bırakılır); kalan karoların bedeli hiç ödenmez.
         /// </summary>
-        public void RequestStop()
+        /// <param name="reason">Boş = oyuncunun kendi iptali. Dolu = sebep HUD'da gösterilir.</param>
+        public void RequestStop(string reason = null)
         {
-            if (IsMoving) _stopRequested = true;
+            if (!IsMoving) return;
+            _stopRequested = true;
+            StopReason     = reason ?? "";
         }
 
         // Yürüyen/itilen TEK coroutine. Elde tutulur ki itilme (ForceShiftTo) yarıda kalmış bir
@@ -227,6 +244,7 @@ namespace TacticalRPG.Core
             CurrentCoord       = target.Coordinate;
             StepsRemaining     = 0;
             _stopRequested     = false;
+            StopReason         = "";
             IsMoving           = false;
             _moveRoutine       = null;
 
@@ -248,6 +266,15 @@ namespace TacticalRPG.Core
                 HexCell from   = path[i - 1];
                 HexCell target = path[i];
                 StepsRemaining = path.Count - i;
+
+                // YOL KOPTU MU? Yürüyüş uzun sürebilir; bu sırada çöküş önümüzdeki karoyu silmiş
+                // olabilir. Yol hesaplanırken var olan karo artık yoksa (ya da yürünemiyorsa)
+                // karakter boşluğa basmasın: bulunduğu karoda durur, oyuncu yeni yol seçer.
+                if (!_gridManager.TryGetCell(target.Coordinate, out HexCell live) || !live.IsWalkable)
+                {
+                    RequestStop("önündeki karo çöktü");
+                    break;
+                }
 
                 Vector3 fromXZ   = new Vector3(from.WorldPosition.x,   0f, from.WorldPosition.z);
                 Vector3 targetXZ = new Vector3(target.WorldPosition.x, 0f, target.WorldPosition.z);
@@ -281,12 +308,17 @@ namespace TacticalRPG.Core
                 if (_stopRequested) break;
             }
 
+            string interrupted = _stopRequested ? StopReason : "";
+
             StepsRemaining    = 0;
             _stopRequested    = false;
+            StopReason        = "";
             IsMoving          = false;
             _moveRoutine      = null;
             _travelMultiplier = 1f;   // hızlanma TEK yürüyüşe özeldi
             _revealFog        = true; // sis kapatma da TEK yürüyüşe özeldi
+
+            if (!string.IsNullOrEmpty(interrupted)) OnWalkInterrupted?.Invoke(interrupted);
         }
 
         /// <summary>Görüş baloncuğunu mevcut konumda yeniden kurar (sis kilidi değişince —

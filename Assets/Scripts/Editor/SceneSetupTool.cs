@@ -58,6 +58,8 @@ namespace TacticalRPG.Editor
                 SetupChapters();     // 8 bolum ilerlemesi — UIShell'den ONCE olmali
                 SetupUIShell();      // ana menu gezinme kabugu (KITAP/CANTA/HARITA sekmeleri + ayar)
                 SetupStore();    // magaza karosu + oz ile item/pot satin alma (StoreManager/PlayerBuffs/StoreHUD)
+                SetupChapterRules(); // FAZ 2 OMURGASI: bolum kural seti + Kam mekanigi + gorev tipleri +
+                                     // otomatik yuruyus durdurucu (ChapterProgress'ten SONRA olmali)
                 // EN SON: haritayi editorde uret ki Play'e basmadan da yeni harita gorunsun.
                 // (Store'dan SONRA olmali — magaza karosunun modeli o adimda kesinlesiyor.)
                 GenerateChapterMapInEditor();
@@ -88,7 +90,8 @@ namespace TacticalRPG.Editor
                 "  • CEVRE — Harita disi dolu: sonsuz okyanus (overworld) / sonsuz orman (arena)\n" +
                 "            Savas haritasinda SIS YOK; overworld sisi aynen duruyor.\n" +
                 "  • BOLUM — 1 bolum = 1 harita (prosedurel 22x25 terrain + dugumler)\n" +
-                "  • HARITA ekrani + TAB = 8 bolumluk ilerleme\n\n" +
+                "  • HARITA ekrani + TAB = 8 bolumluk ilerleme\n" +
+                "  • KURAL SETI — bolum basina Kam mekanigi + gorev zinciri + gorev tipleri\n\n" +
                 "Ctrl+S ile kaydet, Play'e bas:\n" +
                 "Overworld'de renkli ozleri TOPLA (sag panel, 1 AP) → SavasciRanger URET →\n" +
                 "Boyali SAVAS karosu (deneme11-20) → Evet → Kam + uretilen birimleri yerlestir → SAVASI BASLAT.",
@@ -623,14 +626,14 @@ namespace TacticalRPG.Editor
             // warriorData/rangerData asset olarak yine üretildi (üstte) — Faz D tarifleri path'ten yükler.
             pmSO.ApplyModifiedProperties();
 
-            // KamManaManager
-            var oldKam = gameManagerGO.GetComponent<KamManaManager>();
+            // KAM MEKANİĞİ (eski KamManaManager). Mana ayarları artık Mekanik_Mana asset'inde;
+            // bölümün kural seti bağlantısı SetupChapterRules'ta kurulur (ChapterProgress ondan sonra var).
+            var oldKam = gameManagerGO.GetComponent<KamMechanicHost>();
             if (oldKam != null) Object.DestroyImmediate(oldKam);
-            KamManaManager kamMana = gameManagerGO.AddComponent<KamManaManager>();
+            KamMechanicHost kamMana = gameManagerGO.AddComponent<KamMechanicHost>();
             var kamSO = new SerializedObject(kamMana);
-            kamSO.FindProperty("_apManager").objectReferenceValue = apManager;
-            kamSO.FindProperty("_maxMana").intValue               = 10;
-            kamSO.FindProperty("_manaRegenPerSlot").intValue      = 2;
+            kamSO.FindProperty("_apManager").objectReferenceValue        = apManager;
+            kamSO.FindProperty("_fallbackMechanic").objectReferenceValue = EnsureManaMechanic();
             kamSO.ApplyModifiedProperties();
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -650,7 +653,7 @@ namespace TacticalRPG.Editor
             ActionPointManager apManager       = FindComponentAnywhere<ActionPointManager>();
             MapCollapseManager collapseManager = FindComponentAnywhere<MapCollapseManager>();
             EssenceWallet      wallet          = FindComponentAnywhere<EssenceWallet>();
-            KamManaManager     kamMana         = FindComponentAnywhere<KamManaManager>();
+            KamMechanicHost    kamMana         = FindComponentAnywhere<KamMechanicHost>();
             GameStateManager   gsm             = FindComponentAnywhere<GameStateManager>(); // TAM KURULUM'da henüz null olabilir → Faz A bağlar
 
             if (apManager == null)
@@ -720,7 +723,7 @@ namespace TacticalRPG.Editor
             hudSO.FindProperty("_apManager").objectReferenceValue       = apManager;
             hudSO.FindProperty("_collapseManager").objectReferenceValue = collapseManager;
             hudSO.FindProperty("_wallet").objectReferenceValue          = wallet;
-            hudSO.FindProperty("_kamMana").objectReferenceValue         = kamMana;
+            hudSO.FindProperty("_kam").objectReferenceValue         = kamMana;
             hudSO.FindProperty("_timeLabel").objectReferenceValue       = timeLabel;
             hudSO.FindProperty("_apLabel").objectReferenceValue         = apLabel;
             hudSO.FindProperty("_essenceLabel").objectReferenceValue    = essLabel;
@@ -756,7 +759,7 @@ namespace TacticalRPG.Editor
             HexGridManager  gridManager = FindComponentAnywhere<HexGridManager>();
             PlayerController player      = FindComponentAnywhere<PlayerController>();
             PartyManager     party       = FindComponentAnywhere<PartyManager>();
-            KamManaManager   kamMana     = FindComponentAnywhere<KamManaManager>();
+            KamMechanicHost  kamMana     = FindComponentAnywhere<KamMechanicHost>();
             MapInputHandler  input       = FindComponentAnywhere<MapInputHandler>();
 
             if (gridManager == null || player == null || party == null || kamMana == null || input == null)
@@ -836,7 +839,7 @@ namespace TacticalRPG.Editor
             if (oldCaster != null) Object.DestroyImmediate(oldCaster);
             AbilityCaster caster = gameManagerGO.AddComponent<AbilityCaster>();
             var casterSO = new SerializedObject(caster);
-            casterSO.FindProperty("_kamMana").objectReferenceValue     = kamMana;
+            casterSO.FindProperty("_kam").objectReferenceValue     = kamMana;
             casterSO.FindProperty("_unitManager").objectReferenceValue = unitManager;
             casterSO.ApplyModifiedProperties();
 
@@ -851,7 +854,7 @@ namespace TacticalRPG.Editor
             AbilityTestHUD hud = gameManagerGO.AddComponent<AbilityTestHUD>();
             var hudSO = new SerializedObject(hud);
             hudSO.FindProperty("_caster").objectReferenceValue      = caster;
-            hudSO.FindProperty("_kamMana").objectReferenceValue     = kamMana;
+            hudSO.FindProperty("_kam").objectReferenceValue     = kamMana;
             hudSO.FindProperty("_unitManager").objectReferenceValue = unitManager;
             hudSO.ApplyModifiedProperties();
 
@@ -1374,7 +1377,7 @@ namespace TacticalRPG.Editor
                 return;
             }
 
-            KamManaManager    kamMana   = FindComponentAnywhere<KamManaManager>();
+            KamMechanicHost   kamMana   = FindComponentAnywhere<KamMechanicHost>();
             UnitManager       um        = FindComponentAnywhere<UnitManager>();
             PartyManager      party     = FindComponentAnywhere<PartyManager>();
             MapInputHandler   input     = FindComponentAnywhere<MapInputHandler>();
@@ -1426,7 +1429,7 @@ namespace TacticalRPG.Editor
             AbilityCaster caster = gameManagerGO.AddComponent<AbilityCaster>();
             var casterSO = new SerializedObject(caster);
             casterSO.FindProperty("_turnManager").objectReferenceValue = tm;
-            casterSO.FindProperty("_kamMana").objectReferenceValue     = kamMana;
+            casterSO.FindProperty("_kam").objectReferenceValue     = kamMana;
             casterSO.FindProperty("_unitManager").objectReferenceValue = um;
             casterSO.ApplyModifiedProperties();
 
@@ -1445,7 +1448,7 @@ namespace TacticalRPG.Editor
             {
                 var chSO = new SerializedObject(combatHUD);
                 chSO.FindProperty("_caster").objectReferenceValue  = caster;
-                chSO.FindProperty("_kamMana").objectReferenceValue = kamMana;
+                chSO.FindProperty("_kam").objectReferenceValue = kamMana;
                 chSO.ApplyModifiedProperties();
             }
 
@@ -1698,7 +1701,7 @@ namespace TacticalRPG.Editor
 
             ActionPointManager ap = FindComponentAnywhere<ActionPointManager>();
             EssenceWallet  ess    = FindComponentAnywhere<EssenceWallet>();
-            KamManaManager mana   = FindComponentAnywhere<KamManaManager>();
+            KamMechanicHost mana  = FindComponentAnywhere<KamMechanicHost>();
             Debug.Log($"[TANI] AP={ap != null}  Essence={ess != null}  KamMana={mana != null}");
 
             Debug.Log("===== TANI BITTI =====");

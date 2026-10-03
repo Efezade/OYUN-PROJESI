@@ -23,6 +23,11 @@ namespace TacticalRPG.Core
     ///   2. **Düşecek karo mesafe bandından seçilir.** Tamamen rastgele olsaydı 11. günde açılan
     ///      görev haritanın öbür ucuna düşüp bölümü karşı hamlesiz kaybettirebilirdi. Band + kalan
     ///      AP'den türetilen tavan ikisini de (bedava yakın / imkânsız uzak) engeller.
+    ///
+    /// EKONOMİYE BAĞLI AÇILIŞ (Faz 1, 2026-10-03): o an açılabilecek görev sayısı
+    /// = geçilen açılış GÜNÜ sayısı + geçilen ÖZ EŞİĞİ sayısı (tavan: açılış günü sayısı).
+    /// Ekonomi yeni görev UYDURMAZ, yalnız takvimdeki sıradaki görevi öne çeker. Eşik listesi
+    /// boşsa davranış eskisiyle birebir aynıdır.
     /// </summary>
     [DefaultExecutionOrder(-70)]   // ChapterNodeManager(-80) düğümleri kurduktan SONRA
     public class MandatoryQuestDirector : MonoBehaviour
@@ -34,7 +39,12 @@ namespace TacticalRPG.Core
         [SerializeField] private HexGridManager          _grid;
         [SerializeField] private PlayerController        _player;
         [SerializeField] private ChapterRunManager       _run;
+        [Tooltip("YEDEK zincir ayarı — bölümün kural seti (ChapterRulesSO) zincir seçmiyorsa kullanılır.")]
         [SerializeField] private MandatoryQuestConfigSO  _config;
+        [Tooltip("Bölümün kural setini okumak için (Faz 2 omurgası).")]
+        [SerializeField] private ChapterProgress         _progress;
+        [Tooltip("EKONOMİYE BAĞLI AÇILIŞ için kazanılan öz buradan okunur. Atanmazsa yalnız takvim işler.")]
+        [SerializeField] private EssenceWallet           _wallet;
 
         // ── Durum ────────────────────────────────────────────────────────────
 
@@ -53,8 +63,12 @@ namespace TacticalRPG.Core
         /// <summary>Sıradaki açılış savaş yüzünden ertelendi mi (teşhis / UI).</summary>
         public bool UnlockDeferred { get; private set; }
 
-        private int  _cursor;   // sıradaki açılış indeksi (_config.UnlockDay için)
-        private bool _busy;     // yeniden-giriş kilidi: Spawn → OnNodesChanged → Refresh döngüsü
+        private int  _cursor;          // şimdiye dek yapılan açılış sayısı
+        private int  _earnedBaseline;  // bölüm başındaki EssenceWallet.TotalGained
+        private bool _busy;            // yeniden-giriş kilidi: Spawn → OnNodesChanged → Refresh döngüsü
+
+        /// <summary>Son açılış takvimden ÖNCE, ekonomi yüzünden mi oldu? (UI mesajı için)</summary>
+        public bool LastUnlockByEconomy { get; private set; }
 
         /// <summary>Yeni zorunlu görev gökten düştü — (kademe, karo). UI çakması için.</summary>
         public event System.Action<int, HexCoordinate> OnQuestUnlocked;
@@ -64,13 +78,84 @@ namespace TacticalRPG.Core
 
         // ── Sorgular (IMGUI barı bunları her karede okur) ────────────────────
 
-        public MandatoryQuestConfigSO Config => _config;
+        /// <summary>Aktif zincir ayarı: bölümün kural seti seçtiyse o, yoksa Inspector yedeği.</summary>
+        public MandatoryQuestConfigSO Config
+            => _progress != null && _progress.CurrentRules != null && _progress.CurrentRules.QuestChain != null
+               ? _progress.CurrentRules.QuestChain : _config;
 
         /// <summary>Daha açılacak bir görev var mı?</summary>
-        public bool HasNextUnlock => !ChainClosed && _config != null && _cursor < _config.UnlockCount;
+        public bool HasNextUnlock => !ChainClosed && Config != null && _cursor < Config.UnlockCount;
 
-        /// <summary>Sıradaki açılışın günü (yoksa 0).</summary>
-        public int NextUnlockDay => HasNextUnlock ? _config.UnlockDay(_cursor) : 0;
+        /// <summary>Bölüm başından beri kazanılan öz (harcamak düşürmez).</summary>
+        public int EarnedThisChapter => _wallet != null ? Mathf.Max(0, _wallet.TotalGained - _earnedBaseline) : 0;
+
+        /// <summary>Takvimde GEÇİLMİŞ açılış günü sayısı.</summary>
+        private int DaysPassed
+        {
+            get
+            {
+                if (Config == null || _ap == null) return 0;
+                int n = 0;
+                while (n < Config.UnlockCount && _ap.CurrentDay >= Config.UnlockDay(n)) n++;
+                return n;
+            }
+        }
+
+        /// <summary>Aşılmış ekonomi eşiği sayısı.</summary>
+        private int ThresholdsCrossed
+        {
+            get
+            {
+                if (Config == null || _wallet == null) return 0;
+                int earned = EarnedThisChapter, n = 0;
+                while (n < Config.EconomyThresholdCount && earned >= Config.EconomyThreshold(n)) n++;
+                return n;
+            }
+        }
+
+        /// <summary>Şu ana dek açılmış olması GEREKEN görev sayısı (takvim + ekonomi, tavanlı).</summary>
+        private int AllowedUnlocks
+            => Config == null ? 0 : Mathf.Min(Config.UnlockCount, DaysPassed + ThresholdsCrossed);
+
+        /// <summary>Sıradaki görev vadesinde mi (gün/eşik geldi ama savaş ya da karo yüzünden henüz düşmedi)?</summary>
+        public bool UnlockDue => HasNextUnlock && _cursor < AllowedUnlocks;
+
+        /// <summary>Sıradaki açılışın günü: vadesi geldiyse bugün, değilse takvimdeki gün (yoksa 0).</summary>
+        public int NextUnlockDay => UpcomingUnlockDay(0);
+
+        /// <summary>Sıradaki görevi EKONOMİ ile erken düşürmek için kaç öz daha kazanılmalı
+        /// (0 = ekonomi yolu kapalı / kalmadı).</summary>
+        public int EssenceUntilEconomyUnlock
+        {
+            get
+            {
+                if (!HasNextUnlock || UnlockDue || Config == null || _wallet == null) return 0;
+                int t = ThresholdsCrossed;
+                if (t >= Config.EconomyThresholdCount) return 0;
+                return Mathf.Max(0, Config.EconomyThreshold(t) - EarnedThisChapter);
+            }
+        }
+
+        /// <summary>Sıradaki açılışa kaç GÜN kaldı (0 = bugün / vadesi geldi).</summary>
+        public int DaysUntilNextUnlock
+            => HasNextUnlock && _ap != null ? Mathf.Max(0, NextUnlockDay - _ap.CurrentDay) : 0;
+
+        /// <summary>Daha kaç görev açılabilir (takvim + ekonomi aynı tavanı paylaşır).</summary>
+        public int RemainingUnlocks => HasNextUnlock ? Config.UnlockCount - _cursor : 0;
+
+        /// <summary>
+        /// Kalan açılışların günleri, sıradakinden başlayarak (UI takvimi için). Vadesi gelmiş
+        /// olanlar BUGÜN; kalanlar takvimin en yakın günlerinden. Ekonominin öne çektiği her görev
+        /// takvimin SONUNDAN bir gün siler — tavan sabit olduğu için. Aralık dışında 0.
+        /// </summary>
+        public int UpcomingUnlockDay(int offset)
+        {
+            if (!HasNextUnlock || _ap == null || offset < 0 || offset >= RemainingUnlocks) return 0;
+            int due = Mathf.Max(0, AllowedUnlocks - _cursor);
+            if (offset < due) return _ap.CurrentDay;
+            int idx = DaysPassed + offset - due;
+            return idx < Config.UnlockCount ? Config.UnlockDay(idx) : 0;
+        }
 
         /// <summary>Sıradaki açılışa kaç AP kaldı. Gün/dilim DEĞİL — oyuncunun harcadığı birim AP.</summary>
         public int APUntilNextUnlock
@@ -87,7 +172,7 @@ namespace TacticalRPG.Core
 
         /// <summary>Uyarı penceresi açık mı? (barda hayalet çizgi + geri sayım gösterilir)</summary>
         public bool WarningActive
-            => HasNextUnlock && _config != null && APUntilNextUnlock <= _config.WarningAP;
+            => HasNextUnlock && Config != null && APUntilNextUnlock <= Config.WarningAP;
 
         // ── Bağlantı ─────────────────────────────────────────────────────────
 
@@ -96,6 +181,7 @@ namespace TacticalRPG.Core
             if (_nodes != null) _nodes.OnNodesChanged += Refresh;
             if (_ap    != null) _ap.OnTimeAdvanced    += HandleTimeAdvanced;
             if (_map   != null) _map.OnMapGenerated   += ResetChain;
+            if (_wallet != null) _wallet.OnChanged    += Refresh;
         }
 
         private void OnDisable()
@@ -103,6 +189,7 @@ namespace TacticalRPG.Core
             if (_nodes != null) _nodes.OnNodesChanged -= Refresh;
             if (_ap    != null) _ap.OnTimeAdvanced    -= HandleTimeAdvanced;
             if (_map   != null) _map.OnMapGenerated   -= ResetChain;
+            if (_wallet != null) _wallet.OnChanged    -= Refresh;
         }
 
         private void Start()
@@ -117,6 +204,9 @@ namespace TacticalRPG.Core
         private void ResetChain()
         {
             _cursor        = 0;
+            // Ekonomi BÖLÜM İÇİ büyümeyi ölçer: önceki denemede kazanılan öz yeni haritayı hızlandırmasın.
+            _earnedBaseline     = _wallet != null ? _wallet.TotalGained : 0;
+            LastUnlockByEconomy = false;
             ChainClosed    = false;
             HasBossStone   = false;
             UnlockDeferred = false;
@@ -164,7 +254,7 @@ namespace TacticalRPG.Core
             _nodes.SetBossStone(true);
             OnStoneGranted?.Invoke();
 
-            int forfeited = _config != null ? _config.UnlockCount - _cursor : 0;
+            int forfeited = Config != null ? Config.UnlockCount - _cursor : 0;
             Debug.Log($"[Gorev] ZINCIR KAPANDI — {DoneCount} zorunlu gorev bitti, BOSS TASI verildi. " +
                       $"Acilmayan {forfeited} gorev ve ustel odulleri kalici olarak kaybedildi.");
             return true;
@@ -174,7 +264,7 @@ namespace TacticalRPG.Core
         private bool TryUnlock()
         {
             if (!HasNextUnlock || _ap == null) return false;
-            if (_ap.CurrentDay < _config.UnlockDay(_cursor)) return false;
+            if (_cursor >= AllowedUnlocks) return false;   // ne takvim ne ekonomi henüz izin veriyor
 
             // KURAL 1: zorunlu savaş sürüyor → ertele, dönüşte yeniden bakılır.
             if (_nodes.MandatoryCombatPending) { UnlockDeferred = true; return false; }
@@ -190,10 +280,14 @@ namespace TacticalRPG.Core
             int tier = OpenCount + 1;
             if (!_nodes.SpawnMandatory(coord, tier)) return false;
 
+            // Takvim tek başına bu açılışa izin VERMİYORDUYSA görevi ekonomi öne çekmiştir.
+            LastUnlockByEconomy = _cursor >= DaysPassed;
             _cursor++;
             UnlockDeferred = false;
-            Debug.Log($"[Gorev] {tier}. zorunlu gorev gun {_ap.CurrentDay} icinde dustu -> {coord} " +
-                      $"(odul {(_config != null ? _config.RewardForTier(tier) : 0)} oz). " +
+            Debug.Log($"[Gorev] {tier}. zorunlu gorev gun {_ap.CurrentDay} icinde dustu" +
+                      (LastUnlockByEconomy ? $" (EKONOMI: {EarnedThisChapter} oz kazanildi)" : "") +
+                      $" -> {coord} " +
+                      $"(odul {(Config != null ? Config.RewardForTier(tier) : 0)} oz). " +
                       $"Boss tasi icin artik {tier} gorev gerekiyor.");
             OnQuestUnlocked?.Invoke(tier, coord);
             return true;
@@ -237,8 +331,8 @@ namespace TacticalRPG.Core
             rnd.Shuffle(pool);
 
             int hardMax = MaxTravelDistance();
-            int max = _config != null ? Mathf.Min(_config.SpawnDistance.y, hardMax) : hardMax;
-            int min = _config != null ? Mathf.Min(_config.SpawnDistance.x, max)     : 0;
+            int max = Config != null ? Mathf.Min(Config.SpawnDistance.y, hardMax) : hardMax;
+            int min = Config != null ? Mathf.Min(Config.SpawnDistance.x, max)     : 0;
 
             // Band → bandın altını serbest bırak → tamamen serbest. İlk tutan kazanır.
             if (TryFirstInBand(pool, from, min, max, out result)) return true;
@@ -267,14 +361,14 @@ namespace TacticalRPG.Core
         /// </summary>
         private int MaxTravelDistance()
         {
-            if (_ap == null || _config == null) return int.MaxValue;
+            if (_ap == null || Config == null) return int.MaxValue;
 
             int hardCut = _run != null ? _run.HardCutDay : 14;
             int perDay  = Mathf.Max(1, _ap.SlotsPerDay * _ap.MaxAP);
             int apLeft  = _ap.APRemainingToday + Mathf.Max(0, hardCut - _ap.CurrentDay) * perDay;
             int move    = Mathf.Max(1, _ap.APPerMove);
 
-            return Mathf.Max(1, Mathf.FloorToInt((apLeft - _config.QuestAP) * _config.ReachSafety / move));
+            return Mathf.Max(1, Mathf.FloorToInt((apLeft - Config.QuestAP) * Config.ReachSafety / move));
         }
     }
 }

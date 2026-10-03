@@ -16,24 +16,32 @@ MonoBehaviour:
   - displayName: "B\xF6l\xFCm 1"
     theme: "Ta\u015F & Do\u011Fa"
     isPlaceholder: 0
+    rules: {fileID: 11400000, guid: aa07a5afa5afef948895e244a972b29a, type: 2}
   - displayName: "B\xF6l\xFCm 2"
     theme: "~ Ate\u015F / Volkanik"
     isPlaceholder: 1
+    rules: {fileID: 0}
   - displayName: "B\xF6l\xFCm 3"
     theme: ~ Teknoloji
     isPlaceholder: 1
+    rules: {fileID: 0}
   - displayName: "B\xF6l\xFCm 4"
     theme: '?'
     isPlaceholder: 1
+    rules: {fileID: 0}
   - displayName: "B\xF6l\xFCm 5"
     theme: '?'
     isPlaceholder: 1
+    rules: {fileID: 0}
   - displayName: "B\xF6l\xFCm 6"
     theme: '?'
     isPlaceholder: 1
+    rules: {fileID: 0}
   - displayName: "B\xF6l\xFCm 7"
     theme: '?'
     isPlaceholder: 1
+    rules: {fileID: 0}
   - displayName: "B\xF6l\xFCm 8"
     theme: '?'
     isPlaceholder: 1
+    rules: {fileID: 0}

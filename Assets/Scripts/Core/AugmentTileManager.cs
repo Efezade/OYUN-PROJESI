@@ -39,7 +39,8 @@ namespace TacticalRPG.Core
         [Tooltip("Opsiyonel — halka/yazı geri bildirimi. Boşsa mekanik yine çalışır, sessiz olur.")]
         [SerializeField] private AugmentFeedback   _fx;
         [Tooltip("Opsiyonel — Davul Taşı'nın mana vermesi için.")]
-        [SerializeField] private KamManaManager    _mana;
+        [UnityEngine.Serialization.FormerlySerializedAs("_mana")]
+        [SerializeField] private KamMechanicHost   _kam;
 
         [Header("Geri bildirim renkleri")]
         [SerializeField] private Color _buffColor   = new(0.30f, 0.90f, 0.78f);  // ruh teali (tema)
@@ -290,10 +291,11 @@ namespace TacticalRPG.Core
                         break;
 
                     case AugmentEffect.Mana:
-                        // Mana yalnız Kam'ındır — kart da öyle diyor.
-                        if (!unit.IsCommander || _mana == null) continue;
-                        _mana.RestoreMana(p.Entry.Magnitude);
-                        Feedback(p, unit, $"+{p.Entry.Magnitude} MANA", _buffColor);
+                        // Kaynak yalnız Kam'ındır — kart da öyle diyor. Hangi kaynak olduğunu
+                        // bölümün mekaniği söyler (bugün mana).
+                        if (!unit.IsCommander || _kam == null) continue;
+                        _kam.Restore(p.Entry.Magnitude);
+                        Feedback(p, unit, $"+{p.Entry.Magnitude} {_kam.ResourceName.ToUpperInvariant()}", _buffColor);
                         break;
 
                     case AugmentEffect.ExtraAction:

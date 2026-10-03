@@ -30,6 +30,14 @@ namespace TacticalRPG.Core
 
         public int Get(EssenceType t) => _amounts[(int)t];
 
+        /// <summary>
+        /// Oturum başından beri <see cref="Gain"/> ile KAZANILAN toplam öz. Harcamak ve bölüm
+        /// kaybında sıfırlanmak bunu DÜŞÜRMEZ — "ekonomi ne kadar büyüdü" sorusunun cevabı.
+        /// Bölüm içi büyümeyi isteyen (zorunlu görev zinciri) başlangıçtaki değeri taban alır.
+        /// Test başlangıç özleri sayılmaz (Gain'den geçmiyorlar).
+        /// </summary>
+        public int TotalGained { get; private set; }
+
         public int Total
         {
             get { int s = 0; foreach (var a in _amounts) s += a; return s; }
@@ -59,6 +67,7 @@ namespace TacticalRPG.Core
         {
             if (amount <= 0) return;
             _amounts[(int)t] += amount;
+            TotalGained      += amount;
             OnChanged?.Invoke();
         }
 

@@ -15,8 +15,9 @@ namespace TacticalRPG.UI
         [SerializeField] private TurnManager      _turnManager;
         [Tooltip("Kam'ın büyü kasteri — Komutan turunda yetenek paneli için.")]
         [SerializeField] private AbilityCaster    _caster;
-        [Tooltip("Kam manası — büyü panelinde gösterilir.")]
-        [SerializeField] private KamManaManager   _kamMana;
+        [Tooltip("Kam'ın aktif mekaniği (bugün mana) — büyü panelinde gösterilir.")]
+        [UnityEngine.Serialization.FormerlySerializedAs("_kamMana")]
+        [SerializeField] private KamMechanicHost  _kam;
 
         private string _lastMessage = "";
 
@@ -119,8 +120,8 @@ namespace TacticalRPG.UI
         // Kam'ın büyüleri: mana + 1/2/3 arm butonları (hedefe sol tıkla = uygula).
         private void DrawCommanderAbilities()
         {
-            if (_kamMana != null)
-                GUILayout.Label($"Mana {_kamMana.CurrentMana}/{_kamMana.MaxMana}");
+            if (_kam != null)
+                GUILayout.Label($"{_kam.ResourceName} {_kam.Current}/{_kam.Max}");
 
             var abilities = _caster != null ? _caster.Abilities : null;
             if (abilities == null || abilities.Count == 0)
@@ -134,7 +135,7 @@ namespace TacticalRPG.UI
             {
                 KamAbilityData ab    = abilities[i];
                 bool           armed = _caster.ArmedAbility == ab;
-                bool           canMana = _kamMana == null || _kamMana.CanCast(ab.ManaCost);
+                bool           canMana = _kam == null || _kam.CanPay(ab.ManaCost);
 
                 GUI.enabled = !acted && canMana;
                 string mark  = armed ? "► " : "";
