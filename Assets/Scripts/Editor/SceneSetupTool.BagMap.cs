@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.UI;
 using UnityEditor;
 using TMPro;
@@ -14,8 +15,8 @@ namespace TacticalRPG.Editor
     /// mockup'larına göre PARŞÖMEN estetiğinde (SceneSetupTool.UIKit yardımcıları). "ÇANTA/HARİTA" yazısı
     /// YOK; şeklin kendisi (valiz sapı+sekmeler / yırtık harita+pusula) kimliği taşır.
     ///
-    ///  • ÇANTA — sap + sol dikey sekmeler + iki sütun (POTLAR | KAM KARTLARI, noktalı ayraç). Kartlar
-    ///    gerçek <see cref="KamAbilityData"/> asset'lerine <see cref="AbilityCardView"/> ile bağlı.
+    ///  • ÇANTA — sap + sol dikey sekmeler (EŞYALAR · POTLAR). 2026-10-03: EŞYALAR'da karakterlere
+    ///    sürükle-bırak eşya (<see cref="BagInventoryView"/>), POTLAR'da iç (<see cref="BagPotionView"/>).
     ///  • HARİTA — bölümün GERÇEK minihatitası (keşfedilen arazi + önemli karo işaretleri),
     ///    sağda işaret açıklamaları, sürüklenip yakınlaştırılabilir.
     ///    2026-08-17'de KALDIRILANLAR (kullanıcı isteği): 8 bölümlük ilerleme yolu (aynı bilgi TAB
@@ -26,13 +27,6 @@ namespace TacticalRPG.Editor
     /// </summary>
     public static partial class SceneSetupTool
     {
-        private static readonly string[] KamAbilityPaths =
-        {
-            "Assets/Data/Abilities/AtesTopu.asset",
-            "Assets/Data/Abilities/RuhKalkani.asset",
-            "Assets/Data/Abilities/Sifa.asset",
-        };
-
         // ─────────────────────────────────────────────────────────────────────
         // ÇANTA — valiz
         // ─────────────────────────────────────────────────────────────────────
@@ -56,58 +50,247 @@ namespace TacticalRPG.Editor
             // ÖZ de sekme DEĞİL — çantanın köşesinde her sekmede görünen küçük bir şerit
             // ("açılır kapanır olmasın, hep yazsın").
             RectTransform pageItems = BagPageRoot(bag, "Page_Items");
+            RectTransform pageKam   = BagPageRoot(bag, "Page_Kam");    // 2026-10-03: Kam'ın donanımı
             RectTransform pagePots  = BagPageRoot(bag, "Page_Pots");
 
-            Image itemsTabBg, potsTabBg;
-            Button itemsTab = BagTab(bag, "EŞYALAR", InkIcon.Bag,  150f, out itemsTabBg);
-            Button potsTab  = BagTab(bag, "POTLAR",  InkIcon.Drop,  16f, out potsTabBg);
+            Image itemsTabBg, kamTabBg, potsTabBg;
+            Button itemsTab = BagTab(bag, "EŞYALAR", InkIcon.Bag,   150f, out itemsTabBg);
+            Button kamTab   = BagTab(bag, "KAM",     InkIcon.Hand,   16f, out kamTabBg);
+            Button potsTab  = BagTab(bag, "POTLAR",  InkIcon.Drop, -118f, out potsTabBg);
 
             var pager = bagRoot.AddComponent<TacticalRPG.UI.BookmarkPager>();
             var pgSO = new SerializedObject(pager);
             SerializedProperty pages = pgSO.FindProperty("_pages");
-            pages.arraySize = 2;
+            pages.arraySize = 3;
             WireBookmark(pages.GetArrayElementAtIndex(0), pageItems.gameObject, itemsTab, itemsTabBg);
-            WireBookmark(pages.GetArrayElementAtIndex(1), pagePots.gameObject,  potsTab,  potsTabBg);
+            WireBookmark(pages.GetArrayElementAtIndex(1), pageKam.gameObject,   kamTab,   kamTabBg);
+            WireBookmark(pages.GetArrayElementAtIndex(2), pagePots.gameObject,  potsTab,  potsTabBg);
             pgSO.ApplyModifiedProperties();
 
             // ÖZ ŞERİDİ: sayfa köklerinin DIŞINDA, doğrudan valiz gövdesinde → sekme değişse de
             // durur. Sağ üst köşe: sap ile çakışmıyor, içerik alanının dışında kalıyor.
             CreateEssenceStrip(bag, bagRoot);
 
-            // ── EŞYALAR sayfası: Kam kartları (gerçek veri) + boş eşya yuvaları ──
-            SectionHeader(pageItems, "CardsHeader", "KAM KARTLARI", new Vector2(0.5f, 0.5f),
-                new Vector2(-330f, 232f), 420f, 30f);
-            for (int i = 0; i < 5; i++) // 3 gerçek + 2 boş
-            {
-                KamAbilityData data = i < KamAbilityPaths.Length
-                    ? AssetDatabase.LoadAssetAtPath<KamAbilityData>(KamAbilityPaths[i])
-                    : null;
-                CreateAbilityCardRow(pageItems, data, new Vector2(-330f, 140f - i * 96f));
-            }
+            // ── DONANIM sayfaları (2026-10-03, Efe'nin isteği): giydirme bebeği ──────────
+            // EŞYALAR = Kam dışı birlik (solda karakter listesi), KAM = yalnız komutan. İkisi de
+            // ortada silüet + altı vücut bölgesi yuvası, sağda çanta. Sürükleme hayaleti ortak.
+            var ghostGO = new GameObject("DragGhost", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            ghostGO.transform.SetParent(bag, false);
+            ((RectTransform)ghostGO.transform).sizeDelta = new Vector2(64f, 64f);
+            var ghost = ghostGO.GetComponent<Image>();
+            ghost.raycastTarget = false;
+            ghostGO.SetActive(false);
 
-            SectionHeader(pageItems, "GearHeader", "EŞYA YUVALARI", new Vector2(0.5f, 0.5f),
-                new Vector2(370f, 232f), 420f, 30f);
-            for (int i = 0; i < 6; i++)   // envanter sistemi yok → boş yuvalar (yer tutucu)
-            {
-                var slot = InkPanel(pageItems, $"Slot{i}", new Vector2(0.5f, 0.5f),
-                    new Vector2(230f + (i % 3) * 140f, 110f - (i / 3) * 150f),
-                    new Vector2(120f, 120f), 12, 0.75f);
-                CreateCenteredLabel(slot, "Q", "?", new Vector2(0.5f, 0.5f), Vector2.zero,
-                    new Vector2(100f, 60f), new Color(0.62f, 0.57f, 0.48f), 34f);
-            }
+            BuildEquipmentPage(pageItems, commanderOnly: false, ghost);
+            BuildEquipmentPage(pageKam,   commanderOnly: true,  ghost);
 
-            // ── POTLAR sayfası ────────────────────────────────────────────────
-            SectionHeader(pagePots, "PotsHeader", "POTLAR", new Vector2(0.5f, 0.5f),
-                new Vector2(0f, 232f), 380f, 32f);
-            Circle(pagePots, "PotEmblem", new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), 78f, ParchmentLo);
-            CreatePotRow(pagePots, "ŞİFA",  "×15", new Color(0.66f, 0.26f, 0.22f), new Vector2(-160f, 40f));
-            CreatePotRow(pagePots, "MANA",  "×00", new Color(0.26f, 0.36f, 0.62f), new Vector2(-160f, -60f));
-            CreatePotRow(pagePots, "?????", "×??", new Color(0.34f, 0.30f, 0.24f), new Vector2(-160f, -160f));
+            // ── POTLAR sayfası: eldeki potlar (İÇ) + etkin potlar ──────────────
+            SectionHeader(pagePots, "PotsHeader", "POTLAR — iç, süresi boyunca etkili", new Vector2(0.5f, 0.5f),
+                new Vector2(-180f, 232f), 760f, 28f);
+            RectTransform potContent = CreateScrollList(pagePots, "PotScroll",
+                new Vector2(-200f, -46f), new Vector2(780f, 500f), grid: false);
+
+            RectTransform activePanel = InkPanel(pagePots, "ActivePots", new Vector2(0.5f, 0.5f),
+                new Vector2(470f, -80f), new Vector2(400f, 420f), 14);
+            var activeLabel = CreateCenteredLabel(activePanel, "ActiveText", "ETKİN POTLAR", new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(370f, 400f), Ink, 19f);
+            activeLabel.alignment = TextAlignmentOptions.TopLeft;
+            activeLabel.richText  = true;
+
+            var potView = pagePots.gameObject.AddComponent<BagPotionView>();
+            var pvSO = new SerializedObject(potView);
+            pvSO.FindProperty("_inventory").objectReferenceValue   = EnsureInventory();
+            pvSO.FindProperty("_buffs").objectReferenceValue       = FindComponentAnywhere<PlayerBuffs>();
+            pvSO.FindProperty("_content").objectReferenceValue     = potContent;
+            pvSO.FindProperty("_activeLabel").objectReferenceValue = activeLabel;
+            pvSO.FindProperty("_cellSprite").objectReferenceValue  = InkArtFactory.Paper("paper_soft", 96, 96, Color.white);
+            pvSO.FindProperty("_potSprite").objectReferenceValue   = InkArtFactory.Icon(InkIcon.Drop, 64);
+            pvSO.ApplyModifiedProperties();
 
             CreateCenteredLabel(t, "BagHint",
-                "KAM KARTLARI ve ÖZ canlı · eşya yuvaları/potlar envanter sistemiyle gelecek · Kapat: Esc",
+                "Eşyayı karakterin uygun BÖLGESİNE sürükle · yuvadan çantaya sürükle ya da sağ tık = çıkar · potu İÇ · Kapat: Esc",
                 new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(1400f, 40f),
                 new Color(0.62f, 0.57f, 0.48f), 24f);
+        }
+
+        /// <summary>
+        /// GİYDİRME BEBEĞİ sayfası: (EŞYALAR'da) solda karakter listesi · ortada büst + ad +
+        /// tam boy silüet ve çevresinde altı bölge yuvası + toplam etki satırı · sağda çanta +
+        /// künye. Yuvalar silüetin iki yanında, bölgeye yakın hizada durur (kafa/boyun üstte,
+        /// kollar ortada, gövde/ayak altta).
+        /// </summary>
+        private static void BuildEquipmentPage(RectTransform page, bool commanderOnly, Image ghost)
+        {
+            Sprite paper = InkArtFactory.Paper("paper_soft", 96, 96, Color.white);
+
+            // ── Sol: karakter listesi (yalnız EŞYALAR) ────────────────────────
+            RectTransform rosterContent = null;
+            if (!commanderOnly)
+            {
+                SectionHeader(page, "RosterHeader", "KARAKTERLER", new Vector2(0.5f, 0.5f),
+                    new Vector2(-560f, 250f), 240f, 24f);
+                rosterContent = CreateScrollList(page, "RosterScroll",
+                    new Vector2(-560f, -36f), new Vector2(250f, 540f), grid: false);
+            }
+
+            // ── Orta: büst + ad + silüet + yuvalar ────────────────────────────
+            float cx = commanderOnly ? -300f : -140f;
+            RectTransform doll = InkPanel(page, "DollPanel", new Vector2(0.5f, 0.5f),
+                new Vector2(cx, -20f), new Vector2(560f, 600f), 18, 0.85f);
+
+            var bustBox = InkPanel(doll, "Bust", new Vector2(0f, 1f), new Vector2(54f, -52f), new Vector2(84f, 84f), 10, 0.95f);
+            var portrait = CreateImage(bustBox, "Img", new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(74f, 74f), Ink, false);
+            portrait.preserveAspect = true;
+
+            var nameLabel = CreateCenteredLabel(doll, "Name", commanderOnly ? "KAM" : "—", new Vector2(0.5f, 1f),
+                new Vector2(40f, -36f), new Vector2(380f, 44f), Ink, 30f);
+            nameLabel.richText = true;
+
+            var body = InkImage(doll, "Silhouette", InkArtFactory.Doll(220, 340), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -10f), new Vector2(220f, 340f), new Color(Ink.r, Ink.g, Ink.b, 0.80f));
+            body.preserveAspect = true;
+
+            // Yuvalar: sol sütun (kafa · sağ kol · gövde), sağ sütun (boyun · sol kol · ayak).
+            var regions = new (EquipSlot region, Vector2 pos)[]
+            {
+                (EquipSlot.Kafa,   new Vector2(-185f,  150f)),
+                (EquipSlot.Boyun,  new Vector2( 185f,  150f)),
+                (EquipSlot.SagKol, new Vector2(-185f,   20f)),
+                (EquipSlot.SolKol, new Vector2( 185f,   20f)),
+                (EquipSlot.Govde,  new Vector2(-185f, -110f)),
+                (EquipSlot.Ayak,   new Vector2( 185f, -110f)),
+            };
+
+            var slotParts = new List<(EquipSlot region, Image bg, RectTransform holder, TextMeshProUGUI label)>();
+            foreach (var (region, pos) in regions)
+            {
+                RectTransform slot = InkPanel(doll, $"Slot_{region}", new Vector2(0.5f, 0.5f), pos, new Vector2(98f, 98f), 12);
+                Image bg = slot.GetComponent<Image>();
+
+                // Simge tutucu yuvanın ÇOCUĞU: simgenin üstüne bırakılan eşya yuvaya kabarcıklanır.
+                var holderGO = new GameObject("IconHolder", typeof(RectTransform));
+                holderGO.transform.SetParent(slot, false);
+                var holder = (RectTransform)holderGO.transform;
+                StretchFull(holder);
+
+                var label = CreateCenteredLabel(doll, $"SlotLabel_{region}", EquipSlots.Label(region),
+                    new Vector2(0.5f, 0.5f), pos + new Vector2(0f, -62f), new Vector2(150f, 22f), InkSoft, 15f);
+                slotParts.Add((region, bg, holder, label));
+            }
+
+            var stats = CreateCenteredLabel(doll, "Stats", "", new Vector2(0.5f, 0f),
+                new Vector2(0f, 40f), new Vector2(530f, 64f), Ink, 15f);
+            stats.richText = true;
+
+            if (commanderOnly)
+            {
+                // KAM sayfasına özel not — Kam'ın eşyası da diğerleri gibi savaşta işler.
+                RectTransform note = InkPanel(page, "KamNote", new Vector2(0.5f, 0.5f),
+                    new Vector2(-600f, -20f), new Vector2(160f, 600f), 14, 0.8f);
+                var noteText = CreateCenteredLabel(note, "Text",
+                    "KAM\n\nKomutan.\nSavaşa ZORUNLU iner, ölürse bölüm kaybedilir.\n\nTakılan eşyalar her savaşta işler.\n\nBüyüler davuldan, 10 mana.",
+                    new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(140f, 580f), InkSoft, 15f);
+                noteText.alignment = TextAlignmentOptions.Top;
+            }
+
+            // ── Sağ: çanta + künye ────────────────────────────────────────────
+            SectionHeader(page, "BagHeader", "ÇANTA", new Vector2(0.5f, 0.5f),
+                new Vector2(300f, 250f), 220f, 26f);
+            RectTransform bagDrop = InkPanel(page, "BagDropArea", new Vector2(0.5f, 0.5f),
+                new Vector2(420f, 20f), new Vector2(500f, 340f), 14, 0.55f);
+            RectTransform bagContent = CreateScrollList(bagDrop, "BagScroll", Vector2.zero,
+                new Vector2(482f, 322f), grid: true);
+
+            RectTransform detailPanel = InkPanel(page, "ItemDetail", new Vector2(0.5f, 0.5f),
+                new Vector2(420f, -240f), new Vector2(500f, 150f), 14);
+            var detail = CreateCenteredLabel(detailPanel, "DetailText", "", new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(470f, 136f), Ink, 17f);
+            detail.alignment = TextAlignmentOptions.TopLeft;
+            detail.richText  = true;
+
+            // ── Görünümü bağla ────────────────────────────────────────────────
+            var view = page.gameObject.AddComponent<BagInventoryView>();
+            var so = new SerializedObject(view);
+            so.FindProperty("_inventory").objectReferenceValue     = EnsureInventory();
+            so.FindProperty("_party").objectReferenceValue         = FindComponentAnywhere<PartyManager>();
+            so.FindProperty("_commanderOnly").boolValue            = commanderOnly;
+            so.FindProperty("_rosterContent").objectReferenceValue = rosterContent;
+            so.FindProperty("_portrait").objectReferenceValue      = portrait;
+            so.FindProperty("_nameLabel").objectReferenceValue     = nameLabel;
+            so.FindProperty("_statsLabel").objectReferenceValue    = stats;
+            so.FindProperty("_bagContent").objectReferenceValue    = bagContent;
+            so.FindProperty("_bagDropArea").objectReferenceValue   = bagDrop;
+            so.FindProperty("_detailLabel").objectReferenceValue   = detail;
+            so.FindProperty("_ghost").objectReferenceValue         = ghost;
+            so.FindProperty("_cellSprite").objectReferenceValue    = paper;
+
+            SerializedProperty arr = so.FindProperty("_slots");
+            arr.arraySize = slotParts.Count;
+            for (int i = 0; i < slotParts.Count; i++)
+            {
+                SerializedProperty el = arr.GetArrayElementAtIndex(i);
+                el.FindPropertyRelative("_region").enumValueIndex       = (int)slotParts[i].region;
+                el.FindPropertyRelative("_background").objectReferenceValue = slotParts[i].bg;
+                el.FindPropertyRelative("_iconHolder").objectReferenceValue = slotParts[i].holder;
+                el.FindPropertyRelative("_label").objectReferenceValue      = slotParts[i].label;
+            }
+            so.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// Kaydırılabilir liste: görünüm (maske) + içerik (dikey liste ya da ızgara, boyu içeriğe
+        /// göre büyür). Satırları çalışma zamanında görünüm bileşenleri doldurur.
+        /// </summary>
+        private static RectTransform CreateScrollList(Transform parent, string name, Vector2 pos, Vector2 size, bool grid)
+        {
+            var root = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(ScrollRect));
+            root.transform.SetParent(parent, false);
+            var rt = (RectTransform)root.transform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = size;
+            var bg = root.GetComponent<Image>();
+            bg.color = new Color(1f, 1f, 1f, 0.001f);       // görünmez ama sürükleme/kaydırma raycast'i alır
+
+            var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D));
+            viewport.transform.SetParent(rt, false);
+            var vrt = (RectTransform)viewport.transform;
+            StretchFull(vrt);
+
+            var content = new GameObject("Content", typeof(RectTransform), typeof(ContentSizeFitter));
+            content.transform.SetParent(vrt, false);
+            var crt = (RectTransform)content.transform;
+            crt.anchorMin = new Vector2(0f, 1f); crt.anchorMax = new Vector2(1f, 1f);
+            crt.pivot = new Vector2(0.5f, 1f);
+            crt.anchoredPosition = Vector2.zero;
+            crt.sizeDelta = new Vector2(0f, 0f);
+
+            if (grid)
+            {
+                var g = content.AddComponent<GridLayoutGroup>();
+                g.cellSize = new Vector2(84f, 84f);
+                g.spacing  = new Vector2(10f, 10f);
+                g.padding  = new RectOffset(8, 8, 8, 8);
+            }
+            else
+            {
+                var v = content.AddComponent<VerticalLayoutGroup>();
+                v.spacing = 8f;
+                v.padding = new RectOffset(6, 6, 6, 6);
+                v.childAlignment = TextAnchor.UpperCenter;
+                v.childForceExpandWidth = false;
+                v.childForceExpandHeight = false;
+            }
+            content.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var scroll = root.GetComponent<ScrollRect>();
+            scroll.viewport = vrt;
+            scroll.content  = crt;
+            scroll.horizontal = false;
+            scroll.vertical   = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 30f;
+            return crt;
         }
 
         /// <summary>Valizin içindeki bir SAYFA TAKIMI kökü (gövdeyi kaplar, görünürlüğü pager çevirir).</summary>
@@ -162,53 +345,6 @@ namespace TacticalRPG.Editor
             counters.arraySize = 2;
             WireEssenceCounter(counters.GetArrayElementAtIndex(0), EssenceType.Tas,  amtA, nameA, swA);
             WireEssenceCounter(counters.GetArrayElementAtIndex(1), EssenceType.Doga, amtS, nameS, swS);
-            vso.ApplyModifiedProperties();
-        }
-
-        private static void CreatePotRow(Transform parent, string name, string count, Color potColor, Vector2 pos)
-        {
-            Circle(parent, "Pot_" + name, new Vector2(0f, 0.5f), pos, 54f, potColor);
-            CreateCenteredLabel(parent, "PotName_" + name, name, new Vector2(0f, 0.5f),
-                new Vector2(pos.x + 76f, pos.y + 14f), new Vector2(200f, 34f), Ink, 26f);
-            CreateCenteredLabel(parent, "PotCount_" + name, count, new Vector2(0f, 0.5f),
-                new Vector2(pos.x + 76f, pos.y - 18f), new Vector2(200f, 32f), InkSoft, 24f);
-        }
-
-        /// <summary>Bir Kam kartı SATIRI (thumb + ad + stat), AbilityCardView'e bağlı.</summary>
-        private static void CreateAbilityCardRow(Transform parent, KamAbilityData data, Vector2 pos)
-        {
-            RectTransform row = InkPanel(parent, "Card", new Vector2(0.5f, 0.5f),
-                pos, new Vector2(600f, 90f), 14);
-
-            RectTransform thumb = InkPanel(row, "Thumb", new Vector2(0f, 0.5f),
-                new Vector2(20f, 0f), new Vector2(78f, 78f), 10, 0.85f);
-            Image icon = CreateImage(thumb, "Icon", new Vector2(0.5f, 0.5f), Vector2.zero,
-                new Vector2(66f, 66f), Color.gray, false);
-
-            TextMeshProUGUI nameLbl = CreateCenteredLabel(row, "Name", "", new Vector2(0f, 0.5f),
-                new Vector2(120f, 16f), new Vector2(440f, 38f), Ink, 26f);
-            TextMeshProUGUI statLbl = CreateCenteredLabel(row, "Stat", "", new Vector2(0f, 0.5f),
-                new Vector2(120f, -18f), new Vector2(440f, 28f), InkSoft, 19f);
-            TextMeshProUGUI descLbl = CreateCenteredLabel(row, "Desc", "", new Vector2(1f, 0.5f),
-                new Vector2(-14f, 16f), new Vector2(220f, 60f), new Color(0.40f, 0.33f, 0.24f), 16f);
-
-            GameObject empty = new GameObject("EmptyOverlay", typeof(RectTransform), typeof(Image));
-            empty.transform.SetParent(row, false);
-            StretchFull(empty.GetComponent<RectTransform>());
-            Image eImg = empty.GetComponent<Image>();
-            eImg.sprite = RoundSprite; eImg.type = Image.Type.Sliced;
-            eImg.color = new Color(0.83f, 0.75f, 0.58f, 0.92f); eImg.raycastTarget = false;
-            CreateCenteredLabel(empty.transform, "EmptyLabel", "BOŞ SLOT",
-                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(300f, 40f), InkSoft, 24f);
-
-            AbilityCardView view = row.gameObject.AddComponent<AbilityCardView>();
-            var vso = new SerializedObject(view);
-            vso.FindProperty("_ability").objectReferenceValue      = data;
-            vso.FindProperty("_icon").objectReferenceValue         = icon;
-            vso.FindProperty("_nameLabel").objectReferenceValue    = nameLbl;
-            vso.FindProperty("_statLabel").objectReferenceValue    = statLbl;
-            vso.FindProperty("_descLabel").objectReferenceValue    = descLbl;
-            vso.FindProperty("_emptyOverlay").objectReferenceValue = empty;
             vso.ApplyModifiedProperties();
         }
 

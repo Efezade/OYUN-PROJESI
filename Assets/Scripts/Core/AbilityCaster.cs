@@ -23,6 +23,11 @@ namespace TacticalRPG.Core
         [SerializeField] private KamMechanicHost _kam;
         [SerializeField] private UnitManager    _unitManager;
 
+        [Tooltip("ESKİ 1/2/3 kısayol büyüleri. KAPALI (2026-10-03): büyüler artık yalnız davuldan " +
+                 "gelir; bu kısayollar aynı manadan harcayıp 'savaş başı en çok 2 büyü' kuralını " +
+                 "delerdi. Test için açılabilir.")]
+        [SerializeField] private bool _legacyHotkeys = false;
+
         public KamAbilityData ArmedAbility    { get; private set; }
         public bool           HasArmedAbility => ArmedAbility != null;
 
@@ -49,6 +54,8 @@ namespace TacticalRPG.Core
                 if (HasArmedAbility) Disarm();
                 return;
             }
+
+            if (!_legacyHotkeys) return;
 
             if      (Input.GetKeyDown(KeyCode.Alpha1)) ArmAbility(0);
             else if (Input.GetKeyDown(KeyCode.Alpha2)) ArmAbility(1);

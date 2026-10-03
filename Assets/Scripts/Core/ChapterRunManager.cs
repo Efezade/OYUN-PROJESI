@@ -36,6 +36,9 @@ namespace TacticalRPG.Core
                  "ilerleme yeni bölüme taşınır (eski davranış).")]
         [SerializeField] private KamSkillProgress    _skills;
 
+        [Tooltip("DEĞİŞTİRİLEBİLİR KAROLAR AĞACI — yetenek ağacıyla aynı kural: ölünce sıfırlanır.")]
+        [SerializeField] private AugmentTreeProgress _tileTree;
+
         [Tooltip("Bölüm kaybedilince sıfırlanan ÖZ türleri — bölümün ham özü. Kalıcı birime dönüşmüş " +
                  "öz zaten roster'da, etkilenmez.")]
         [SerializeField] private EssenceType[] _chapterEssences = { EssenceType.Tas, EssenceType.Doga };
@@ -123,6 +126,7 @@ namespace TacticalRPG.Core
             //    yalnız "açık başlar" düğümleri kalır. Harcanmış öz geri GELMEZ — bu bir
             //    sıfırlama, geri alma değil. Kalıcı avantaj (meta ekonomi) ayrı katman olacak.
             if (_skills != null) _skills.ResetProgress();
+            if (_tileTree != null) _tileTree.ResetProgress();
 
             ChapterLost = false;
             LossReason  = "";

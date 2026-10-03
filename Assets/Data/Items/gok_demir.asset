@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5721286505c91843a5cebd7c62644a5, type: 3}
+  m_Name: gok_demir
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.ItemSO
+  _id: gok_demir
+  _displayName: "G\xF6k Demir Z\u0131rh"
+  _description: "K\u0131r\u0131lmaz, dokunan\u0131 yaralar."
+  _icon: {fileID: 21300000, guid: 591fa37fbef8ab844a17f6aa81b0c6e7, type: 3}
+  _rarity: 2
+  _price:
+  - type: 3
+    amount: 16
+  - type: 4
+    amount: 10
+  _slot: 3
+  _trait: 2
+  _amount: 3
+  _trait2: 8
+  _amount2: 2

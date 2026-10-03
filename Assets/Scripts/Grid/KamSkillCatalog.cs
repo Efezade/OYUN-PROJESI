@@ -43,16 +43,19 @@ namespace TacticalRPG.Grid
             public int            PushDistance;   // alan dışına ek itme (Push)
             public int            StunTurns;      // sersemletme (Petrify)
             public float          R, G, B;        // tema rengi: kart şeridi + hedef göstergesi
+            /// <summary>Büyüyü atmanın Kam MANA bedeli — karodan PAHALI (4-5). Kural ve
+            /// türetilişi: <c>AugmentCatalog.ManaRules</c>.</summary>
+            public int            ManaCost = 4;
             /// <summary>Etki alanı kaç hex kaplar (kartta yazar).</summary>
             public int HexCount => 3 * Radius * Radius + 3 * Radius + 1;
         }
 
         private static Entry E(string id, string name, string desc, KamSkillEffect effect,
                                int radius, int magnitude, float r, float g, float b,
-                               int push = 0, int stun = 0)
+                               int push = 0, int stun = 0, int mana = 4)
             => new Entry { Id = id, Name = name, Description = desc, Effect = effect,
                            Radius = radius, Magnitude = magnitude, PushDistance = push,
-                           StunTurns = stun, R = r, G = g, B = b };
+                           StunTurns = stun, R = r, G = g, B = b, ManaCost = mana };
 
         public static readonly Entry[] All =
         {
@@ -87,46 +90,46 @@ namespace TacticalRPG.Grid
             E("kor_yagmuru", "Kor Yağmuru",
               "Tek karonun üstüne kor yağar: 3 karo çapındaki alandaki HERKES 13 hasar alır. " +
               "Dar ama acımasız.",
-              KamSkillEffect.Meteor, 1, 13, 1.00f, 0.30f, 0.10f),
+              KamSkillEffect.Meteor, 1, 13, 1.00f, 0.30f, 0.10f, mana: 5),
 
             E("yildiz_dusumu", "Yıldız Düşümü",
               "Gökten bir yıldız iner: 7 karo çapındaki alandaki HERKES 6 hasar alır. " +
               "Geniş ama yumuşak.",
-              KamSkillEffect.Meteor, 3, 6, 1.00f, 0.62f, 0.24f),
+              KamSkillEffect.Meteor, 3, 6, 1.00f, 0.62f, 0.24f, mana: 5),
 
             E("ak_sut", "Ak Süt",
               "Ak süt dökülür: 3 karo çapındaki alandaki HERKES 11 can yeniler — düşman dahil.",
-              KamSkillEffect.Heal, 1, 11, 0.96f, 0.96f, 0.88f),
+              KamSkillEffect.Heal, 1, 11, 0.96f, 0.96f, 0.88f, mana: 5),
 
             E("yasam_agaci", "Yaşam Ağacı",
               "Kökler yayılır: 7 karo çapındaki alandaki HERKES 8 can yeniler — düşman dahil.",
-              KamSkillEffect.Heal, 3, 8, 0.72f, 0.90f, 0.55f),
+              KamSkillEffect.Heal, 3, 8, 0.72f, 0.90f, 0.55f, mana: 5),
 
             E("yel_kamcisi", "Yel Kamçısı",
               "Tek noktadan kamçı gibi bir rüzgâr: 3 karo çapındaki HERKES alanın dışına, oradan " +
               "4 karo daha savrulur.",
-              KamSkillEffect.Push, 1, 0, 0.70f, 0.92f, 0.98f, 4),
+              KamSkillEffect.Push, 1, 0, 0.70f, 0.92f, 0.98f, 4, mana: 5),
 
             E("boran", "Boran",
               "Bütün tahtayı süpüren bir boran: 7 karo çapındaki HERKES alanın dışına, oradan " +
               "1 karo daha savrulur.",
-              KamSkillEffect.Push, 3, 0, 0.52f, 0.78f, 0.90f, 1),
+              KamSkillEffect.Push, 3, 0, 0.52f, 0.78f, 0.90f, 1, mana: 5),
 
             E("buz_bagi", "Buz Bağı",
               "3 karo çapındaki alan buz tutar: içerideki HERKES 2 tur sersemler.",
-              KamSkillEffect.Petrify, 1, 0, 0.62f, 0.82f, 0.92f, 0, 2),
+              KamSkillEffect.Petrify, 1, 0, 0.62f, 0.82f, 0.92f, 0, 2, mana: 5),
 
             E("kok_zinciri", "Kök Zinciri",
               "Kökler 7 karo çapındaki alanı sarar: içerideki HERKES 1 tur sersemler.",
-              KamSkillEffect.Petrify, 3, 0, 0.55f, 0.62f, 0.42f, 0, 1),
+              KamSkillEffect.Petrify, 3, 0, 0.55f, 0.62f, 0.42f, 0, 1, mana: 5),
 
             E("girdap", "Girdap",
               "Dar ve derin bir girdap: 3 karo çapındaki HERKES merkeze çekilir.",
-              KamSkillEffect.Pull, 1, 0, 0.42f, 0.38f, 0.62f),
+              KamSkillEffect.Pull, 1, 0, 0.42f, 0.38f, 0.62f, mana: 5),
 
             E("ruh_cagrisi", "Ruh Çağrısı",
               "Atalar çağırır: 7 karo çapındaki HERKES merkeze doğru çekilir — dost, düşman fark etmez.",
-              KamSkillEffect.Pull, 3, 0, 0.66f, 0.58f, 0.82f),
+              KamSkillEffect.Pull, 3, 0, 0.66f, 0.58f, 0.82f, mana: 5),
         };
 
         public static Entry Get(string id)

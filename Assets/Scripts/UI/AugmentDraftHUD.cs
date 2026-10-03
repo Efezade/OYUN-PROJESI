@@ -16,6 +16,10 @@ namespace TacticalRPG.UI
     ///
     /// Akış: davul çalar → panel açılır (oyun girdisi bloklanır) → kart seçilir → panel kapanır,
     /// haritada Kam'ın menzilindeki karolar IŞIKLANIR → tıklanan karoya karo konur.
+    ///
+    /// MANA (2026-10-03): her kartın sağ üst köşesinde MANA bedeli durur. Manası yetmeyen ya da
+    /// büyü sınırına (savaş başı 2) takılan kart SOLUKLAŞIR ve altında sebebi yazar. Başlık
+    /// kalan manayı ve atılan büyü sayısını söyler; altta PAS GEÇ düğmesi manayı saklar.
     /// </summary>
     [DefaultExecutionOrder(-30)]
     public class AugmentDraftHUD : MonoBehaviour
@@ -29,6 +33,10 @@ namespace TacticalRPG.UI
         [SerializeField] private Vector2 _cardSize = new(330f, 500f);
         [SerializeField] private float   _cardGap  = 40f;
         [SerializeField] private Color   _validCellColor = new(0.30f, 0.90f, 1f, 0.55f);
+        [Tooltip("Mana rozetinin rengi.")]
+        [SerializeField] private Color   _manaColor = new(0.25f, 0.55f, 1f);
+        [Tooltip("Oynanamayan kartın soluklaşma oranı (0 = görünmez, 1 = hiç soluklaşmaz).")]
+        [SerializeField, Range(0.1f, 1f)] private float _disabledAlpha = 0.38f;
 
         // Grup rengi — kartın nadirlik/tür rozeti. Oyuncu bir bakışta "bu artı mı eksi mi" görsün.
         private static readonly Dictionary<AugmentGroup, Color> GroupColor = new()
@@ -52,6 +60,7 @@ namespace TacticalRPG.UI
         private GameObject _root;
         private RectTransform _cardRow;
         private TextMeshProUGUI _hint;
+        private GameObject      _skipButton;
         private readonly List<GameObject> _cards = new();
         private readonly List<GameObject> _cellMarkers = new();
         private Transform _markerRoot;
@@ -102,7 +111,8 @@ namespace TacticalRPG.UI
             for (int i = 0; i < _drum.Choices.Count; i++)
                 _cards.Add(BuildCard(_drum.Choices[i], i));
 
-            _hint.text = "DAVUL ÇALDI — bir karo seç";
+            _hint.text = HeaderText();
+            if (_skipButton != null) _skipButton.SetActive(true);
             _root.SetActive(true);
             // IMGUI HUD'ları (can barları, sıra barı, "Geri Dön") SUSTUR — IMGUI Canvas'ın üstüne
             // çizdiği için aksi halde kartların içinden geçerler (2026-08-12 ekran görüntüsü).
@@ -117,6 +127,15 @@ namespace TacticalRPG.UI
             // düşmanın canına bakarak karar veriyorsun.
             MenuState.IsDraftOpen = false;
             DrawValidCells();
+        }
+
+        /// <summary>"DAVUL ÇALDI — bir kart seç · MANA 7/10 · büyü 0/2"</summary>
+        private string HeaderText()
+        {
+            string s = "DAVUL ÇALDI — bir kart seç";
+            if (_drum.UsesMana) s += $"  ·  MANA {_drum.Mana}/{_drum.MaxMana}";
+            s += $"  ·  büyü {_drum.SpellsCast}/{_drum.MaxSpellsPerCombat}";
+            return s;
         }
 
         private void HandlePlaced(HexCoordinate coord, AugmentCatalog.Entry entry)
@@ -218,6 +237,34 @@ namespace TacticalRPG.UI
                   new Vector2(0.5f, 0f), new Vector2(0f, 22f),
                   new Vector2(_cardSize.x - 28f, 36f), new Color(0.60f, 0.58f, 0.54f), 19f);
 
+            // ── MANA ROZETİ (sağ üst köşe, şeridin üstüne taşar) ──
+            var badge = NewRect("Mana", rt, new Vector2(1f, 1f), new Vector2(-6f, 14f), new Vector2(66f, 66f));
+            badge.pivot = new Vector2(1f, 1f);
+            var badgeImg = badge.gameObject.AddComponent<Image>();
+            badgeImg.color = _manaColor;
+            badgeImg.raycastTarget = false;
+            Label(badge, "Cost", card.ManaCost.ToString(), new Vector2(0.5f, 0.5f), new Vector2(0f, 6f),
+                  new Vector2(60f, 40f), Color.white, 34f, FontStyles.Bold);
+            Label(badge, "Unit", "MANA", new Vector2(0.5f, 0f), new Vector2(0f, 3f),
+                  new Vector2(60f, 18f), new Color(0.85f, 0.92f, 1f), 13f, FontStyles.Bold);
+
+            // ── Oynanamıyorsa: soluk + sebep (alt satırın yerine) ──
+            bool playable = _drum.CanPlay(card, out string reason);
+            if (!playable)
+            {
+                var group = cardGO.AddComponent<CanvasGroup>();
+                group.alpha = _disabledAlpha;
+                cardGO.GetComponent<Button>().interactable = false;
+
+                Transform pick = inner.Find("Pick");
+                if (pick != null)
+                {
+                    var t = pick.GetComponent<TextMeshProUGUI>();
+                    t.text  = reason;
+                    t.color = new Color(1f, 0.55f, 0.45f);
+                }
+            }
+
             int captured = index;
             cardGO.GetComponent<Button>().onClick.AddListener(() => OnCardClicked(captured));
             return cardGO;
@@ -228,6 +275,13 @@ namespace TacticalRPG.UI
             if (_drum == null) return;
 
             bool isSkill = index >= 0 && index < _drum.Choices.Count && _drum.Choices[index].IsSkill;
+
+            if (index >= 0 && index < _drum.Choices.Count &&
+                !_drum.CanPlay(_drum.Choices[index], out string reason))
+            {
+                _hint.text = reason;
+                return;
+            }
 
             if (!_drum.Choose(index))
             {
@@ -325,6 +379,19 @@ namespace TacticalRPG.UI
             layout.childAlignment = TextAnchor.MiddleCenter;
             layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = false;
+
+            // PAS GEÇ — kartların altında. Mana savaş başına 2-3 karta yetiyor; her vuruşta
+            // oynamak mümkün değil, geçmek de bir karar.
+            var skipRT = NewRect("Skip", (RectTransform)_root.transform, new Vector2(0.5f, 0f),
+                                 new Vector2(0f, 70f), new Vector2(420f, 72f));
+            var skipImg = skipRT.gameObject.AddComponent<Image>();
+            skipImg.color = new Color(0.16f, 0.15f, 0.20f, 0.95f);
+            var skipBtn = skipRT.gameObject.AddComponent<Button>();
+            skipBtn.targetGraphic = skipImg;
+            skipBtn.onClick.AddListener(() => { if (_drum != null) _drum.Skip(); });
+            Label(skipRT, "SkipLabel", "PAS GEÇ — manayı sakla", new Vector2(0.5f, 0.5f), Vector2.zero,
+                  new Vector2(400f, 64f), new Color(0.92f, 0.88f, 0.78f), 28f, FontStyles.Bold);
+            _skipButton = skipRT.gameObject;
         }
 
         private static RectTransform NewRect(string name, RectTransform parent, Vector2 anchor,

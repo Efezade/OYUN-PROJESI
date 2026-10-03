@@ -27,6 +27,12 @@ namespace TacticalRPG.Core
         [SerializeField] private UnitManager       _unitManager;
         [Tooltip("Yerleştirilecek kartların kaynağı — komutan kartı da buradan bulunur.")]
         [SerializeField] private PartyManager      _party;
+        [Tooltip("SINIF EVRİMLERİ (2026-10-03) — savaşa inen birim sınıfının açık evrimlerini taşır.")]
+        [SerializeField] private ClassEvolutionProgress _evolutions;
+        [Tooltip("EŞYALAR (2026-10-03) — karakterin taktığı eşyaların etkisi birime eklenir.")]
+        [SerializeField] private Inventory   _inventory;
+        [Tooltip("SAVAŞ POTLARI (2026-10-03) — içilmiş savaş potları tüm birliğe eklenir.")]
+        [SerializeField] private PlayerBuffs _buffs;
 
         [Header("Yerleştirme Bölgesi")]
         [Tooltip("Savaş haritasının alt kaç satırı yerleştirme bölgesi olsun (R < bu değer).")]
@@ -181,6 +187,13 @@ namespace TacticalRPG.Core
             card.RestoreFull(); // taze birim olarak in (savaş başı tam HP)
             unit.Configure(_grid, _unitManager, UnitTeam.Player);
             unit.Bind(card);
+            // EVRİM + EŞYA + SAVAŞ POTU: üçü tek toplamda birleşir ve birime bir kez işlenir
+            // (çift ok, kalkan, yarma, +saldırı ...). Savaş kodu yalnız bu toplamı okur.
+            var traits = new TacticalRPG.Data.EvolutionTraits();
+            if (_evolutions != null && card.Data != null) traits.Merge(_evolutions.TraitsFor(card.Data));
+            if (_inventory  != null) traits.Merge(_inventory.TraitsFor(card));
+            if (_buffs      != null) traits.Merge(_buffs.CombatTraits);
+            unit.ApplyEvolution(traits);
             unit.PlaceAt(coord);
             return unit;
         }

@@ -41,6 +41,8 @@ namespace TacticalRPG.Core
         [SerializeField] private CombatDrumManager _drum;
         [Tooltip("Kam'ın büyü hedeflemesi — açıkken harita tıklaması büyüye gider (çift tık = at).")]
         [SerializeField] private KamSkillCaster _skills;
+        [Tooltip("SINIF YETENEKLERİ (2026-10-03) — bir yetenek seçiliyse tıklama hedef olur.")]
+        [SerializeField] private UnitAbilityCaster _unitAbilities;
         [Tooltip("Opsiyonel — atanmışsa bölüm kaybedilince (sert kesim) harita tıklamaları kilitlenir.")]
         [SerializeField] private ChapterRunManager _run;
         [Tooltip("Opsiyonel — atanmışsa SAVAŞ SİSİ kalkmış adada (kule ile) menzil sınırı kalkar.")]
@@ -150,10 +152,13 @@ namespace TacticalRPG.Core
                 // Kam BÜYÜ hedefliyorsa tıklama TAMAMEN onundur (çift tık = at). Buradan
                 // geçseydi ilk tık birimi yürütür, büyü hedefi seçilemezdi.
                 if (_skills != null && _skills.Busy) return;
+                // Sınıf yeteneği animasyonu sürerken tahta kilitli (yarıda hareket/saldırı olmasın).
+                if (_unitAbilities != null && _unitAbilities.Busy) return;
 
                 if (!TryGetClickedCoord(out HexCoordinate combatCoord)) return;
                 if (_drum != null && _drum.IsPlacing) { _drum.PlaceAt(combatCoord); return; }
                 if (_caster != null && _caster.HasArmedAbility) { _caster.TryCastAt(combatCoord); return; }
+                if (_unitAbilities != null && _unitAbilities.HasArmed) { _unitAbilities.TryCastAt(combatCoord); return; }
                 if (_turnManager != null) _turnManager.HandlePlayerClick(combatCoord);
                 return;
             }

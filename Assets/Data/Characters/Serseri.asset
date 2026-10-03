@@ -42,7 +42,63 @@ MonoBehaviour:
   _unitModelEuler: {x: 0, y: 0, z: 0}
   _unitModelYOffset: 0
   _unitAnimator: {fileID: 0}
-  _portrait: {fileID: 0}
+  _portrait: {fileID: 21300000, guid: b465d5d62a9ed774cbca542902f30664, type: 3}
   _hasManaSystem: 0
   _maxMana: 0
   _abilities: []
+  _evolutions:
+  - _name: "\xC7evik"
+    _description: "+2 h\u0131z (s\u0131rada \xF6ne ge\xE7er)"
+    _cost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _trait: 5
+    _amount: 2
+  - _name: "G\xF6lge Ad\u0131m"
+    _description: +1 hareket
+    _cost:
+    - type: 3
+      amount: 11
+    - type: 4
+      amount: 6
+    _trait: 3
+    _amount: 1
+  - _name: "\xC7ift Han\xE7er"
+    _description: "Her sald\u0131r\u0131da ikinci darbe (%80)"
+    _cost:
+    - type: 3
+      amount: 17
+    - type: 4
+      amount: 11
+    _trait: 6
+    _amount: 80
+  _classAbilities:
+  - _name: "S\u0131rttan B\u0131\xE7ak"
+    _description: "2.2 kat sinsi vuru\u015F"
+    _kind: 0
+    _power: 220
+    _hits: 1
+    _range: -1
+    _radius: 0
+    _cooldown: 3
+    _color: {r: 0.45, g: 0.35, b: 0.55, a: 1}
+  - _name: "Han\xE7er Ya\u011Fmuru"
+    _description: "Ayn\u0131 hedefe 2 darbe (%60)"
+    _kind: 1
+    _power: 60
+    _hits: 2
+    _range: -1
+    _radius: 0
+    _cooldown: 2
+    _color: {r: 0.8, g: 0.85, b: 0.95, a: 1}
+  - _name: "Sis Bombas\u0131"
+    _description: "Alana %40 + karma\u015Fa (7 karo)"
+    _kind: 2
+    _power: 40
+    _hits: 1
+    _range: 2
+    _radius: 1
+    _cooldown: 3
+    _color: {r: 0.45, g: 0.35, b: 0.55, a: 1}

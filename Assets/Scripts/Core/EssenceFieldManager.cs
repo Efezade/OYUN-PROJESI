@@ -20,6 +20,11 @@ namespace TacticalRPG.Core
     ///
     /// Bu bileşen yalnız VERİYİ tutar. Karonun boyanması, konturu ve üstündeki hareketli küre
     /// <see cref="EssenceFieldVisuals"/>'in işidir (tek sorumluluk).
+    ///
+    /// OTOMATİK TOPLAMA (Efe'nin isteği 2026-10-03): Kam öz karosuna ADIM ATTIĞI anda öz alınır —
+    /// "Topla" düğmesi gerekmez. Uzun yürüyüşte yol üstündeki her yatak da toplanır. Toplama
+    /// eskisiyle AYNI yoldan geçer (<see cref="OnDepositRemoved"/> → sökülme gösterisi), yalnız
+    /// tetikleyen düğme değil adım. Toplama 1 AP yer (Efe, 2026-10-03: "öz toplayınca 1 AP geçsin").
     /// </summary>
     [DefaultExecutionOrder(-85)]   // ChapterMapGenerator(-90) haritayı kurduktan SONRA, düğümlerden(-80) ÖNCE
     public class EssenceFieldManager : MonoBehaviour
@@ -41,8 +46,19 @@ namespace TacticalRPG.Core
         [SerializeField] private PlayerController    _player;
 
         [Header("Toplama")]
-        [Tooltip("Öz toplamanın AP maliyeti (GAME_DESIGN §0: 1 AP).")]
+        [Tooltip("ELLE toplamanın AP maliyeti (GAME_DESIGN §0: 1 AP) — yalnız otomatik toplama " +
+                 "kapalıyken kullanılır.")]
         [SerializeField, Min(0)] private int _collectAPCost = 1;
+
+        [Tooltip("Kam öz karosuna adım atınca öz OTOMATİK toplansın (Efe, 2026-10-03).")]
+        [SerializeField] private bool _autoCollect = true;
+
+        [Tooltip("Otomatik toplamanın AP bedeli — adımın 1 AP'sinin ÜSTÜNE (Efe: öz toplayınca 1 AP " +
+                 "geçsin). Ad değişti (eski _autoCollectAPCost=0 sahnede kalmış olabilir, taşınmasın).")]
+        [SerializeField, Min(0)] private int _autoCollectAP = 1;
+
+        [Tooltip("Toplayıcı Özü potu açıkken toplama AP harcamaz (2026-10-03).")]
+        [SerializeField] private PlayerBuffs _buffs;
 
         private readonly Dictionary<HexCoordinate, Deposit> _deposits = new();
 
@@ -74,14 +90,19 @@ namespace TacticalRPG.Core
 
         public EssenceConfigSO Config => _config;
 
+        /// <summary>Öz adım atınca kendiliğinden mi toplanıyor? (HUD "Topla" düğmesini gizler.)</summary>
+        public bool AutoCollect => _autoCollect;
+
         private void OnEnable()
         {
-            if (_map != null) _map.OnMapGenerated += Rebuild;
+            if (_map    != null) _map.OnMapGenerated += Rebuild;
+            if (_player != null) _player.OnMoved     += HandlePlayerMoved;
         }
 
         private void OnDisable()
         {
-            if (_map != null) _map.OnMapGenerated -= Rebuild;
+            if (_map    != null) _map.OnMapGenerated -= Rebuild;
+            if (_player != null) _player.OnMoved     -= HandlePlayerMoved;
         }
 
         // ── Yerleşim ─────────────────────────────────────────────────────────
@@ -231,9 +252,24 @@ namespace TacticalRPG.Core
         public bool CollectAt(HexCoordinate c)
         {
             if (!CanCollect(c)) return false;
+            return Collect(c, _collectAPCost);
+        }
+
+        /// <summary>Kam bir karoya vardı: üstünde öz varsa OTOMATİK topla. Yürüyüşün her adımında
+        /// çağrılır (PlayerController.OnMoved) — yol üstündeki yataklar da toplanır.</summary>
+        private void HandlePlayerMoved(HexCoordinate c)
+        {
+            if (!_autoCollect || !HasEssenceAt(c)) return;
+            // AP KAPISI YOK: SpendAP dilimi/günü kendisi devirir — dilim sonunda basılan öz
+            // atlanmasın (karo yerinde kalsaydı oyuncu neden toplanmadığını anlamazdı).
+            Collect(c, _buffs != null && _buffs.FreeCollectActive ? 0 : _autoCollectAP);
+        }
+
+        private bool Collect(HexCoordinate c, int apCost)
+        {
             Deposit d = _deposits[c];
 
-            if (_ap != null) _ap.SpendAP(_collectAPCost);
+            if (_ap != null && apCost > 0) _ap.SpendAP(apCost);
             if (_wallet != null) _wallet.Gain(d.Type, d.Amount);
 
             _deposits.Remove(c);

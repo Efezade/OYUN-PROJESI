@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d4074c5bb1d0a648b1927bf335d27d2, type: 3}
+  m_Name: davul_serbeti
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.PotionSO
+  _id: davul_serbeti
+  _displayName: "Sava\u015F Davulu \u015Eerbeti"
+  _description: "Sonraki sava\u015F: \xE7ift vuru\u015F %35"
+  _icon: {fileID: 21300000, guid: 3e209a548a4843b4c882726fafbcd389, type: 3}
+  _color: {r: 0.95, g: 0.55, b: 0.2, a: 1}
+  _rarity: 2
+  _price:
+  - type: 3
+    amount: 9
+  - type: 4
+    amount: 6
+  _kind: 7
+  _magnitude: 35
+  _duration: 1
+  _trait: 6
+  _trait2: 0
+  _amount2: 0

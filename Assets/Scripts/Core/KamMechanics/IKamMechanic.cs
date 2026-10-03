@@ -42,6 +42,10 @@ namespace TacticalRPG.Core
         /// <summary>Overworld'de zaman dilimi ilerledi (yenilenme burada olur).</summary>
         void OnTimeSlotAdvanced(int day, int slot);
 
+        /// <summary>Yeni bir savaş başladı. Mana mekaniği burada savaş bütçesini doldurur
+        /// (Efe, 2026-10-03: "her savaş için 10 mana").</summary>
+        void OnCombatStarted();
+
         /// <summary>(mevcut, tavan) — HUD dinler.</summary>
         event Action<int, int> OnResourceChanged;
     }

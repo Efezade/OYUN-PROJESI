@@ -95,24 +95,41 @@ namespace TacticalRPG.Editor
             var loreLabel = CreateCenteredLabel(page, "CharLore", "", new Vector2(0.5f, 0.5f),
                 new Vector2(-372f, -292f), new Vector2(520f, 90f), InkSoft, 21f);
 
-            // ── SAĞ SAYFA: bedel + statlar ────────────────────────────────────
+            // ── SAĞ SAYFA: bedel · statlar · yetenekler · 3 evrim slotu ────────
+            // 2026-10-03: sayfa sıkıştırıldı — yetenekler ve evrim slotları (Efe'nin isteği)
+            // sığsın diye bedel ve stat panelleri küçüldü.
             RectTransform costPanel = InkPanel(page, "CostPanel", new Vector2(0.5f, 0.5f),
-                new Vector2(372f, 190f), new Vector2(470f, 160f), 18);
+                new Vector2(372f, 318f), new Vector2(470f, 76f), 14);
             var costLabel = CreateCenteredLabel(costPanel, "CostText", "ÜRETİM BEDELİ",
-                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(430f, 130f), Ink, 30f);
+                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(440f, 70f), Ink, 21f);
 
             RectTransform statPanel = InkPanel(page, "StatPanel", new Vector2(0.5f, 0.5f),
-                new Vector2(372f, -80f), new Vector2(470f, 340f), 18);
+                new Vector2(372f, 196f), new Vector2(470f, 150f), 14);
             // Statlar İKİ SÜTUN: orantılı fontta boşlukla hizalama tutmuyor (sayılar kayıyordu).
             // Sol sütun adlar, sağ sütun değerler; satırlar birebir eşleşsin diye ikisi de aynı
             // sırayla, aynı satır sayısıyla yazılır (CharacterBookView).
             var statNames = CreateCenteredLabel(statPanel, "StatNames", "", new Vector2(0f, 0.5f),
-                new Vector2(46f, 0f), new Vector2(230f, 300f), Ink, 25f);
+                new Vector2(46f, 0f), new Vector2(230f, 140f), Ink, 17f);
             statNames.alignment = TextAlignmentOptions.Left;
 
             var statsLabel = CreateCenteredLabel(statPanel, "StatValues", "", new Vector2(1f, 0.5f),
-                new Vector2(-56f, 0f), new Vector2(120f, 300f), Ink, 25f);
+                new Vector2(-56f, 0f), new Vector2(120f, 140f), Ink, 17f);
             statsLabel.alignment = TextAlignmentOptions.Right;
+
+            // YETENEKLER — sınıfın üç aktif yeteneği (savaşta 1/2/3).
+            RectTransform abilityPanel = InkPanel(page, "AbilityPanel", new Vector2(0.5f, 0.5f),
+                new Vector2(372f, 30f), new Vector2(470f, 166f), 14);
+            var abilitiesLabel = CreateCenteredLabel(abilityPanel, "AbilityText", "YETENEKLER",
+                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(444f, 152f), Ink, 15f);
+            abilitiesLabel.alignment = TextAlignmentOptions.TopLeft;
+            abilitiesLabel.richText  = true;
+
+            // EVRİM SLOTLARI — I · II · III, sırayla açılır.
+            CreateCenteredLabel(page, "EvoTitle", "EVRİMLER", new Vector2(0.5f, 0.5f),
+                new Vector2(372f, -70f), new Vector2(300f, 30f), Ink, 20f);
+            var slots = new List<EvoSlotParts>();
+            for (int i = 0; i < 3; i++)
+                slots.Add(CreateEvolutionSlot(page, i, new Vector2(372f + (i - 1) * 155f, -176f)));
 
             // ── Sayfa çevirme ─────────────────────────────────────────────────
             // Ok GLİFİ DEĞİL kelime: TMP'nin varsayılan fontunda U+25C0/U+25B6 yok, yerine boş
@@ -140,20 +157,79 @@ namespace TacticalRPG.Editor
             vso.FindProperty("_pageLabel").objectReferenceValue     = pageLabel;
             vso.FindProperty("_prevButton").objectReferenceValue    = prev;
             vso.FindProperty("_nextButton").objectReferenceValue    = next;
+            vso.FindProperty("_abilitiesLabel").objectReferenceValue = abilitiesLabel;
+            vso.FindProperty("_evolutions").objectReferenceValue     = EnsureClassEvolutionProgress();
+
+            SerializedProperty slotArr = vso.FindProperty("_evoSlots");
+            slotArr.arraySize = slots.Count;
+            for (int i = 0; i < slots.Count; i++)
+            {
+                SerializedProperty el = slotArr.GetArrayElementAtIndex(i);
+                el.FindPropertyRelative("_button").objectReferenceValue     = slots[i].Button;
+                el.FindPropertyRelative("_background").objectReferenceValue = slots[i].Background;
+                el.FindPropertyRelative("_title").objectReferenceValue      = slots[i].Title;
+                el.FindPropertyRelative("_name").objectReferenceValue       = slots[i].Name;
+                el.FindPropertyRelative("_desc").objectReferenceValue       = slots[i].Desc;
+                el.FindPropertyRelative("_status").objectReferenceValue     = slots[i].Status;
+            }
 
             SerializedProperty arr = vso.FindProperty("_entries");
             arr.arraySize = recipes.Count;
             for (int i = 0; i < recipes.Count; i++)
             {
+                Sprite bustSprite = InkArtFactory.Bust(BustFor(recipes[i]), 420);
                 SerializedProperty el = arr.GetArrayElementAtIndex(i);
                 el.FindPropertyRelative("_recipe").objectReferenceValue = recipes[i];
-                el.FindPropertyRelative("_bust").objectReferenceValue   =
-                    InkArtFactory.Bust(BustFor(recipes[i]), 420);
+                el.FindPropertyRelative("_bust").objectReferenceValue   = bustSprite;
+
+                // PORTRE (2026-10-03): büst sınıfın portresi olur — yerleştirme listesi ve sıra
+                // barı da aynı görseli göstersin. Elle atanmış portre EZİLMEZ (gerçek splash art).
+                AssignPortraitIfEmpty(recipes[i].UnitClass, bustSprite);
             }
             vso.ApplyModifiedProperties();
 
             Debug.Log($"[Kitap] Karakter sayfasi kuruldu — {recipes.Count} karakter " +
                       "(Kam haric, uretim tariflerinden).");
+        }
+
+        /// <summary>Tek evrim slotunun parçaları (görünüme bağlanır).</summary>
+        private class EvoSlotParts
+        {
+            public Button Button;
+            public Image  Background;
+            public TextMeshProUGUI Title, Name, Desc, Status;
+        }
+
+        /// <summary>Evrim slotu: kâğıt kart (düğme) + başlık · ad · açıklama · durum/bedel.</summary>
+        private static EvoSlotParts CreateEvolutionSlot(Transform page, int index, Vector2 pos)
+        {
+            RectTransform card = InkPanel(page, $"EvoSlot_{index + 1}", new Vector2(0.5f, 0.5f),
+                                          pos, new Vector2(145f, 160f), 12);
+            var parts = new EvoSlotParts { Background = card.GetComponent<Image>() };
+            parts.Button = card.gameObject.AddComponent<Button>();
+            parts.Button.targetGraphic = parts.Background;
+
+            parts.Title = CreateCenteredLabel(card, "Title", $"EVRİM {index + 1}", new Vector2(0.5f, 1f),
+                new Vector2(0f, -14f), new Vector2(136f, 22f), InkSoft, 14f);
+            parts.Name = CreateCenteredLabel(card, "Name", "—", new Vector2(0.5f, 1f),
+                new Vector2(0f, -38f), new Vector2(138f, 26f), Ink, 16f);
+            parts.Desc = CreateCenteredLabel(card, "Desc", "", new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -8f), new Vector2(134f, 56f), InkSoft, 12.5f);
+            parts.Status = CreateCenteredLabel(card, "Status", "", new Vector2(0.5f, 0f),
+                new Vector2(0f, 16f), new Vector2(138f, 26f), Ink, 13f);
+            return parts;
+        }
+
+        /// <summary>Sınıfın portresi boşsa verilen sprite'ı atar (asset kirli işaretlenir).</summary>
+        private static void AssignPortraitIfEmpty(CharacterClassData data, Sprite sprite)
+        {
+            if (data == null || sprite == null) return;
+            var so = new SerializedObject(data);
+            SerializedProperty p = so.FindProperty("_portrait");
+            if (p == null || p.objectReferenceValue != null) return;
+            p.objectReferenceValue = sprite;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(data);
         }
 
         /// <summary>

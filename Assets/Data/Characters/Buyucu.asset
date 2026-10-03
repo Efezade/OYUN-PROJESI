@@ -42,7 +42,63 @@ MonoBehaviour:
   _unitModelEuler: {x: 0, y: 0, z: 0}
   _unitModelYOffset: 0
   _unitAnimator: {fileID: 0}
-  _portrait: {fileID: 0}
+  _portrait: {fileID: 21300000, guid: 1598a2af0afa0a74197ecc9b29960e74, type: 3}
   _hasManaSystem: 1
   _maxMana: 8
   _abilities: []
+  _evolutions:
+  - _name: "Ruh Kalkan\u0131"
+    _description: "Sava\u015Fa 4 kalkanla iner"
+    _cost:
+    - type: 3
+      amount: 4
+    - type: 4
+      amount: 3
+    _trait: 10
+    _amount: 4
+  - _name: "B\xFCy\xFC G\xFCc\xFC"
+    _description: "+2 sald\u0131r\u0131"
+    _cost:
+    - type: 3
+      amount: 10
+    - type: 4
+      amount: 6
+    _trait: 1
+    _amount: 2
+  - _name: "Zincir \u015Eim\u015Fek"
+    _description: "Vuru\u015Fu yandakilere %60 s\u0131\xE7rar"
+    _cost:
+    - type: 3
+      amount: 17
+    - type: 4
+      amount: 11
+    _trait: 9
+    _amount: 60
+  _classAbilities:
+  - _name: "Ate\u015F Topu"
+    _description: Alana %90 hasar (7 karo)
+    _kind: 2
+    _power: 90
+    _hits: 1
+    _range: 4
+    _radius: 1
+    _cooldown: 2
+    _color: {r: 1, g: 0.45, b: 0.15, a: 1}
+  - _name: "Buz M\u0131zra\u011F\u0131"
+    _description: Vurur ve dondurur
+    _kind: 3
+    _power: 70
+    _hits: 1
+    _range: 4
+    _radius: 0
+    _cooldown: 3
+    _color: {r: 0.55, g: 0.85, b: 1, a: 1}
+  - _name: Arkan Patlama
+    _description: "1.8 kat saf b\xFCy\xFC"
+    _kind: 0
+    _power: 180
+    _hits: 1
+    _range: 3
+    _radius: 0
+    _cooldown: 3
+    _color: {r: 0.65, g: 0.4, b: 1, a: 1}

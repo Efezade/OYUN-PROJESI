@@ -15,6 +15,7 @@ MonoBehaviour:
   _kamMechanic: {fileID: 11400000, guid: a0d76f5e1d0ef9f4ca4012f06acd1263, type: 2}
   _skillTree: {fileID: 11400000, guid: 167b153f780281544a1d1abddbe0a1fb, type: 2}
   _questChain: {fileID: 11400000, guid: 6a447aa8755c3e449b45b0aa3bbdd38c, type: 2}
+  _storyChains: {fileID: 11400000, guid: bb84ccbf0dab5ea419e242c330904bca, type: 2}
   _chapterEssences: 0300000004000000
   _rewardEssence: 4
   _tone: 0

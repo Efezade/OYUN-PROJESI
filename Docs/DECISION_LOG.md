@@ -16,6 +16,94 @@
 
 ---
 
+## 2026-10-04 — Giydirme bebeği: vücut bölgesi yuvaları + KAM donanım sayfası
+
+**KARAR — Eşya bir VÜCUT BÖLGESİNE aittir (`EquipSlot`: kafa · boyun · gövde · sağ kol/silah ·
+sol kol/kalkan · ayak) ve yalnız oraya takılır; karakter başına 6 yuva.** ÇANTA'da EŞYALAR
+sekmesi giydirme bebeği: solda karakter listesi, ortada büst + tam boy mürekkep silüeti
+(`InkArtFactory.Doll`) + iki yanında bölge yuvaları + "EŞYALARDAN" toplam satırı, sağda çanta.
+Sürükleme başlayınca uygun yuva yeşil, diğerleri sönük. Yeni **KAM** sekmesi aynı ekranın
+komutana kilitli hâli (`BagInventoryView._commanderOnly`). `EquipSlot.Yok` = atanmamış sentinel:
+kurulum eski eşya asset'lerine bölgeyi YALNIZ boşsa yazar.
+**NEDEN (Efe):** "eşyaları karakterlerin kol, gövde, kafa gibi bölgelerine sürükleyip takabileyim;
+Kam için de geçerli olsun". Eski 2 serbest yuva hangi eşyanın nereye gittiğini anlatmıyordu.
+
+## 2026-10-03 (5) — Otomatik öz toplama + eşya/pot envanteri + rastgele market ve reroll
+
+**KARAR 1 — Öz, karoya ADIM ATINCA toplanır ve 1 AP yer** (Efe: "toplaya basmama gerek
+kalmasın", sonra "öz toplayınca 1 AP geçsin"). Yol üstündeki her yatak da toplanır; animasyon
+eski yoldan (`OnDepositRemoved`). AP kapısı YOK — `SpendAP` dilimi kendisi devirir, dilim sonunda
+basılan öz atlanmaz. Alan adı `_autoCollectAP` (eski `_autoCollectAPCost=0` sahnede kalmış olabilir).
+
+**KARAR 2 — EŞYA kalıcıdır ve karaktere TAKILIR; POT geçicidir ve İÇİLİR.** 24 eşya (Sıradan ·
+Nadir · Destansı), karakter başına 2 yuva, ÇANTA → EŞYALAR'da sürükle-bırak (yuvaya bırak = tak,
+dolu yuva = yer değiştir, çantaya bırak / sağ tık = çıkar). Eşya etkileri evrimlerle AYNI özellik
+kümesi (`EvolutionTraits`) — yerleştirmede evrim + eşya + savaş potu tek toplamda birleşir.
+14 pot: ana harita (adım süreli: menzil, hız, görüş, bedava toplama · anında: AP, sis açma, yol
+taşı) ve savaş (sonraki 1-2 savaşta tüm birliğe). Envanter bölüm kaybında KORUNUR.
+
+**KARAR 3 — Market rafı her GÜN nadirlik ağırlıklı rastgele dizilir (4 eşya + 4 pot); REROLL
+belirli öz karşılığı rafı baştan dizer** (3 taş + 3 doğa, sabit — örnek). Reroll mümkün olduğunca
+bir önceki raftakileri getirmez. Alınan ürün SATILDI olur ve envantere gider. Eski sabit katalog
+(`ShopItemSO`) asset'leri SİLİNMEDİ, market artık onları göstermiyor.
+
+## 2026-10-03 (4) — Sınıf evrimleri + sınıf yetenekleri + yerleştirmede büst
+
+**KARAR 1 — Her sınıfın 3 EVRİMİ var; KİTAP'ın karakter sayfasında SIRAYLA (I → II → III) özle
+açılır ve o sınıftan savaşa inen HER birime işler.** Evrim sınıf başınadır, birim başına değil.
+Özellik kümesi küçük ve kodda çözülen bir enum (`EvolutionTrait`): stat bonusları, çift vuruş
+(Okçu "çift ok"), can çalma, diken, yarma, başlangıç kalkanı, yenilenme, yetenek beklemesi
+kısaltma. Bedeller YER TUTUCU (Efe: "şimdilik rastgele"). **Ölünce SIFIRLANMAZ** — roster ve
+seviyeler de korunuyor; ağaçlardan bilinçli fark.
+
+**KARAR 2 — Kam dışındaki her sınıfın 3 aktif YETENEĞİ var**, savaşta normal saldırının yerine
+(1/2/3 ya da HUD düğmesi), bekleme süreli. Altı tür (`UnitAbilityKind`): sert vuruş, çoklu vuruş,
+alan, sersemletme, dosta can, dosta kalkan. Animasyonlar YER TUTUCU ve prosedürel
+(`UnitAbilityFx`: hamle · mermi · yayılan halka · yükselen ışık); etki animasyonun "vurduğu
+an"da uygulanır. Alan yeteneği dost vurmaz (Kam büyülerinden farkı).
+
+**KARAR 3 — Yerleştirme listesinde ve sıra barında sınıf BÜSTÜ.** Portre alanı boşsa kurulum
+KİTAP büstünü atar (elle konan gerçek splash art ezilmez). Büst beyaz maske → kâğıt zemin +
+mürekkep tonuyla çizilir.
+
+## 2026-10-03 (3) — Savaş manası + kart bedelleri + KİTAP'ta KAROLAR ağacı
+
+**KARAR — Kam her savaşa 10 mana ile girer; davul kartlarının HEPSİ manayla oynanır.** Karo 3
+(güçlü 4), büyü 4 (dal kökü) / 5 (üst basamak). Sayılar Efe'nin kısıtlarından türetildi: en
+ucuz kart 3 → en çok 3 kart; 5+5=10 → en az 2 kart; en ucuz büyü 4 → manayla en çok 2 büyü.
+Ayrıca davulda SERT 2 büyü sınırı (Davul Taşı mana kazandırabildiği için sigorta; kartın kendisi
++3'ten +1'e indi). Oynanamayan kart soluk + sebebi yazar; PAS GEÇ manayı saklar.
+**Eski 1/2/3 Kam büyüleri kapatıldı** (aynı manadan harcayıp sınırı delerdi).
+**KAROLAR AĞACI:** yetenek ağacıyla aynı altyapı — `UpgradeTreeSO` / `UpgradeTreeProgress` /
+`UpgradeTreeView` ortak taban (eski `KamSkillTreeView` GUID korunarak genelleşti). 23 karo / 5
+dal (karo grupları), her dalın ilk ikisi açık başlar; ağaç draft havuzunu ve seviyeyi belirler,
+mana bedeli seviyeyle değişmez. Ölünce sıfırlanır (yetenek ağacıyla aynı kural).
+**HATA (bulundu, düzeltildi):** `CombatDrumManager.ResetForNewBattle` hiç çağrılmıyordu — bir
+savaşta çıkan kart sonraki savaşlarda da "kullanıldı" sayılıyordu. Artık her savaşın 1. turunda.
+
+## 2026-10-03 (2) — Hikaye zincirleri + minimapte zincir çizgisi
+
+**KARAR — Savaş alanları (zindan + karşılaşma) harita üretilince 2-5 adımlık HİKAYE ZİNCİRLERİNE
+bölünür; zorunlu görevler kademe sırasıyla kendi altın zincirlerini kurar. Zincir YALNIZ
+minimapte, kesik çizgiyle ve SİS KURALIYLA çizilir; 3B haritada yok.**
+**NEDEN (Efe):** "hiçbir savaş alanı tek görev gibi olmayacak"; hikaye metinleri (yandan çıkan
+karakter konuşmaları) çok ileride gelecek, zincir şimdiden veri olarak dursun.
+**SİS:** çizgi yalnız keşfedilmiş karoların üstünde görünür, sise girdiği yerde kesilir — oyuncu
+zincirin yönünü sezer, ucunu keşfetmeden göremez. Zorunlu görev ikonu sisten bağımsız ama
+aradaki altın zincir aynı kurala uyar.
+**SIRA KİLİDİ YOK (Efe'nin seçimi):** her alana yine serbestçe girilir; panel yalnız "adım 2/3" yazar.
+**BÖLME:** açgözlü — en az komşulu alandan başla, kuyruğa en yakını ekle (bağ ≤ 7 hex), tek
+kalanı en yakın DOLMAMIŞ zincirin ucuna ekle. Tekil görev kuralı 5-adım tavanından önce gelir.
+Batch testinde 300 rastgele yerleşimde tekil zincir 0; zincirlerin ~%3'ü 5'i aşıyor (yalnız çok
+seyrek yerleşimlerde). Ayar: `StoryChainConfig.asset`, kural setinden bölüme özel seçilebilir.
+**DERS:** `FindFirstObjectByType` varsayılan olarak KAPALI nesneleri bulmaz — sahnede kapalı
+başlayan HARİTA paneli için `FindObjectsInactive.Include` şart (ilk kurulum sessizce atlamıştı).
+**DERS 2 (Play'de bulundu):** batch kurulumda eklenen özel `MaskableGraphic`'in nesnesinde
+`CanvasRenderer` OLUŞMADI; RectMask2D kırpması her karede `MissingComponentException` attı ve
+`CanvasUpdateRegistry` TÜM arayüzün güncellemesini yarıda bıraktı → HARİTA açılmadı, UI yanıp
+söndü. Kural: UI nesnesini `new GameObject(ad, typeof(RectTransform), typeof(CanvasRenderer))`
+ile kur; grafik sınıfı da Awake'te eksik CanvasRenderer'ı ekler.
+
 ## 2026-10-03 — Faz 2 omurgası (kural seti + Kam mekaniği) + Faz 1 (görev tipi, takvim, ekonomi) + yürüyüş soruları
 
 **KARAR 1 — Her bölümün kimliği TEK bir `ChapterRulesSO`'da; bölüm listesi (`ChapterConfigSO`)

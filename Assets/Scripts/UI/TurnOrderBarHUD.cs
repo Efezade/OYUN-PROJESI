@@ -109,7 +109,12 @@ namespace TacticalRPG.UI
             // Zemin: portre varsa onu bas, yoksa sınıf rengi.
             Sprite portrait = data != null ? data.Portrait : null;
             if (portrait != null && portrait.texture != null)
-                GUI.DrawTexture(card, portrait.texture, ScaleMode.ScaleAndCrop);
+            {
+                // Portre şimdilik KİTAP büstü = beyaz maske (2026-10-03); zemin olmadan arazinin
+                // üstünde kayboluyordu → önce sınıf rengi, üstüne büst.
+                DrawRect(card, baseCol);
+                GUI.DrawTexture(card, portrait.texture, ScaleMode.ScaleToFit);
+            }
             else
             {
                 DrawRect(card, baseCol);

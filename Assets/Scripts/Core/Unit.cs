@@ -129,12 +129,38 @@ namespace TacticalRPG.Core
         // ── Savaş statları (kart varsa karttan; yoksa kartsız fallback alanlarından) ──
         // Karo bonusu HEPSİNE eklenir; negatif karolar (çamur, sarsıntı) statı sıfırın altına
         // indiremez — aksi halde "eksi savunma" formülde ters yönde hasar azaltmaya dönerdi.
-        public int Attack      => Mathf.Max(0, (_card != null ? _card.Attack      : _attack)      + _tileBonus.Attack);
-        public int Defense     => Mathf.Max(0, (_card != null ? _card.Defense     : _defense)     + _tileBonus.Defense);
+        // Davul karosu bonusu + EVRİM bonusu (2026-10-03) birlikte uygulanır.
+        public int Attack      => Mathf.Max(0, (_card != null ? _card.Attack      : _attack)      + _tileBonus.Attack     + _evo.Attack);
+        public int Defense     => Mathf.Max(0, (_card != null ? _card.Defense     : _defense)     + _tileBonus.Defense    + _evo.Defense);
         public int Level       => _card != null ? _card.Level       : 1;
-        public int MoveRange   => Mathf.Max(0, (_card != null ? _card.MoveRange   : _moveRange)   + _tileBonus.Move);
-        public int Speed       => Mathf.Max(0, (_card != null ? _card.Speed       : _speed)       + _tileBonus.Initiative);
-        public int AttackRange => Mathf.Max(1, (_card != null ? _card.AttackRange : _attackRange) + _tileBonus.Range);
+        public int MoveRange   => Mathf.Max(0, (_card != null ? _card.MoveRange   : _moveRange)   + _tileBonus.Move       + _evo.Move);
+        public int Speed       => Mathf.Max(0, (_card != null ? _card.Speed       : _speed)       + _tileBonus.Initiative + _evo.Speed);
+        public int AttackRange => Mathf.Max(1, (_card != null ? _card.AttackRange : _attackRange) + _tileBonus.Range      + _evo.Range);
+
+        // ── Evrim (2026-10-03) ────────────────────────────────────────────────
+        // Sınıfın KİTAP'ta açılmış evrimlerinin toplamı; savaşa inerken DeploymentManager verir.
+        // Düşmanlar ve kartsız birimler için sıfır kalır.
+        private EvolutionTraits _evo;
+
+        /// <summary>Bu birimin taşıdığı evrimler (HUD yazar).</summary>
+        public EvolutionTraits Evolution => _evo;
+
+        /// <summary>Evrimleri birime işler (savaşa iniş anında bir kez). Başlangıç kalkanı burada verilir.</summary>
+        public void ApplyEvolution(in EvolutionTraits traits)
+        {
+            _evo = traits;
+            if (_evo.StartShield > 0) AddShield(_evo.StartShield);
+            OnStatsChanged?.Invoke(this);
+        }
+
+        /// <summary>Kendi turu başladı (TurnManager çağırır) — evrimden gelen yenilenme.</summary>
+        public void OnOwnTurnBegan()
+        {
+            if (_evo.Regen > 0) Heal(_evo.Regen);
+        }
+
+        /// <summary>Saldırı animasyonunu hasarsız tetikler (yetenekler kendi hasarını uygular).</summary>
+        public void AnnounceAttack(Unit target) => OnAttackPerformed?.Invoke(target);
 
         /// <summary>Karo bonusu olmadan taban hız — sıra barı "neden öne geçti"yi gösterebilsin.</summary>
         public int BaseSpeed => _card != null ? _card.Speed : _speed;
@@ -320,7 +346,40 @@ namespace TacticalRPG.Core
         {
             if (target == null || !IsAlive) return;
             OnAttackPerformed?.Invoke(target);
-            target.TakeDamage(Attack);
+            DealDamageTo(target, Attack);
+
+            // EVRİM: çift vuruş — ikinci ok/darbe (Okçu "çift ok" gibi).
+            if (_evo.DoubleStrikePct > 0 && target.IsAlive)
+                DealDamageTo(target, Mathf.Max(1, Attack * _evo.DoubleStrikePct / 100));
+
+            // EVRİM: yarma — hedefin bitişiğindeki düşmanlar da pay alır.
+            if (_evo.CleavePct > 0 && _unitManager != null)
+            {
+                int splash = Mathf.Max(1, Attack * _evo.CleavePct / 100);
+                var near = new List<Unit>();
+                foreach (Unit u in _unitManager.Units)
+                    if (u != null && u != target && u.IsAlive && u.Team == target.Team &&
+                        u.Coordinate.DistanceTo(target.Coordinate) == 1) near.Add(u);
+                foreach (Unit u in near) DealDamageTo(u, splash);
+            }
+
+            // EVRİM (hedefin): diken — yakından vurana hasar geri döner.
+            if (target._evo.Thorns > 0 && Coordinate.DistanceTo(target.Coordinate) <= 1)
+                TakeDamage(target._evo.Thorns);
+        }
+
+        /// <summary>
+        /// Hedefe hasar verir ve GERÇEKTEN düşen canı döndürür. Can çalma (evrim) burada işler —
+        /// normal saldırı da sınıf yetenekleri de bu yoldan geçer.
+        /// </summary>
+        public int DealDamageTo(Unit target, int amount)
+        {
+            if (target == null || amount <= 0) return 0;
+            int before = target.CurrentHP;
+            target.TakeDamage(amount);
+            int dealt = Mathf.Max(0, before - target.CurrentHP);
+            if (dealt > 0 && _evo.LifestealPct > 0) Heal(Mathf.Max(1, dealt * _evo.LifestealPct / 100));
+            return dealt;
         }
 
         // ── Etki API'si (AbilityCaster çağırır) ───────────────────────────────

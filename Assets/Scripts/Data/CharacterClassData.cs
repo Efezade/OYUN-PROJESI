@@ -66,6 +66,13 @@ namespace TacticalRPG.Data
         [Header("Yetenekler (Kam vb. — boş olabilir)")]
         [SerializeField] private List<KamAbilityData> _abilities = new();
 
+        [Header("Evrim (2026-10-03) — KİTAP'ta sırayla açılır: I → II → III")]
+        [Tooltip("Üç evrim basamağı. Açılan evrim o sınıftan savaşa inen HER birime işler.")]
+        [SerializeField] private ClassEvolution[] _evolutions = new ClassEvolution[0];
+
+        [Header("Sınıf yetenekleri (2026-10-03) — savaşta normal saldırının yerine")]
+        [SerializeField] private ClassAbility[] _classAbilities = new ClassAbility[0];
+
         // ── Kimlik ───────────────────────────────────────────────────────────
         public string ClassName => _className;
         public string Lore      => _lore;
@@ -94,6 +101,10 @@ namespace TacticalRPG.Data
 
         // ── Yetenekler ────────────────────────────────────────────────────────
         public IReadOnlyList<KamAbilityData> Abilities => _abilities;
+
+        // ── Evrim + sınıf yetenekleri ────────────────────────────────────────
+        public IReadOnlyList<ClassEvolution> Evolutions     => _evolutions ?? System.Array.Empty<ClassEvolution>();
+        public IReadOnlyList<ClassAbility>   ClassAbilities => _classAbilities ?? System.Array.Empty<ClassAbility>();
 
         // ── Seviye sorgulama ──────────────────────────────────────────────────
         public const int MaxLevel = 3; // 1, 2, 3

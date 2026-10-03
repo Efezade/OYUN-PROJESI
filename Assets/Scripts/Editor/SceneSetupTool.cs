@@ -58,6 +58,8 @@ namespace TacticalRPG.Editor
                 SetupChapters();     // 8 bolum ilerlemesi — UIShell'den ONCE olmali
                 SetupUIShell();      // ana menu gezinme kabugu (KITAP/CANTA/HARITA sekmeleri + ayar)
                 SetupStore();    // magaza karosu + oz ile item/pot satin alma (StoreManager/PlayerBuffs/StoreHUD)
+                SetupInventory();        // esya + pot + market stogu/reroll (PlayerBuffs'tan SONRA)
+                SetupClassProgression(); // sinif evrimleri + sinif yetenekleri (savasta 1/2/3)
                 SetupChapterRules(); // FAZ 2 OMURGASI: bolum kural seti + Kam mekanigi + gorev tipleri +
                                      // otomatik yuruyus durdurucu (ChapterProgress'ten SONRA olmali)
                 // EN SON: haritayi editorde uret ki Play'e basmadan da yeni harita gorunsun.

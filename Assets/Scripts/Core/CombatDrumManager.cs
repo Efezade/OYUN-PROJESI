@@ -71,11 +71,34 @@ namespace TacticalRPG.Core
                  "Atanmazsa eski davranış sürer: katalogdaki her büyü çıkabilir.")]
         [SerializeField] private KamSkillProgress _skillTree;
 
+        [Header("Karo ağacı (2026-10-03)")]
+        [Tooltip("DEĞİŞTİRİLEBİLİR KAROLAR AĞACI. Atanırsa karo kartları YALNIZ ağaçta açılmış " +
+                 "karolardan çıkar ve SEVİYELİ kopyayla sunulur. Atanmazsa her karo çıkabilir.")]
+        [SerializeField] private AugmentTreeProgress _tileTree;
+
+        [Header("Mana (2026-10-03)")]
+        [Tooltip("Kartların mana bedelini öder. Atanmazsa kartlar bedelsiz (eski davranış).")]
+        [SerializeField] private KamMechanicHost _kam;
+        [Tooltip("Savaş başına atılabilecek en çok büyü (Efe: 2). Mana zaten 2'ye izin veriyor; " +
+                 "bu sınır mana kazandıran kartlara karşı SİGORTA.")]
+        [SerializeField, Min(0)] private int _maxSpellsPerCombat = 2;
+
         // ── Durum ────────────────────────────────────────────────────────────
         private readonly List<DraftCard>            _choices   = new();
         private readonly List<HexCoordinate>        _validCells = new();
         private readonly List<string>               _usedIds    = new();   // aynı savaşta tekrar etmesin
         private readonly List<HexCoordinate>        _placedCoords = new(); // bu kartın kapladığı karolar
+
+        /// <summary>Bu savaşta atılan büyü sayısı (<see cref="_maxSpellsPerCombat"/> ile sınırlı).</summary>
+        public int SpellsCast { get; private set; }
+
+        /// <summary>Savaş başına büyü sınırı (UI yazar).</summary>
+        public int MaxSpellsPerCombat => _maxSpellsPerCombat;
+
+        /// <summary>Kam'ın şu anki manası / tavanı (mana bağlı değilse 0/0).</summary>
+        public int Mana    => _kam != null ? _kam.Current : 0;
+        public int MaxMana => _kam != null ? _kam.Max     : 0;
+        public bool UsesMana => _kam != null;
 
         /// <summary>
         /// Draftta sunulan TEK bir kart: ya bir KARO ya bir BÜYÜ. İkisi tek listede duruyor
@@ -97,7 +120,31 @@ namespace TacticalRPG.Core
             public string Description => IsSkill ? Skill.Description : Tile.Description;
             public string AreaLabel   => IsSkill ? KamSkillCatalog.AreaLabel(Skill)
                                                  : AugmentCatalog.AreaLabel(Tile);
+            public int    ManaCost    => IsSkill ? Skill.ManaCost : Tile.ManaCost;
         }
+
+        /// <summary>
+        /// Kart ŞU AN oynanabilir mi? İki kapı: MANA (bedel yetmeli) ve BÜYÜ SINIRI (savaş başına
+        /// en çok <see cref="_maxSpellsPerCombat"/>). Sebep kartın üstünde yazar — sönük kartın
+        /// neden sönük olduğu tahmin ettirilmez.
+        /// </summary>
+        public bool CanPlay(DraftCard card, out string reason)
+        {
+            reason = "";
+            if (!card.IsValid) { reason = "Geçersiz kart."; return false; }
+            if (card.IsSkill && SpellsCast >= _maxSpellsPerCombat)
+            {
+                reason = $"Bu savaşta {_maxSpellsPerCombat} büyü atıldı — sınır doldu.";
+                return false;
+            }
+            if (_kam != null && !_kam.CanPay(card.ManaCost))
+            {
+                reason = $"Mana yetmiyor ({card.ManaCost} gerek, {_kam.Current} var).";
+                return false;
+            }
+            return true;
+        }
+
 
         /// <summary>Şu an seçim bekleniyor mu? (UI bu bayrağa bakar, savaş girdisi kilitlenir.)</summary>
         public bool IsChoosing { get; private set; }
@@ -138,6 +185,9 @@ namespace TacticalRPG.Core
 
         private void HandleRoundStarted(int round)
         {
+            // Yeni savaş: kullanılan kartlar ve büyü sayacı sıfırlanır. (Eskiden bu çağrı HİÇ
+            // yapılmıyordu — bir savaşta çıkan kart sonraki savaşlarda da "kullanıldı" sayılıyordu.)
+            if (round == 1) ResetForNewBattle();
             if (round < _firstBeatRound) return;
             if ((round - _firstBeatRound) % _beatInterval != 0) return;
             if (KamUnit() == null) return;                  // Kam yoksa davul çalmaz
@@ -151,9 +201,24 @@ namespace TacticalRPG.Core
             _usedIds.Clear();
             _choices.Clear();
             _validCells.Clear();
-            Selected   = null;
+            Selected       = null;
+            IsChoosing     = false;
+            IsPlacing      = false;
+            IsCastingSkill = false;
+            SpellsCast     = 0;
+        }
+
+        /// <summary>
+        /// PAS GEÇ — bu vuruşta kart oynamadan manayı sakla (UI çağırır). Mana bütçesi savaş
+        /// başına 2-3 karta yettiği için her vuruşta oynamak mümkün değil; geçmek de bir karar.
+        /// </summary>
+        public void Skip()
+        {
+            if (!IsChoosing) return;
             IsChoosing = false;
-            IsPlacing  = false;
+            _choices.Clear();
+            Debug.Log($"[Davul] Tur {(_turns != null ? _turns.Round : 0)} — pas gecildi, mana saklandi ({Mana}/{MaxMana}).");
+            OnDraftClosed?.Invoke();
         }
 
         // ── Draft ────────────────────────────────────────────────────────────
@@ -208,10 +273,11 @@ namespace TacticalRPG.Core
                 if (_usedIds.Contains(e.Id)) continue;                   // aynı savaşta tekrar yok
                 if (e.NeedsRangedSystem)     continue;                   // menzil/LoS gelmeden çalışmaz
                 if (e.RequiresClass != null) continue;                   // sınıfsallar ayrı yoldan
+                if (_tileTree != null && !_tileTree.IsInPool(e.Id)) continue;   // KİTAP'ta açılmamış
                 pool.Add(e);
             }
             if (pool.Count == 0) return;
-            _choices.Add(new DraftCard(pool[Random.Range(0, pool.Count)]));
+            _choices.Add(new DraftCard(ScaledTile(pool[Random.Range(0, pool.Count)])));
         }
 
         /// <summary>
@@ -257,10 +323,15 @@ namespace TacticalRPG.Core
             {
                 if (_usedIds.Contains(e.Id) || e.NeedsRangedSystem) continue;
                 if (e.RequiresClass != null && !onField.Contains(e.RequiresClass)) continue;
+                if (_tileTree != null && !_tileTree.IsInPool(e.Id)) continue;
                 pool.Add(e);
             }
-            return pool.Count > 0 ? pool[Random.Range(0, pool.Count)] : null;
+            return pool.Count > 0 ? ScaledTile(pool[Random.Range(0, pool.Count)]) : null;
         }
+
+        /// <summary>Karonun KİTAP'taki seviyesiyle ölçeklenmiş kopyası (ağaç yoksa aynısı).</summary>
+        private AugmentCatalog.Entry ScaledTile(AugmentCatalog.Entry e)
+            => _tileTree != null ? _tileTree.Scaled(e) : e;
 
         // ── Seçim → yerleştirme ──────────────────────────────────────────────
 
@@ -270,6 +341,11 @@ namespace TacticalRPG.Core
             if (!IsChoosing || index < 0 || index >= _choices.Count) return false;
 
             DraftCard card = _choices[index];
+            if (!CanPlay(card, out string reason))
+            {
+                Debug.Log($"[Davul] '{card.Name}' oynanamaz — {reason}");
+                return false;
+            }
 
             // BÜYÜ: yerleştirme yok — hedefleme moduna geçilir (kamera uzaklaşır, alan fareyi
             // takip eder, çift tık atar). Karo yolundan tamamen ayrı bir dal.
@@ -318,6 +394,10 @@ namespace TacticalRPG.Core
                 OnChoicesOffered?.Invoke();
                 return;
             }
+
+            // BEDEL büyü GERÇEKTEN atılınca ödenir (iptalde hiçbir şey gitmez).
+            if (_kam != null) _kam.TryPay(skill.ManaCost);
+            SpellsCast++;
 
             _usedIds.Add(skill.Id);
             _choices.Clear();
@@ -383,6 +463,9 @@ namespace TacticalRPG.Core
                                  "TacticalRPG/Savas - Arena + Formul Kur menusunu calistir.");
                 foreach (var c in _placedCoords) ApplyTile(c, Selected);
             }
+
+            // BEDEL karo GERÇEKTEN konunca ödenir.
+            if (_kam != null) _kam.TryPay(Selected.ManaCost);
 
             _usedIds.Add(Selected.Id);
             var placedEntry = Selected;

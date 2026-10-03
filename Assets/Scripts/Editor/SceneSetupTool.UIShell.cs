@@ -147,11 +147,15 @@ namespace TacticalRPG.Editor
             // Sayfa takımları aynı gövdenin içinde; kenardaki yer imleri arasında geçiş yapılır.
             RectTransform pageClasses = PageRoot(b, "Page_Classes");
             RectTransform pageSkills  = PageRoot(b, "Page_Skills");
+            // Üçüncü takım (2026-10-03): DEĞİŞTİRİLEBİLİR KAROLAR ağacı — davulun karo kartları.
+            RectTransform pageTiles   = PageRoot(b, "Page_Tiles");
 
             Image bmClassesBg;
-            Button bmClasses = Bookmark(b, "Bookmark_Classes", "KARAKTER",  110f, out bmClassesBg);
+            Button bmClasses = Bookmark(b, "Bookmark_Classes", "KARAKTER",  180f, out bmClassesBg);
             Image bmSkillsBg;
-            Button bmSkills  = Bookmark(b, "Bookmark_Skills",  "YETENEK",  -110f, out bmSkillsBg);
+            Button bmSkills  = Bookmark(b, "Bookmark_Skills",  "YETENEK",     0f, out bmSkillsBg);
+            Image bmTilesBg;
+            Button bmTiles   = Bookmark(b, "Bookmark_Tiles",   "KAROLAR",  -180f, out bmTilesBg);
 
             // Sınıf sayfası ARTIK kitap gövdesine değil, kendi sayfa köküne çizilir.
             b = pageClasses;
@@ -182,13 +186,17 @@ namespace TacticalRPG.Editor
             // ── İkinci sayfa takımı: KAM'IN YETENEK AĞACI ─────────────────────
             PopulateSkillPage(pageSkills, panelGO);
 
+            // ── Üçüncü sayfa takımı: DEĞİŞTİRİLEBİLİR KAROLAR AĞACI ───────────
+            PopulateAugmentPage(pageTiles);
+
             // Yer imi çevirici (hangi sayfa takımı görünür).
             var pager = panelGO.AddComponent<BookmarkPager>();
             var pso = new SerializedObject(pager);
             SerializedProperty pages = pso.FindProperty("_pages");
-            pages.arraySize = 2;
+            pages.arraySize = 3;
             WireBookmark(pages.GetArrayElementAtIndex(0), pageClasses.gameObject, bmClasses, bmClassesBg);
             WireBookmark(pages.GetArrayElementAtIndex(1), pageSkills.gameObject,  bmSkills,  bmSkillsBg);
+            WireBookmark(pages.GetArrayElementAtIndex(2), pageTiles.gameObject,   bmTiles,   bmTilesBg);
             pso.ApplyModifiedProperties();
         }
 

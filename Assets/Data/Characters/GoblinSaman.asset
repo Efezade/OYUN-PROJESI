@@ -46,3 +46,5 @@ MonoBehaviour:
   _hasManaSystem: 0
   _maxMana: 0
   _abilities: []
+  _evolutions: []
+  _classAbilities: []

@@ -3,39 +3,40 @@ using UnityEngine.UI;
 using TMPro;
 using TacticalRPG.Core;
 using TacticalRPG.Data;
-using TacticalRPG.Grid;
 
 namespace TacticalRPG.UI
 {
     /// <summary>
-    /// KİTAP'taki KAM'IN YETENEK AĞACI sayfası (2026-09-04): gövdeden dallanan düğümler + altta
-    /// künye kartı (`Gerekli belgeler/game UI.pdf` s.6 dili).
+    /// KİTAP'TAKİ BİR GELİŞTİRME AĞACI sayfası: gövdeden dallanan düğümler + altta künye kartı
+    /// (`Gerekli belgeler/game UI.pdf` s.6 dili). Eski adı <c>KamSkillTreeView</c> — 2026-10-03'te
+    /// genelleşti (dosya GUID'i korundu): aynı sınıf YETENEK (büyü) ve KAROLAR (değiştirilebilir
+    /// karo) sekmelerini çizer; hangisi olduğunu bağlı <see cref="UpgradeTreeProgress"/> belirler.
     ///
     /// SORUMLULUK: yalnız GÖSTERİR ve tıklamayı iletir. Neyin açılabildiği ve neye kaç öz gittiği
-    /// <see cref="KamSkillProgress"/>'in, ağacın şekli <see cref="KamSkillTreeSO"/>'nun işi.
-    /// Düğüm nesneleri sahnede kurulur (SceneSetupTool) — bu sınıf onları YARATMAZ, whiteboxing
-    /// gereği hepsi Inspector'dan bağlanır.
+    /// ilerleme bileşeninin, ağacın şekli <see cref="UpgradeTreeSO"/>'nun işi. Düğüm nesneleri
+    /// sahnede kurulur (SceneSetupTool) — bu sınıf onları YARATMAZ, whiteboxing gereği hepsi
+    /// Inspector'dan bağlanır.
     ///
     /// DÖRT DURUM TEK BAKIŞTA (yoksa ağaç "tıkla da gör" bulmacasına döner):
     ///   • KİLİTLİ (ön koşul kapalı) — soluk kâğıt, ASMA KİLİT ikonu.
     ///   • AÇILABİLİR — kâğıt canlı, asma kilit durur ama halka koyulaşır; öz yetiyorsa düğme aktif.
-    ///   • AÇIK — büyünün kendi ikonu + altın disk + seviye rozeti.
+    ///   • AÇIK — düğümün kendi ikonu + altın disk + seviye rozeti.
     ///   • TAVAN — dolu altın, düğme "EN ÜST SEVİYE" der.
     /// Seçili düğümün HALKASI vurgulanır (mockup'ta seçim rengi yok; okunurluk için eklendi).
     /// </summary>
-    public class KamSkillTreeView : MonoBehaviour
+    public class UpgradeTreeView : MonoBehaviour
     {
         /// <summary>Sahnedeki tek bir düğüm rozetinin parçaları.</summary>
         [System.Serializable]
         public class NodeView
         {
-            [SerializeField] private string _skillId;
+            [SerializeField] private string _skillId;   // düğüm id'si (ad tarihsel)
             [SerializeField] private Button _button;
             [Tooltip("Durum rengini taşıyan dolu daire (madalyon zemini).")]
             [SerializeField] private Image  _disc;
             [Tooltip("Mürekkep halka — seçili düğümde vurgulanır.")]
             [SerializeField] private Image  _ring;
-            [Tooltip("Ortadaki glif: kilitliyken asma kilit, açıkken büyünün ikonu.")]
+            [Tooltip("Ortadaki glif: kilitliyken asma kilit, açıkken düğümün ikonu.")]
             [SerializeField] private Image  _icon;
             [SerializeField] private Sprite _lockedIcon;
             [SerializeField] private Sprite _openIcon;
@@ -44,7 +45,7 @@ namespace TacticalRPG.UI
             [SerializeField] private Image  _levelBadge;
             [SerializeField] private TextMeshProUGUI _levelLabel;
 
-            public string SkillId => _skillId;
+            public string Id       => _skillId;
             public Button Button   => _button;
             public Image  Disc     => _disc;
             public Image  Ring     => _ring;
@@ -57,8 +58,9 @@ namespace TacticalRPG.UI
         }
 
         [Header("Bağımlılıklar")]
-        [SerializeField] private KamSkillProgress _progress;
-        [SerializeField] private EssenceWallet    _wallet;
+        [Tooltip("Hangi ağaç: KamSkillProgress (büyüler) ya da AugmentTreeProgress (karolar).")]
+        [SerializeField] private UpgradeTreeProgress _progress;
+        [SerializeField] private EssenceWallet       _wallet;
 
         [Header("Düğümler")]
         [SerializeField] private NodeView[] _nodes;
@@ -92,7 +94,7 @@ namespace TacticalRPG.UI
                 foreach (NodeView nv in _nodes)
                 {
                     if (nv?.Button == null) continue;
-                    string id = nv.SkillId;                     // kapanış değişkeni: döngü değişkeni DEĞİL
+                    string id = nv.Id;                          // kapanış değişkeni: döngü değişkeni DEĞİL
                     nv.Button.onClick.AddListener(() => Select(id));
                 }
 
@@ -106,7 +108,7 @@ namespace TacticalRPG.UI
 
             // Sayfa açılırken bir şey seçili olsun: boş künye "bozuk mu?" hissi verir.
             if (string.IsNullOrEmpty(_selectedId) && _nodes != null && _nodes.Length > 0)
-                _selectedId = _nodes[0].SkillId;
+                _selectedId = _nodes[0].Id;
             Refresh();
         }
 
@@ -118,9 +120,9 @@ namespace TacticalRPG.UI
 
         // ── Etkileşim ────────────────────────────────────────────────────────
 
-        private void Select(string skillId)
+        private void Select(string id)
         {
-            _selectedId = skillId;
+            _selectedId = id;
             Refresh();
         }
 
@@ -139,6 +141,9 @@ namespace TacticalRPG.UI
             RefreshWallet();
         }
 
+        private UpgradeTreeSO.Node NodeOf(string id)
+            => _progress != null && _progress.Tree != null ? _progress.Tree.Find(id) : null;
+
         private void RefreshNodes()
         {
             if (_nodes == null || _progress == null) return;
@@ -146,14 +151,13 @@ namespace TacticalRPG.UI
             foreach (NodeView nv in _nodes)
             {
                 if (nv == null) continue;
-                KamSkillTreeSO.Node node = _progress.Tree != null ? _progress.Tree.Find(nv.SkillId) : null;
-                KamSkillCatalog.Entry entry = KamSkillCatalog.Get(nv.SkillId);
+                UpgradeTreeSO.Node node = NodeOf(nv.Id);
 
-                int  level     = _progress.LevelOf(nv.SkillId);
+                int  level     = _progress.LevelOf(nv.Id);
                 bool unlocked  = level > 0;
                 bool maxed     = node != null && level >= node.MaxLevel;
                 bool reachable = node != null && _progress.PrerequisiteMet(node);
-                bool selected  = nv.SkillId == _selectedId;
+                bool selected  = nv.Id == _selectedId;
 
                 if (nv.Disc != null)
                     nv.Disc.color = maxed     ? _maxedColor
@@ -166,7 +170,7 @@ namespace TacticalRPG.UI
                                   : reachable || unlocked ? _inkColor
                                   : new Color(_inkColor.r, _inkColor.g, _inkColor.b, 0.45f);
 
-                // Kilitliyken asma kilit, açıkken büyünün kendi glifi (mockup'taki okuma biçimi).
+                // Kilitliyken asma kilit, açıkken düğümün kendi glifi (mockup'taki okuma biçimi).
                 if (nv.Icon != null)
                 {
                     Sprite s = unlocked ? nv.OpenIcon : nv.LockedIcon;
@@ -178,7 +182,7 @@ namespace TacticalRPG.UI
 
                 if (nv.NameLabel != null)
                 {
-                    nv.NameLabel.text  = entry != null ? entry.Name : nv.SkillId;
+                    nv.NameLabel.text  = _progress.NameOf(nv.Id);
                     nv.NameLabel.color = unlocked || reachable
                                        ? _inkColor
                                        : new Color(_inkColor.r, _inkColor.g, _inkColor.b, 0.55f);
@@ -196,24 +200,15 @@ namespace TacticalRPG.UI
         {
             if (_progress == null) return;
 
-            KamSkillTreeSO.Node   node  = _progress.Tree != null ? _progress.Tree.Find(_selectedId) : null;
-            KamSkillCatalog.Entry entry = KamSkillCatalog.Get(_selectedId);
+            UpgradeTreeSO.Node node = NodeOf(_selectedId);
 
             if (_detailName != null)
-                _detailName.text = entry != null ? entry.Name : "—";
+                _detailName.text = string.IsNullOrEmpty(_selectedId) ? "—" : _progress.NameOf(_selectedId);
 
+            // Seçili düğümün ŞU ANKİ hâli (seviyeli kopya): oyuncu yükseltmenin ne getirdiğini
+            // kartın kendi dilinde okur. Mana bedeli de burada yazar.
             if (_detailBody != null)
-            {
-                if (entry == null) _detailBody.text = "Bu düğüm için katalog girdisi bulunamadı.";
-                else
-                {
-                    // Seçili büyünün ŞU ANKİ hâli gösterilir (seviyeli kopya): oyuncu yükseltmenin
-                    // ne getirdiğini kartın kendi dilinde okur.
-                    KamSkillCatalog.Entry shown = _progress.IsUnlocked(_selectedId)
-                                                ? _progress.Scaled(_selectedId) : entry;
-                    _detailBody.text = shown.Description + "\n" + KamSkillCatalog.AreaLabel(shown);
-                }
-            }
+                _detailBody.text = string.IsNullOrEmpty(_selectedId) ? "" : _progress.DescribeCurrent(_selectedId);
 
             bool canAct = node != null && _progress.CanAffordNext(node);
             int  level  = _progress.LevelOf(_selectedId);
@@ -232,16 +227,13 @@ namespace TacticalRPG.UI
         }
 
         /// <summary>Bedel satırı — kilidin sebebi de burada yazar (düğme sessizce sönük kalmasın).</summary>
-        private string CostLine(KamSkillTreeSO.Node node, int level)
+        private string CostLine(UpgradeTreeSO.Node node, int level)
         {
             if (node == null) return "";
-            if (level >= node.MaxLevel) return "Bu büyü en üst seviyede.";
+            if (level >= node.MaxLevel) return "En üst seviyede.";
 
             if (!_progress.PrerequisiteMet(node))
-            {
-                KamSkillCatalog.Entry req = KamSkillCatalog.Get(node.Requires);
-                return $"Kilitli — önce {(req != null ? req.Name : node.Requires)} açılmalı.";
-            }
+                return $"Kilitli — önce {_progress.NameOf(node.Requires)} açılmalı.";
 
             var cost = _progress.NextCost(node);
             if (cost == null || cost.Count == 0) return "Bedelsiz.";

@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5721286505c91843a5cebd7c62644a5, type: 3}
+  m_Name: ahsap_kalkan
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.ItemSO
+  _id: ahsap_kalkan
+  _displayName: "Ah\u015Fap Kalkan"
+  _description: "Kay\u0131n a\u011Fac\u0131ndan yuvarlak kalkan."
+  _icon: {fileID: 21300000, guid: 591fa37fbef8ab844a17f6aa81b0c6e7, type: 3}
+  _rarity: 0
+  _price:
+  - type: 3
+    amount: 6
+  - type: 4
+    amount: 4
+  _slot: 5
+  _trait: 10
+  _amount: 3
+  _trait2: 0
+  _amount2: 0

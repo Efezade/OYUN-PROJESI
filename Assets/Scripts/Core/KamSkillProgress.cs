@@ -8,7 +8,8 @@ namespace TacticalRPG.Core
     /// <summary>
     /// KAM'IN YETENEK AĞACINDAKİ İLERLEME (2026-09-04): hangi büyü açık, kaçıncı seviyede.
     /// Ağacın şekli <see cref="KamSkillTreeSO"/>'da, çizimi KİTAP ekranında
-    /// (<see cref="TacticalRPG.UI.KamSkillTreeView"/>), harcama burada.
+    /// (<see cref="TacticalRPG.UI.UpgradeTreeView"/>), açma/yükseltme kuralı ortak tabanda
+    /// (<see cref="UpgradeTreeProgress"/>), büyüye özgü olan (seviyeli kopya) burada.
     ///
     /// İKİ TÜKETİCİ, TEK KAYNAK:
     ///   • KİTAP ekranı — açma/yükseltme (öz harcar).
@@ -24,97 +25,32 @@ namespace TacticalRPG.Core
     /// statik veri savaş arası taşınır ve bir daha geri alınamazdı. Seviyeli kart her seferinde
     /// <see cref="Scaled"/> ile KOPYA olarak üretilir.
     /// </summary>
-    public class KamSkillProgress : MonoBehaviour
+    public class KamSkillProgress : UpgradeTreeProgress
     {
         [Header("Bağımlılıklar")]
         [SerializeField] private KamSkillTreeSO _tree;
-        [SerializeField] private EssenceWallet  _wallet;
         [Tooltip("Bölümün kural seti ağacı değiştirebilir (map'e özgü dallar). Atanmazsa hep _tree.")]
         [SerializeField] private ChapterProgress _progress;
 
-        /// <summary>Bir düğüm açıldı/yükseldi (KİTAP ekranı ve HUD dinler).</summary>
-        public event System.Action OnChanged;
-
-        // id → seviye. Sözlükte OLMAYAN düğüm kilitlidir (seviye 0).
-        private readonly Dictionary<string, int> _levels = new();
-
         /// <summary>Aktif ağaç: bölümün kural seti seçtiyse o (map'e özgü dallar), yoksa varsayılan.
         /// İlerleme id → seviye sözlüğünde tutulduğu için ağaç değişse de açılmış büyüler kalır.</summary>
-        public KamSkillTreeSO Tree
+        public override UpgradeTreeSO Tree
             => _progress != null && _progress.CurrentRules != null && _progress.CurrentRules.SkillTree != null
                ? _progress.CurrentRules.SkillTree : _tree;
 
-        private void Start() => ResetProgress();
+        protected override string LogLabel => "Yetenek";
 
-        // ── Sorgular ─────────────────────────────────────────────────────────
-
-        public bool IsUnlocked(string skillId) => LevelOf(skillId) > 0;
-
-        public int LevelOf(string skillId)
-            => !string.IsNullOrEmpty(skillId) && _levels.TryGetValue(skillId, out int lv) ? lv : 0;
-
-        /// <summary>Ön koşulu açık mı? (kök düğümlerde her zaman true)</summary>
-        public bool PrerequisiteMet(KamSkillTreeSO.Node node)
-            => node != null && (string.IsNullOrEmpty(node.Requires) || IsUnlocked(node.Requires));
-
-        /// <summary>Bu düğüm ŞU AN yükseltilebilir mi (açık + tavana gelmemiş)?</summary>
-        public bool CanLevelUp(KamSkillTreeSO.Node node)
-            => node != null && IsUnlocked(node.SkillId) && LevelOf(node.SkillId) < node.MaxLevel;
-
-        /// <summary>Bir sonraki adımın bedeli: kilitliyse AÇMA, açıksa YÜKSELTME bedeli.
-        /// Tavana gelmiş düğümde boş liste döner.</summary>
-        public IReadOnlyList<EssenceAmount> NextCost(KamSkillTreeSO.Node node)
+        public override string NameOf(string id)
         {
-            if (node == null) return System.Array.Empty<EssenceAmount>();
-            int lv = LevelOf(node.SkillId);
-            if (lv == 0)            return node.UnlockCost ?? (IReadOnlyList<EssenceAmount>)System.Array.Empty<EssenceAmount>();
-            if (lv < node.MaxLevel) return node.UpgradeCost(lv);
-            return System.Array.Empty<EssenceAmount>();
+            KamSkillCatalog.Entry e = KamSkillCatalog.Get(id);
+            return e != null ? e.Name : id;
         }
 
-        /// <summary>Bir sonraki adım şu an ödenebilir mi (ön koşul + kese)?</summary>
-        public bool CanAffordNext(KamSkillTreeSO.Node node)
+        public override string DescribeCurrent(string id)
         {
-            if (node == null || _wallet == null) return false;
-            if (!PrerequisiteMet(node)) return false;
-            if (LevelOf(node.SkillId) >= node.MaxLevel) return false;
-            return _wallet.CanAfford(NextCost(node));
-        }
-
-        // ── Harcama ──────────────────────────────────────────────────────────
-
-        /// <summary>
-        /// Düğümü bir adım ilerletir: kilitliyse AÇAR, açıksa SEVİYE ATLATIR. Öz yetmiyorsa ya da
-        /// ön koşul kapalıysa hiçbir şey olmaz.
-        /// </summary>
-        /// <returns>false = ön koşul kapalı, tavana gelinmiş ya da öz yetersiz.</returns>
-        public bool TryAdvance(string skillId)
-        {
-            KamSkillTreeSO.Node node = Tree != null ? Tree.Find(skillId) : null;
-            if (node == null || _wallet == null) return false;
-            if (!PrerequisiteMet(node)) return false;
-
-            int lv = LevelOf(skillId);
-            if (lv >= node.MaxLevel) return false;
-            if (!_wallet.TrySpend(NextCost(node))) return false;
-
-            _levels[skillId] = lv + 1;
-            Debug.Log(lv == 0
-                ? $"[Yetenek] '{node.SkillId}' ACILDI — artik draft havuzunda."
-                : $"[Yetenek] '{node.SkillId}' seviye {lv} -> {lv + 1}.");
-            OnChanged?.Invoke();
-            return true;
-        }
-
-        /// <summary>Ağacı başlangıç hâline döndürür (ölüm → bölüm yeniden başlar).
-        /// Harcanmış öz GERİ GELMEZ — bu bir sıfırlama, geri alma değil.</summary>
-        public void ResetProgress()
-        {
-            _levels.Clear();
-            if (Tree != null)
-                foreach (var n in Tree.Nodes)
-                    if (n != null && n.UnlockedAtStart && n.Catalog != null) _levels[n.SkillId] = 1;
-            OnChanged?.Invoke();
+            KamSkillCatalog.Entry e = IsUnlocked(id) ? Scaled(id) : KamSkillCatalog.Get(id);
+            if (e == null) return "Bu düğüm için katalog girdisi bulunamadı.";
+            return $"{e.Description}\n{KamSkillCatalog.AreaLabel(e)}  ·  {e.ManaCost} mana";
         }
 
         // ── Davul draftına bakan yüz ─────────────────────────────────────────
@@ -131,9 +67,9 @@ namespace TacticalRPG.Core
 
             foreach (var n in Tree.Nodes)
             {
-                if (n == null || !IsUnlocked(n.SkillId)) continue;
-                KamSkillCatalog.Entry e = n.Catalog;
-                if (e != null) into.Add(Scaled(e, n, LevelOf(n.SkillId)));
+                if (n == null || !IsUnlocked(n.Id)) continue;
+                KamSkillCatalog.Entry e = KamSkillCatalog.Get(n.Id);
+                if (e != null) into.Add(Scaled(e, n, LevelOf(n.Id)));
             }
         }
 
@@ -141,12 +77,12 @@ namespace TacticalRPG.Core
         public KamSkillCatalog.Entry Scaled(string skillId)
         {
             KamSkillCatalog.Entry e = KamSkillCatalog.Get(skillId);
-            KamSkillTreeSO.Node   n = Tree != null ? Tree.Find(skillId) : null;
+            UpgradeTreeSO.Node    n = Tree != null ? Tree.Find(skillId) : null;
             return e == null ? null : Scaled(e, n, Mathf.Max(1, LevelOf(skillId)));
         }
 
         private static KamSkillCatalog.Entry Scaled(KamSkillCatalog.Entry e,
-                                                    KamSkillTreeSO.Node n, int level)
+                                                    UpgradeTreeSO.Node n, int level)
         {
             int steps = Mathf.Max(0, level - 1);
             if (n == null || steps == 0) return e;      // seviye 1 → katalog girdisi aynen
@@ -175,7 +111,8 @@ namespace TacticalRPG.Core
                 Magnitude    = magnitude,
                 PushDistance = push,
                 StunTurns    = stun,
-                R = e.R, G = e.G, B = e.B
+                R = e.R, G = e.G, B = e.B,
+                ManaCost     = e.ManaCost       // MANA SEVİYEYLE DEĞİŞMEZ — bütçe kuralı delinmesin
             };
         }
     }

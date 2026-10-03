@@ -14,6 +14,10 @@ namespace TacticalRPG.Core
     ///
     /// GEÇİCİ etkiler ADIM (oyuncu hareketi) ile ölçülür: <see cref="PlayerController.OnMoved"/>'de
     /// geri sayılır, biten etki geri alınır. Sistemlere tek yönlü dokunur (event-driven, CLAUDE.md).
+    ///
+    /// POTLAR (2026-10-03): ÇANTA'da içilen pot <see cref="ApplyPotion"/> ile buraya gelir. Ana
+    /// harita potları adımla, SAVAŞ potları savaş sayısıyla biter; savaş potlarının toplamı
+    /// <see cref="CombatTraits"/> ile yerleştirmede her birime eklenir.
     /// </summary>
     public class PlayerBuffs : MonoBehaviour
     {
@@ -21,6 +25,10 @@ namespace TacticalRPG.Core
         [SerializeField] private PlayerController    _player;
         [SerializeField] private MapInputHandler     _input;
         [SerializeField] private ActionPointManager  _apManager;
+        [Tooltip("Kâhin Tütsüsü (sisi kalıcı açar) için.")]
+        [SerializeField] private FogOfWarManager     _fog;
+        [Tooltip("Savaş potlarının süresi savaş bitince düşer.")]
+        [SerializeField] private TurnManager         _turns;
 
         private sealed class TimedBuff
         {
@@ -38,6 +46,39 @@ namespace TacticalRPG.Core
         [SerializeField, Min(0)] private int _startingPowerStones = 0;
 
         private readonly List<TimedBuff> _timed = new();
+
+        // ── Pot durumu ───────────────────────────────────────────────────────
+        private sealed class PotionTimed  { public PotionSO Potion; public int MovesLeft; }
+        private sealed class PotionCombat { public PotionSO Potion; public EvolutionTraits Traits; public int BattlesLeft; }
+
+        private readonly List<PotionTimed>  _potionTimed  = new();
+        private readonly List<PotionCombat> _potionCombat = new();
+        private int _freeCollect;   // açık "Toplayıcı Özü" sayısı
+
+        /// <summary>Etkin pot listesi değişti (ÇANTA → POTLAR dinler).</summary>
+        public event System.Action OnPotionsChanged;
+
+        /// <summary>Öz toplamak şu an AP harcamıyor mu? (Toplayıcı Özü)</summary>
+        public bool FreeCollectActive => _freeCollect > 0;
+
+        /// <summary>Sonraki savaşta birliğe işleyecek pot etkilerinin toplamı.</summary>
+        public EvolutionTraits CombatTraits
+        {
+            get
+            {
+                var t = new EvolutionTraits();
+                foreach (var c in _potionCombat) t.Merge(c.Traits);
+                return t;
+            }
+        }
+
+        /// <summary>Etkin potların kısa listesi ("Yel İksiri — 7 adım").</summary>
+        public void FillActivePotions(List<string> into)
+        {
+            into.Clear();
+            foreach (var t in _potionTimed)  into.Add($"{t.Potion.DisplayName} — {t.MovesLeft} adım kaldı");
+            foreach (var c in _potionCombat) into.Add($"{c.Potion.DisplayName} — sonraki {c.BattlesLeft} savaş");
+        }
 
         /// <summary>Şu an aktif geçici etki sayısı (HUD göstergesi için).</summary>
         public int ActiveTimedCount => _timed.Count;
@@ -86,12 +127,85 @@ namespace TacticalRPG.Core
 
         private void OnEnable()
         {
-            if (_player != null) _player.OnMoved += HandleMoved;
+            if (_player != null) _player.OnMoved       += HandleMoved;
+            if (_turns  != null) _turns.OnCombatEnded  += HandleCombatEnded;
         }
 
         private void OnDisable()
         {
-            if (_player != null) _player.OnMoved -= HandleMoved;
+            if (_player != null) _player.OnMoved       -= HandleMoved;
+            if (_turns  != null) _turns.OnCombatEnded  -= HandleCombatEnded;
+        }
+
+        // ── Potlar ───────────────────────────────────────────────────────────
+
+        /// <summary>İçilen potu uygular (pot envanterden ÇAĞIRAN tarafından düşülmüş olmalı).</summary>
+        public void ApplyPotion(PotionSO potion)
+        {
+            if (potion == null) return;
+            switch (potion.Kind)
+            {
+                case PotionEffectKind.MoveRange:
+                    if (_input != null) _input.BonusMoveRange += potion.Magnitude;
+                    _potionTimed.Add(new PotionTimed { Potion = potion, MovesLeft = Mathf.Max(1, potion.Duration) });
+                    break;
+
+                case PotionEffectKind.MoveSpeed:
+                    if (_player != null) _player.SpeedMultiplier += potion.Magnitude / 100f;
+                    _potionTimed.Add(new PotionTimed { Potion = potion, MovesLeft = Mathf.Max(1, potion.Duration) });
+                    break;
+
+                case PotionEffectKind.Vision:
+                    if (_player != null) { _player.VisionBonus += potion.Magnitude; _player.RefreshVision(); }
+                    _potionTimed.Add(new PotionTimed { Potion = potion, MovesLeft = Mathf.Max(1, potion.Duration) });
+                    break;
+
+                case PotionEffectKind.FreeCollect:
+                    _freeCollect++;
+                    _potionTimed.Add(new PotionTimed { Potion = potion, MovesLeft = Mathf.Max(1, potion.Duration) });
+                    break;
+
+                case PotionEffectKind.BonusAP:
+                    _apManager?.GrantAP(potion.Magnitude);
+                    break;
+
+                case PotionEffectKind.RevealArea:
+                    if (_fog != null && _player != null) _fog.RevealAreaPermanent(_player.CurrentCoord, potion.Magnitude);
+                    break;
+
+                case PotionEffectKind.TravelStones:
+                    GrantStones(potion.Magnitude);
+                    break;
+
+                case PotionEffectKind.CombatTrait:
+                    _potionCombat.Add(new PotionCombat
+                    {
+                        Potion = potion, Traits = potion.CombatTraits(), BattlesLeft = Mathf.Max(1, potion.Duration)
+                    });
+                    break;
+            }
+            Debug.Log($"[Pot] {potion.DisplayName} icildi ({potion.DurationText}).");
+            OnPotionsChanged?.Invoke();
+        }
+
+        /// <summary>Süresi biten ana harita potunun etkisini geri alır.</summary>
+        private void RevertPotion(PotionSO potion)
+        {
+            switch (potion.Kind)
+            {
+                case PotionEffectKind.MoveRange:   if (_input  != null) _input.BonusMoveRange   -= potion.Magnitude; break;
+                case PotionEffectKind.MoveSpeed:   if (_player != null) _player.SpeedMultiplier -= potion.Magnitude / 100f; break;
+                case PotionEffectKind.Vision:      if (_player != null) _player.VisionBonus     -= potion.Magnitude; break;
+                case PotionEffectKind.FreeCollect: _freeCollect = Mathf.Max(0, _freeCollect - 1); break;
+            }
+        }
+
+        private void HandleCombatEnded(CombatResult _)
+        {
+            if (_potionCombat.Count == 0) return;
+            for (int i = _potionCombat.Count - 1; i >= 0; i--)
+                if (--_potionCombat[i].BattlesLeft <= 0) _potionCombat.RemoveAt(i);
+            OnPotionsChanged?.Invoke();
         }
 
         /// <summary>Bir satın alımı uygular. Öz bedeli çağırandan ÖNCE düşülmüş olmalıdır.</summary>
@@ -136,6 +250,18 @@ namespace TacticalRPG.Core
 
         private void HandleMoved(HexCoordinate _)
         {
+            // Pot süreleri (adım).
+            if (_potionTimed.Count > 0)
+            {
+                for (int i = _potionTimed.Count - 1; i >= 0; i--)
+                {
+                    if (--_potionTimed[i].MovesLeft > 0) continue;
+                    RevertPotion(_potionTimed[i].Potion);
+                    _potionTimed.RemoveAt(i);
+                }
+                OnPotionsChanged?.Invoke();
+            }
+
             if (_timed.Count == 0) return;
 
             for (int i = _timed.Count - 1; i >= 0; i--)

@@ -42,7 +42,63 @@ MonoBehaviour:
   _unitModelEuler: {x: 0, y: 0, z: 0}
   _unitModelYOffset: 0
   _unitAnimator: {fileID: 9100000, guid: ae9edc95554af8944911c3e2ee4af65c, type: 2}
-  _portrait: {fileID: 0}
+  _portrait: {fileID: 21300000, guid: 08e00823ae8dcab4582fe794f8c54dd1, type: 3}
   _hasManaSystem: 0
   _maxMana: 0
   _abilities: []
+  _evolutions:
+  - _name: Demir Deri
+    _description: +2 savunma
+    _cost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 5
+    _trait: 2
+    _amount: 2
+  - _name: "Diken Z\u0131rh"
+    _description: "Yak\u0131ndan vurana 2 hasar d\xF6ner"
+    _cost:
+    - type: 3
+      amount: 11
+    - type: 4
+      amount: 7
+    _trait: 8
+    _amount: 2
+  - _name: Yarma
+    _description: "Vuru\u015Fu yandakilere %50 s\u0131\xE7rar"
+    _cost:
+    - type: 3
+      amount: 16
+    - type: 4
+      amount: 12
+    _trait: 9
+    _amount: 50
+  _classAbilities:
+  - _name: "G\xFC\xE7l\xFC Darbe"
+    _description: "1.6 kat sert vuru\u015F"
+    _kind: 0
+    _power: 160
+    _hits: 1
+    _range: -1
+    _radius: 0
+    _cooldown: 2
+    _color: {r: 0.8, g: 0.85, b: 0.95, a: 1}
+  - _name: "Kalkan Duvar\u0131"
+    _description: Bir dosta 5 kalkan
+    _kind: 5
+    _power: 5
+    _hits: 1
+    _range: 1
+    _radius: 0
+    _cooldown: 3
+    _color: {r: 0.8, g: 0.85, b: 0.95, a: 1}
+  - _name: Sersemletici
+    _description: Vurur ve 1 tur sersemletir
+    _kind: 3
+    _power: 80
+    _hits: 1
+    _range: -1
+    _radius: 0
+    _cooldown: 3
+    _color: {r: 0.55, g: 0.85, b: 1, a: 1}

@@ -23,6 +23,14 @@ namespace TacticalRPG.UI
         [SerializeField] private EssenceConfigSO   _config;
         [SerializeField] private List<UnitRecipe>  _recipes = new();
 
+        [Header("Büst (2026-10-03)")]
+        [Tooltip("Kart satırındaki büst kutusunun boyu.")]
+        [SerializeField] private float _bustSize = 56f;
+        [Tooltip("Büstün arkasındaki kâğıt zemin.")]
+        [SerializeField] private Color _bustPaper = new(0.93f, 0.88f, 0.76f);
+        [Tooltip("Büstün mürekkep rengi (büst dokusu beyaz maske, bu renge boyanır).")]
+        [SerializeField] private Color _bustInk = new(0.13f, 0.10f, 0.07f);
+
         private Vector2 _scroll;   // içerik taşınca kaydırma (roster/tarif sayısı büyüyor)
 
         private static readonly EssenceType[] Types =
@@ -149,13 +157,38 @@ namespace TacticalRPG.UI
             string label = $"* {card.Data.ClassName} (KOMUTAN, ucretsiz){tag}";
 
             Color prevColor = GUI.color;
+            GUILayout.BeginHorizontal();
+            DrawBust(card);
             GUI.color = deployed ? new Color(0.72f, 1f, 0.72f) : new Color(1f, 0.92f, 0.55f);
-            if (GUILayout.Button(label, GUILayout.Height(30)))
+            if (GUILayout.Button(label, GUILayout.Height(_bustSize)))
             {
                 if (deployed) _deployment.TryUndeploy(card);
                 else          _deployment.SelectedCard = selected ? null : card;
             }
             GUI.color = prevColor;
+            GUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// Kartın solunda sınıfın BÜSTÜ (Efe'nin isteği 2026-10-03: "listeden seçerken splash art
+        /// olsun"). Portre KİTAP'taki büstle aynı görsel (kurulum atar); büst dokusu beyaz maske
+        /// olduğu için kâğıt zemin üstüne mürekkep renginde çizilir. Portre yoksa sınıf rengi.
+        /// </summary>
+        private void DrawBust(CharacterCard card)
+        {
+            Rect r = GUILayoutUtility.GetRect(_bustSize, _bustSize, GUILayout.Width(_bustSize), GUILayout.Height(_bustSize));
+            Sprite portrait = card != null && card.Data != null ? card.Data.Portrait : null;
+
+            Color prev = GUI.color;
+            GUI.color = portrait != null ? _bustPaper : (card != null && card.Data != null ? card.Data.UnitColor : Color.gray);
+            GUI.DrawTexture(r, Texture2D.whiteTexture);
+            if (portrait != null && portrait.texture != null)
+            {
+                GUI.color = _bustInk;
+                GUI.DrawTexture(new Rect(r.x + 2f, r.y + 2f, r.width - 4f, r.height - 4f),
+                                portrait.texture, ScaleMode.ScaleToFit);
+            }
+            GUI.color = prev;
         }
 
         private void DrawCardList()
@@ -174,11 +207,14 @@ namespace TacticalRPG.UI
                 string label = $"{card.Data.ClassName} Sv{card.Level}  HP{card.MaxHP}{tag}";
 
                 // Yerlesmis kart da tiklanabilir: yanlis hucreye konan birim geri alinabilsin.
-                if (GUILayout.Button(label, GUILayout.Height(28)))
+                GUILayout.BeginHorizontal();
+                DrawBust(card);
+                if (GUILayout.Button(label, GUILayout.Height(_bustSize)))
                 {
                     if (deployed) _deployment.TryUndeploy(card);
                     else          _deployment.SelectedCard = selected ? null : card;
                 }
+                GUILayout.EndHorizontal();
             }
         }
     }

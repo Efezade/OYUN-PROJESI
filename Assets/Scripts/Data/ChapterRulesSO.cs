@@ -44,6 +44,10 @@ namespace TacticalRPG.Data
                  "tipleri, ekonomi eşikleri). Boş = sahnedeki yedek ayar.")]
         [SerializeField] private MandatoryQuestConfigSO _questChain;
 
+        [Header("Hikaye zincirleri")]
+        [Tooltip("Savaş alanlarının 2-5 adımlık zincirlere bölünme ayarı. Boş = StoryChainManager'ın yedeği.")]
+        [SerializeField] private StoryChainConfigSO _storyChains;
+
         [Header("Öz")]
         [Tooltip("Bölümün HAM özleri. Bölüm kaybedilince yalnız bunlar sıfırlanır. Boş = " +
                  "ChapterRunManager'daki yedek liste.")]
@@ -62,6 +66,7 @@ namespace TacticalRPG.Data
         public KamMechanicSO          KamMechanic     => _kamMechanic;
         public KamSkillTreeSO         SkillTree       => _skillTree;
         public MandatoryQuestConfigSO QuestChain      => _questChain;
+        public StoryChainConfigSO     StoryChains     => _storyChains;
         public EssenceType            RewardEssence   => _rewardEssence;
         public ChapterTone            Tone            => _tone;
 

@@ -105,6 +105,8 @@ namespace TacticalRPG.Grid
             public string         RequiresClass;
             /// <summary>İsabet/menzil sistemi gelmeden ETKİSİ ÇALIŞMAZ — draft'tan elenir.</summary>
             public bool           NeedsRangedSystem;
+            /// <summary>Kartı oynamanın Kam MANA bedeli (2026-10-03). Bkz <see cref="ManaRules"/>.</summary>
+            public int            ManaCost = 3;
 
             /// <summary>Bu karo tahtayı kapatıyor mu (yürünmez + görüş keser)?</summary>
             public bool IsTerrain => Trigger == AugmentTrigger.Terrain;
@@ -113,11 +115,29 @@ namespace TacticalRPG.Grid
         private static Entry E(string id, string name, string desc, AugmentGroup g, AugmentTarget t,
                                AugmentEffect e, AugmentTrigger trig, int mag, int radius, string visual,
                                int tiles = 1, bool oneShot = false, int fuse = 0,
-                               string cls = null, bool needsRanged = false)
+                               string cls = null, bool needsRanged = false, int mana = 3)
             => new Entry { Id = id, Name = name, Description = desc, Group = g, Target = t, Effect = e,
                            Trigger = trig, Magnitude = mag, Radius = radius, VisualId = visual,
                            TileCount = tiles, OneShot = oneShot, FuseRounds = fuse,
-                           RequiresClass = cls, NeedsRangedSystem = needsRanged };
+                           RequiresClass = cls, NeedsRangedSystem = needsRanged, ManaCost = mana };
+
+        /// <summary>
+        /// MANA KURALI (Efe, 2026-10-03): Kam her savaşa 10 mana ile girer; karo da büyü de
+        /// manayla oynanır, büyü daha pahalıdır, savaş başına en çok 2 büyü ve toplam 2-3 kart.
+        ///
+        /// Sayılar bu kısıtlardan TÜRETİLDİ:
+        ///   • KARO 3 (güçlü olanlar 4) · BÜYÜ 4 (dal kökü) / 5 (üst basamak).
+        ///   • En ucuz kart 3 → 4 kart 12 tutar, 10'a sığmaz → en çok 3 kart.
+        ///   • En pahalı ikili 5 + 5 = 10 → her zaman en az 2 kart oynanabilir.
+        ///   • En ucuz büyü 4 → 3 büyü 12 tutar → manayla en çok 2 büyü. Davul Taşı mana
+        ///     kazandırabildiği için ayrıca davulda SERT bir 2 büyü sınırı var.
+        /// <see cref="Validate"/> bu aralıkların dışına çıkan kartı kurulumda bağırarak söyler.
+        /// </summary>
+        public static class ManaRules
+        {
+            public const int TILE_MIN  = 3, TILE_MAX  = 4;
+            public const int SPELL_MIN = 4, SPELL_MAX = 5;
+        }
 
         public static readonly Entry[] All =
         {
@@ -136,12 +156,12 @@ namespace TacticalRPG.Grid
               +2, 1, TileCatalog.AugOcak),
             E("ofke_tasi",   "Öfke Taşı",    "Bu alandaki yandaşlar +2 hasar verir.",
               AugmentGroup.Kut, AugmentTarget.Allies, AugmentEffect.Damage, AugmentTrigger.Aura,
-              +2, 1, TileCatalog.AugOfkeTasi),
+              +2, 1, TileCatalog.AugOfkeTasi, mana: 4),
 
             // ── KARGIŞ (düşmana −) ───────────────────────────────────────────
             E("tuzak_tasi",  "Tuzak Taşı",   "Bu alana GİREN düşman SERSEMLER — sıradaki turunu kaybeder.",
               AugmentGroup.Kargis, AugmentTarget.Enemies, AugmentEffect.Stun, AugmentTrigger.OnEnter,
-              1, 1, TileCatalog.AugTuzakTasi),
+              1, 1, TileCatalog.AugTuzakTasi, mana: 4),
             E("camur",       "Çamur",        "Bu alandaki düşmanın hareketi 2 azalır.",
               AugmentGroup.Kargis, AugmentTarget.Enemies, AugmentEffect.Move, AugmentTrigger.Aura,
               -2, 1, TileCatalog.AugCamur),
@@ -150,7 +170,7 @@ namespace TacticalRPG.Grid
               -30, 1, TileCatalog.AugKorkuSisi, 1, false, 0, null, true),
             E("diken",       "Diken Tarlası","Bu alana GİREN düşman 3 hasar alır.",
               AugmentGroup.Kargis, AugmentTarget.Enemies, AugmentEffect.EntryDamage, AugmentTrigger.OnEnter,
-              3, 1, TileCatalog.AugDiken),
+              3, 1, TileCatalog.AugDiken, mana: 4),
             E("agirlik",     "Ağırlık Taşı", "Bu alandaki düşman sırada GERİYE DÜŞER (−3 inisiyatif).",
               AugmentGroup.Kargis, AugmentTarget.Enemies, AugmentEffect.Initiative, AugmentTrigger.Aura,
               -3, 1, TileCatalog.AugAgirlik),
@@ -161,7 +181,7 @@ namespace TacticalRPG.Grid
               -2, 1, TileCatalog.AugSarsinti),
             E("ruh_kapisi",  "Ruh Kapısı",   "Bu alanda TUR BAŞLATAN herkes +1 aksiyon kazanır.",
               AugmentGroup.Notr, AugmentTarget.Everyone, AugmentEffect.ExtraAction, AugmentTrigger.TurnStart,
-              +1, 1, TileCatalog.AugRuhKapisi),
+              +1, 1, TileCatalog.AugRuhKapisi, mana: 4),
             E("duvar",       "Taş Duvar",    "3 karoluk geçilemez duvar örer; görüş hattını da keser.",
               AugmentGroup.Notr, AugmentTarget.Everyone, AugmentEffect.Impassable, AugmentTrigger.Terrain,
               0, 0, TileCatalog.AugDuvar, 3),
@@ -172,13 +192,13 @@ namespace TacticalRPG.Grid
             // ── PATLAYICI (bir kez tetiklenir) ───────────────────────────────
             E("ates_ficisi", "Ateş Fıçısı",  "Üstündeki birim vurulunca patlar: çevresine 5 hasar.",
               AugmentGroup.Patlayici, AugmentTarget.Everyone, AugmentEffect.Explode, AugmentTrigger.OnDamaged,
-              5, 1, TileCatalog.AugAtesFicisi, 1, true),
+              5, 1, TileCatalog.AugAtesFicisi, 1, true, mana: 4),
             E("buz_kabugu",  "Buz Kabuğu",   "Bu alana İLK giren birim DONAR (bir tur), sonra karo kırılır.",
               AugmentGroup.Patlayici, AugmentTarget.Everyone, AugmentEffect.Stun, AugmentTrigger.OnEnter,
               1, 1, TileCatalog.AugBuzKabugu, 1, true),
             E("ruh_bombasi", "Ruh Bombası",  "2 tur sonra kendiliğinden patlar: geniş alana 4 hasar.",
               AugmentGroup.Patlayici, AugmentTarget.Everyone, AugmentEffect.Explode, AugmentTrigger.Fuse,
-              4, 2, TileCatalog.AugRuhBombasi, 1, true, 2),
+              4, 2, TileCatalog.AugRuhBombasi, 1, true, 2, mana: 4),
             E("cig_tasi",    "Çığ Taşı",     "Yerleştiği karoyu ve 2 komşusunu molozla kapatır: geçilemez siper.",
               AugmentGroup.Patlayici, AugmentTarget.Everyone, AugmentEffect.Impassable, AugmentTrigger.Terrain,
               0, 0, TileCatalog.AugCigTasi, 3),
@@ -195,16 +215,18 @@ namespace TacticalRPG.Grid
               +2, 1, TileCatalog.AugKalkanDuvari, 1, false, 0, "Savasci"),
             E("ley_damari",  "Ley Damarı",   "BÜYÜCÜ kartı: bu alanda tur başlatan yandaş +1 aksiyon kazanır.",
               AugmentGroup.Sinifsal, AugmentTarget.Allies, AugmentEffect.ExtraAction, AugmentTrigger.TurnStart,
-              +1, 1, TileCatalog.AugLeyDamari, 1, false, 0, "Buyucu"),
+              +1, 1, TileCatalog.AugLeyDamari, 1, false, 0, "Buyucu", mana: 4),
             E("kutsal_zemin","Kutsal Zemin", "RAHİP kartı: bu geniş alanda tur başlatan yandaş 2 can yeniler.",
               AugmentGroup.Sinifsal, AugmentTarget.Allies, AugmentEffect.Regen, AugmentTrigger.TurnStart,
-              +2, 2, TileCatalog.AugKutsalZemin, 3, false, 0, "Rahip"),
+              +2, 2, TileCatalog.AugKutsalZemin, 3, false, 0, "Rahip", mana: 4),
             E("golge_yarigi","Gölge Yarığı", "SERSERİ kartı: bu alandaki yandaşlar +3 hasar verir.",
               AugmentGroup.Sinifsal, AugmentTarget.Allies, AugmentEffect.Damage, AugmentTrigger.Aura,
-              +3, 1, TileCatalog.AugGolgeYarigi, 1, false, 0, "Serseri"),
-            E("davul_tasi",  "Davul Taşı",   "KAM kartı: bu alanda tur başlatan Kam 3 mana kazanır.",
+              +3, 1, TileCatalog.AugGolgeYarigi, 1, false, 0, "Serseri", mana: 4),
+            // +3'ten +1'e indi (2026-10-03): savaş başı 10 manalık bütçede tur başı +3, iki-üç
+            // turda bedava bir büyü demekti — "en çok 2 büyü" kuralını delerdi.
+            E("davul_tasi",  "Davul Taşı",   "KAM kartı: bu alanda tur başlatan Kam 1 mana kazanır.",
               AugmentGroup.Sinifsal, AugmentTarget.Allies, AugmentEffect.Mana, AugmentTrigger.TurnStart,
-              +3, 1, TileCatalog.AugDavulTasi, 1, false, 0, "Kam"),
+              +1, 1, TileCatalog.AugDavulTasi, 1, false, 0, "Kam"),
         };
 
         /// <summary>Yarıçapın kaç hex kapladığı (kart açıklamasında gösterilir).</summary>
@@ -233,6 +255,8 @@ namespace TacticalRPG.Grid
             var problems = new List<string>();
             foreach (var e in All)
             {
+                if (e.ManaCost < ManaRules.TILE_MIN || e.ManaCost > ManaRules.TILE_MAX)
+                    problems.Add($"{e.Id}: mana {e.ManaCost} — karo bedeli {ManaRules.TILE_MIN}-{ManaRules.TILE_MAX} olmalı");
                 if (e.IsTerrain)
                 {
                     if (e.TileCount < 2)

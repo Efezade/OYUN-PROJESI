@@ -30,6 +30,7 @@ namespace TacticalRPG.Editor
         private const string QuestKindFolder   = "Assets/Data/Quests";
         private const string ManaMechanicPath  = RulesFolder + "/Mekanik_Mana.asset";
         private const string Chapter1RulesPath = RulesFolder + "/Bolum1_Kurallar.asset";
+        private const string StoryChainConfigPath = "Assets/Data/Config/StoryChainConfig.asset";
 
         [MenuItem("TacticalRPG/Bolum - Kural Seti Omurgasini Kur", false, 30)]
         public static void SetupChapterRulesMenu()
@@ -84,6 +85,16 @@ namespace TacticalRPG.Editor
             KamSkillTreeSO tree = AssetDatabase.LoadAssetAtPath<KamSkillTreeSO>(SkillTreeAssetPath);
             ChapterRulesSO rules = EnsureChapter1Rules(mana, questCfg, tree);
 
+            // HİKAYE ZİNCİRLERİ (2026-10-03): ayar asset'i + kural setindeki BOŞ alana bağ.
+            StoryChainConfigSO chainCfg = EnsureAsset<StoryChainConfigSO>(StoryChainConfigPath);
+            var rulesSO = new SerializedObject(rules);
+            if (rulesSO.FindProperty("_storyChains").objectReferenceValue == null)
+            {
+                rulesSO.FindProperty("_storyChains").objectReferenceValue = chainCfg;
+                rulesSO.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(rules);
+            }
+
             ChapterConfigSO chapters = progress.Config != null ? progress.Config : EnsureChapterConfig();
             ChapterConfigSO.ChapterEntry first = chapters.Get(1);
             if (first != null && first.rules == null)
@@ -108,6 +119,8 @@ namespace TacticalRPG.Editor
                 var so = new SerializedObject(host);
                 so.FindProperty("_progress").objectReferenceValue = progress;
                 so.FindProperty("_map").objectReferenceValue      = gen;
+                // Savaşa girince mana savaş bütçesine dolsun (Efe: her savaş 10 mana).
+                so.FindProperty("_state").objectReferenceValue    = FindComponentAnywhere<GameStateManager>();
                 if (so.FindProperty("_apManager").objectReferenceValue == null)
                     so.FindProperty("_apManager").objectReferenceValue = ap;
                 if (so.FindProperty("_fallbackMechanic").objectReferenceValue == null)
@@ -165,6 +178,41 @@ namespace TacticalRPG.Editor
                 so.ApplyModifiedProperties();
             }
 
+            // DAVUL MANASI (2026-10-03): kartların mana bedelini Kam'ın mekaniği öder.
+            var drum = FindComponentAnywhere<CombatDrumManager>();
+            if (drum != null)
+            {
+                var so = new SerializedObject(drum);
+                so.FindProperty("_kam").objectReferenceValue = host;
+                so.ApplyModifiedProperties();
+            }
+            Debug.Log($"[Kural] DOGRULAMA — davul-mana:{(drum != null && host != null)}");
+
+            // HİKAYE ZİNCİRLERİ: yönetici düğüm yöneticisinin yanında, çizim minimap panelinde.
+            StoryChainManager chainMgr = null;
+            if (nodes != null)
+            {
+                chainMgr = nodes.GetComponent<StoryChainManager>();
+                if (chainMgr == null) chainMgr = nodes.gameObject.AddComponent<StoryChainManager>();
+                var so = new SerializedObject(chainMgr);
+                so.FindProperty("_nodes").objectReferenceValue    = nodes;
+                so.FindProperty("_map").objectReferenceValue      = gen;
+                so.FindProperty("_player").objectReferenceValue   = player;
+                so.FindProperty("_progress").objectReferenceValue = progress;
+                so.FindProperty("_config").objectReferenceValue   = chainCfg;
+                so.ApplyModifiedProperties();
+            }
+
+            var nodeHud = FindComponentAnywhere<TacticalRPG.UI.ChapterNodeHUD>();
+            if (nodeHud != null)
+            {
+                var so = new SerializedObject(nodeHud);
+                so.FindProperty("_chains").objectReferenceValue = chainMgr;
+                so.ApplyModifiedProperties();
+            }
+
+            TacticalRPG.UI.MinimapChainOverlay overlay = SetupMinimapChainOverlay(chainMgr);
+
             // ── Doğrulama: sessizce yarım kalıp "tamam" demesin ──────────────
             Debug.Log($"[Kural] DOGRULAMA — bolum1-kural:{(chapters.RulesOf(1) != null)} " +
                       $"mekanik:{(rules.KamMechanic != null)} zincir:{(rules.QuestChain != null)} " +
@@ -173,7 +221,67 @@ namespace TacticalRPG.Editor
                       $"dugum:{(nodes != null)} adak-runner:{(offeringRunner != null)} bolum:{(run != null)} " +
                       $"agac-ilerleme:{(skills != null)} yuruyus-durdurucu:{(interruptor != null)} " +
                       $"cuzdan:{(wallet != null)} oyuncu:{(player != null)}");
+            bool overlayGraphic = overlay != null &&
+                                  new SerializedObject(overlay).FindProperty("_graphic").objectReferenceValue != null;
+            Debug.Log($"[Kural] DOGRULAMA — zincir-yonetici:{(chainMgr != null)} zincir-ayar:{(rules.StoryChains != null)} " +
+                      $"minimap-zincir:{(overlay != null)} zincir-katmani:{overlayGraphic} panel:{(nodeHud != null)}");
             return 1;
+        }
+
+        /// <summary>
+        /// Minimap paneline zincir çizimini kurar: <see cref="TacticalRPG.UI.MinimapView"/>'ın
+        /// nesnesine kaplama bileşeni + ikon katmanının EN ALT çocuğu olarak çizgi grafiği
+        /// (ikonlar üstte kalsın). Bağımlılıklar MinimapView'ın kendi alanlarından okunur — iki
+        /// ayrı kaynak olmasın.
+        /// </summary>
+        private static TacticalRPG.UI.MinimapChainOverlay SetupMinimapChainOverlay(StoryChainManager chains)
+        {
+            // HARİTA paneli sahnede KAPALI başlar → kapalı nesneler de aranmalı.
+            var view = Object.FindFirstObjectByType<TacticalRPG.UI.MinimapView>(FindObjectsInactive.Include);
+            if (view == null)
+            {
+                Debug.LogWarning("[Kural] MinimapView yok — zincir cizimi kurulmadi (once 'UI - Menu Iskeleti Kur').");
+                return null;
+            }
+
+            var vso       = new SerializedObject(view);
+            var iconLayer = vso.FindProperty("_iconLayer").objectReferenceValue as RectTransform;
+
+            var overlay = view.GetComponent<TacticalRPG.UI.MinimapChainOverlay>();
+            if (overlay == null) overlay = view.gameObject.AddComponent<TacticalRPG.UI.MinimapChainOverlay>();
+
+            TacticalRPG.UI.MinimapChainGraphic graphic = null;
+            if (iconLayer != null)
+            {
+                Transform existing = iconLayer.Find("ZincirKatmani");
+                if (existing == null)
+                {
+                    var go = new GameObject("ZincirKatmani", typeof(RectTransform), typeof(CanvasRenderer));
+                    var rt = (RectTransform)go.transform;
+                    rt.SetParent(iconLayer, false);
+                    rt.anchorMin = Vector2.zero;
+                    rt.anchorMax = Vector2.one;
+                    rt.offsetMin = rt.offsetMax = Vector2.zero;
+                    existing = rt;
+                }
+                existing.SetAsFirstSibling();
+                // CanvasRenderer'sız grafik tüm UI güncellemesini kırıyordu (2026-10-03) — onar.
+                if (!existing.TryGetComponent(out CanvasRenderer _)) existing.gameObject.AddComponent<CanvasRenderer>();
+                graphic = existing.GetComponent<TacticalRPG.UI.MinimapChainGraphic>();
+                if (graphic == null) graphic = existing.gameObject.AddComponent<TacticalRPG.UI.MinimapChainGraphic>();
+                graphic.raycastTarget = false;
+            }
+
+            var so = new SerializedObject(overlay);
+            so.FindProperty("_renderer").objectReferenceValue  = vso.FindProperty("_renderer").objectReferenceValue;
+            so.FindProperty("_grid").objectReferenceValue      = vso.FindProperty("_grid").objectReferenceValue;
+            so.FindProperty("_fog").objectReferenceValue       = vso.FindProperty("_fog").objectReferenceValue;
+            so.FindProperty("_style").objectReferenceValue     = vso.FindProperty("_style").objectReferenceValue;
+            so.FindProperty("_chains").objectReferenceValue    = chains;
+            so.FindProperty("_iconLayer").objectReferenceValue = iconLayer;
+            so.FindProperty("_graphic").objectReferenceValue   = graphic;
+            so.ApplyModifiedProperties();
+            return overlay;
         }
 
         // ── Asset yardımcıları (hepsi idempotent) ────────────────────────────

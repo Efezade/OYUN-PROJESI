@@ -192,6 +192,67 @@ namespace TacticalRPG.Editor
         }
 
         /// <summary>
+        /// GİYDİRME BEBEĞİ — tam boy silüet (baş · boyun · gövde · iki kol · iki bacak), ÇANTA'nın
+        /// donanım sayfasında eşya yuvalarının ortasında durur (2026-10-03). Büstlerle aynı dil:
+        /// DOLU beyaz maske (kullanıldığı yerde mürekkep rengine boyanır), kemer ve yaka oyulur.
+        /// Bölgeler okunsun diye kol ve bacaklar gövdeden ince bir boşlukla ayrılır.
+        /// </summary>
+        public static Sprite Doll(int w, int h)
+        {
+            string name = $"doll_body_{w}x{h}";
+            string path = $"{InkFolder}/{name}.png";
+            Sprite cached = Load(path);
+            if (cached != null) return cached;
+
+            var px = NewCanvas(w, h);
+            // Normalize koordinat: x 0..1 (sol→sağ), y 0..1 (aşağı→yukarı). Kalınlıklar YÜKSEKLİK oranında.
+            float A = w / (float)h;                         // en/boy — daireler yassılmasın
+            bool Capsule(Vector2 p, Vector2 a, Vector2 b, float r)
+            {
+                Vector2 ab = b - a; float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / Mathf.Max(1e-6f, ab.sqrMagnitude));
+                return (a + ab * t - p).magnitude <= r;
+            }
+
+            for (int py = 0; py < h; py++)
+                for (int pxi = 0; pxi < w; pxi++)
+                {
+                    // Eşit ölçekli uzay: x'i en/boy ile çarp → mesafeler iki eksende aynı birim.
+                    Vector2 p = new((pxi + 0.5f) / w * A, (py + 0.5f) / h);
+                    float cx = 0.5f * A;
+
+                    bool head  = Vector2.Distance(p, new Vector2(cx, 0.875f)) <= 0.075f;
+                    bool neck  = Mathf.Abs(p.x - cx) <= 0.028f && p.y >= 0.77f && p.y <= 0.82f;
+                    bool torso = false;
+                    if (p.y >= 0.47f && p.y <= 0.78f)
+                    {
+                        float t = (p.y - 0.47f) / 0.31f;                   // 0 = bel, 1 = omuz
+                        float half = Mathf.Lerp(0.085f, 0.135f, Mathf.Pow(t, 0.7f));
+                        torso = Mathf.Abs(p.x - cx) <= half;
+                    }
+                    bool armL = Capsule(p, new Vector2(cx - 0.165f, 0.755f), new Vector2(cx - 0.215f, 0.46f), 0.034f);
+                    bool armR = Capsule(p, new Vector2(cx + 0.165f, 0.755f), new Vector2(cx + 0.215f, 0.46f), 0.034f);
+                    bool legL = Capsule(p, new Vector2(cx - 0.050f, 0.46f),  new Vector2(cx - 0.062f, 0.06f), 0.042f);
+                    bool legR = Capsule(p, new Vector2(cx + 0.050f, 0.46f),  new Vector2(cx + 0.062f, 0.06f), 0.042f);
+
+                    if (head || neck || torso || armL || armR || legL || legR)
+                        px[py * w + pxi] = new Color(1f, 1f, 1f, 1f);
+                }
+
+            // Detaylar OYULUR: kemer çizgisi + yaka (silüet tek blok kalmasın).
+            void Carve(float th, Vector2 a, Vector2 b)
+            {
+                int steps = Mathf.CeilToInt(Vector2.Distance(a, b) * 2f) + 2;
+                for (int s = 0; s <= steps; s++)
+                    Stamp(px, w, h, Vector2.Lerp(a, b, s / (float)steps), th * 0.5f, erase: true);
+            }
+            Carve(0.012f * h, new Vector2(w * 0.40f, h * 0.505f), new Vector2(w * 0.60f, h * 0.505f));   // kemer
+            Carve(0.010f * h, new Vector2(w * 0.43f, h * 0.745f), new Vector2(w * 0.50f, h * 0.70f));    // yaka sol
+            Carve(0.010f * h, new Vector2(w * 0.57f, h * 0.745f), new Vector2(w * 0.50f, h * 0.70f));    // yaka sağ
+
+            return Save(px, w, h, path, Vector4.zero);
+        }
+
+        /// <summary>
         /// YETENEK AĞACININ GÖVDESİ: verilen kenarları (ebeveyn → çocuk) tek bir dokuya, gövdeden
         /// dallanan organik çizgiler olarak çizer. Mockup'taki ağaç bu: dallar aşağıdaki KÖKTEN
         /// çıkıyor, yukarı doğru inceliyor.

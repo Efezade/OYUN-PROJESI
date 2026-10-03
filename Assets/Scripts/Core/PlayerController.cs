@@ -41,6 +41,11 @@ namespace TacticalRPG.Core
         [SerializeField] private HexCoordinate _startCoord;
 
         public HexCoordinate CurrentCoord { get; private set; }
+
+        /// <summary>Pottan gelen ek görüş (Kartal Gözü İksiri). PlayerBuffs yönetir.</summary>
+        public int VisionBonus { get; set; }
+
+        private int Vision => Mathf.Max(0, _visionRange + VisionBonus);
         public bool          IsMoving     { get; private set; }
 
         /// <summary>Süren yürüyüşte kaç karo kaldı (HUD "N karo kaldı" yazar). Dururken 0.</summary>
@@ -113,7 +118,7 @@ namespace TacticalRPG.Core
                 Debug.LogError($"[PlayerController] Baslangic koordinati {startCoord} grid'de YOK — " +
                                "haritada hic yurunur karo bulunamadi.");
 
-            _fogManager.UpdateFogAround(transform.position, _visionRange);
+            _fogManager.UpdateFogAround(transform.position, Vision);
             _lastFogSample = transform.position;
         }
 
@@ -146,7 +151,7 @@ namespace TacticalRPG.Core
             if (_fogManager == null) return;
             if ((transform.position - _lastFogSample).sqrMagnitude < 0.00005f) return;
 
-            if (_revealFog) _fogManager.UpdateFogAround(transform.position, _visionRange);
+            if (_revealFog) _fogManager.UpdateFogAround(transform.position, Vision);
 
             // ÖRNEK KONUMU SİS KAPALIYKEN DE İLERLER. Aksi halde yolculuk biter bitmez konum
             // ile örnek arasındaki fark bu satırı hedefte bir kez ateşler ve tam da engellemek
@@ -325,7 +330,7 @@ namespace TacticalRPG.Core
         /// örn. savaştan dönünce ya da kule açılmamış adaya dönünce WatchtowerManager çağırır).</summary>
         public void RefreshVision()
         {
-            if (_fogManager != null) _fogManager.UpdateFogAround(transform.position, _visionRange);
+            if (_fogManager != null) _fogManager.UpdateFogAround(transform.position, Vision);
         }
 
         // Karonun YÜRÜME yüzeyinin dünya Y'si + karakterin ayak payı (clearance).

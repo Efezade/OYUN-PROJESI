@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5721286505c91843a5cebd7c62644a5, type: 3}
+  m_Name: pasli_kilic
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.ItemSO
+  _id: pasli_kilic
+  _displayName: "Pasl\u0131 K\u0131l\u0131\xE7"
+  _description: "Eski bir ak\u0131nc\u0131n\u0131n k\u0131l\u0131c\u0131."
+  _icon: {fileID: 21300000, guid: 74c42cd4659a87943aedaec89dbfae50, type: 3}
+  _rarity: 0
+  _price:
+  - type: 3
+    amount: 6
+  - type: 4
+    amount: 4
+  _slot: 4
+  _trait: 1
+  _amount: 1
+  _trait2: 0
+  _amount2: 0

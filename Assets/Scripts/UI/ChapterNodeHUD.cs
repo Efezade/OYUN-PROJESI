@@ -20,6 +20,8 @@ namespace TacticalRPG.UI
         [SerializeField] private ChapterNodeManager _nodes;
         [SerializeField] private PlayerController   _player;
         [SerializeField] private ActionPointManager _ap;
+        [Tooltip("Opsiyonel — atanmışsa düğümün hikaye zincirindeki adımı yazılır.")]
+        [SerializeField] private StoryChainManager  _chains;
 
         private void OnGUI()
         {
@@ -60,6 +62,8 @@ namespace TacticalRPG.UI
                             ? $"{TitleOf(n.Type)} — {n.Tier}. kademe"
                             : $"{TitleOf(n.Type)}");
 
+            DrawChainStep(n);
+
             // Görev TİPİ (Faz 1): savaş dışı tiplerde oyuncu ne yapacağını burada okur.
             if (n.Type == MapNodeType.Mandatory && n.Kind != null)
             {
@@ -90,6 +94,26 @@ namespace TacticalRPG.UI
 
             if (n.Type == MapNodeType.Market && !_nodes.IsMarketOpen())
                 GUILayout.Label("Gündüz dilimlerinde tekrar gel.");
+        }
+
+        /// <summary>Hikaye zincirindeki yeri: "HİKAYE ZİNCİRİ · adım 2/3 (1 bitti)". Sıra kilidi
+        /// yok — bilgi amaçlı (Efe'nin kararı 2026-10-03).</summary>
+        private void DrawChainStep(ChapterNodeManager.MapNode n)
+        {
+            if (_chains == null) return;
+
+            if (n.Type == MapNodeType.Mandatory)
+            {
+                var m = _chains.MandatoryChain;
+                int idx = -1, done = 0;
+                for (int i = 0; i < m.Count; i++) { if (m[i] == n) idx = i; if (m[i].Completed) done++; }
+                if (idx >= 0 && m.Count > 1)
+                    GUILayout.Label($"ZORUNLU ZİNCİR · adım {idx + 1}/{m.Count} ({done} bitti)");
+                return;
+            }
+
+            if (_chains.TryGetChain(n, out StoryChain chain, out int step))
+                GUILayout.Label($"HİKAYE ZİNCİRİ · adım {step + 1}/{chain.Length} ({chain.DoneCount} bitti)");
         }
 
         private void DrawBoss()

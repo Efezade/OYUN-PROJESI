@@ -42,7 +42,63 @@ MonoBehaviour:
   _unitModelEuler: {x: 0, y: 0, z: 0}
   _unitModelYOffset: 0
   _unitAnimator: {fileID: 0}
-  _portrait: {fileID: 0}
+  _portrait: {fileID: 21300000, guid: 6fa35529b63f8e148a758e65fd5a0231, type: 3}
   _hasManaSystem: 0
   _maxMana: 0
   _abilities: []
+  _evolutions:
+  - _name: "Keskin G\xF6z"
+    _description: +1 menzil
+    _cost:
+    - type: 3
+      amount: 4
+    - type: 4
+      amount: 3
+    _trait: 4
+    _amount: 1
+  - _name: "\xC7ift Ok"
+    _description: "Her at\u0131\u015Fta ikinci ok (%70)"
+    _cost:
+    - type: 3
+      amount: 9
+    - type: 4
+      amount: 8
+    _trait: 6
+    _amount: 70
+  - _name: "\xD6l\xFCmc\xFCl Ni\u015Fan"
+    _description: "+2 sald\u0131r\u0131"
+    _cost:
+    - type: 3
+      amount: 17
+    - type: 4
+      amount: 11
+    _trait: 1
+    _amount: 2
+  _classAbilities:
+  - _name: "\xC7ift At\u0131\u015F"
+    _description: "Ayn\u0131 hedefe 2 ok (%70)"
+    _kind: 1
+    _power: 70
+    _hits: 2
+    _range: -1
+    _radius: 0
+    _cooldown: 2
+    _color: {r: 0.8, g: 0.85, b: 0.95, a: 1}
+  - _name: "Ok Ya\u011Fmuru"
+    _description: Alana %60 hasar (7 karo)
+    _kind: 2
+    _power: 60
+    _hits: 1
+    _range: 4
+    _radius: 1
+    _cooldown: 3
+    _color: {r: 1, g: 0.45, b: 0.15, a: 1}
+  - _name: "Ni\u015Fanc\u0131 At\u0131\u015F\u0131"
+    _description: "1.7 kat isabetli at\u0131\u015F"
+    _kind: 0
+    _power: 170
+    _hits: 1
+    _range: 4
+    _radius: 0
+    _cooldown: 3
+    _color: {r: 0.8, g: 0.85, b: 0.95, a: 1}

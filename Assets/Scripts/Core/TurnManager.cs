@@ -211,6 +211,9 @@ namespace TacticalRPG.Core
             _extraActions   = 0;
             OnTurnChanged?.Invoke();
 
+            // EVRİM: kendi turunun başında yenilenme (Rahip/Ranger evrimleri).
+            unit.OnOwnTurnBegan();
+
             // Karo etkileri (Ocak can yeniler, Ruh Kapısı aksiyon verir, Davul Taşı mana verir)
             // turun EN BAŞINDA çözülür — birim daha hamle yapmadan.
             OnUnitTurnBegan?.Invoke(unit);
@@ -287,7 +290,13 @@ namespace TacticalRPG.Core
         /// "saldırı/eylem" hakkını tüketir, win/lose kontrolü + otomatik tur sonu yapar.
         /// (Hasar/mana/etki AbilityCaster'da; burada yalnızca tur defteri tutulur.)
         /// </summary>
-        public void RegisterCommanderAction()
+        public void RegisterCommanderAction() => RegisterUnitAction();
+
+        /// <summary>
+        /// Aktif birim bir YETENEK kullandı (Kam büyüsü ya da sınıf yeteneği): eylem hakkını
+        /// tüketir, win/lose kontrolü + otomatik tur sonu yapar. Etkiyi çağıran uygular.
+        /// </summary>
+        public void RegisterUnitAction()
         {
             if (!IsPlayerTurn || CurrentHasActed) return;
             ConsumeAction();

@@ -15,6 +15,8 @@ namespace TacticalRPG.UI
         [SerializeField] private TurnManager      _turnManager;
         [Tooltip("Kam'ın büyü kasteri — Komutan turunda yetenek paneli için.")]
         [SerializeField] private AbilityCaster    _caster;
+        [Tooltip("SINIF YETENEKLERİ (2026-10-03) — sırası gelen birimin 3 yeteneği burada düğme olur.")]
+        [SerializeField] private UnitAbilityCaster _unitAbilities;
         [Tooltip("Kam'ın aktif mekaniği (bugün mana) — büyü panelinde gösterilir.")]
         [UnityEngine.Serialization.FormerlySerializedAs("_kamMana")]
         [SerializeField] private KamMechanicHost  _kam;
@@ -52,14 +54,22 @@ namespace TacticalRPG.UI
         private void DrawTurnPanel()
         {
             Unit cur = _turnManager.CurrentUnit;
-            bool commanderTurn = cur != null && cur.Team == UnitTeam.Player && cur.IsCommander;
 
             // Davul karosu satırı yalnız bir etki VARKEN çizilir → panel boş yere büyümez,
             // ama etki varken oyuncu "neden bu tur daha sert vuruyorum"u panelde görür.
             string tileLine = cur != null ? TileEffectLine(cur) : null;
 
             const float w = 320f;
-            float h = (commanderTurn ? 330f : 176f) + (string.IsNullOrEmpty(tileLine) ? 0f : 26f);
+            // Eski 1/2/3 büyü düğmeleri kaldırıldı (2026-10-03): büyüler artık YALNIZ davuldan
+            // gelir ve manası oradan düşer. Panel her turda Kam'ın manasını gösterir.
+            float h = 202f + (string.IsNullOrEmpty(tileLine) ? 0f : 26f);
+
+            // Sınıf yetenekleri + evrim satırı panelin boyunu büyütür (yalnız varken).
+            int abilityCount = _unitAbilities != null && cur != null && cur.Team == UnitTeam.Player && !cur.IsCommander
+                             ? _unitAbilities.AbilitiesOf(cur).Count : 0;
+            string evoLine = cur != null ? cur.Evolution.Describe() : "";
+            h += abilityCount > 0 ? abilityCount * 32f + 26f : 0f;
+            h += string.IsNullOrEmpty(evoLine) ? 0f : 26f;
             // Sol-üst (OverworldCombatHUD üst-orta "Geri Don" ile çakışmaz).
             var rect = new Rect(12f, 12f, w, h);
             ImguiBlocker.Register(rect);   // panel üstündeki tık hareket/saldırı sayılmasın
@@ -73,6 +83,12 @@ namespace TacticalRPG.UI
                 GUILayout.Label($"Hareket {cur.MoveRange}   ·   Saldiri menzili {cur.AttackRange}");
 
                 if (!string.IsNullOrEmpty(tileLine)) GUILayout.Label(tileLine);
+                if (!string.IsNullOrEmpty(evoLine))  GUILayout.Label($"EVRİM: {evoLine}");
+
+                // KAM'IN MANASI — her turda görünür: davul çaldığında hangi kartı alabileceğini
+                // oyuncu önceden hesaplayabilsin.
+                if (_kam != null)
+                    GUILayout.Label($"KAM {_kam.ResourceName.ToUpperInvariant()}: {_kam.Current}/{_kam.Max}");
 
                 if (cur.Team == UnitTeam.Player)
                 {
@@ -80,9 +96,10 @@ namespace TacticalRPG.UI
                     string a = _turnManager.CurrentHasActed ? "eylem: bitti"   : "eylem: HAZIR";
                     GUILayout.Label($"{m}   |   {a}");
 
-                    if (commanderTurn) DrawCommanderAbilities();
 
-                    GUI.enabled = _turnManager.IsPlayerTurn;
+                    if (abilityCount > 0) DrawClassAbilities(cur);
+
+                    GUI.enabled = _turnManager.IsPlayerTurn && (_unitAbilities == null || !_unitAbilities.Busy);
                     if (GUILayout.Button("Turu Bitir", GUILayout.Height(28)))
                         _turnManager.EndPlayerTurn();
                     GUI.enabled = true;
@@ -94,6 +111,28 @@ namespace TacticalRPG.UI
                 GUILayout.Label($"» {_lastMessage}");
 
             GUILayout.EndArea();
+        }
+
+        /// <summary>Sırası gelen birimin üç sınıf yeteneği: [1] ad (bekleme). Seçili olan ► ile
+        /// işaretlenir; kullanılamayan sönük durur ve sebebi düğmede yazar.</summary>
+        private void DrawClassAbilities(Unit cur)
+        {
+            GUILayout.Label("YETENEKLER — 1/2/3 seç, hedefe tıkla:");
+            var list = _unitAbilities.AbilitiesOf(cur);
+            for (int i = 0; i < list.Count; i++)
+            {
+                var ab = list[i];
+                if (ab == null) continue;
+                bool can   = _unitAbilities.CanUse(cur, i, out string why);
+                bool armed = _unitAbilities.ArmedIndex == i;
+                int  cd    = _unitAbilities.CooldownLeft(cur, i);
+
+                string state = cd > 0 ? $"  ({cd} tur)" : "";
+                GUI.enabled = can && !_unitAbilities.Busy;
+                if (GUILayout.Button($"{(armed ? "► " : "")}[{i + 1}] {ab.Name}{state}", GUILayout.Height(28)))
+                    _unitAbilities.Arm(i);
+                GUI.enabled = true;
+            }
         }
 
         /// <summary>Birimin ÜSTÜNDEKİ davul karosundan gelen fark — "karo çalışıyor mu" sorusunun
@@ -116,37 +155,6 @@ namespace TacticalRPG.UI
         }
 
         private static string Signed(int v) => v > 0 ? $"+{v}" : v.ToString();
-
-        // Kam'ın büyüleri: mana + 1/2/3 arm butonları (hedefe sol tıkla = uygula).
-        private void DrawCommanderAbilities()
-        {
-            if (_kam != null)
-                GUILayout.Label($"{_kam.ResourceName} {_kam.Current}/{_kam.Max}");
-
-            var abilities = _caster != null ? _caster.Abilities : null;
-            if (abilities == null || abilities.Count == 0)
-            {
-                GUILayout.Label("(Yetenek yok — Faz C4 kurulumu?)");
-                return;
-            }
-
-            bool acted = _turnManager.CurrentHasActed;
-            for (int i = 0; i < abilities.Count; i++)
-            {
-                KamAbilityData ab    = abilities[i];
-                bool           armed = _caster.ArmedAbility == ab;
-                bool           canMana = _kam == null || _kam.CanPay(ab.ManaCost);
-
-                GUI.enabled = !acted && canMana;
-                string mark  = armed ? "► " : "";
-                if (GUILayout.Button($"{mark}[{i + 1}] {ab.DisplayName}  ({ab.Effect} {ab.Power}, m{ab.ManaCost}, menzil {ab.Range})"))
-                    _caster.ArmAbility(i);
-                GUI.enabled = true;
-            }
-
-            if (_caster.HasArmedAbility)
-                GUILayout.Label($"HAZIR: {_caster.ArmedAbility.DisplayName} → hedefe tikla (Esc iptal)");
-        }
 
         private void DrawResultBanner()
         {

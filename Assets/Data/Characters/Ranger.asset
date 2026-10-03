@@ -42,7 +42,63 @@ MonoBehaviour:
   _unitModelEuler: {x: 0, y: 0, z: 0}
   _unitModelYOffset: 0
   _unitAnimator: {fileID: 9100000, guid: 9a8e3b922658c4a4bb4e660461ac1477, type: 2}
-  _portrait: {fileID: 0}
+  _portrait: {fileID: 21300000, guid: 6fa35529b63f8e148a758e65fd5a0231, type: 3}
   _hasManaSystem: 0
   _maxMana: 0
   _abilities: []
+  _evolutions:
+  - _name: "Hafif Ad\u0131m"
+    _description: +1 hareket
+    _cost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 5
+    _trait: 3
+    _amount: 1
+  - _name: "Do\u011Fa Ba\u011F\u0131"
+    _description: "Her turun ba\u015F\u0131nda 2 can"
+    _cost:
+    - type: 3
+      amount: 9
+    - type: 4
+      amount: 8
+    _trait: 11
+    _amount: 2
+  - _name: Delici Ok
+    _description: "Vuru\u015Fu yandakilere %40 s\u0131\xE7rar"
+    _cost:
+    - type: 3
+      amount: 15
+    - type: 4
+      amount: 11
+    _trait: 9
+    _amount: 40
+  _classAbilities:
+  - _name: Tuzak Oku
+    _description: Uzaktan vurur, sersemletir
+    _kind: 3
+    _power: 50
+    _hits: 1
+    _range: 3
+    _radius: 0
+    _cooldown: 3
+    _color: {r: 0.45, g: 0.9, b: 0.4, a: 1}
+  - _name: "H\u0131zl\u0131 Darbe"
+    _description: "Ayn\u0131 hedefe 3 darbe (%45)"
+    _kind: 1
+    _power: 45
+    _hits: 3
+    _range: -1
+    _radius: 0
+    _cooldown: 3
+    _color: {r: 0.8, g: 0.85, b: 0.95, a: 1}
+  - _name: "Do\u011Fa \u015Eifas\u0131"
+    _description: Bir dosta 5 can
+    _kind: 4
+    _power: 5
+    _hits: 1
+    _range: 2
+    _radius: 0
+    _cooldown: 3
+    _color: {r: 0.45, g: 0.9, b: 0.4, a: 1}

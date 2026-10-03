@@ -23,6 +23,8 @@ namespace TacticalRPG.Core
         [SerializeField] private ChapterProgress     _progress;
         [Tooltip("Yeni harita = bölüm (yeniden) başladı → mekanik taze kurulur.")]
         [SerializeField] private ChapterMapGenerator _map;
+        [Tooltip("Savaşa girilince mekaniğe haber verilir (mana: savaş bütçesi dolar).")]
+        [SerializeField] private GameStateManager    _state;
 
         [Header("Yedek")]
         [Tooltip("Bölümün kural seti yoksa ya da mekanik seçmiyorsa kullanılan mekanik. " +
@@ -55,6 +57,7 @@ namespace TacticalRPG.Core
             if (_apManager != null) _apManager.OnTimeAdvanced   += HandleTimeAdvanced;
             if (_progress  != null) _progress.OnProgressChanged += Rebuild;
             if (_map       != null) _map.OnMapGenerated         += Rebuild;
+            if (_state     != null) _state.OnStateChanged       += HandleStateChanged;
         }
 
         private void OnDisable()
@@ -62,6 +65,7 @@ namespace TacticalRPG.Core
             if (_apManager != null) _apManager.OnTimeAdvanced   -= HandleTimeAdvanced;
             if (_progress  != null) _progress.OnProgressChanged -= Rebuild;
             if (_map       != null) _map.OnMapGenerated         -= Rebuild;
+            if (_state     != null) _state.OnStateChanged       -= HandleStateChanged;
             if (_active    != null) _active.OnResourceChanged   -= Relay;
         }
 
@@ -105,6 +109,11 @@ namespace TacticalRPG.Core
 
         private void HandleTimeAdvanced(int day, int slot, string slotName)
             => _active.OnTimeSlotAdvanced(day, slot);
+
+        private void HandleStateChanged(GameState state)
+        {
+            if (state == GameState.Combat) _active.OnCombatStarted();
+        }
 
         // ── Bedel (büyü kasterleri buradan öder) ─────────────────────────────
 

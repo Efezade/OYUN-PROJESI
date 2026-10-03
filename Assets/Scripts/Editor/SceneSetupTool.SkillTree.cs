@@ -83,7 +83,8 @@ namespace TacticalRPG.Editor
 
             GameObject canvas = GameObject.Find(MenuShellCanvasName);
             Transform panel = canvas != null ? canvas.transform.Find("Panel_Book") : null;
-            var view = panel != null ? panel.GetComponentInChildren<KamSkillTreeView>(true) : null;
+            Transform skillPage = panel != null ? panel.Find("BookBody/Page_Skills") : null;
+            var view = skillPage != null ? skillPage.GetComponent<UpgradeTreeView>() : null;
             if (view == null)
             {
                 Debug.LogError("[Yetenek] Yetenek sayfasi kurulamadi — KITAP paneli uretilemedi.");
@@ -252,37 +253,58 @@ namespace TacticalRPG.Editor
 
         // ── KİTAP'taki ağaç sayfası ──────────────────────────────────────────
 
-        /// <summary>
-        /// Ağaç sayfasını çizer: başlık · gövde + dallar (TEK mürekkep dokusu) · ikonlu düğümler ·
-        /// sayfanın altında künye kartı (ad · açıklama · bedel · AÇ/YÜKSELT · kese).
-        /// </summary>
         private static void PopulateSkillPage(Transform page, GameObject panelGO)
         {
-            KamSkillTreeSO tree = EnsureSkillTreeAsset();
+            KamSkillTreeSO   tree     = EnsureSkillTreeAsset();
+            KamSkillProgress progress = EnsureSkillProgress(tree);
 
-            // ── Başlık: mockup'taki gibi avuç içi ikonu + el yazısı ───────────
-            var titleRow = new GameObject("SkillTitle", typeof(RectTransform));
+            PopulateTreePage(page, "SkillTitle", "YETENEK AĞACI", InkIcon.Hand, "Skill", tree, progress,
+                             n =>
+                             {
+                                 KamSkillCatalog.Entry e = KamSkillCatalog.Get(n.Id);
+                                 return (e != null ? e.Name : n.Id, IconFor(e));
+                             },
+                             nameWidth: 196f, nameFont: 19f, branchPrefix: "tree_branches", groupLabels: null);
+
+            WireSkillTreeConsumers(progress);
+        }
+
+        /// <summary>
+        /// KİTAP'ta bir GELİŞTİRME AĞACI sayfası çizer (2026-10-03'te büyü sayfasından genelleşti):
+        /// başlık · gövde + dallar (TEK mürekkep dokusu) · ikonlu düğümler · sayfanın altında künye
+        /// kartı (ad · açıklama · bedel · AÇ/YÜKSELT · kese). Görünüm SAYFA KÖKÜNE eklenir — kitapta
+        /// birden çok ağaç sayfası olduğu için panelin kendisine konamaz.
+        /// </summary>
+        private static UpgradeTreeView PopulateTreePage(
+            Transform page, string titleName, string title, InkIcon titleIcon, string partPrefix,
+            UpgradeTreeSO tree, UpgradeTreeProgress progress,
+            System.Func<UpgradeTreeSO.Node, (string label, InkIcon icon)> describe,
+            float nameWidth, float nameFont, string branchPrefix,
+            List<(string text, Vector2 pos)> groupLabels)
+        {
+            // ── Başlık: mockup'taki gibi ikon + el yazısı ─────────────────────
+            var titleRow = new GameObject(titleName, typeof(RectTransform));
             titleRow.transform.SetParent(page, false);
-            // Başlık SOL ÜSTTE: ortada dururken orta daldaki üst düğümün (Boran) üstüne biniyordu.
+            // Başlık SOL ÜSTTE: ortada dururken orta daldaki üst düğümün üstüne biniyordu.
             var trt = titleRow.GetComponent<RectTransform>();
             trt.anchorMin = trt.anchorMax = trt.pivot = new Vector2(0f, 1f);
             trt.anchoredPosition = new Vector2(34f, -16f);
             trt.sizeDelta = new Vector2(460f, 56f);
 
-            InkImage(titleRow.transform, "TitleIcon", InkArtFactory.Icon(InkIcon.Hand, 64),
+            InkImage(titleRow.transform, "TitleIcon", InkArtFactory.Icon(titleIcon, 64),
                      new Vector2(0f, 0.5f), new Vector2(6f, 0f), new Vector2(44f, 44f), Ink);
-            var titleText = CreateCenteredLabel(titleRow.transform, "TitleText", "YETENEK AĞACI",
+            var titleText = CreateCenteredLabel(titleRow.transform, "TitleText", title,
                 new Vector2(0f, 0.5f), new Vector2(72f, 0f), new Vector2(380f, 50f), Ink, 32f);
             titleText.alignment = TMPro.TextAlignmentOptions.Left;
 
             // ── Dallar: TEK doku (kesişimler kopuk görünmesin) ────────────────
             var edges = new List<(Vector2 from, Vector2 to)>();
             var rootChildren = new List<Vector2>();
-            foreach (KamSkillTreeSO.Node n in tree.Nodes)
+            foreach (UpgradeTreeSO.Node n in tree.Nodes)
             {
                 if (n == null) continue;
                 if (string.IsNullOrEmpty(n.Requires)) { rootChildren.Add(n.GraphPos); continue; }
-                KamSkillTreeSO.Node parent = tree.Find(n.Requires);
+                UpgradeTreeSO.Node parent = tree.Find(n.Requires);
                 if (parent != null) edges.Add((parent.GraphPos, n.GraphPos));
             }
 
@@ -296,11 +318,17 @@ namespace TacticalRPG.Editor
 
             // Doku adı YERLEŞİMDEN türer: düğümleri kaydırınca dallar da yeniden üretilsin
             // (aynı yerleşimde ise diskteki dosya korunur, üretim tekrarlanmaz).
-            string branchName = $"tree_branches_{LayoutHash(tree)}";
+            string branchName = $"{branchPrefix}_{LayoutHash(tree)}";
             Sprite branches = InkArtFactory.Branches(branchName, texW, texH,
                                                      ToTex(SkillTrunkRoot), texEdges, texRoots);
             InkImage(page, "Branches", branches, new Vector2(0.5f, 0.5f), Vector2.zero,
                      new Vector2(texW, texH), Ink);
+
+            // Dal adları (opsiyonel) — karo ağacında her dal bir karo grubu.
+            if (groupLabels != null)
+                foreach (var (text, pos) in groupLabels)
+                    CreateCenteredLabel(page, $"Group_{text}", text, new Vector2(0.5f, 0.5f), pos,
+                                        new Vector2(260f, 30f), InkSoft, 18f);
 
             // ── Düğümler ──────────────────────────────────────────────────────
             Sprite disc     = InkArtFactory.Disc("node_disc_92", 92);
@@ -308,14 +336,15 @@ namespace TacticalRPG.Editor
             Sprite lockIcon = InkArtFactory.Icon(InkIcon.Lock, 64);
 
             var views = new List<SkillNodeParts>();
-            foreach (KamSkillTreeSO.Node n in tree.Nodes)
+            foreach (UpgradeTreeSO.Node n in tree.Nodes)
             {
                 if (n == null) continue;
-                views.Add(CreateSkillNode(page, n, disc, ring, lockIcon));
+                var (label, icon) = describe(n);
+                views.Add(CreateSkillNode(page, n, label, icon, disc, ring, lockIcon, nameWidth, nameFont));
             }
 
             // ── Künye kartı (sayfanın altı, boydan boya) ──────────────────────
-            RectTransform card = InkPanel(page, "SkillCard", new Vector2(0.5f, 0.5f),
+            RectTransform card = InkPanel(page, $"{partPrefix}Card", new Vector2(0.5f, 0.5f),
                 new Vector2(0f, SkillCardY), new Vector2(1360f, SkillCardHeight), 22);
 
             var detailName = CreateCenteredLabel(card, "DetailName", "—",
@@ -338,9 +367,9 @@ namespace TacticalRPG.Editor
                                       new Vector2(-28f, 0f), new Vector2(258f, 82f));
             var actionLabel = action.GetComponentInChildren<TextMeshProUGUI>();
 
-            // ── Görünümü bağla ────────────────────────────────────────────────
-            var view = panelGO.GetComponent<KamSkillTreeView>();
-            if (view == null) view = panelGO.AddComponent<KamSkillTreeView>();
+            // ── Görünümü bağla (SAYFA KÖKÜNDE) ────────────────────────────────
+            var view = page.GetComponent<UpgradeTreeView>();
+            if (view == null) view = page.gameObject.AddComponent<UpgradeTreeView>();
 
             var vso = new SerializedObject(view);
             SerializedProperty arr = vso.FindProperty("_nodes");
@@ -366,11 +395,10 @@ namespace TacticalRPG.Editor
             vso.FindProperty("_walletLabel").objectReferenceValue  = walletLabel;
             vso.FindProperty("_actionButton").objectReferenceValue = action;
             vso.FindProperty("_actionLabel").objectReferenceValue  = actionLabel;
-            vso.FindProperty("_progress").objectReferenceValue = EnsureSkillProgress(tree);
-            vso.FindProperty("_wallet").objectReferenceValue   = FindComponentAnywhere<EssenceWallet>();
+            vso.FindProperty("_progress").objectReferenceValue     = progress;
+            vso.FindProperty("_wallet").objectReferenceValue       = FindComponentAnywhere<EssenceWallet>();
             vso.ApplyModifiedProperties();
-
-            WireSkillTreeConsumers(EnsureSkillProgress(tree));
+            return view;
         }
 
         /// <summary>Bir düğümün sahnedeki parçaları (görünüme bağlanır).</summary>
@@ -383,21 +411,21 @@ namespace TacticalRPG.Editor
             public TextMeshProUGUI NameLabel, LevelLabel;
         }
 
-        /// <summary>Tek düğüm: durum diski + mürekkep halka + ikon + ad + seviye rozeti.</summary>
-        private static SkillNodeParts CreateSkillNode(Transform parent, KamSkillTreeSO.Node node,
-                                                      Sprite disc, Sprite ring, Sprite lockIcon)
+        /// <summary>Tek düğüm: durum diski + mürekkep halka + ikon + ad + seviye rozeti.
+        /// Ad şeridinin genişliği ağaca göre değişir: karo ağacında düğümler yan yana ikişer durur.</summary>
+        private static SkillNodeParts CreateSkillNode(Transform parent, UpgradeTreeSO.Node node,
+                                                      string label, InkIcon openIcon,
+                                                      Sprite disc, Sprite ring, Sprite lockIcon,
+                                                      float nameWidth, float nameFont)
         {
-            KamSkillCatalog.Entry entry = node.Catalog;
-            string label = entry != null ? entry.Name : node.SkillId;
-
-            var go = new GameObject($"Node_{node.SkillId}", typeof(RectTransform));
+            var go = new GameObject($"Node_{node.Id}", typeof(RectTransform));
             go.transform.SetParent(parent, false);
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = node.GraphPos;
             rt.sizeDelta = new Vector2(150f, 150f);
 
-            var parts = new SkillNodeParts { SkillId = node.SkillId, LockedIcon = lockIcon };
+            var parts = new SkillNodeParts { SkillId = node.Id, LockedIcon = lockIcon };
 
             parts.Disc = InkImage(go.transform, "Disc", disc, new Vector2(0.5f, 0.5f),
                                   Vector2.zero, new Vector2(92f, 92f), ParchmentHi, raycast: true);
@@ -407,7 +435,7 @@ namespace TacticalRPG.Editor
             parts.Ring = InkImage(go.transform, "Ring", ring, new Vector2(0.5f, 0.5f),
                                   Vector2.zero, new Vector2(104f, 104f), Ink);
 
-            parts.OpenIcon = InkArtFactory.Icon(IconFor(entry), 64);
+            parts.OpenIcon = InkArtFactory.Icon(openIcon, 64);
             parts.Icon = InkImage(go.transform, "Icon", lockIcon, new Vector2(0.5f, 0.5f),
                                   Vector2.zero, new Vector2(50f, 50f), Ink);
 
@@ -419,11 +447,11 @@ namespace TacticalRPG.Editor
 
             // Adın ARKASINA kâğıt şerit: dallar yazının üstünden geçince ad okunmuyordu.
             InkImage(go.transform, "NamePlate", InkArtFactory.Paper("paper_soft", 96, 96, Color.white),
-                     new Vector2(0.5f, 0f), new Vector2(0f, 0f), new Vector2(196f, 30f),
+                     new Vector2(0.5f, 0f), new Vector2(0f, 0f), new Vector2(nameWidth, 30f),
                      new Color(ParchmentHi.r, ParchmentHi.g, ParchmentHi.b, 0.88f)).type = Image.Type.Sliced;
 
             parts.NameLabel = CreateCenteredLabel(go.transform, "Name", label,
-                new Vector2(0.5f, 0f), new Vector2(0f, -4f), new Vector2(210f, 34f), Ink, 19f);
+                new Vector2(0.5f, 0f), new Vector2(0f, -4f), new Vector2(nameWidth + 14f, 34f), Ink, nameFont);
 
             return parts;
         }
@@ -441,15 +469,15 @@ namespace TacticalRPG.Editor
             };
 
         /// <summary>Yerleşim parmak izi: düğüm konumları değişince dal dokusu yeniden üretilsin.</summary>
-        private static string LayoutHash(KamSkillTreeSO tree)
+        private static string LayoutHash(UpgradeTreeSO tree)
         {
             unchecked
             {
                 int h = 17;
-                foreach (KamSkillTreeSO.Node n in tree.Nodes)
+                foreach (UpgradeTreeSO.Node n in tree.Nodes)
                 {
-                    if (n == null || n.SkillId == null) continue;
-                    h = h * 31 + n.SkillId.GetHashCode();
+                    if (n == null || n.Id == null) continue;
+                    h = h * 31 + n.Id.GetHashCode();
                     h = h * 31 + Mathf.RoundToInt(n.GraphPos.x) * 7 + Mathf.RoundToInt(n.GraphPos.y);
                 }
                 return (h & 0x7FFFFF).ToString("x");

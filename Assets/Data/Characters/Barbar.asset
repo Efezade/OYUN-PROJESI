@@ -43,7 +43,63 @@ MonoBehaviour:
   _unitModelEuler: {x: 0, y: 0, z: 0}
   _unitModelYOffset: 0
   _unitAnimator: {fileID: 0}
-  _portrait: {fileID: 0}
+  _portrait: {fileID: 21300000, guid: ff3bc1181d2698b4fb10eaa733af2284, type: 3}
   _hasManaSystem: 0
   _maxMana: 0
   _abilities: []
+  _evolutions:
+  - _name: "Kal\u0131n Kemik"
+    _description: "Sava\u015Fa 4 kalkanla iner"
+    _cost:
+    - type: 3
+      amount: 4
+    - type: 4
+      amount: 4
+    _trait: 10
+    _amount: 4
+  - _name: Kan Emici
+    _description: "Verdi\u011Fi hasar\u0131n %40'\u0131 cana d\xF6ner"
+    _cost:
+    - type: 3
+      amount: 10
+    - type: 4
+      amount: 6
+    _trait: 7
+    _amount: 40
+  - _name: "\xC7\u0131lg\u0131nl\u0131k"
+    _description: "Her sald\u0131r\u0131da ikinci darbe (%60)"
+    _cost:
+    - type: 3
+      amount: 17
+    - type: 4
+      amount: 11
+    _trait: 6
+    _amount: 60
+  _classAbilities:
+  - _name: "D\xF6ner Balta"
+    _description: "\xC7evresindeki t\xFCm d\xFC\u015Fmanlara %80"
+    _kind: 2
+    _power: 80
+    _hits: 1
+    _range: 0
+    _radius: 1
+    _cooldown: 2
+    _color: {r: 0.85, g: 0.15, b: 0.15, a: 1}
+  - _name: "Kan \xD6fkesi"
+    _description: "2 kat y\u0131k\u0131c\u0131 vuru\u015F"
+    _kind: 0
+    _power: 200
+    _hits: 1
+    _range: -1
+    _radius: 0
+    _cooldown: 3
+    _color: {r: 0.85, g: 0.15, b: 0.15, a: 1}
+  - _name: Kafa Atma
+    _description: Vurur ve sersemletir
+    _kind: 3
+    _power: 60
+    _hits: 1
+    _range: -1
+    _radius: 0
+    _cooldown: 3
+    _color: {r: 0.8, g: 0.85, b: 0.95, a: 1}

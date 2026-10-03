@@ -1,0 +1,435 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c31b9fcc6498174a9de6d773034650e, type: 3}
+  m_Name: AugmentTree
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.AugmentTreeSO
+  _nodes:
+  - _skillId: ocak
+    _requires: 
+    _unlockedAtStart: 1
+    _maxLevel: 3
+    _unlockCost: []
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 1
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: -630, y: 10}
+  - _skillId: kalkan_tasi
+    _requires: 
+    _unlockedAtStart: 1
+    _maxLevel: 3
+    _unlockCost: []
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 1
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: -490, y: 10}
+  - _skillId: ruzgar_tasi
+    _requires: ocak
+    _unlockedAtStart: 0
+    _maxLevel: 2
+    _unlockCost:
+    - type: 3
+      amount: 8
+    - type: 4
+      amount: 6
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 1
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: -630, y: 150}
+  - _skillId: ata_tasi
+    _requires: kalkan_tasi
+    _unlockedAtStart: 0
+    _maxLevel: 3
+    _unlockCost:
+    - type: 3
+      amount: 8
+    - type: 4
+      amount: 6
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 1
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: -490, y: 150}
+  - _skillId: ofke_tasi
+    _requires: ruzgar_tasi
+    _unlockedAtStart: 0
+    _maxLevel: 3
+    _unlockCost:
+    - type: 3
+      amount: 16
+    - type: 4
+      amount: 10
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 1
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: -560, y: 290}
+  - _skillId: camur
+    _requires: 
+    _unlockedAtStart: 1
+    _maxLevel: 3
+    _unlockCost: []
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 1
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: -350, y: 10}
+  - _skillId: agirlik
+    _requires: 
+    _unlockedAtStart: 1
+    _maxLevel: 3
+    _unlockCost: []
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 1
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: -210, y: 10}
+  - _skillId: diken
+    _requires: camur
+    _unlockedAtStart: 0
+    _maxLevel: 3
+    _unlockCost:
+    - type: 3
+      amount: 8
+    - type: 4
+      amount: 6
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 2
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: -350, y: 150}
+  - _skillId: tuzak_tasi
+    _requires: agirlik
+    _unlockedAtStart: 0
+    _maxLevel: 1
+    _unlockCost:
+    - type: 3
+      amount: 8
+    - type: 4
+      amount: 6
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 0
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: -210, y: 150}
+  - _skillId: duvar
+    _requires: 
+    _unlockedAtStart: 1
+    _maxLevel: 2
+    _unlockCost: []
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 0
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 1
+    _graphPos: {x: -70, y: 10}
+  - _skillId: sarsinti
+    _requires: 
+    _unlockedAtStart: 1
+    _maxLevel: 2
+    _unlockCost: []
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 1
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: 70, y: 10}
+  - _skillId: bosluk
+    _requires: duvar
+    _unlockedAtStart: 0
+    _maxLevel: 2
+    _unlockCost:
+    - type: 3
+      amount: 8
+    - type: 4
+      amount: 6
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 0
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 1
+    _graphPos: {x: -70, y: 150}
+  - _skillId: ruh_kapisi
+    _requires: sarsinti
+    _unlockedAtStart: 0
+    _maxLevel: 1
+    _unlockCost:
+    - type: 3
+      amount: 8
+    - type: 4
+      amount: 6
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 0
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: 70, y: 150}
+  - _skillId: cig_tasi
+    _requires: 
+    _unlockedAtStart: 1
+    _maxLevel: 2
+    _unlockCost: []
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 0
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 1
+    _graphPos: {x: 210, y: 10}
+  - _skillId: ates_ficisi
+    _requires: 
+    _unlockedAtStart: 1
+    _maxLevel: 3
+    _unlockCost: []
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 2
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: 350, y: 10}
+  - _skillId: buz_kabugu
+    _requires: cig_tasi
+    _unlockedAtStart: 0
+    _maxLevel: 1
+    _unlockCost:
+    - type: 3
+      amount: 8
+    - type: 4
+      amount: 6
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 0
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: 210, y: 150}
+  - _skillId: ruh_bombasi
+    _requires: ates_ficisi
+    _unlockedAtStart: 0
+    _maxLevel: 3
+    _unlockCost:
+    - type: 3
+      amount: 8
+    - type: 4
+      amount: 6
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 1
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: 350, y: 150}
+  - _skillId: kalkan_duvari
+    _requires: 
+    _unlockedAtStart: 1
+    _maxLevel: 3
+    _unlockCost: []
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 1
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: 490, y: 10}
+  - _skillId: nisan_kayasi
+    _requires: 
+    _unlockedAtStart: 1
+    _maxLevel: 2
+    _unlockCost: []
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 1
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: 630, y: 10}
+  - _skillId: ley_damari
+    _requires: kalkan_duvari
+    _unlockedAtStart: 0
+    _maxLevel: 1
+    _unlockCost:
+    - type: 3
+      amount: 8
+    - type: 4
+      amount: 6
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 0
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: 490, y: 150}
+  - _skillId: golge_yarigi
+    _requires: nisan_kayasi
+    _unlockedAtStart: 0
+    _maxLevel: 3
+    _unlockCost:
+    - type: 3
+      amount: 8
+    - type: 4
+      amount: 6
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 1
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: 630, y: 150}
+  - _skillId: kutsal_zemin
+    _requires: ley_damari
+    _unlockedAtStart: 0
+    _maxLevel: 3
+    _unlockCost:
+    - type: 3
+      amount: 16
+    - type: 4
+      amount: 10
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 1
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: 490, y: 290}
+  - _skillId: davul_tasi
+    _requires: golge_yarigi
+    _unlockedAtStart: 0
+    _maxLevel: 1
+    _unlockCost:
+    - type: 3
+      amount: 16
+    - type: 4
+      amount: 10
+    _levelCost:
+    - type: 3
+      amount: 5
+    - type: 4
+      amount: 4
+    _magnitudePerLevel: 0
+    _radiusPerLevel: 0
+    _pushPerLevel: 0
+    _stunPerLevel: 0
+    _tilesPerLevel: 0
+    _graphPos: {x: 630, y: 290}

@@ -79,7 +79,12 @@ namespace TacticalRPG.UI
             if (_field == null) return;
             HexCoordinate here = _player.CurrentCoord;
 
-            if (_field.HasEssenceAt(here))
+            if (_field.AutoCollect)
+            {
+                // OTOMATİK TOPLAMA (2026-10-03): düğme yok — öz karosuna basınca alınır.
+                GUILayout.Label("Öz karosuna bas → öz otomatik toplanır.");
+            }
+            else if (_field.HasEssenceAt(here))
             {
                 GUILayout.Label($"Bu karoda: {_field.Describe(here)}");
                 GUI.enabled = _field.CanCollect(here);

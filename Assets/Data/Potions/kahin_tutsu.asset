@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d4074c5bb1d0a648b1927bf335d27d2, type: 3}
+  m_Name: kahin_tutsu
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.PotionSO
+  _id: kahin_tutsu
+  _displayName: "K\xE2hin T\xFCts\xFCs\xFC"
+  _description: "\xC7evrendeki 4 karoda sisi kal\u0131c\u0131 a\xE7"
+  _icon: {fileID: 21300000, guid: 3e209a548a4843b4c882726fafbcd389, type: 3}
+  _color: {r: 0.7, g: 0.6, b: 0.9, a: 1}
+  _rarity: 1
+  _price:
+  - type: 3
+    amount: 5
+  - type: 4
+    amount: 5
+  _kind: 5
+  _magnitude: 4
+  _duration: 0
+  _trait: 0
+  _trait2: 0
+  _amount2: 0

@@ -21,6 +21,10 @@ namespace TacticalRPG.UI
     ///
     /// Büstler yer tutucudur (<c>InkArtFactory.Bust</c> ile prosedürel çizilir); Efe'nin gerçek
     /// splash art'ları geldiğinde tek iş her girdinin <c>_bust</c> alanını değiştirmek.
+    ///
+    /// EVRİM + YETENEKLER (2026-10-03, Efe'nin isteği): sağ sayfanın altında sınıfın ÜÇ
+    /// yeteneği ve ÜÇ EVRİM SLOTU durur. Slotlar SIRAYLA açılır (I → II → III): açık olan
+    /// altın, sıradaki bedelini gösterir ve tıklanınca özle açılır, sonrakiler kilitli bekler.
     /// </summary>
     public class CharacterBookView : MonoBehaviour
     {
@@ -42,9 +46,30 @@ namespace TacticalRPG.UI
                 => _recipe != null && _recipe.UnitClass != null ? _recipe.UnitClass : _fallbackClass;
         }
 
+        /// <summary>Tek bir evrim slotunun parçaları (sahnede kurulur).</summary>
+        [System.Serializable]
+        public class EvolutionSlot
+        {
+            [SerializeField] private Button          _button;
+            [SerializeField] private Image           _background;
+            [SerializeField] private TextMeshProUGUI _title;
+            [SerializeField] private TextMeshProUGUI _name;
+            [SerializeField] private TextMeshProUGUI _desc;
+            [SerializeField] private TextMeshProUGUI _status;
+
+            public Button          Button     => _button;
+            public Image           Background => _background;
+            public TextMeshProUGUI Title      => _title;
+            public TextMeshProUGUI Name       => _name;
+            public TextMeshProUGUI Desc       => _desc;
+            public TextMeshProUGUI Status     => _status;
+        }
+
         [Header("Bağımlılıklar")]
         [SerializeField] private EssenceWallet   _wallet;
         [SerializeField] private EssenceConfigSO _essenceConfig;
+        [Tooltip("Sınıf evrimlerinin ilerlemesi — slotlar buradan okur ve buraya yazar.")]
+        [SerializeField] private ClassEvolutionProgress _evolutions;
 
         [Header("Sayfalar")]
         [SerializeField] private Entry[] _entries;
@@ -64,6 +89,13 @@ namespace TacticalRPG.UI
         [SerializeField] private Button          _prevButton;
         [SerializeField] private Button          _nextButton;
 
+        [Header("Yetenekler + evrim (2026-10-03)")]
+        [SerializeField] private TextMeshProUGUI _abilitiesLabel;
+        [SerializeField] private EvolutionSlot[] _evoSlots;
+        [SerializeField] private Color _slotOpen      = new(0.94f, 0.80f, 0.42f);
+        [SerializeField] private Color _slotAvailable = new(0.96f, 0.92f, 0.80f);
+        [SerializeField] private Color _slotLocked    = new(0.78f, 0.74f, 0.66f);
+
         [Header("Renk")]
         [SerializeField] private Color _ink        = new(0.13f, 0.10f, 0.07f);
         [SerializeField] private Color _inkSoft    = new(0.36f, 0.29f, 0.20f);
@@ -76,17 +108,35 @@ namespace TacticalRPG.UI
         {
             if (_prevButton != null) _prevButton.onClick.AddListener(() => Turn(-1));
             if (_nextButton != null) _nextButton.onClick.AddListener(() => Turn(+1));
+
+            if (_evoSlots != null)
+                for (int i = 0; i < _evoSlots.Length; i++)
+                {
+                    int slot = i;                                   // kapanış değişkeni
+                    if (_evoSlots[i]?.Button != null) _evoSlots[i].Button.onClick.AddListener(() => Unlock(slot));
+                }
         }
 
         private void OnEnable()
         {
-            if (_wallet != null) _wallet.OnChanged += Refresh;
+            if (_wallet     != null) _wallet.OnChanged     += Refresh;
+            if (_evolutions != null) _evolutions.OnChanged += Refresh;
             Refresh();
         }
 
         private void OnDisable()
         {
-            if (_wallet != null) _wallet.OnChanged -= Refresh;
+            if (_wallet     != null) _wallet.OnChanged     -= Refresh;
+            if (_evolutions != null) _evolutions.OnChanged -= Refresh;
+        }
+
+        /// <summary>Slota tıklandı: yalnız SIRADAKİ evrim açılabilir (sıra atlanmaz).</summary>
+        private void Unlock(int slot)
+        {
+            if (_evolutions == null || _entries == null || _entries.Length == 0) return;
+            CharacterClassData data = _entries[Mathf.Clamp(_page, 0, _entries.Length - 1)]?.Class;
+            if (data == null || slot != _evolutions.LevelOf(data)) return;
+            _evolutions.TryUnlockNext(data);   // başarısızsa sessiz: sebep slotta yazıyor
         }
 
         /// <summary>Sayfa çevirir. Uçlarda DÖNMEZ — kitapta ilk sayfadan öncesi yoktur.</summary>
@@ -146,12 +196,81 @@ namespace TacticalRPG.UI
                     $"{data.MoveRange}\n{data.Speed}\n{data.AttackRange}" +
                     (data.HasManaSystem ? $"\n{data.MaxMana}" : "");
 
+            RefreshAbilities(data);
+            RefreshEvolutions(data);
+
             if (_pageLabel != null)
                 _pageLabel.text = $"{_page + 1} / {_entries.Length}";
 
             // Uçlarda düğme sönük: kitabın sonu olduğunu tıklamadan görebilmeli.
             if (_prevButton != null) _prevButton.interactable = _page > 0;
             if (_nextButton != null) _nextButton.interactable = _page < _entries.Length - 1;
+        }
+
+        /// <summary>Sınıfın üç yeteneği: "• Çift Ok — ... (2 tur)".</summary>
+        private void RefreshAbilities(CharacterClassData data)
+        {
+            if (_abilitiesLabel == null) return;
+            if (data == null || data.ClassAbilities.Count == 0) { _abilitiesLabel.text = "YETENEKLER\n—"; return; }
+
+            string s = "YETENEKLER";
+            foreach (ClassAbility ab in data.ClassAbilities)
+                if (ab != null) s += $"\n• <b>{ab.Name}</b> — {ab.Description} <i>({ab.Cooldown} tur)</i>";
+            _abilitiesLabel.text = s;
+        }
+
+        /// <summary>Üç evrim slotu: açık · sıradaki (bedel) · kilitli.</summary>
+        private void RefreshEvolutions(CharacterClassData data)
+        {
+            if (_evoSlots == null) return;
+            int level = _evolutions != null ? _evolutions.LevelOf(data) : 0;
+
+            for (int i = 0; i < _evoSlots.Length; i++)
+            {
+                EvolutionSlot slot = _evoSlots[i];
+                if (slot == null) continue;
+                ClassEvolution evo = data != null && i < data.Evolutions.Count ? data.Evolutions[i] : null;
+
+                bool open      = evo != null && i < level;
+                bool next      = evo != null && i == level;
+                bool affordable = next && _evolutions != null && _evolutions.CanAffordNext(data);
+
+                if (slot.Title  != null) slot.Title.text = $"EVRİM {Roman(i + 1)}";
+                if (slot.Name   != null) slot.Name.text  = evo != null ? evo.Name : "—";
+                if (slot.Desc   != null) slot.Desc.text  = evo != null ? evo.Description : "";
+                if (slot.Background != null)
+                    slot.Background.color = open ? _slotOpen : next ? _slotAvailable : _slotLocked;
+
+                if (slot.Status != null)
+                {
+                    slot.Status.text  = evo == null ? ""
+                                      : open      ? "AÇIK"
+                                      : next      ? $"AÇ: {CostText(evo)}"
+                                      : $"önce {Roman(i)}";
+                    slot.Status.color = next && !affordable ? _tooPricey : _ink;
+                }
+
+                if (slot.Button != null) slot.Button.interactable = affordable;
+            }
+        }
+
+        private static string Roman(int n) => n switch { 1 => "I", 2 => "II", 3 => "III", _ => n.ToString() };
+
+        private static string CostText(ClassEvolution evo)
+        {
+            string s = "";
+            foreach (var c in evo.Cost)
+            {
+                if (c.amount <= 0) continue;
+                string unit = c.type switch
+                {
+                    EssenceType.Tas  => "taş",
+                    EssenceType.Doga => "doğa",
+                    _                => c.type.ToString().ToLowerInvariant()
+                };
+                s += (s.Length > 0 ? " · " : "") + $"{c.amount} {unit}";
+            }
+            return s.Length > 0 ? s : "bedelsiz";
         }
     }
 }
