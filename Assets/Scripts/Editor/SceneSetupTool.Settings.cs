@@ -11,7 +11,7 @@ namespace TacticalRPG.Editor
     /// <summary>
     /// SceneSetupTool'un AYARLAR parçası: AYARLAR panelinin GERÇEK içeriğini + arkasındaki "modelleri"
     /// (<see cref="GameAudio"/>, <see cref="DisplaySettings"/>) ve tam-ekran PARLAKLIK kaplamasını
-    /// programatik kurar (SetupDebugHUD deseni — her şey kodla kurulur, elle prefab yok).
+    /// programatik kurar + MİNYATÜR efektini ana kameraya bağlar (SetupDebugHUD deseni — her şey kodla kurulur, elle prefab yok).
     ///
     /// Modeller sahne kökünde HER ZAMAN AKTİF çocuklara eklenir (menü gizliyken de açılışta prefs uygular);
     /// SettingsController panelin kendisine (görünüm). Müzik klibi Assets/Audio/Music'ten yüklenir.
@@ -55,6 +55,7 @@ namespace TacticalRPG.Editor
             DisplaySettings display = dispGO.AddComponent<DisplaySettings>();
             var dso = new SerializedObject(display);
             dso.FindProperty("_brightnessOverlay").objectReferenceValue = brightnessOverlay;
+            dso.FindProperty("_miniature").objectReferenceValue = EnsureMiniatureEffect(); // ana kamerada
             dso.ApplyModifiedProperties();
 
             // ── Başlık ────────────────────────────────────────────────────────
@@ -76,6 +77,7 @@ namespace TacticalRPG.Editor
             var qualityBtn    = CreateButtonRow(t, "KALİTE",    "DEĞİŞTİR", ref y, out var qualityVal);
             var fullscreenBtn = CreateButtonRow(t, "TAM EKRAN", "AÇ / KAPA", ref y, out var fullscreenVal);
             var vsyncBtn      = CreateButtonRow(t, "VSYNC",     "AÇ / KAPA", ref y, out var vsyncVal);
+            var miniatureBtn  = CreateButtonRow(t, MiniatureRowLabel, "AÇ / KAPA", ref y, out var miniatureVal);
 
             // ── KAMERA bolumu (2026-08-12: yakinlik testi icin, ayri iki zoom) ──
             y -= 24f;
@@ -123,6 +125,7 @@ namespace TacticalRPG.Editor
             cso.FindProperty("_qualityValue").objectReferenceValue     = qualityVal;
             cso.FindProperty("_fullscreenValue").objectReferenceValue  = fullscreenVal;
             cso.FindProperty("_vsyncValue").objectReferenceValue       = vsyncVal;
+            cso.FindProperty("_miniatureValue").objectReferenceValue   = miniatureVal;
             cso.FindProperty("_zoom").objectReferenceValue                = zoom;
             cso.FindProperty("_overworldZoomSlider").objectReferenceValue = owZoomSlider;
             cso.FindProperty("_combatZoomSlider").objectReferenceValue    = cbtZoomSlider;
@@ -134,6 +137,7 @@ namespace TacticalRPG.Editor
             UnityEditor.Events.UnityEventTools.AddPersistentListener(qualityBtn.onClick,    ctrl.OnCycleQuality);
             UnityEditor.Events.UnityEventTools.AddPersistentListener(fullscreenBtn.onClick, ctrl.OnToggleFullscreen);
             UnityEditor.Events.UnityEventTools.AddPersistentListener(vsyncBtn.onClick,      ctrl.OnToggleVSync);
+            UnityEditor.Events.UnityEventTools.AddPersistentListener(miniatureBtn.onClick,  ctrl.OnToggleMiniature);
 
             CreateCenteredLabel(t, "SettingsHint",
                 "Değişiklikler anında kaydolur (PlayerPrefs) · müzik telifsiz placeholder · Kapat: Esc",

@@ -35,6 +35,7 @@ namespace TacticalRPG.UI
         [SerializeField] private TextMeshProUGUI _qualityValue;   // kalite adı etiketi
         [SerializeField] private TextMeshProUGUI _fullscreenValue; // AÇIK/KAPALI
         [SerializeField] private TextMeshProUGUI _vsyncValue;      // AÇIK/KAPALI
+        [SerializeField] private TextMeshProUGUI _miniatureValue;  // AÇIK/KAPALI (overworld tilt-shift)
 
         [Header("Kamera Yakınlığı (2026-08-12 — test ayarı)")]
         [Tooltip("Overworld ve savaş için AYRI zoom. Küçük değer = daha yakın. Beğenilen değer " +
@@ -105,6 +106,7 @@ namespace TacticalRPG.UI
                 }
                 UpdateOnOff(_fullscreenValue, _display.IsFullscreen);
                 UpdateOnOff(_vsyncValue, _display.VSyncOn);
+                UpdateOnOff(_miniatureValue, _display.MiniatureOn);
             }
             _syncing = false;
         }
@@ -156,6 +158,14 @@ namespace TacticalRPG.UI
             if (_display == null) return;
             _display.SetVSync(!_display.VSyncOn);
             UpdateOnOff(_vsyncValue, _display.VSyncOn);
+        }
+
+        /// <summary>Minyatür (uzak bulanık / yakın net) aç/kapat butonu.</summary>
+        public void OnToggleMiniature()
+        {
+            if (_display == null) return;
+            _display.SetMiniature(!_display.MiniatureOn);
+            UpdateOnOff(_miniatureValue, _display.MiniatureOn);
         }
 
         private static void UpdatePercent(TextMeshProUGUI label, float v01)

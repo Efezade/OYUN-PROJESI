@@ -4,7 +4,8 @@ using UnityEngine.UI;
 namespace TacticalRPG.Core
 {
     /// <summary>
-    /// Görüntü ayarları "modeli": KALİTE seviyesi, PARLAKLIK, TAM EKRAN ve VSYNC. Değerleri PlayerPrefs'e
+    /// Görüntü ayarları "modeli": KALİTE seviyesi, PARLAKLIK, TAM EKRAN, VSYNC ve MİNYATÜR
+    /// (overworld tilt-shift, <see cref="MiniatureEffect"/>). Değerleri PlayerPrefs'e
     /// KALICI yazar ve AÇILIŞTA (Awake) uygular — ayar paneli açılmasa da geçerli olur. Ayarlar ekranı
     /// (<c>SettingsController</c>) yalnızca setter'ları çağıran bir GÖRÜNÜM (tek yönlü bağımlılık, CLAUDE.md).
     ///
@@ -21,6 +22,7 @@ namespace TacticalRPG.Core
         private const string KEY_BRIGHTNESS = "gfx.brightness";
         private const string KEY_FULLSCREEN = "gfx.fullscreen";
         private const string KEY_VSYNC      = "gfx.vsync";
+        private const string KEY_MINIATURE  = "gfx.miniature";
 
         [Header("Parlaklık Kaplaması")]
         [Tooltip("Tam-ekran kaplama Image'i (en üstte, raycast kapalı). Parlaklık bunun renk/alpha'sı ile taklit edilir.")]
@@ -30,16 +32,22 @@ namespace TacticalRPG.Core
         [SerializeField] private float _brightnessMin = 0.5f;
         [SerializeField] private float _brightnessMax = 1.5f;
 
+        [Header("Minyatür (overworld tilt-shift)")]
+        [Tooltip("Ana kameradaki MiniatureEffect. Atanmazsa ayar kaydolur ama görüntüye yansımaz.")]
+        [SerializeField] private MiniatureEffect _miniature;
+
         [Header("Varsayılanlar")]
         [SerializeField, Range(0.5f, 1.5f)] private float _defaultBrightness = 1f;
         [SerializeField] private bool _defaultFullscreen = true;
         [SerializeField] private bool _defaultVSync      = true;
+        [SerializeField] private bool _defaultMiniature  = true;
 
         public float Brightness { get; private set; }
         public int   QualityLevel  => QualitySettings.GetQualityLevel();
         public string[] QualityNames => QualitySettings.names;
         public bool  IsFullscreen { get; private set; }
         public bool  VSyncOn       { get; private set; }
+        public bool  MiniatureOn   { get; private set; }
 
         public float BrightnessMin => _brightnessMin;
         public float BrightnessMax => _brightnessMax;
@@ -52,10 +60,12 @@ namespace TacticalRPG.Core
             Brightness   = PlayerPrefs.GetFloat(KEY_BRIGHTNESS, _defaultBrightness);
             IsFullscreen = PlayerPrefs.GetInt(KEY_FULLSCREEN, _defaultFullscreen ? 1 : 0) == 1;
             VSyncOn      = PlayerPrefs.GetInt(KEY_VSYNC,      _defaultVSync ? 1 : 0) == 1;
+            MiniatureOn  = PlayerPrefs.GetInt(KEY_MINIATURE,  _defaultMiniature ? 1 : 0) == 1;
 
             ApplyBrightness();
             Screen.fullScreen = IsFullscreen;
             QualitySettings.vSyncCount = VSyncOn ? 1 : 0;
+            if (_miniature != null) _miniature.SetUserEnabled(MiniatureOn);
         }
 
         public void SetBrightness(float v)
@@ -87,6 +97,13 @@ namespace TacticalRPG.Core
             VSyncOn = on;
             QualitySettings.vSyncCount = on ? 1 : 0;
             PlayerPrefs.SetInt(KEY_VSYNC, on ? 1 : 0);
+        }
+
+        public void SetMiniature(bool on)
+        {
+            MiniatureOn = on;
+            if (_miniature != null) _miniature.SetUserEnabled(on);
+            PlayerPrefs.SetInt(KEY_MINIATURE, on ? 1 : 0);
         }
 
         private void ApplyBrightness()
