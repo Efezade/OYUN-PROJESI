@@ -13,7 +13,7 @@ namespace TacticalRPG.Editor
     /// Bir klasördeki karo varlıklarını tarayıp TilePalette'e ekler — Tile Painter'ın
     /// "Klasörü Tara" düğmesi bunu çağırır. İki tür varlığı işler:
     ///   • FBX/model  → hex boyutuna ÖLÇEKLER (footprint = köşe-köşe 1.90 m) + pivot ALT-ORTA
-    ///                  + MeshCollider ekler → bir prefab kaydeder (Assets/Prefabs/Grid/Tile_&lt;id&gt;).
+    ///                  + MeshCollider ekler → bir prefab kaydeder (Assets/Prefabs/Tiles/Tile_&lt;id&gt;).
     ///   • .prefab    → doğrudan referanslar (hazır karo).
     /// Her varlık için palet girişini (id'ye göre) bulur/oluşturur. NON-DESTRUCTIVE: klasörde olmayan
     /// girişlere hiç dokunmaz; klasörde OLAN mevcut girişlerde ise yalnız <c>prefab</c> tazelenir —
@@ -28,7 +28,10 @@ namespace TacticalRPG.Editor
     /// </summary>
     public static class TileFolderImporter
     {
-        private const string PrefabFolder = "Assets/Prefabs/Grid";
+        // Prefablar Grid/ DIŞINA yazılır: TileVisualFactory.IsGenerated "Assets/Prefabs/Grid/…"
+        // altındakileri kendi ürettiği sayıp TAM KURULUM'da yer tutucuyla EZER (2026-10-10).
+        // Eski karo prefabları (Tile_agac1…) Grid/ altında duruyor; yeniden taranınca buraya taşınır.
+        private const string PrefabFolder = "Assets/Prefabs/Tiles";
 
         // Görsel %95 footprint — köşe-köşe = 2*OuterRadius*0.95 = 1.90 m.
         private const float ArtScale = 0.95f;
@@ -99,7 +102,7 @@ namespace TacticalRPG.Editor
                 if (asset == null) continue;
 
                 string  stem = Path.GetFileNameWithoutExtension(path);
-                TileDef def  = ResolveDef(stem);
+                TileDef def  = ResolveDef(stem, palette);
 
                 PrefabAssetType type   = PrefabUtility.GetPrefabAssetType(asset);
                 GameObject      prefab = null;
@@ -198,8 +201,18 @@ namespace TacticalRPG.Editor
         }
 
         // Bilinen karo → güzel varsayılan; bilinmeyen → dosya adından genel giriş.
-        private static TileDef ResolveDef(string stem)
+        //
+        // ÖNCE palette AYNI id'li giriş aranır (TileCatalog id'leri: "yosun_tarlasi", "cam_ormani"…).
+        // Eşleşirse o girişin MODELİ değişir → üretilen harita yeni modeli hemen kullanır. Neden:
+        // NormalizeKey alt çizgiyi atıyordu; "yosun_tarlasi.fbx" → "yosuntarlasi" adında YENİ bir
+        // giriş açılıyor, harita ise eski yer tutucu karoyu göstermeye devam ediyordu (2026-10-10).
+        private static TileDef ResolveDef(string stem, TilePaletteSO palette)
         {
+            string catalogId = CatalogKey(stem);
+            TilePaletteSO.TileEntry existing = palette.tiles.FirstOrDefault(t => t.id == catalogId);
+            if (existing != null)
+                return new TileDef { id = existing.id, displayName = existing.displayName };
+
             string key = NormalizeKey(stem);
             if (Overrides.TryGetValue(key, out TileDef d)) return d;
             return new TileDef
@@ -269,6 +282,20 @@ namespace TacticalRPG.Editor
                     // _, -, boşluk vb. AT: "agac_karo_1" / "agac karo 1" → "agackaro1" (tabloyla eşleşsin).
                     default:  if (char.IsLetterOrDigit(c)) sb.Append(c); break;
                 }
+            }
+            return sb.ToString();
+        }
+
+        // Katalog biçimi: Türkçe→ASCII, küçük harf, boşluk/tire → '_' ("Yosun Tarlası" → "yosun_tarlasi").
+        private static string CatalogKey(string s)
+        {
+            var sb = new StringBuilder(s.Length);
+            foreach (string part in s.Split(' ', '-', '_'))
+            {
+                string p = NormalizeKey(part);
+                if (p.Length == 0) continue;
+                if (sb.Length > 0) sb.Append('_');
+                sb.Append(p);
             }
             return sb.ToString();
         }
