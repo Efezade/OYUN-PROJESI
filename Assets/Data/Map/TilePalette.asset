@@ -415,7 +415,7 @@ MonoBehaviour:
     surfaceHeightOverride: 0
   - id: cayir
     displayName: "\xC7i\xE7ekli \xC7ay\u0131r"
-    prefab: {fileID: 7088932913128150804, guid: c46719f638e4f8f42a089a77eef8ce8a, type: 3}
+    prefab: {fileID: 6016557718592524130, guid: 26d7f5336c4a5194cae16ecf9ea7f8ef, type: 3}
     editorColor: {r: 0.58, g: 0.72, b: 0.38, a: 1}
     isWalkable: 1
     canEnterCombat: 0
