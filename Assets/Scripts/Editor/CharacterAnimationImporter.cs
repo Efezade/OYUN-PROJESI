@@ -679,13 +679,98 @@ namespace TacticalRPG.Editor
         // Controller'ı deterministik yeniden kurar: Idle (varsayılan) ↔ Walk "IsMoving" bool'una
         // bağlı; Attack/Death klipleri varsa AnyState'ten trigger'la bağlanır
         // (CharacterAnimationDriver sürer). Tanınmayan klipler eklenmez (controller temiz kalır).
+        //
+        // Mevcut controller hedef yapıyla AYNIYSA dosyaya HİÇ dokunulmaz. Neden: yeniden kurulum
+        // durum/geçişleri silip ekler → Unity her seferinde YENİ rastgele fileID üretir. İki PC
+        // aynı gün TAM KURULUM koşunca 6 animator'da birleştirilemez senkron çakışması çıkıyordu
+        // (2026-10-10). Karşılaştırma bellekteki geçici bir controller'a kurulup imzası alınarak
+        // yapılır → "hedef yapı" tanımı tek yerde (PopulateController) kalır.
         private static AnimatorController BuildController(
             string controllerPath, List<(string name, AnimationClip clip)> clips)
         {
             var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
+            if (controller != null && Signature(controller) == DesiredSignature(clips))
+                return controller;
+
             if (controller == null)
                 controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
 
+            string summary = PopulateController(controller, clips);
+
+            EditorUtility.SetDirty(controller);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[Karakter] Controller kuruldu: {controllerPath} ({summary})");
+            return controller;
+        }
+
+        // Hedef yapının imzası: aynı kurulumu kayıtsız (bellekte) bir controller'a uygular.
+        private static string DesiredSignature(List<(string name, AnimationClip clip)> clips)
+        {
+            var temp = new AnimatorController { hideFlags = HideFlags.HideAndDontSave };
+            temp.AddLayer("Base Layer");
+            try
+            {
+                PopulateController(temp, clips);
+                return Signature(temp);
+            }
+            finally
+            {
+                AnimatorStateMachine sm = temp.layers[0].stateMachine;
+                foreach (ChildAnimatorState s in sm.states)
+                {
+                    foreach (AnimatorStateTransition t in s.state.transitions) Object.DestroyImmediate(t);
+                    Object.DestroyImmediate(s.state);
+                }
+                foreach (AnimatorStateTransition t in sm.anyStateTransitions) Object.DestroyImmediate(t);
+                Object.DestroyImmediate(sm);
+                Object.DestroyImmediate(temp);
+            }
+        }
+
+        // Controller'ın davranışını belirleyen her şeyin metin özeti (fileID'ler hariç).
+        // Sıra bağımsız: durumlar ada göre sıralanır.
+        private static string Signature(AnimatorController controller)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (AnimatorControllerParameter p in controller.parameters.OrderBy(p => p.name))
+                sb.Append("P:").Append(p.name).Append(':').Append(p.type).Append('\n');
+
+            if (controller.layers.Length == 0) return sb.Append("NOLAYER").ToString();
+            AnimatorStateMachine sm = controller.layers[0].stateMachine;
+            sb.Append("D:").Append(sm.defaultState != null ? sm.defaultState.name : "-").Append('\n');
+
+            foreach (ChildAnimatorState cs in sm.states.OrderBy(s => s.state.name))
+            {
+                AnimatorState s = cs.state;
+                sb.Append("S:").Append(s.name).Append(':').Append(MotionKey(s.motion))
+                  .Append(':').Append(s.speed.ToString("R")).Append('\n');
+                foreach (AnimatorStateTransition t in s.transitions) AppendTransition(sb, "T", t);
+            }
+            foreach (AnimatorStateTransition t in sm.anyStateTransitions) AppendTransition(sb, "A", t);
+            return sb.ToString();
+        }
+
+        private static void AppendTransition(System.Text.StringBuilder sb, string tag, AnimatorStateTransition t)
+        {
+            sb.Append(tag).Append(':').Append(t.destinationState != null ? t.destinationState.name : "-")
+              .Append(':').Append(t.hasExitTime).Append(':').Append(t.exitTime.ToString("R"))
+              .Append(':').Append(t.duration.ToString("R")).Append(':').Append(t.canTransitionToSelf);
+            foreach (AnimatorCondition c in t.conditions)
+                sb.Append(":C=").Append(c.mode).Append('/').Append(c.parameter).Append('/').Append(c.threshold.ToString("R"));
+            sb.Append('\n');
+        }
+
+        private static string MotionKey(Motion m)
+        {
+            if (m == null) return "-";
+            return AssetDatabase.TryGetGUIDAndLocalFileIdentifier(m, out string guid, out long id)
+                ? guid + "/" + id : m.name;
+        }
+
+        // Controller'ı hedef yapıya kurar (önce temizler). Özet döndürür (log için).
+        private static string PopulateController(
+            AnimatorController controller, List<(string name, AnimationClip clip)> clips)
+        {
             // Parametreleri sıfırla → tek kaynaktan kur.
             foreach (AnimatorControllerParameter p in controller.parameters)
                 controller.RemoveParameter(p);
@@ -730,11 +815,7 @@ namespace TacticalRPG.Editor
             WireAttack(controller, sm, attack, idleState);
             WireDeath(controller, sm, death);
 
-            EditorUtility.SetDirty(controller);
-            AssetDatabase.SaveAssets();
-            Debug.Log($"[Karakter] Controller kuruldu: {controllerPath} " +
-                      $"(idle={idle != null}, walk={walk != null}, attack={attack != null}, death={death != null})");
-            return controller;
+            return $"idle={idle != null}, walk={walk != null}, attack={attack != null}, death={death != null}";
         }
 
         // Saldırı: HERHANGİ bir durumdan "Attack" trigger'ıyla girilir, klip bitince Idle'a döner.
