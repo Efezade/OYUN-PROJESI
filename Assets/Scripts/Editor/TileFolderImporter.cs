@@ -36,6 +36,11 @@ namespace TacticalRPG.Editor
         // Görsel %95 footprint — köşe-köşe = 2*OuterRadius*0.95 = 1.90 m.
         private const float ArtScale = 0.95f;
 
+        // Kök Ahdi (el boyaması) karoları hücreyi TAM doldurur: komşular arasında boşluk yok, çimen
+        // kapakları birbirine değer (Efe 2026-10-10: "bu çizim tarzında hepsi birbirine tam oturmalı").
+        private const string FullFitFolder = "Assets/Art/Models/Tiles/KokAhdi";
+        private const float  FullArtScale  = 1f;
+
         // Karolar FBX'ten baş-aşağı (ters) geliyor → tarama sırasında bu döndürmeyle düzeltilir.
         // Eksen yanlış sonuç verirse Euler'ı ayarla: (0,0,180)=Z-flip, (90,0,0)=Z-up→Y-up vb.
         private static readonly Quaternion ImportFlip = Quaternion.Euler(180f, 0f, 0f);
@@ -48,6 +53,23 @@ namespace TacticalRPG.Editor
         private const float MaxFootprint  = 100000f;
         private const float WarnFootprint = 5f;  // bunun üstü = işlenir ama uyarılır
         private const int   WarnMeshCount = 20;   // çok parçalı = uyarılır (tek mesh önerilir)
+
+        private const string VariantSeparator = "__";
+
+        // Varyantın İLK eklenişindeki ağırlık (sonra Inspector'dan değişir, tarama ezmez).
+        // Çayır (Efe 2026-10-10): sade ~%55 · tek odaklı ~%33 · dolu ~%11 → tekrar göze batmasın.
+        private static readonly Dictionary<string, float> VariantWeightDefaults = new()
+        {
+            ["cayir__acik"]         = 3f,
+            ["cayir__cicekli"]      = 2f,
+            ["cayir__kutuk"]        = 1.5f,
+            ["cayir__yosunlu_kaya"] = 1.5f,
+            ["cayir__egrelti_kok"]  = 0.5f,
+        };
+        private static readonly Dictionary<string, float> MainWeightDefaults = new()
+        {
+            ["cayir"] = 0.5f,   // ana "dolu" karo (kütük + taş + mantar)
+        };
 
         /// <summary>Bir karo için palet girişi alanları.</summary>
         private class TileDef
@@ -91,27 +113,37 @@ namespace TacticalRPG.Editor
             }
 
             EnsureFolder(PrefabFolder);
+            float artScale = folder.Replace('\\', '/').TrimEnd('/').StartsWith(FullFitFolder) ? FullArtScale : ArtScale;
 
-            string[] guids = AssetDatabase.FindAssets("t:GameObject", new[] { folder });
+            // Ana karolar önce: "<id>__<ad>" varyantları ana girişe eklenir, o yüzden giriş hazır olmalı.
+            IEnumerable<string> paths = AssetDatabase.FindAssets("t:GameObject", new[] { folder })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .OrderBy(p => Path.GetFileNameWithoutExtension(p).Contains(VariantSeparator));
             int count = 0;
 
-            foreach (string g in guids)
+            foreach (string path in paths)
             {
-                string     path  = AssetDatabase.GUIDToAssetPath(g);
                 GameObject asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (asset == null) continue;
 
-                string  stem = Path.GetFileNameWithoutExtension(path);
-                TileDef def  = ResolveDef(stem, palette);
-
+                string stem = Path.GetFileNameWithoutExtension(path);
                 PrefabAssetType type   = PrefabUtility.GetPrefabAssetType(asset);
                 GameObject      prefab = null;
                 string          note   = null;
 
+                int sep = stem.IndexOf(VariantSeparator, System.StringComparison.Ordinal);
+                if (sep > 0)
+                {
+                    if (ImportVariant(palette, stem, sep, path, asset, type, artScale, sb)) count++;
+                    continue;
+                }
+
+                TileDef def = ResolveDef(stem, palette);
+
                 if (type == PrefabAssetType.Model)
                 {
                     string prefabPath = $"{PrefabFolder}/Tile_{def.id}.prefab";
-                    prefab = BuildPrefabFromModel(path, prefabPath, out note);
+                    prefab = BuildPrefabFromModel(path, prefabPath, artScale, out note);
                 }
                 else if (type == PrefabAssetType.Regular || type == PrefabAssetType.Variant)
                 {
@@ -139,8 +171,53 @@ namespace TacticalRPG.Editor
             return count;
         }
 
+        // "<id>__<ad>.fbx" → <id> karosunun GÖRSEL varyantı (oynanış aynı; HexGridManager hücreye göre seçer).
+        private static bool ImportVariant(TilePaletteSO palette, string stem, int sep, string path, GameObject asset,
+                                          PrefabAssetType type, float artScale, StringBuilder sb)
+        {
+            string baseId = CatalogKey(stem.Substring(0, sep));
+            string name   = CatalogKey(stem.Substring(sep + VariantSeparator.Length));
+            TilePaletteSO.TileEntry entry = palette.tiles.FirstOrDefault(t => t.id == baseId);
+            if (entry == null)
+            {
+                sb.AppendLine($"  ✗ {stem}: ana karo '{baseId}' palette yok (önce {baseId}.fbx taranmalı)");
+                return false;
+            }
+
+            string     note   = null;
+            GameObject prefab = type == PrefabAssetType.Model
+                ? BuildPrefabFromModel(path, $"{PrefabFolder}/Tile_{baseId}{VariantSeparator}{name}.prefab", artScale, out note)
+                : (type == PrefabAssetType.Regular || type == PrefabAssetType.Variant ? asset : null);
+            if (prefab == null)
+            {
+                sb.AppendLine($"  ✗ {stem}: {note ?? "model/prefab değil"}");
+                return false;
+            }
+
+            // Mevcut varyantta yalnız prefab tazelenir — ağırlık tasarımcının (Inspector).
+            var v = entry.variants.FirstOrDefault(x => x.name == name);
+            bool isNew = v == null;
+            if (isNew)
+            {
+                if (entry.variants.Count == 0 && MainWeightDefaults.TryGetValue(baseId, out float mw))
+                    entry.mainWeight = mw;
+                entry.variants.Add(new TilePaletteSO.VisualVariant
+                {
+                    name   = name,
+                    prefab = prefab,
+                    weight = VariantWeightDefaults.TryGetValue($"{baseId}{VariantSeparator}{name}", out float w) ? w : 1f,
+                });
+            }
+            else v.prefab = prefab;
+
+            sb.AppendLine($"  ✓ {stem} → '{baseId}' varyantı '{name}' " +
+                          (isNew ? "(yeni)" : "(model tazelendi — ağırlık korundu)") +
+                          (note != null ? $"   [{note}]" : ""));
+            return true;
+        }
+
         // FBX'i işle: instantiate → footprint'e ölçekle → pivot alt-orta → collider → prefab.
-        private static GameObject BuildPrefabFromModel(string fbxPath, string prefabPath, out string note)
+        private static GameObject BuildPrefabFromModel(string fbxPath, string prefabPath, float artScale, out string note)
         {
             note = null;
             GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(fbxPath);
@@ -168,8 +245,8 @@ namespace TacticalRPG.Editor
                 return null;
             }
 
-            // Ölçek: yatay footprint (köşe-köşe) = 1.90 m. Sadece X/Z — dik süsleme ölçeği bozmaz.
-            float target = HexMetrics.OuterRadius * 2f * ArtScale;
+            // Ölçek: yatay footprint (köşe-köşe) = 1.90 m (Kök Ahdi: 2.00 m). Sadece X/Z — dik süsleme ölçeği bozmaz.
+            float target = HexMetrics.OuterRadius * 2f * artScale;
             float s      = footprint > 0.0001f ? target / footprint : 1f;
             inst.transform.localScale = Vector3.one * s;
 

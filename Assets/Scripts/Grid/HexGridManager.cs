@@ -124,7 +124,9 @@ namespace TacticalRPG.Grid
         {
             Transform               parent = _gridParent != null ? _gridParent : transform;
             TilePaletteSO.TileEntry entry  = ResolveEntry(cell.Coordinate);
-            GameObject              prefab = entry?.prefab != null ? entry.prefab : _hexCellPrefab;
+            GameObject              prefab = entry?.prefab != null
+                ? entry.PickPrefab(cell.Coordinate.VariantHash())   // görsel varyant (yoksa ana prefab)
+                : _hexCellPrefab;
             GameObject              go;
 
             if (prefab != null)

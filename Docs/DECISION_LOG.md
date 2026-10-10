@@ -16,6 +16,33 @@
 
 ---
 
+## 2026-10-10 (2) — Karo GÖRSEL varyantları (aynı id, farklı model; hücreye göre sabit seçim)
+
+**KARAR — Bir palet girişi birden çok model taşıyabilir (`TileEntry.variants` + `mainWeight`);
+`HexGridManager` hücrenin `HexCoordinate.VariantHash()`'iyle ağırlıklı seçer.** Oynanış id'si
+değişmez ("cayir"), yalnız görünüş. Kök Ahdi hattında `<id>__<ad>.fbx` varyant sayılır; ağırlık ilk
+eklemede tablodan gelir, sonra Inspector'ın (tarama ezmez).
+**NEDEN (Efe):** rastgele döndürme yerine farklı çayır karoları; 60-80 aynı karo tekrarı göze batıyordu.
+Sade varyantlar ağır basar (sade ~%55 / tek odak ~%33 / dolu ~%11).
+
+---
+
+## 2026-10-10 — Kök Ahdi karoları hücreyi TAM doldurur (boşluksuz) + Unity'siz karo kontrolü
+
+**KARAR — `Assets/Art/Models/Tiles/KokAhdi` klasöründen taranan karolar köşe-köşe 2.00 m'ye
+(hücrenin %100'ü) ölçeklenir; diğer karolar ve beyaz kutu yer tutucular %95'te (1.90) kalır.**
+`TileFolderImporter`: `FullFitFolder` / `FullArtScale`. Blender tarafı (`MODELLER/Karolar/cayir/
+build_rodin.py`) karonun kenar bandını açı dilimi başına tam altıgene esnetir, kenarı 0.285'ten
+keser (Unity ×2/1.9 sonrası 0.30). Yeni `KokAhdiTileBatch.Snapshot` (`-snapOut`, `-snapId`): boş
+sahnede 19 karoluk yama + beyaz kutu çevre, oyun kamerası açısından (50°, -30°, orto) PNG.
+**NEDEN (Efe):** "bu çizim tarzını koruyacaksak hepsi birbirine tam oturmalı" — el boyaması
+çimen kapakları arasında %5 boşluk karoları ayrık adacıklar gibi gösteriyordu.
+**DERS:** Unity içe aktarıcısı en geniş yatay ölçüyü hedefe ölçekler → yuvarlak köşeli model
+büyütülür ve komşuya biner; köşeler sivri olmalı. Blender +Y, oyun kamerasında 180° dönmüş görünür
+(kompozisyon için ROT60 ile döndür). Unity açıkken batch çalışmaz.
+
+---
+
 ## 2026-10-04 — Giydirme bebeği: vücut bölgesi yuvaları + KAM donanım sayfası
 
 **KARAR — Eşya bir VÜCUT BÖLGESİNE aittir (`EquipSlot`: kafa · boyun · gövde · sağ kol/silah ·

@@ -55,6 +55,20 @@ namespace TacticalRPG.Grid
             return new Vector3(x, 0f, z);
         }
 
+        // Koordinattan kararlı, iyi dağılmış sayı — görsel varyant seçimi gibi "rastgele ama hep aynı"
+        // işler için (komşu hücreler benzer sonuç vermesin diye karıştırılır).
+        public int VariantHash()
+        {
+            unchecked
+            {
+                int h = Q * 73856093 ^ R * 19349663;
+                h ^= h >> 13;
+                h *= 0x5bd1e995;
+                h ^= h >> 15;
+                return h;
+            }
+        }
+
         // İki hex arasındaki adım mesafesi
         public int DistanceTo(HexCoordinate other)
         {
