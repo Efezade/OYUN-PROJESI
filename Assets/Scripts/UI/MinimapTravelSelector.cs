@@ -375,6 +375,7 @@ namespace TacticalRPG.UI
 
         private void SelectAt(PointerEventData e)
         {
+            if (_player != null && _player.IsMovementLocked) { Clear(); return; }
             if (_mode == TravelMode.Route)   { MarkRouteAt(e);  return; }
             if (_mode == TravelMode.Restore) { RestoreTileAt(e); return; }
 
@@ -827,7 +828,8 @@ namespace TacticalRPG.UI
         /// Hız yalnız görseldir.</summary>
         public void Confirm()
         {
-            if (_path == null || _path.Count < 2 || _player == null) { Clear(); return; }
+            if (_path == null || _path.Count < 2 || _player == null || _player.IsMovementLocked)
+            { Clear(); return; }
 
             if (_mode == TravelMode.None) { Clear(); return; }
 

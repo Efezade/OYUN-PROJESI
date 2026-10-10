@@ -51,6 +51,8 @@ namespace TacticalRPG.Core
 
         // Event'ler — UI bu event'leri dinler
         public event Action<int, int>    OnAPChanged;        // (currentAP, maxAP)
+        /// <summary>Gerçek harcama: AP yenileme/bonusları bu olayı yaymaz.</summary>
+        public event Action<int> OnAPSpent;
         public event Action<int, int, string> OnTimeAdvanced; // (day, slot, slotName)
         /// <summary>Gündüz↔gece SINIRI geçildiğinde tetiklenir (her dilimde DEĞİL). true = gece oldu.
         /// DayNightCycle bunu dinleyip karo değiş-tokuş animasyonunu + sert ışık geçişini oynatır.</summary>
@@ -176,6 +178,7 @@ namespace TacticalRPG.Core
 
             OnAPChanged?.Invoke(CurrentAP, MaxAP);
             Debug.Log($"[Time] Gün {CurrentDay} | {GetCurrentSlotName()} | AP: {CurrentAP}/{MaxAP}");
+            if (amount > 0) OnAPSpent?.Invoke(amount);
         }
 
         /// <summary>Karo başına hareket maliyeti (TimeSlotConfig.APPerMove).</summary>

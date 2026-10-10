@@ -145,6 +145,8 @@ namespace TacticalRPG.Editor
             {
                 var so = new SerializedObject(ambush);
                 Set(so, "_state", state); Set(so, "_player", player); Set(so, "_notice", notice);
+                if (so.FindProperty("_zoom").objectReferenceValue == null)
+                    Set(so, "_zoom", Object.FindFirstObjectByType<TacticalRPG.UI.CameraZoomSettings>());
                 so.ApplyModifiedProperties();
             }
 
@@ -210,6 +212,8 @@ namespace TacticalRPG.Editor
                 var raven = Ensure<RavenWatch>(rulesGo);
                 var rso = WireMechanic(raven, R(KokAhdiRegions.YirtikKoru), gen, grid, player, state, fog, ap, notice, nodes);
                 Set(rso, "_huntAmbush", huntAmbush); Set(rso, "_ambush", ambush); Set(rso, "_safeRegion", R(KokAhdiRegions.HalkaKoyu));
+                if (rso.FindProperty("_hunterClass").objectReferenceValue == null)
+                    Set(rso, "_hunterClass", AssetDatabase.LoadAssetAtPath<CharacterClassData>("Assets/Data/Characters/Goblin.asset"));
                 rso.ApplyModifiedProperties(); mechanics++;
 
                 var wisp = Ensure<WispLights>(rulesGo);

@@ -52,6 +52,15 @@ namespace TacticalRPG.Core
         private int Vision => Mathf.Max(0, _visionRange + VisionBonus + RegionVisionDelta);
         public bool          IsMoving     { get; private set; }
 
+        /// <summary>Karşılaşma animasyonu boyunca yeni yürüyüş/seyahat başlatılmaz.</summary>
+        public bool IsMovementLocked { get; private set; }
+
+        public void SetMovementLocked(bool locked)
+        {
+            IsMovementLocked = locked;
+            if (locked) RequestStop("Av birliğiyle karşılaşma");
+        }
+
         /// <summary>Süren yürüyüşte kaç karo kaldı (HUD "N karo kaldı" yazar). Dururken 0.</summary>
         public int StepsRemaining { get; private set; }
 
@@ -92,6 +101,13 @@ namespace TacticalRPG.Core
         // sabit (3,4)'e konuyordu, organik haritada orası denizin içi/cep oluyordu).
         private bool _initialized;
 
+        private void OnDisable()
+        {
+            // SetActive(false) yürüyüş coroutine'ini keser; sonundaki temizlik çalışmaz.
+            // Savaştan dönünce IsMoving açık kalıp yeni yolları kilitlemesin.
+            ResetMovement();
+        }
+
         private void Start()
         {
             if (_gridManager == null) { Debug.LogError("[PlayerController] _gridManager NULL! Faz 1.3'ü yeniden çalıştır."); return; }
@@ -102,6 +118,7 @@ namespace TacticalRPG.Core
 
         public void Initialize(HexCoordinate startCoord)
         {
+            ResetMovement();
             _initialized = true;
 
             // GÜVENLİK AĞI: verilen karo yoksa ya da yürünemezse en yakın YÜRÜNÜR karoya kay.
@@ -181,7 +198,7 @@ namespace TacticalRPG.Core
         /// </param>
         public void MoveAlongPath(List<HexCell> path, float speedMultiplier = 1f, bool revealFog = true)
         {
-            if (IsMoving || path == null || path.Count < 2) return;
+            if (IsMovementLocked || IsMoving || path == null || path.Count < 2) return;
             _travelMultiplier = Mathf.Max(0.1f, speedMultiplier);
             _revealFog        = revealFog;
             _stopRequested    = false;          // yeni yürüyüş, eski iptal isteği taşınmaz
@@ -205,6 +222,18 @@ namespace TacticalRPG.Core
         // Yürüyen/itilen TEK coroutine. Elde tutulur ki itilme (ForceShiftTo) yarıda kalmış bir
         // yürüyüşü kesebilsin — StopAllCoroutines burada YANLIŞ olurdu, başka işleri de keserdi.
         private Coroutine _moveRoutine;
+
+        private void ResetMovement()
+        {
+            if (_moveRoutine != null) StopCoroutine(_moveRoutine);
+            _moveRoutine      = null;
+            IsMoving          = false;
+            StepsRemaining    = 0;
+            _stopRequested    = false;
+            StopReason        = "";
+            _travelMultiplier = 1f;
+            _revealFog        = true;
+        }
 
         /// <summary>
         /// ZORLA KAYDIRMA — ayağının altındaki karo çökerken Kam komşu karoya İTİLİR

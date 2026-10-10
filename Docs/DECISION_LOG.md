@@ -16,6 +16,27 @@
 
 ---
 
+## 2026-10-11 — Av birliğinin sabit merkezi ve animasyonlu karşılaşma
+
+**KARAR:** Goblinler harita kurulduğunda mor görüş halkalarının merkezlerine yerleştirilir.
+Görünür sınırda aynı goblin takibe başlar; kaçışta aynı merkeze yürür. Mor halkalar sabit,
+üç takip halkası hareketlidir. Gün değişimi merkezleri taşımaz. Yakalanmada goblin Kam'a
+0,85 m mesafeye gelir, mevcut Attack klibi oynar; kamera yakınlaşması ve ekran geçişinden
+sonra pusu açılır. Hareket ve seyahat geçiş boyunca kilitli; bitiş/iptal bile temizler.
+Savaş başlatan nöbet noktası ertesi güne kadar dinlenir; aynı yerde dönüşte tekrar savaş açmaz.
+Efe kaçışı çok zor bulunca fark edişte rota kesilmesi kaldırıldı; 1,2 sn tepki süresi,
+%35 daha yavaş takip ve %40 daha küçük yakalanma halkası eklendi. Dönüş hızı korunur.
+
+**NEDEN:** Efe mor halkanın bir gözcü noktası olduğunu görürken goblin başka yerde sonradan
+beliriyordu. Bekleyen düşman, merkezden takip ve merkeze dönüş bu görüntüyü tutarlı yapar.
+Aniden arena açılması yerine yaklaşma/yüzleşme oyuncuya yakalandığını gösterir.
+
+**DERS:** Görüş tetiklemesi çizilen dairenin gerçek dünya yarıçapını kullanmalı; hex adım
+mesafesiyle ayrı hesaplanırsa oyuncu görünen sınır ile etkinleşme arasında fark görür.
+Karşılaşma yürüyüşü durdururken yeni hedef ve hızlı seyahat onayını da engellemeli.
+
+**COMMIT:** Henüz commit yok (`feature/av-birligi-takip`).
+
 ## 2026-10-10 (4) — Dört bölge kuralı + çürüme savaşa bağlandı + mor katman
 
 **KARAR — Bölge kuralları ortak tabanla (`RegionMechanicBase`) yazıldı:** Gözcü Kuzgun + av birliği

@@ -94,8 +94,32 @@ namespace TacticalRPG.Core
             if (_ap == null) _ap = FindFirstObjectByType<ActionPointManager>();
         }
 
+        private void OnEnable()
+        {
+            if (_stateManager != null) _stateManager.OnStateChanged += HandleStateChanged;
+        }
+
+        private void OnDisable()
+        {
+            if (_stateManager != null) _stateManager.OnStateChanged -= HandleStateChanged;
+            ClearWalkInput();
+        }
+
+        private void HandleStateChanged(GameState state) => ClearWalkInput();
+
+        private void ClearWalkInput()
+        {
+            _hasQueued = false;
+            ClearPreview();
+        }
+
         private void Update()
         {
+            if (_player != null && _player.IsMovementLocked)
+            {
+                ClearWalkInput();
+                return;
+            }
             // Önizleme geçersizleştiyse temizle (savaşa girildi / karakter yürümeye başladı).
             // _hasPending false iken bedava — Update'te ağır iş yok.
             if (_hasPending &&
