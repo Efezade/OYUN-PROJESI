@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using TacticalRPG.Data;
@@ -70,18 +71,27 @@ namespace TacticalRPG.Editor
 
             var boxMat = new Material(Shader.Find("Universal Render Pipeline/Lit")) { color = new Color(0.55f, 0.72f, 0.45f) };
             Mesh box = TacticalRPG.Grid.HexMetrics.CreateHexMesh(0.95f);
-            for (int q = -4; q <= 4; q++)
-                for (int r = -4; r <= 4; r++)
+            // Oyundaki gibi satır satır (r dış, q iç) — komşu kaçınma sırası HexGridManager'la aynı olsun.
+            var chosen = new System.Collections.Generic.Dictionary<TacticalRPG.Grid.HexCoordinate, GameObject>();
+            for (int r = -4; r <= 4; r++)
+                for (int q = -4; q <= 4; q++)
                 {
                     var c = new TacticalRPG.Grid.HexCoordinate(q, r);
                     int d = c.DistanceTo(new TacticalRPG.Grid.HexCoordinate(0, 0));
                     if (d > 4) continue;
                     Vector3 p = c.ToWorldPosition(1f);
-                    GameObject go = d <= 2
-                        ? (GameObject)PrefabUtility.InstantiatePrefab(forced ?? entry.PickPrefab(c.VariantHash()))
-                        : new GameObject("Kutu", typeof(MeshFilter), typeof(MeshRenderer));
-                    if (d > 2)
+                    GameObject go;
+                    if (d <= 2)
                     {
+                        GameObject look = forced ?? TacticalRPG.Grid.HexGridManager.PickLook(entry, c, chosen);
+                        go = (GameObject)PrefabUtility.InstantiatePrefab(look);
+                        bool mir = TacticalRPG.Grid.HexGridManager.ShouldMirror(entry, c);
+                        if (mir) go.transform.localScale = new Vector3(-1f, 1f, 1f);
+                        Debug.Log($"[KokAhdi] snapshot hucre {q},{r}: {look.name}{(mir ? " (ayna)" : "")}");
+                    }
+                    else
+                    {
+                        go = new GameObject("Kutu", typeof(MeshFilter), typeof(MeshRenderer));
                         go.GetComponent<MeshFilter>().sharedMesh = box;
                         go.GetComponent<MeshRenderer>().sharedMaterial = boxMat;
                     }
@@ -113,6 +123,40 @@ namespace TacticalRPG.Editor
                 Object.DestroyImmediate(rt);
                 Debug.Log($"[KokAhdi] snapshot: {path}");
             }
+        }
+
+        /// <summary>
+        /// Gerçek bölüm haritasında (Bolum1_Uretilen) görsel varyant komşuluğunu sayar: aynı görünüşün
+        /// yan yana geldiği komşu çiftleri (aynalı dahil/hariç). Batch: -executeMethod ...CheckAdjacency.
+        /// </summary>
+        public static void CheckAdjacency()
+        {
+            var palette = AssetDatabase.LoadAssetAtPath<TilePaletteSO>(PalettePath);
+            var map = AssetDatabase.LoadAssetAtPath<TileMapSO>("Assets/Data/Map/Bolum1_Uretilen.asset");
+            var chosen = new System.Collections.Generic.Dictionary<TacticalRPG.Grid.HexCoordinate, GameObject>();
+            var mirror = new System.Collections.Generic.Dictionary<TacticalRPG.Grid.HexCoordinate, bool>();
+            var counts = new System.Collections.Generic.Dictionary<string, int>();
+            for (int r = 0; r < map.GridSize.y; r++)
+                for (int col = 0; col < map.GridSize.x; col++)
+                {
+                    var c = TacticalRPG.Grid.HexCoordinate.FromOffset(col, r);
+                    var e = palette.GetById(map.GetTileId(c));
+                    if (e?.prefab == null || e.variants.Count == 0) continue;
+                    GameObject look = TacticalRPG.Grid.HexGridManager.PickLook(e, c, chosen);
+                    mirror[c] = TacticalRPG.Grid.HexGridManager.ShouldMirror(e, c);
+                    counts[look.name] = counts.TryGetValue(look.name, out int k) ? k + 1 : 1;
+                }
+            int pairs = 0, same = 0;
+            foreach (var kv in chosen)
+                for (int i = 0; i < 3; i++)   // her çift bir kez
+                    if (chosen.TryGetValue(kv.Key.GetNeighbor(i), out GameObject n))
+                    {
+                        pairs++;
+                        if (n == kv.Value) same++;
+                    }
+            Debug.Log($"[KokAhdi] komsuluk: {chosen.Count} varyantli hucre, {pairs} komsu cift, ayni gorunus yan yana = {same}; " +
+                      $"aynali = {mirror.Values.Count(m => m)} · dagilim: " +
+                      string.Join(", ", counts.Select(x => $"{x.Key}={x.Value}")));
         }
 
         /// <summary>

@@ -103,6 +103,7 @@ namespace TacticalRPG.Grid
                 DestroyImmediate(parent.GetChild(i).gameObject);
 
             _cells?.Clear();
+            _lookChoice.Clear();
         }
 
         /// <summary>
@@ -120,18 +121,50 @@ namespace TacticalRPG.Grid
 
         // ── Görsel üretimi ────────────────────────────────────────────────────
 
+        // Hücre → seçilen görünüş (prefab). Komşu kontrolü için tutulur.
+        private readonly Dictionary<HexCoordinate, GameObject> _lookChoice = new();
+        private static readonly List<GameObject> AvoidBuffer = new(6);
+
+        /// <summary>
+        /// Görsel varyant seçimi: komşu hücrelerin görünüşleri havuzdan çıkarılır → aynı karo yan
+        /// yana gelmez (Efe 2026-10-10: "aynı tile'lar yan yana denk geliyor"). Grid satır satır
+        /// kurulduğu için her hücrenin en çok 3 komşusu önceden seçilmiştir; 4+ görünüşle çakışma
+        /// olmaz. Seçim <paramref name="chosen"/>'a yazılır. KokAhdiTileBatch.Snapshot da bunu kullanır.
+        /// </summary>
+        public static GameObject PickLook(TilePaletteSO.TileEntry entry, HexCoordinate c,
+                                          IDictionary<HexCoordinate, GameObject> chosen)
+        {
+            GameObject pick = entry.prefab;
+            if (entry.variants != null && entry.variants.Count > 0)
+            {
+                AvoidBuffer.Clear();
+                for (int i = 0; i < 6; i++)
+                    if (chosen.TryGetValue(c.GetNeighbor(i), out GameObject n) && n != null)
+                        AvoidBuffer.Add(n);
+                pick = entry.PickPrefab(c.VariantHash(), AvoidBuffer);
+            }
+            chosen[c] = pick;
+            return pick;
+        }
+
+        /// <summary>Karo aynalansın mı (hücreye göre sabit; varyant seçiminden bağımsız bit).</summary>
+        public static bool ShouldMirror(TilePaletteSO.TileEntry entry, HexCoordinate c)
+            => entry.allowMirror && ((c.VariantHash() >> 11) & 1) == 1;
+
         private void SpawnVisual(HexCell cell)
         {
             Transform               parent = _gridParent != null ? _gridParent : transform;
             TilePaletteSO.TileEntry entry  = ResolveEntry(cell.Coordinate);
             GameObject              prefab = entry?.prefab != null
-                ? entry.PickPrefab(cell.Coordinate.VariantHash())   // görsel varyant (yoksa ana prefab)
+                ? PickLook(entry, cell.Coordinate, _lookChoice)   // görsel varyant (yoksa ana prefab)
                 : _hexCellPrefab;
             GameObject              go;
 
             if (prefab != null)
             {
                 go = Instantiate(prefab, cell.WorldPosition, Quaternion.identity, parent);
+                if (entry != null && ShouldMirror(entry, cell.Coordinate))
+                    go.transform.localScale = new Vector3(-1f, 1f, 1f);
 
                 // Kırık mesh GUID fallback (yalnızca placeholder HexCell prefabı için)
                 var mf = go.GetComponent<MeshFilter>();

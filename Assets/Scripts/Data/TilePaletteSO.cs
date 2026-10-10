@@ -40,28 +40,46 @@ namespace TacticalRPG.Data
             [Tooltip("Varyant havuzunda ANA prefabın ağırlığı (0 = ana prefab hiç çıkmaz).")]
             [Min(0f)] public float mainWeight = 1f;
 
-            /// <summary>Hücre için görsel seçer; <paramref name="hash"/> = koordinattan kararlı sayı.</summary>
-            public GameObject PickPrefab(int hash)
+            [Tooltip("Hücreye göre sabit olarak SOL-SAĞ AYNALANABİLİR mi (X ölçeği -1). Ön-arka düzeni " +
+                     "korur, görünüş sayısını ikiye katlar. Yazı/yön taşıyan karolarda kapalı tut.")]
+            public bool allowMirror = false;
+
+            /// <summary>
+            /// Hücre için görsel seçer; <paramref name="hash"/> = koordinattan kararlı sayı.
+            /// <paramref name="avoid"/> içindeki prefablar (komşuların görünüşleri) havuzdan çıkarılır —
+            /// hepsi çıkarsa tüm havuzdan seçilir.
+            /// </summary>
+            public GameObject PickPrefab(int hash, ICollection<GameObject> avoid = null)
             {
                 if (variants == null || variants.Count == 0) return prefab;
-                float total = prefab != null ? mainWeight : 0f;
+                GameObject pick = Pick(hash, avoid);
+                return pick != null ? pick : Pick(hash, null) ?? prefab;
+            }
+
+            private GameObject Pick(int hash, ICollection<GameObject> avoid)
+            {
+                bool Usable(GameObject p) => p != null && (avoid == null || !avoid.Contains(p));
+
+                float total = Usable(prefab) ? mainWeight : 0f;
                 foreach (var v in variants)
-                    if (v.prefab != null) total += v.weight;
-                if (total <= 0f) return prefab;
+                    if (Usable(v.prefab)) total += v.weight;
+                if (total <= 0f) return null;
 
                 float t = (hash & 0x7fffffff) / (float)int.MaxValue * total;
-                if (prefab != null)
+                if (Usable(prefab))
                 {
                     if (t < mainWeight) return prefab;
                     t -= mainWeight;
                 }
+                GameObject last = null;
                 foreach (var v in variants)
                 {
-                    if (v.prefab == null) continue;
+                    if (!Usable(v.prefab) || v.weight <= 0f) continue;
                     if (t < v.weight) return v.prefab;
                     t -= v.weight;
+                    last = v.prefab;
                 }
-                return prefab;
+                return last;   // kayan nokta artığı
             }
         }
 

@@ -852,7 +852,14 @@ namespace TacticalRPG.Editor
 
                 var prefabProp = slot.FindPropertyRelative("prefab");
                 if (isNew || force || prefabProp.objectReferenceValue == null || IsGenerated(prefabProp.objectReferenceValue))
-                { prefabProp.objectReferenceValue = prefab; touched++; }
+                {
+                    // Tasarımcı karosu (TileFolderImporter → Prefabs/Tiles/Tile_<id>) varsa yer tutucu
+                    // ONU EZEMEZ: referans bir an boş görünse bile (içe aktarma sırası) gerçek karo geri
+                    // bağlanır. 2026-10-10: Unity açılışında 'cayir' Kök Ahdi karosu yer tutucuya dönmüştü.
+                    var designer = AssetDatabase.LoadAssetAtPath<GameObject>($"{DesignerPrefabFolder}/Tile_{cat.Id}.prefab");
+                    prefabProp.objectReferenceValue = designer != null && !force ? designer : prefab;
+                    touched++;
+                }
             }
 
             so.ApplyModifiedProperties();
@@ -901,6 +908,9 @@ namespace TacticalRPG.Editor
         /// (eski beyaz placeholder karolar dahil) — bunlar EZİLİR, çünkü kullanıcının şikâyeti tam
         /// da "her karo beyaz" idi. Tasarımcının kendi FBX'inden gelen karolar
         /// `Assets/Art/Models/Tiles/…` altında durur (bkz Docs/TILE_PIPELINE.md) ve ASLA ezilmez.</summary>
+        // TileFolderImporter'ın tasarımcı karolarını yazdığı yer (Grid/ DIŞI — bkz IsGenerated).
+        private const string DesignerPrefabFolder = "Assets/Prefabs/Tiles";
+
         private static bool IsGenerated(Object prefab)
         {
             string path = AssetDatabase.GetAssetPath(prefab);

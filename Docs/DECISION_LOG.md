@@ -24,6 +24,10 @@ değişmez ("cayir"), yalnız görünüş. Kök Ahdi hattında `<id>__<ad>.fbx` 
 eklemede tablodan gelir, sonra Inspector'ın (tarama ezmez).
 **NEDEN (Efe):** rastgele döndürme yerine farklı çayır karoları; 60-80 aynı karo tekrarı göze batıyordu.
 Sade varyantlar ağır basar (sade ~%55 / tek odak ~%33 / dolu ~%11).
+**EK (aynı gün):** Seçim KOMŞUYA BAKAR (`HexGridManager.PickLook`: komşu görünüşleri havuzdan çıkar →
+aynı görünüş yan yana gelmez; Efe: "aynı tile'lar yan yana denk geliyor") + `allowMirror` (sol-sağ ayna,
+ön-arka korunur). **DERS:** `TileVisualFactory` palet referansı bir an boş görününce yer tutucuyla
+eziyordu (cayir soluk karoya döndü) → önce `Prefabs/Tiles/Tile_<id>` aranır.
 
 ---
 
