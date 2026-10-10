@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e676d4722d0de34581bf6df6a4590ce, type: 3}
+  m_Name: Bolge_oyuk_tepeler
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.RegionSO
+  _id: oyuk_tepeler
+  _displayName: Oyuk Tepeler
+  _flavor: "A\u011Fa\xE7 kovuklar\u0131 ve Eski Ruhlar\u0131n tap\u0131naklar\u0131.
+    Huldra'n\u0131n yurdu."
+  _color: {r: 0.86, g: 0.7, b: 0.48, a: 1}
+  _role: 3
+  _seeds: 1
+  _area: 1
+  _elevationBias: 0.16
+  _moistureBias: -0.05
+  _ground:
+  - id: kok_sirti
+    weight: 2.2
+  - id: cayir
+    weight: 0.8
+  - id: hus_korusu
+    weight: 1
+  - id: agac_kovugu
+    weight: 0.5
+  - id: killi_yamac
+    weight: 0.8
+  - id: kaya_yigini
+    weight: 0.6
+  _forest:
+  - karanlik_orman
+  _lake:
+  - gol
+  _mountain:
+  - dag
+  - kayalik
+  - ucurum
+  _landmarks:
+  - harabe
+  - tas_daire
+  _unique:
+  - ruh_tapinagi
+  _corruptionSource: 1
+  _sourceTile: kara_asi
+  _sourcePermanent: 0
+  _visionDelta: 0

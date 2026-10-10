@@ -33,6 +33,9 @@ namespace TacticalRPG.Core
         [Tooltip("SİSLİ bölgedeki uyarı görünsün diye: işaretli karonun BULUTU kızıl yanar. " +
                  "Atanmazsa uyarı yalnız yüzeydeki kırmızı çerçeveyle kalır (sisin altında görünmez).")]
         [SerializeField] private FogOfWarManager    _fog;
+        [Tooltip("KARA AŞI ÇÜRÜMESİ (2026-10-10): atanmışsa çökecek karo seçilirken kararmış karolar " +
+                 "ağırlıklı seçilir — çöküş çürümenin yayıldığı yerden gelir. Atanmazsa eski düz rastgele seçim.")]
+        [SerializeField] private CorruptionManager  _corruption;
 
         [Header("Çöküş Görseli")]
         [SerializeField] private Material _collapsedMaterial;
@@ -392,13 +395,30 @@ namespace TacticalRPG.Core
         {
             for (int i = 0; i < wanted && pool.Count > 0; i++)
             {
-                int idx = UnityEngine.Random.Range(0, pool.Count);
+                int idx = PickIndex(pool);
                 HexCell cell = pool[idx];
                 pool.RemoveAt(idx);
                 _doomed.Add((cell.Coordinate, removeDay));
                 _pendingReveal.Add(cell.Coordinate);
                 into.Add(cell);
             }
+        }
+
+        /// <summary>Havuzdan bir indis: çürüme etkinse kademesiyle AĞIRLIKLI, değilse düz rastgele.
+        /// Yakın/uzak havuz payı (baskı kuralı) aynen korunur — ağırlık yalnız havuzun İÇİNDE işler.</summary>
+        private int PickIndex(List<HexCell> pool)
+        {
+            if (_corruption == null || !_corruption.IsActive) return UnityEngine.Random.Range(0, pool.Count);
+
+            float total = 0f;
+            for (int i = 0; i < pool.Count; i++) total += _corruption.CollapseWeight(pool[i].Coordinate);
+            float roll = UnityEngine.Random.value * total;
+            for (int i = 0; i < pool.Count; i++)
+            {
+                roll -= _corruption.CollapseWeight(pool[i].Coordinate);
+                if (roll <= 0f) return i;
+            }
+            return pool.Count - 1;
         }
 
         // Dalga cephesi işaretli karonun üstünden geçti → yıldırım çaktı → çerçeve + sayaç

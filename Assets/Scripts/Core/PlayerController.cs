@@ -45,7 +45,11 @@ namespace TacticalRPG.Core
         /// <summary>Pottan gelen ek görüş (Kartal Gözü İksiri). PlayerBuffs yönetir.</summary>
         public int VisionBonus { get; set; }
 
-        private int Vision => Mathf.Max(0, _visionRange + VisionBonus);
+        /// <summary>İçinde bulunulan BÖLGENİN görüş kuralı (bataklık sisi −1). RegionPresence yönetir.
+        /// Pottan ayrı tutulur: biri ötekinin değerini ezmesin.</summary>
+        public int RegionVisionDelta { get; set; }
+
+        private int Vision => Mathf.Max(0, _visionRange + VisionBonus + RegionVisionDelta);
         public bool          IsMoving     { get; private set; }
 
         /// <summary>Süren yürüyüşte kaç karo kaldı (HUD "N karo kaldı" yazar). Dururken 0.</summary>

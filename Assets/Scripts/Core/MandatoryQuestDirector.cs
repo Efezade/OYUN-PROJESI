@@ -334,10 +334,41 @@ namespace TacticalRPG.Core
             int max = Config != null ? Mathf.Min(Config.SpawnDistance.y, hardMax) : hardMax;
             int min = Config != null ? Mathf.Min(Config.SpawnDistance.x, max)     : 0;
 
+            // HİKÂYE BAĞI (2026-10-10): sahipsiz bir AŞI NOKTASI varsa görev onun başına düşer —
+            // ama yine BANT içinde (adalet kuralı bozulmaz). Bant dışındaysa eski seçim işler.
+            if (TryPickGraftSite(pool, from, min, max, out result)) return true;
+
             // Band → bandın altını serbest bırak → tamamen serbest. İlk tutan kazanır.
             if (TryFirstInBand(pool, from, min, max, out result)) return true;
             if (TryFirstInBand(pool, from, 0,   max, out result)) return true;
             return TryFirstInBand(pool, from, 0, int.MaxValue, out result);
+        }
+
+        /// <summary>
+        /// Henüz zorunlu görevi olmayan (sahipsiz) ARINABİLİR çürüme kaynaklarının başındaki
+        /// düzlük karolarından bant içindeki ilki. Böylece zincir hikâyedeki üç aşı noktasını
+        /// sırayla açar; hangisinin önce düşeceğini oyuncunun nerede dolaştığı belirler.
+        /// </summary>
+        private bool TryPickGraftSite(List<HexCoordinate> pool, HexCoordinate from, int min, int max,
+                                      out HexCoordinate result)
+        {
+            result = default;
+            if (_map == null || !_map.HasRegions) return false;
+
+            var claimed = new HashSet<int>();
+            foreach (var n in _nodes.Nodes)
+                if (n.Type == MapNodeType.Mandatory) claimed.Add(_map.RegionIndexAt(n.Coord));
+
+            var options = new List<HexCoordinate>();
+            foreach (var src in _map.CorruptionSources)
+            {
+                if (src.Permanent || claimed.Contains(src.Region)) continue;
+                if (_nodes.TryPickNearSource(pool, src, null, out HexCoordinate c)) options.Add(c);
+            }
+            if (options.Count == 0) return false;
+
+            if (TryFirstInBand(options, from, min, max, out result)) return true;
+            return TryFirstInBand(options, from, 0, max, out result);
         }
 
         private static bool TryFirstInBand(List<HexCoordinate> pool, HexCoordinate from,

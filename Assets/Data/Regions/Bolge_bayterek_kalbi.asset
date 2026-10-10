@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e676d4722d0de34581bf6df6a4590ce, type: 3}
+  m_Name: Bolge_bayterek_kalbi
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.RegionSO
+  _id: bayterek_kalbi
+  _displayName: Bayterek'in Kalbi
+  _flavor: "K\xF6klerin Zar'a de\u011Fdi\u011Fi yer. G\xF6ky\xFCz\xFCnde \xE7atlaklar
+    g\xF6r\xFCn\xFCyor."
+  _color: {r: 0.95, g: 0.5, b: 0.42, a: 1}
+  _role: 4
+  _seeds: 1
+  _area: 0.75
+  _elevationBias: 0.06
+  _moistureBias: 0.08
+  _ground:
+  - id: kok_agi
+    weight: 2.6
+  - id: yosun_tarlasi
+    weight: 0.8
+  - id: kehribar_damari
+    weight: 0.6
+  - id: orman
+    weight: 0.6
+  - id: nadir_yuksek_orman
+    weight: 0.5
+  _forest:
+  - dev_kokler
+  _lake:
+  - gol
+  _mountain:
+  - dag
+  - kayalik
+  - dev_kaya
+  _landmarks:
+  - isik_cukuru
+  _unique:
+  - bayterek
+  _corruptionSource: 1
+  _sourceTile: kara_asi
+  _sourcePermanent: 1
+  _visionDelta: 0

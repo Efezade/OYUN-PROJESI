@@ -18,6 +18,8 @@ MonoBehaviour:
   _storyChains: {fileID: 11400000, guid: bb84ccbf0dab5ea419e242c330904bca, type: 2}
   _chapterEssences: 0300000004000000
   _rewardEssence: 4
+  _regions: {fileID: 11400000, guid: 54fc7d9151088d14a98de70d28c6693a, type: 2}
+  _corruption: {fileID: 11400000, guid: 35eeb017e481ff341be360ea594bb240, type: 2}
   _tone: 0
   _designNote: "B\xF6l\xFCm 1 \u2014 Ta\u015F & Do\u011Fa. \xD6\u011Fretici map:
     Kam klasik mana kullan\u0131r, zincir 2 g\xF6revle a\xE7\u0131l\u0131r (g\xFCn

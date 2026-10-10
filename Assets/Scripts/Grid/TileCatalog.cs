@@ -126,6 +126,29 @@ namespace TacticalRPG.Grid
         public const string IsikCukuru   = "isik_cukuru";
         public const string GemiEnkazi   = "gemi_enkazi";
 
+        // ── BÖLÜM 1 · KÖK AHDİ BÖLGE KAROLARI (2026-10-10) ──────────────────
+        // Hikâye kitabındaki bölgelerden (hikaye/Dokuz Hücre…md §5) çıkan karolar. Ağırlıkları 0:
+        // eski iklim kovaları bunları HİÇ seçmez; yalnız bölge tabloları (RegionSO) çeker.
+        // Tam liste ve hangi bölgede çıktıkları: MODELLER/Karolar/KARO_LISTESI.md.
+        public const string SolgunCayir    = "solgun_cayir";      // Yırtık Koru — mor puslu, sararmış ot
+        public const string KurumusKoru    = "kurumus_koru";      // Yırtık Koru — yarı kurumuş ağaçlar
+        public const string ZarYirtigi     = "zar_yirtigi";       // Yırtık Koru — çürüme kaynağı (kalıcı)
+        public const string HalkaZemini    = "halka_zemini";      // Halka Köyü — dev kütük halkası
+        public const string FenerYolu      = "fener_yolu";        // Halka Köyü — kehribar fenerli patika
+        public const string DalEv          = "dal_ev";            // Halka Köyü — canlı dallardan evler
+        public const string HalkaMeclisi   = "halka_meclisi";     // Halka Köyü — köy meydanı (tek)
+        public const string Mandragora     = "mandragora_yatagi"; // Fısıltı Bataklığı — çığlıkçı kökler
+        public const string BatikTas       = "batik_tas";         // Fısıltı Bataklığı — batık yosunlu taş
+        public const string KodamaYuvasi   = "kodama_yuvasi";     // Uyuyanlar Vadisi — ağaç ruhu yuvası
+        public const string KokSirti       = "kok_sirti";         // Oyuk Tepeler — köklü açık sırt
+        public const string AgacKovugu     = "agac_kovugu";       // Oyuk Tepeler — kovuk (ileride tünel)
+        public const string RuhTapinagi    = "ruh_tapinagi";      // Oyuk Tepeler — eski ruh tapınağı (tek)
+        public const string KokAgi         = "kok_agi";           // Bayterek'in Kalbi — kök ağı zemini
+        public const string KehribarDamari = "kehribar_damari";   // Bayterek'in Kalbi — reçine damarı
+        public const string DevKokler      = "dev_kokler";        // Bayterek'in Kalbi — geçilmez kök duvarı
+        public const string Bayterek       = "bayterek";          // Bayterek'in Kalbi — hayat ağacı (tek)
+        public const string KaraAsi        = "kara_asi";          // aşı bölgeleri — çürüme kaynağı
+
         // ── DAVUL KAROLARI (Kam savaşta koyar — TEK RENK TEMASI) ────────────
         // Bunlar overworld karosu DEĞİL: yalnız savaş arenasında, yalnız Kam'ın davul draftıyla
         // yerleşir. Ayrı id'leri olmasının sebebi kullanıcı isteği (2026-08-12): "karolara özel
@@ -182,12 +205,24 @@ namespace TacticalRPG.Grid
             public float       R, G, B;        // zemin rengi (editör materyal/doku üretimi kullanır)
             /// <summary>Biyom kovasında bu karonun çekilme ağırlığı (0 = üretici kendisi yerleştirir).</summary>
             public float       Weight;
+            /// <summary>Yalnız BÖLGE planı yerleştirir (tekil landmark, çürüme kaynağı). Rastgele
+            /// landmark havuzuna girmez — yoksa Bayterek haritanın herhangi bir köşesinde çıkardı.</summary>
+            public bool        RegionOnly;
         }
 
         private static Entry E(string id, string name, TileFamily fam, bool walk, int ess, EssenceKind kind,
                                Surface surf, float r, float g, float b, float weight = 0f)
             => new Entry { Id = id, Name = name, Family = fam, Walkable = walk, Essence = ess, Kind = kind,
                            Surface = surf, R = r, G = g, B = b, Weight = weight };
+
+        /// <summary>Bölgeye özel tekil karo (bkz <see cref="Entry.RegionOnly"/>).</summary>
+        private static Entry U(string id, string name, TileFamily fam, int ess, EssenceKind kind,
+                               Surface surf, float r, float g, float b)
+        {
+            Entry e = E(id, name, fam, true, ess, kind, surf, r, g, b);
+            e.RegionOnly = true;
+            return e;
+        }
 
         /// <summary>Tüm karo tanımları. SIRA sadece okunabilirlik içindir — üretim sırası bundan
         /// bağımsızdır (seçimler açık ağırlık listeleriyle yapılır).</summary>
@@ -283,6 +318,26 @@ namespace TacticalRPG.Grid
             E(IsikCukuru,   "Işık Çukuru",       TileFamily.Landmark, true, 3, EssenceKind.Doga, Surface.Moss,  0.36f,0.52f,0.48f, 1.0f),
             E(GemiEnkazi,   "Gemi Enkazı",       TileFamily.Landmark, true, 1, EssenceKind.Tas,  Surface.Sand,  0.70f,0.64f,0.50f, 1.0f),
 
+            // ── BÖLÜM 1 · KÖK AHDİ BÖLGE KAROLARI (ağırlık 0 → yalnız bölge tabloları çeker) ──
+            E(SolgunCayir,   "Solgun Çayır",            TileFamily.Plain,  true,  0, EssenceKind.None, Surface.Dry,   0.55f,0.54f,0.44f),
+            E(KurumusKoru,   "Kurumuş Koru (1 doğa)",   TileFamily.Nature, true,  1, EssenceKind.Doga, Surface.Dry,   0.42f,0.40f,0.33f),
+            U(ZarYirtigi,    "Zar Yırtığı",             TileFamily.Landmark,  0, EssenceKind.None, Surface.Ash,   0.32f,0.22f,0.40f),
+            E(HalkaZemini,   "Kütük Halkası",           TileFamily.Plain,  true,  0, EssenceKind.None, Surface.Dirt,  0.62f,0.50f,0.34f),
+            E(FenerYolu,     "Fener Yolu",              TileFamily.Plain,  true,  0, EssenceKind.None, Surface.Dirt,  0.66f,0.56f,0.36f),
+            E(DalEv,         "Dal Evler",               TileFamily.Plain,  true,  0, EssenceKind.None, Surface.Grass, 0.50f,0.52f,0.33f),
+            U(HalkaMeclisi,  "Halka Meclisi",           TileFamily.Landmark,  0, EssenceKind.None, Surface.Dirt,  0.72f,0.56f,0.32f),
+            E(Mandragora,    "Mandragora Yatağı (3 doğa)",TileFamily.Nature,true, 3, EssenceKind.Doga, Surface.Swamp, 0.40f,0.42f,0.30f),
+            E(BatikTas,      "Batık Taşlar (1 taş)",    TileFamily.Stone,  true,  1, EssenceKind.Tas,  Surface.Swamp, 0.40f,0.44f,0.38f),
+            E(KodamaYuvasi,  "Kodama Yuvası (2 doğa)",  TileFamily.Nature, true,  2, EssenceKind.Doga, Surface.Moss,  0.38f,0.52f,0.36f),
+            E(KokSirti,      "Kök Sırtı",               TileFamily.Plain,  true,  0, EssenceKind.None, Surface.Dirt,  0.52f,0.50f,0.37f),
+            E(AgacKovugu,    "Ağaç Kovuğu (1 doğa)",    TileFamily.Nature, true,  1, EssenceKind.Doga, Surface.Moss,  0.36f,0.34f,0.26f),
+            U(RuhTapinagi,   "Eski Ruh Tapınağı",       TileFamily.Landmark,  0, EssenceKind.None, Surface.Stone, 0.53f,0.55f,0.50f),
+            E(KokAgi,        "Kök Ağı",                 TileFamily.Plain,  true,  0, EssenceKind.None, Surface.Moss,  0.44f,0.40f,0.28f),
+            E(KehribarDamari,"Kehribar Damarı (2 taş)", TileFamily.Stone,  true,  2, EssenceKind.Tas,  Surface.Stone, 0.78f,0.56f,0.22f),
+            E(DevKokler,     "Dev Kökler",              TileFamily.Blob,   false, 0, EssenceKind.None, Surface.Moss,  0.30f,0.26f,0.18f),
+            U(Bayterek,      "Bayterek",                TileFamily.Landmark,  0, EssenceKind.None, Surface.Grass, 0.30f,0.44f,0.24f),
+            U(KaraAsi,       "Kara Aşı",                TileFamily.Landmark,  0, EssenceKind.None, Surface.Ash,   0.28f,0.16f,0.34f),
+
             // ── DAVUL KAROLARI (yalnız savaş; ağırlık 0 → arazi üreticisi asla seçmez) ──
             // Renkler bilerek BİRBİRİNE ÇOK YAKIN: hepsi tek bir kara-bazalt temasının değer
             // basamakları. Oyuncu karoyu renginden değil BİÇİMİNDEN tanır; renk yalnız "bu bir
@@ -336,11 +391,12 @@ namespace TacticalRPG.Grid
         public static Entry Get(string id)
             => id != null && ById.TryGetValue(id, out Entry e) ? e : null;
 
-        /// <summary>Verilen ailedeki karolar (ağırlıklı seçim için).</summary>
+        /// <summary>Verilen ailedeki karolar (ağırlıklı seçim için). Yalnız bölge planının koyduğu
+        /// tekil karolar (<see cref="Entry.RegionOnly"/>) bu listeye GİRMEZ.</summary>
         public static List<Entry> Family(TileFamily f)
         {
             var list = new List<Entry>();
-            foreach (var e in All) if (e.Family == f) list.Add(e);
+            foreach (var e in All) if (e.Family == f && !e.RegionOnly) list.Add(e);
             return list;
         }
 

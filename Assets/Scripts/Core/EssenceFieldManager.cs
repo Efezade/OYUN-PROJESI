@@ -275,8 +275,8 @@ namespace TacticalRPG.Core
             _deposits.Remove(c);
             _drained.Add(c);
 
-            // TEK SEFERLİK: karo tükenir → ova.
-            _map.SetTile(c, TerrainGenerator.DepletedId);
+            // TEK SEFERLİK: karo tükenir → bölgesinin ana düzlüğü (bölgesiz haritada ova).
+            _map.SetTile(c, _map.DepletedIdAt(c));
 
             OnDepositRemoved?.Invoke(c, true);
             return true;

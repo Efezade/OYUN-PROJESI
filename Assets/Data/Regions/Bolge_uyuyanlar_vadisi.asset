@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e676d4722d0de34581bf6df6a4590ce, type: 3}
+  m_Name: Bolge_uyuyanlar_vadisi
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.RegionSO
+  _id: uyuyanlar_vadisi
+  _displayName: Uyuyanlar Vadisi
+  _flavor: "Dev a\u011Fa\xE7lar ve yosun kapl\u0131 uyuyan dev heykelleri. Kodamalar
+    f\u0131s\u0131ldar."
+  _color: {r: 0.62, g: 0.86, b: 0.5, a: 1}
+  _role: 3
+  _seeds: 1
+  _area: 1.1
+  _elevationBias: -0.05
+  _moistureBias: 0.12
+  _ground:
+  - id: yosun_tarlasi
+    weight: 2.2
+  - id: cayir
+    weight: 1.2
+  - id: uzun_ot
+    weight: 0.6
+  - id: orman
+    weight: 1
+  - id: nadir_yuksek_orman
+    weight: 0.5
+  - id: kodama_yuvasi
+    weight: 0.6
+  - id: mantar_ormani
+    weight: 0.25
+  - id: kaya_yigini
+    weight: 0.6
+  _forest:
+  - kadim_orman
+  _lake:
+  - gol
+  _mountain:
+  - dag
+  - dev_kaya
+  - kayalik
+  _landmarks:
+  - dusmus_dev
+  _unique: []
+  _corruptionSource: 1
+  _sourceTile: kara_asi
+  _sourcePermanent: 0
+  _visionDelta: 0

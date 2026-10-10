@@ -15,7 +15,8 @@ param(
     [int]$Want  = 30,
     [switch]$Arena,    # savas arenalarini olc (overworld seed taramasi yerine)
     [switch]$Oz,       # 30 seed'in oz yerlesimini olc (60-80 hedefi tutuyor mu)
-    [switch]$Minimap   # minihatita boyamasini PNG olarak yaz (gorsel dogrulama)
+    [switch]$Minimap,  # minihatita boyamasini PNG olarak yaz (gorsel dogrulama)
+    [switch]$Bolge     # Kok Ahdi bolge planini olc + bolge renkli PNG yaz (2026-10-10)
 )
 
 $ErrorActionPreference = "Stop"
@@ -44,12 +45,15 @@ $rsp = @("-target:exe","-langversion:9.0","-nostdlib+","-optimize+","-out:`"$wor
 $rsp += "`"$repo\Assets\Scripts\Grid\PythonRandom.cs`""
 $rsp += "`"$repo\Assets\Scripts\Grid\MapNoise.cs`""
 $rsp += "`"$repo\Assets\Scripts\Grid\TileCatalog.cs`""
+$rsp += "`"$repo\Assets\Scripts\Grid\RegionPlan.cs`""
+$rsp += "`"$repo\Assets\Scripts\Grid\KokAhdiRegions.cs`""
 $rsp += "`"$repo\Assets\Scripts\Grid\TerrainGenerator.cs`""
 $rsp += "`"$repo\Assets\Scripts\Core\CombatMath.cs`""
 $rsp += "`"$repo\Assets\Scripts\Grid\CombatArenaGenerator.cs`""
 $rsp += "`"$here\ArenaReport.cs`""
 $rsp += "`"$here\EssenceReport.cs`""
 $rsp += "`"$here\MinimapPreview.cs`""
+$rsp += "`"$here\RegionReport.cs`""
 $rsp += "`"$here\SeedSearchMain.cs`""
 $rsp | Out-File "$work\seed.rsp" -Encoding utf8
 
@@ -63,6 +67,7 @@ $sw = [System.Diagnostics.Stopwatch]::StartNew()
 if     ($Arena)   { & dotnet "$work\seed.dll" arena | Out-File "$here\savas_sonuc.txt" -Encoding utf8 }
 elseif ($Oz)      { & dotnet "$work\seed.dll" oz    | Out-File "$here\oz_sonuc.txt"    -Encoding utf8 }
 elseif ($Minimap) { & dotnet "$work\seed.dll" minimap }
+elseif ($Bolge)   { & dotnet "$work\seed.dll" bolge }
 else              { & dotnet "$work\seed.dll" $Seeds $Want | Out-File "$here\sonuc.txt" -Encoding utf8 }
 $sw.Stop()
 
@@ -70,4 +75,5 @@ Write-Host ("Tarama bitti: {0:N1} sn" -f $sw.Elapsed.TotalSeconds) -ForegroundCo
 if     ($Arena)   { Get-Content "$here\savas_sonuc.txt" }
 elseif ($Oz)      { Get-Content "$here\oz_sonuc.txt" }
 elseif ($Minimap) { Copy-Item "$work\minimap_*.png" "$here\" -Force; "PNG'ler: $here" }
+elseif ($Bolge)   { Copy-Item "$work\bolge_*" "$here\" -Force; "Rapor + PNG'ler: $here" }
 else              { Get-Content "$here\sonuc.txt" -TotalCount 60 }

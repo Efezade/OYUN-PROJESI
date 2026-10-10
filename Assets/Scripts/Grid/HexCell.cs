@@ -34,6 +34,11 @@ namespace TacticalRPG.Grid
         // böylece materyali değiştirmeden (boyanmış karoyu bozmadan) sis efekti verir.
         public Color BaseColor { get; set; } = Color.white;
 
+        // ÜST KATMAN rengi (2026-10-10): BaseColor'ın ÜSTÜNE çarpılır. Kara Aşı çürümesi karoyu
+        // buradan morartır. Ayrı tutulur çünkü BaseColor'ı öz görseli (EssenceFieldVisuals) de
+        // yazıyor — ikisi aynı alana yazsaydı biri ötekinin rengini silerdi.
+        public Color OverlayTint { get; set; } = Color.white;
+
         // Birimlerin üstünde duracağı yüzey yüksekliği (taban üstü, dünya birimi).
         // SpawnVisual karoyu ürettiğinde ölçer; düz placeholder = TileHeight (0.3),
         // köprü gibi yüksek karolar daha büyük. Engebe/yükseklik desteği bundan gelir.

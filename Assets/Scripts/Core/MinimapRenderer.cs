@@ -165,6 +165,9 @@ namespace TacticalRPG.Core
             {
                 string id = TileIdAt(coord);
                 color = ColorOf(id) * ShadeOf(coord, id) * DitherOf(coord);
+                // Kara Aşı çürümesi (2026-10-10): karonun üst katman rengi haritada da görünsün —
+                // oyuncu hangi aşı noktasının çürüğü nereye yaydığını HARİTA sekmesinden okur.
+                color *= cell.OverlayTint;
                 if (fog != FogState.Visible)
                     color *= _style != null ? _style.ExploredDim : 0.62f;
                 color.a = 1f;

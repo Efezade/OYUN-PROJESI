@@ -1448,3 +1448,201 @@ MonoBehaviour:
     variants: []
     mainWeight: 1
     allowMirror: 0
+  - id: solgun_cayir
+    displayName: "Solgun \xC7ay\u0131r"
+    prefab: {fileID: 670311943412038634, guid: 80ec109b215c3d840bf95097683b2d0c, type: 3}
+    editorColor: {r: 0.55, g: 0.54, b: 0.44, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: kurumus_koru
+    displayName: "Kurumu\u015F Koru (1 do\u011Fa)"
+    prefab: {fileID: 5430984927891957584, guid: 3de0c32e60072d64b9b2c4261575204b, type: 3}
+    editorColor: {r: 0.42, g: 0.4, b: 0.33, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: zar_yirtigi
+    displayName: "Zar Y\u0131rt\u0131\u011F\u0131"
+    prefab: {fileID: 5635025671268551408, guid: 43bb9335673c7504b9ed7035e06a3eb6, type: 3}
+    editorColor: {r: 0.32, g: 0.22, b: 0.4, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: halka_zemini
+    displayName: "K\xFCt\xFCk Halkas\u0131"
+    prefab: {fileID: 5424270348773463622, guid: f8c9da3d033f7774cbc634ed2f000bc4, type: 3}
+    editorColor: {r: 0.62, g: 0.5, b: 0.34, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: fener_yolu
+    displayName: Fener Yolu
+    prefab: {fileID: 1547788089732967248, guid: a735193700a0dfd489daff752a3b7a86, type: 3}
+    editorColor: {r: 0.66, g: 0.56, b: 0.36, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: dal_ev
+    displayName: Dal Evler
+    prefab: {fileID: 3220204991356804885, guid: f914e3594363e4341adcad2fa3cfd11b, type: 3}
+    editorColor: {r: 0.5, g: 0.52, b: 0.33, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: halka_meclisi
+    displayName: Halka Meclisi
+    prefab: {fileID: 2768982468964560572, guid: f4dbeb9de2135ce4db3a667665172293, type: 3}
+    editorColor: {r: 0.72, g: 0.56, b: 0.32, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: mandragora_yatagi
+    displayName: "Mandragora Yata\u011F\u0131 (3 do\u011Fa)"
+    prefab: {fileID: 65179275083867002, guid: 35c3124c8c4706e42b5775127f614a53, type: 3}
+    editorColor: {r: 0.4, g: 0.42, b: 0.3, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: batik_tas
+    displayName: "Bat\u0131k Ta\u015Flar (1 ta\u015F)"
+    prefab: {fileID: 5053743652142551051, guid: 2f3a1d7ce4fc8ec488028d891cca26bb, type: 3}
+    editorColor: {r: 0.4, g: 0.44, b: 0.38, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: kodama_yuvasi
+    displayName: "Kodama Yuvas\u0131 (2 do\u011Fa)"
+    prefab: {fileID: 4195943987832235795, guid: ee16ec2c44c8fd2438fc9781da36501d, type: 3}
+    editorColor: {r: 0.38, g: 0.52, b: 0.36, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: kok_sirti
+    displayName: "K\xF6k S\u0131rt\u0131"
+    prefab: {fileID: 841049083298286208, guid: 8d0d6c8c8a702754faa77a83cbc771c7, type: 3}
+    editorColor: {r: 0.52, g: 0.5, b: 0.37, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: agac_kovugu
+    displayName: "A\u011Fa\xE7 Kovu\u011Fu (1 do\u011Fa)"
+    prefab: {fileID: 4011992126213508072, guid: 743013108dc2e2b489996ed64247c8d8, type: 3}
+    editorColor: {r: 0.36, g: 0.34, b: 0.26, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: ruh_tapinagi
+    displayName: "Eski Ruh Tap\u0131na\u011F\u0131"
+    prefab: {fileID: 2849305023063138699, guid: e7f378a18ecc14f4a8c6a697d9efc68a, type: 3}
+    editorColor: {r: 0.53, g: 0.55, b: 0.5, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: kok_agi
+    displayName: "K\xF6k A\u011F\u0131"
+    prefab: {fileID: 1219349315434906408, guid: 0bb4bea635f968d4d88450714aa77574, type: 3}
+    editorColor: {r: 0.44, g: 0.4, b: 0.28, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: kehribar_damari
+    displayName: "Kehribar Damar\u0131 (2 ta\u015F)"
+    prefab: {fileID: 9174472134925167515, guid: 6bb8c0a6658c85c42949be86eadf2ceb, type: 3}
+    editorColor: {r: 0.78, g: 0.56, b: 0.22, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: dev_kokler
+    displayName: "Dev K\xF6kler"
+    prefab: {fileID: 5121083658786235695, guid: 5dbe769011b8c0149a1baec43dbcdae8, type: 3}
+    editorColor: {r: 0.3, g: 0.26, b: 0.18, a: 1}
+    isWalkable: 0
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: bayterek
+    displayName: Bayterek
+    prefab: {fileID: 1930279031798955504, guid: 28ca69d1a8b916f4292617df41897f48, type: 3}
+    editorColor: {r: 0.3, g: 0.44, b: 0.24, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0
+  - id: kara_asi
+    displayName: "Kara A\u015F\u0131"
+    prefab: {fileID: 7681874903215615455, guid: 35ebbec6b95ffcc4d8d1468ac012537d, type: 3}
+    editorColor: {r: 0.28, g: 0.16, b: 0.34, a: 1}
+    isWalkable: 1
+    canEnterCombat: 0
+    isStore: 0
+    surfaceHeightOverride: 0.3
+    variants: []
+    mainWeight: 1
+    allowMirror: 0

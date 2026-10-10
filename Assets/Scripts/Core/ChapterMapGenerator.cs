@@ -31,6 +31,13 @@ namespace TacticalRPG.Core
                  "haritayla test etmek için).")]
         [SerializeField] private bool _generateOnStart = true;
 
+        [Header("Bölgeler (2026-10-10)")]
+        [Tooltip("Bölümün kural seti buradan okunur: bölge seti (RegionSetSO) oradaysa harita bölgeli üretilir.")]
+        [SerializeField] private ChapterProgress _progress;
+        [Tooltip("0 = her koşuda RASTGELE bölge yerleşimi (aynı arazide bölgeler başka yere düşer). " +
+                 "0 dışı = sabit yerleşim (test/hata ayıklama).")]
+        [SerializeField] private int _fixedLayoutSeed;
+
         private const string LastSeedKey = "TacticalRPG.LastChapterSeed";
 
         private string[,] _terrain;      // [sütun, satır] — üretilmiş karo tipleri (öz tükenince güncellenir)
@@ -44,6 +51,37 @@ namespace TacticalRPG.Core
 
         /// <summary>Bu koşumda kullanılan seed (HUD/log için).</summary>
         public int CurrentSeed { get; private set; } = -1;
+
+        /// <summary>Bu koşumdaki bölge yerleşim seed'i (0 = bölgesiz harita).</summary>
+        public int CurrentLayoutSeed { get; private set; }
+
+        // ── Bölge durumu (üretim çıktısı; bölgesiz haritada boş) ──
+        private int[,] _region;                                   // [sütun, satır] → _regionOrder indisi
+        private readonly List<RegionSO> _regionOrder = new();
+        private readonly List<CorruptionSource> _sources = new();
+        private readonly List<(int region, HexCoordinate coord)> _cores = new();
+
+        /// <summary>Haritadaki bir çürüme kaynağı (Zar yırtığı / kara aşı).</summary>
+        public readonly struct CorruptionSource
+        {
+            public readonly HexCoordinate Coord;
+            public readonly int           Region;
+            public readonly bool          Permanent;
+            public CorruptionSource(HexCoordinate c, int region, bool permanent)
+            { Coord = c; Region = region; Permanent = permanent; }
+        }
+
+        /// <summary>Harita bölgeli mi üretildi?</summary>
+        public bool HasRegions => _region != null && _regionOrder.Count > 0;
+
+        /// <summary>Üretimde kullanılan bölgeler (indis = <see cref="RegionIndexAt"/>).</summary>
+        public IReadOnlyList<RegionSO> Regions => _regionOrder;
+
+        /// <summary>Çürüme kaynakları (üretim sırasıyla).</summary>
+        public IReadOnlyList<CorruptionSource> CorruptionSources => _sources;
+
+        /// <summary>Bölge çekirdek karoları (tekil karolar ve kaynaklar bunların çevresinde).</summary>
+        public IReadOnlyList<(int region, HexCoordinate coord)> RegionCores => _cores;
 
         /// <summary>Harita üretildi/yeniden üretildi.</summary>
         public event System.Action OnMapGenerated;
@@ -72,8 +110,25 @@ namespace TacticalRPG.Core
             }
 
             CurrentSeed = seed;
-            MapResult result = TerrainGenerator.Generate(_config.ToParams(), seed);
+            TerrainParams prm = _config.ToParams();
+
+            // BÖLGE PLANI: bölümün kural setinde bölge seti varsa. Yerleşim seed'i arazi seed'inden
+            // AYRI → 30'luk havuzun oran/bağlantı filtreleri geçerli kalır, bölgeler her koşu kayar.
+            RegionSetSO set = _progress != null && _progress.CurrentRules != null ? _progress.CurrentRules.Regions : null;
+            CurrentLayoutSeed = 0;
+            if (set != null && set.Count > 0)
+            {
+                CurrentLayoutSeed = _fixedLayoutSeed != 0 ? _fixedLayoutSeed
+                                  : target != null ? seed * 31 + 1                      // editör önizlemesi sabit
+                                  : UnityEngine.Random.Range(1, int.MaxValue);
+                prm.Regions = set.ToPlan(CurrentLayoutSeed, _regionOrder);
+                if (prm.Regions.IsEmpty) { prm.Regions = null; CurrentLayoutSeed = 0; }
+            }
+            else _regionOrder.Clear();
+
+            MapResult result = TerrainGenerator.Generate(prm, seed);
             _terrain = result.Tiles;
+            CaptureRegions(result);
 
             // Hedef verilmediyse RUNTIME kopya (asset'e yazılmaz); verildiyse o asset'e yazılır.
             if (target != null)
@@ -114,8 +169,58 @@ namespace TacticalRPG.Core
                       $"dag %{result.MountainPct:F1} · orman/gol %{result.BlobPct:F1} · " +
                       $"gecit %{result.CrossingPct:F2}) | erisilebilir %{result.ReachablePct:F1} " +
                       $"({result.MainComponent} karo) | oz arzi {result.EssenceSupply} | " +
-                      $"landmark {result.Landmark} | sinir dekoru {result.Fringe}");
+                      $"landmark {result.Landmark} | sinir dekoru {result.Fringe}" +
+                      (HasRegions ? $" | bolge yerlesimi {CurrentLayoutSeed} ({_regionOrder.Count} bolge, " +
+                                    $"{_sources.Count} curume kaynagi)" : ""));
             OnMapGenerated?.Invoke();
+        }
+
+        /// <summary>Üretimin bölge çıktısını tahta koordinatlarına çevirip saklar.</summary>
+        private void CaptureRegions(MapResult result)
+        {
+            _sources.Clear();
+            _cores.Clear();
+            _region = result.Region;
+            if (_region == null) { _regionOrder.Clear(); return; }
+
+            foreach (var s in result.Sources)
+                _sources.Add(new CorruptionSource(HexCoordinate.FromOffset(s.Q, s.R), s.Region, s.Permanent));
+            foreach (var c in result.Cores)
+                _cores.Add((c.region, HexCoordinate.FromOffset(c.q, c.r)));
+        }
+
+        // ── Bölge sorguları ──────────────────────────────────────────────────
+
+        /// <summary>Karonun bölge indisi (-1 = bölge yok / bölgesiz harita).</summary>
+        public int RegionIndexAt(HexCoordinate c)
+        {
+            if (_region == null) return -1;
+            c.ToOffset(out int col, out int row);
+            if (col < 0 || row < 0 || col >= _region.GetLength(0) || row >= _region.GetLength(1)) return -1;
+            return _region[col, row];
+        }
+
+        /// <summary>Karonun bölgesi (yoksa null).</summary>
+        public RegionSO RegionAt(HexCoordinate c)
+        {
+            int i = RegionIndexAt(c);
+            return i >= 0 && i < _regionOrder.Count ? _regionOrder[i] : null;
+        }
+
+        /// <summary>Özü toplanan karonun döneceği karo: bölgesinin ana düzlüğü (bataklıkta bataklık),
+        /// bölgesiz haritada eski "ova". Tükenmiş karo bölgesinin dokusundan kopmasın diye.</summary>
+        public string DepletedIdAt(HexCoordinate c)
+        {
+            string id = RegionAt(c)?.DepletedTileId;
+            return string.IsNullOrEmpty(id) ? TerrainGenerator.DepletedId : id;
+        }
+
+        /// <summary>Bu bölgenin (arınabilir ya da kalıcı) çürüme kaynağı; yoksa false.</summary>
+        public bool TryGetSourceOfRegion(int region, out CorruptionSource source)
+        {
+            foreach (var s in _sources) if (s.Region == region) { source = s; return true; }
+            source = default;
+            return false;
         }
 
         /// <summary>Havuzdan seed seç: mümkünse son oynanandan farklı.</summary>

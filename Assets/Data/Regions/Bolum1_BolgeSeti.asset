@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48d409afb1e4f6140a92a3f1d0f9b6e4, type: 3}
+  m_Name: Bolum1_BolgeSeti
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.RegionSetSO
+  _regions:
+  - {fileID: 11400000, guid: 9457c7a96cfa9a541ac4ac3b12cf96d6, type: 2}
+  - {fileID: 11400000, guid: c49d8388b5149484e80941ca746474ac, type: 2}
+  - {fileID: 11400000, guid: 8eb9ad006db1f694aa2c8fc240008e99, type: 2}
+  - {fileID: 11400000, guid: db012dd7b5fe1eb409e0d8f761f547e9, type: 2}
+  - {fileID: 11400000, guid: 429ef46e0122db34791a761e6a53e22c, type: 2}
+  - {fileID: 11400000, guid: 51ad1f4e6ac34d74fab86c28adcff333, type: 2}
+  - {fileID: 11400000, guid: 00aa9e93ad5934745a89110ecdc3b337, type: 2}
+  _borderNoise: 0.9
+  _borderMix: 0.25
+  _startInStartRegion: 1

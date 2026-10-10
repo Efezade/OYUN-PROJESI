@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e676d4722d0de34581bf6df6a4590ce, type: 3}
+  m_Name: Bolge_halka_koyu
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.RegionSO
+  _id: halka_koyu
+  _displayName: "Halka K\xF6y\xFC"
+  _flavor: "Dev bir k\xFCt\xFC\u011F\xFCn halkalar\u0131 \xFCzerine kurulmu\u015F
+    k\xF6y. Kehribar fenerler hi\xE7 s\xF6nmez."
+  _color: {r: 0.98, g: 0.76, b: 0.36, a: 1}
+  _role: 2
+  _seeds: 1
+  _area: 0.6
+  _elevationBias: -0.12
+  _moistureBias: 0
+  _ground:
+  - id: halka_zemini
+    weight: 2.4
+  - id: fener_yolu
+    weight: 1.2
+  - id: dal_ev
+    weight: 1
+  - id: cayir
+    weight: 1
+  - id: meyve_bahcesi
+    weight: 1
+  - id: orman
+    weight: 0.5
+  - id: taslik_ova
+    weight: 0.4
+  _forest:
+  - sik_orman
+  _lake:
+  - gol
+  _mountain:
+  - dag
+  - kayalik
+  - dev_kaya
+  _landmarks:
+  - dev_agac
+  - tas_daire
+  _unique:
+  - halka_meclisi
+  _corruptionSource: 0
+  _sourceTile: kara_asi
+  _sourcePermanent: 0
+  _visionDelta: 0

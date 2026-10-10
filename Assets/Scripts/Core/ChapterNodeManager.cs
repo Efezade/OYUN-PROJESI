@@ -97,6 +97,10 @@ namespace TacticalRPG.Core
         /// <summary>Düğüm durumu değişti (tamamlandı / harita yenilendi) — UI dinler.</summary>
         public event System.Action OnNodesChanged;
 
+        /// <summary>Bir düğüm TAMAMLANDI (ödül verildikten sonra). Çürüme yöneticisi zorunlu
+        /// görevi dinler: aşı bölgesindeki görev o bölgenin kaynağını arındırır.</summary>
+        public event System.Action<MapNode> OnNodeCompleted;
+
         public IReadOnlyList<MapNode> Nodes => _nodes;
 
         /// <summary>Zorunlu görevlerin kaçı bitti / toplam.</summary>
@@ -173,6 +177,7 @@ namespace TacticalRPG.Core
             // Zorunlu görev sayısı ZİNCİR ayarından gelir (varsayılan 2). Harita bu kadarıyla
             // açılır; zincir kapanmadan açılış günü gelirse SpawnMandatory ile büyür.
             int mandatoryStart = QuestConfig != null ? QuestConfig.InitialCount : _config.MandatoryCount;
+            PreferGraftSitesForMandatory(pool, mandatoryStart, rnd);
             Take(pool, ref idx, mandatoryStart, MapNodeType.Mandatory,
                  () => _config.MandatoryValue, () => _config.MandatoryAP, rnd);
             Take(pool, ref idx, _config.ZindanCount, MapNodeType.Zindan,
@@ -211,6 +216,53 @@ namespace TacticalRPG.Core
             Debug.Log($"[Node] Yerlesim tamam — zorunlu {_config.MandatoryCount}, zindan {_config.ZindanCount}, " +
                       $"encounter {_config.EncounterCount}, market {_config.MarketCount}, " +
                       $"kule {_config.WatchtowerCount}, boss 1 (konumsuz).");
+        }
+
+        /// <summary>
+        /// ZORUNLU GÖREV = AŞI NOKTASI (hikâye: "Bayterek hasta, üç yerde kökü kararmış"). Bölgeli
+        /// haritada ilk zorunlu görevler ARINABİLİR çürüme kaynaklarının dibine (2-3 karo) konur;
+        /// hangi aşı bölgelerinin önce açılacağı seed'e göre karılır. Görevi bitirmek o bölgenin
+        /// kaynağını arındırır (<see cref="CorruptionManager"/>). Seçilen karolar havuzun ÖNÜNE
+        /// alınır — Take sırası ve diğer düğümlerin yerleşimi bozulmaz.
+        /// Bölgesiz haritada hiçbir şey yapmaz (eski rastgele yerleşim).
+        /// </summary>
+        private void PreferGraftSitesForMandatory(List<HexCoordinate> pool, int count, PythonRandom rnd)
+        {
+            if (_map == null || !_map.HasRegions || count <= 0) return;
+
+            var grafts = new List<ChapterMapGenerator.CorruptionSource>();
+            foreach (var src in _map.CorruptionSources) if (!src.Permanent) grafts.Add(src);
+            rnd.Shuffle(grafts);
+
+            var chosen = new List<HexCoordinate>();
+            foreach (var src in grafts)
+            {
+                if (chosen.Count >= count) break;
+                if (TryPickNearSource(pool, src, chosen, out HexCoordinate c)) chosen.Add(c);
+            }
+            for (int i = chosen.Count - 1; i >= 0; i--)
+            {
+                pool.Remove(chosen[i]);
+                pool.Insert(0, chosen[i]);
+            }
+        }
+
+        /// <summary>Kaynağın bölgesinde, kaynağa en yakın (en az 2 karo) düzlük karosu.</summary>
+        public bool TryPickNearSource(IList<HexCoordinate> candidates, ChapterMapGenerator.CorruptionSource src,
+                                      ICollection<HexCoordinate> exclude, out HexCoordinate result)
+        {
+            result = default;
+            if (_map == null || candidates == null) return false;
+            int bestD = int.MaxValue;
+            foreach (var c in candidates)
+            {
+                if (exclude != null && exclude.Contains(c)) continue;
+                if (_map.RegionIndexAt(c) != src.Region) continue;
+                int d = c.DistanceTo(src.Coord);
+                if (d < 2 || d >= bestD) continue;   // kaynağın üstüne değil, başına
+                bestD = d; result = c;
+            }
+            return bestD != int.MaxValue;
         }
 
         private void Take(List<HexCoordinate> pool, ref int idx, int count, MapNodeType type,
@@ -628,6 +680,7 @@ namespace TacticalRPG.Core
             else if (n.Type == MapNodeType.Zindan || n.Type == MapNodeType.Encounter)
                 DisableCombatTile(n.Coord);
 
+            OnNodeCompleted?.Invoke(n);
             OnNodesChanged?.Invoke();
         }
 

@@ -150,6 +150,26 @@ namespace TacticalRPG.Editor
             new Recipe(TileCatalog.DusmusDev,    Deco.Statue, 1),
             new Recipe(TileCatalog.IsikCukuru,   Deco.GlowPit, 1),
             new Recipe(TileCatalog.GemiEnkazi,   Deco.Wreck, 1),
+
+            // ── Bölüm 1 · Kök Ahdi bölge karoları (yer tutucu — gerçek model MODELLER/Karolar'dan) ──
+            new Recipe(TileCatalog.SolgunCayir,    Deco.Grass, 4, Deco.DeadTree, 1),
+            new Recipe(TileCatalog.KurumusKoru,    Deco.DeadTree, 3),
+            new Recipe(TileCatalog.ZarYirtigi,     Deco.Crystals, 4, Deco.Mist, 2),
+            new Recipe(TileCatalog.HalkaZemini,    Deco.Slabs, 2),
+            new Recipe(TileCatalog.FenerYolu,      Deco.Pebbles, 3, Deco.GlowPit, 1),
+            new Recipe(TileCatalog.DalEv,          Deco.Vines, 3, Deco.Bush, 2),
+            new Recipe(TileCatalog.HalkaMeclisi,   Deco.StoneCircle, 1, Deco.GiantTree, 1),
+            new Recipe(TileCatalog.Mandragora,     Deco.Reeds, 3, Deco.Mushroom, 2),
+            new Recipe(TileCatalog.BatikTas,       Deco.Rocks, 3, Deco.Water, 1),
+            new Recipe(TileCatalog.KodamaYuvasi,   Deco.Broadleaf, 2, Deco.Mushroom, 3),
+            new Recipe(TileCatalog.KokSirti,       Deco.Vines, 2, Deco.Grass, 3),
+            new Recipe(TileCatalog.AgacKovugu,     Deco.GiantTree, 1),
+            new Recipe(TileCatalog.RuhTapinagi,    Deco.Altar, 1, Deco.Birch, 2),
+            new Recipe(TileCatalog.KokAgi,         Deco.Vines, 5),
+            new Recipe(TileCatalog.KehribarDamari, Deco.Crystals, 4),
+            new Recipe(TileCatalog.DevKokler,      Deco.Vines, 4, Deco.GiantTree, 1),
+            new Recipe(TileCatalog.Bayterek,       Deco.GiantTree, 1, Deco.Vines, 3),
+            new Recipe(TileCatalog.KaraAsi,        Deco.Crystals, 3, Deco.DeadTree, 1),
         };
 
         // ═════════════════════════════════════════════════════════════════════

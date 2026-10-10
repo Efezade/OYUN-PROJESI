@@ -62,6 +62,8 @@ namespace TacticalRPG.Editor
                 SetupClassProgression(); // sinif evrimleri + sinif yetenekleri (savasta 1/2/3)
                 SetupChapterRules(); // FAZ 2 OMURGASI: bolum kural seti + Kam mekanigi + gorev tipleri +
                                      // otomatik yuruyus durdurucu (ChapterProgress'ten SONRA olmali)
+                SetupRegions();      // BOLGELER + KARA ASI CURUMESI (kural setinden SONRA, harita
+                                     // uretiminden ONCE — onizleme haritasi da bolgeli ciksin)
                 // EN SON: haritayi editorde uret ki Play'e basmadan da yeni harita gorunsun.
                 // (Store'dan SONRA olmali — magaza karosunun modeli o adimda kesinlesiyor.)
                 GenerateChapterMapInEditor();

@@ -18,6 +18,10 @@ namespace TacticalRPG.Grid
         public int   LandmarkCount;
         public int   LandmarkSpacing;
 
+        /// <summary>BÖLGE planı (2026-10-10). Null = bölgesiz eski üretim (iklim kovaları) —
+        /// seed taraması ve bölgesi tanımlanmamış bölümler bununla birebir aynı haritayı alır.</summary>
+        public RegionPlan Regions;
+
         /// <summary>Kıtanın tahta kenarına bırakmak ZORUNDA olduğu boşluk (karo). Sınır dekoru
         /// (sis/deniz) buraya sığmazsa kesilir ve tam da kaçındığımız DÜZ KENAR ortaya çıkar.</summary>
         public int Margin => FringeWidth + 1;
@@ -43,6 +47,18 @@ namespace TacticalRPG.Grid
         public int MainComponent;               // başlangıçtan YÜRÜYEREK erişilebilen karo sayısı
         public int EssenceSupply;               // erişilebilir bölgedeki toplam öz
         public int Fringe;                      // dekoratif sınır karosu sayısı
+
+        // ── Bölge çıktısı (plan yoksa Region = null) ──
+        public RegionPlan Plan;                 // üretimde kullanılan plan
+        public int[,] Region;                   // [sütun, satır] → Plan.Regions indisi, -1 = yok
+        public int[]  RegionSize;               // bölge başına kara karosu
+        public List<(int region, int q, int r)> Cores   = new();   // bölge çekirdek karoları (tekiller burada)
+        public List<RegionSource>               Sources = new();   // çürüme kaynakları
+
+        /// <summary>Dizi indisindeki bölge (-1 = yok / plan yok).</summary>
+        public int RegionAt(int q, int r)
+            => Region != null && q >= 0 && r >= 0 && q < Region.GetLength(0) && r < Region.GetLength(1)
+               ? Region[q, r] : -1;
 
         public float WalkablePct => Land > 0 ? 100f * Walkable / Land : 0f;
         public float RiverPct    => Land > 0 ? 100f * River    / Land : 0f;
@@ -136,6 +152,19 @@ namespace TacticalRPG.Grid
             BuildFields(p, seed, land, out float[,] elev, out float[,] moist, out float[,] temp,
                         out int[,] coastDist);
 
+            // 2.5) BÖLGELER — alanlardan ÖNCE değil SONRA kurulur ama dağ/nehir/göl yerleşiminden
+            //      ÖNCE: bölgenin yükseklik/nem bükmesi o adımları kendiliğinden şekillendirir
+            //      (bataklık alçak ve göllü, tepeler sırtlı). Oranlar değişmez — dağ/nehir/blob
+            //      SAYILARI hâlâ kıtaya oranla sabit, yalnız YERLERİ kayar.
+            RegionPlan plan = p.Regions != null && !p.Regions.IsEmpty ? p.Regions : null;
+            RegionLayout.Result lay = null;
+            if (plan != null)
+            {
+                lay = RegionLayout.Build(land, coastDist, plan);
+                RegionLayout.BiasFields(lay, plan, land, elev, moist);
+            }
+            int[,] region = lay?.Region;
+
             // Karo yerleşimi: null = "henüz boş kara" (biyom adımında doldurulacak)
             var t = new string[w, h];
 
@@ -151,17 +180,27 @@ namespace TacticalRPG.Grid
 
             // 5) GÖL + SIK ORMAN BLOBLARI
             int nBlob = (int)Math.Round(landCount * p.BlobPct);
-            PlaceBlobs(land, elev, moist, temp, t, rnd, nBlob);
+            PlaceBlobs(land, elev, moist, temp, t, rnd, nBlob, region, plan);
+
+            // 5.5) Bölgenin dağ türleri (yer ve sayı aynı, yalnız TÜR — karlı zirve yerine kayalık sırt)
+            if (plan != null) RemapMountains(land, t, region, plan);
 
             // 6) GEÇİTLER (köprü/sığ geçit/dağ geçidi) + bağlantı onarımı
             PlaceCrossings(land, t, nBridge);
             RepairConnectivity(land, t);
 
+            // 6.5) BÖLGE ÇEKİRDEKLERİ — tekil karolar (Bayterek, Halka Meclisi…) ve çürüme
+            //      kaynakları. Yalnız BOŞ kara karosuna konur (yürünür olacaktı) → bağlantı bozulmaz.
+            var cores   = new List<(int region, int q, int r)>();
+            var sources = new List<RegionSource>();
+            if (plan != null) PlaceRegionCores(land, t, lay, plan, cores, sources);
+
             // 7) BİYOMLAR — kalan boş kara karoları
-            AssignBiomes(land, elev, moist, temp, coastDist, t, seed);
+            AssignBiomes(land, elev, moist, temp, coastDist, t, seed, region, plan);
 
             // 8) LANDMARK'LAR
-            int landmarks = PlaceLandmarks(land, t, elev, coastDist, rnd, p.LandmarkCount, p.LandmarkSpacing);
+            int landmarks = PlaceLandmarks(land, t, elev, coastDist, rnd, p.LandmarkCount, p.LandmarkSpacing,
+                                           region, plan);
 
             // Tahtaya yaz
             for (int q = 0; q < w; q++)
@@ -172,7 +211,9 @@ namespace TacticalRPG.Grid
             int fringe = PlaceFringe(p, seed, land, tiles);
 
             // ── Sonuç + istatistik ──
-            var res = new MapResult { Tiles = tiles, Land = landCount, Fringe = fringe };
+            var res = new MapResult { Tiles = tiles, Land = landCount, Fringe = fringe,
+                                      Plan = plan, Region = region, RegionSize = lay?.Size,
+                                      Cores = cores, Sources = sources };
             foreach (var (q, r) in Cells(w, h))
             {
                 if (!land[q, r]) continue;
@@ -190,7 +231,9 @@ namespace TacticalRPG.Grid
             }
             if (landmarks != res.Landmark) res.Landmark = landmarks;
 
-            res.Start = PickStart(land, tiles, elev);
+            res.Start = plan != null && plan.StartInStartRegion
+                ? PickStartInRegion(land, tiles, elev, lay, plan)
+                : PickStart(land, tiles, elev);
             var comp  = ConnectedComponent(tiles, res.Start.q, res.Start.r, out res.Start);
             res.MainComponent = comp.Count;
             foreach (var c in comp)
@@ -586,6 +629,36 @@ namespace TacticalRPG.Grid
             }
         }
 
+        /// <summary>Dağ karolarını bölgenin dağ listesine çevirir: silsile içi (4+ dağ komşusu) →
+        /// listenin ilki, kenarlar → kalanından hücre hash'iyle. Yürünemezlik değişmez (hepsi dağ ailesi).</summary>
+        private static void RemapMountains(bool[,] land, string[,] t, int[,] region, RegionPlan plan)
+        {
+            int w = land.GetLength(0), h = land.GetLength(1);
+            var next = new Dictionary<(int q, int r), string>();
+            foreach (var (q, r) in Cells(w, h))
+            {
+                var e = TileCatalog.Get(t[q, r]);
+                if (e == null || e.Family != TileFamily.Mountain) continue;
+                RegionDef rd = RegionOf(region, plan, q, r);
+                if (rd == null || rd.Mountain == null || rd.Mountain.Length == 0) continue;
+
+                int inner = 0;
+                for (int d = 0; d < 6; d++)
+                {
+                    Neighbor(q, r, d, out int nq, out int nr);
+                    if (!InBounds(nq, nr, w, h)) continue;
+                    var ne = TileCatalog.Get(t[nq, nr]);
+                    if (ne != null && ne.Family == TileFamily.Mountain) inner++;
+                }
+                string id = rd.Mountain[0];
+                if (inner < 4 && rd.Mountain.Length > 1)
+                    id = rd.Mountain[1 + (int)(MapNoise.White(q, r, 9191) * (rd.Mountain.Length - 1)) % (rd.Mountain.Length - 1)];
+                var ce = TileCatalog.Get(id);
+                if (ce != null && ce.Family == TileFamily.Mountain) next[(q, r)] = id;
+            }
+            foreach (var kv in next) t[kv.Key.q, kv.Key.r] = kv.Value;
+        }
+
         // ═════════════════════════════════════════════════════════════════════
         //  4) NEHİRLER — yokuş aşağı akış
         // ═════════════════════════════════════════════════════════════════════
@@ -698,7 +771,8 @@ namespace TacticalRPG.Grid
         // ═════════════════════════════════════════════════════════════════════
 
         private static void PlaceBlobs(bool[,] land, float[,] elev, float[,] moist, float[,] temp,
-                                       string[,] t, PythonRandom rnd, int target)
+                                       string[,] t, PythonRandom rnd, int target,
+                                       int[,] region = null, RegionPlan plan = null)
         {
             int w = land.GetLength(0), h = land.GetLength(1);
             if (target <= 0) return;
@@ -734,6 +808,12 @@ namespace TacticalRPG.Grid
 
                 string id = wantLake ? PickLakeId(temp[seed.q, seed.r], moist[seed.q, seed.r], seed)
                                      : PickForestId(temp[seed.q, seed.r], moist[seed.q, seed.r], seed);
+                // Bölge kendi göl/orman türünü söylüyorsa o geçerli (bataklıkta bataklık gölü,
+                // Kalp'te dev kökler). Blob SAYISI ve YERİ değişmez — yalnız türü.
+                RegionDef rd = RegionOf(region, plan, seed.q, seed.r);
+                string[] own = rd == null ? null : (wantLake ? rd.Lake : rd.Forest);
+                if (own != null && own.Length > 0)
+                    id = own[(int)(MapNoise.White(seed.q, seed.r, 6262) * own.Length) % own.Length];
 
                 placed += GrowBlob(land, t, rnd, seed, size, id);
             }
@@ -1036,9 +1116,35 @@ namespace TacticalRPG.Grid
               TileCatalog.Lavanta, TileCatalog.MeyveBahcesi, TileCatalog.Fundalik, TileCatalog.Bozkir };
 
         private static void AssignBiomes(bool[,] land, float[,] elev, float[,] moist, float[,] temp,
-                                         int[,] coastDist, string[,] t, int seed)
+                                         int[,] coastDist, string[,] t, int seed,
+                                         int[,] region = null, RegionPlan plan = null)
         {
             int w = land.GetLength(0), h = land.GetLength(1);
+
+            // BÖLGE ZEMİNİ: bölgesi tablo taşıyan karo o tablodan çeker. Sınır karosu (komşusu
+            // başka bölge) BorderMix olasılıkla KOMŞUNUN tablosundan çeker → Minecraft biyomları
+            // gibi kesin ama tırtıklı bir geçiş; tek çizgili "duvar" sınır olmaz.
+            if (plan != null && region != null)
+            {
+                foreach (var (q, r) in Cells(w, h))
+                {
+                    if (!land[q, r] || t[q, r] != null) continue;
+                    RegionDef rd = RegionOf(region, plan, q, r);
+                    if (rd == null || rd.Ground == null || rd.Ground.Length == 0) continue;
+
+                    RegionDef use = rd;
+                    float roll = MapNoise.White(q, r, seed ^ 0x2B1D);
+                    if (roll < plan.BorderMix)
+                    {
+                        int d = (int)(MapNoise.White(q, r, seed ^ 0x7A11) * 6f) % 6;
+                        Neighbor(q, r, d, out int nq, out int nr);
+                        RegionDef other = RegionOf(region, plan, nq, nr);
+                        if (other != null && other != rd && other.Ground != null && other.Ground.Length > 0)
+                            use = other;
+                    }
+                    t[q, r] = WeightedPick(use.Ground, q, r, seed);
+                }
+            }
 
             // Nehre/göle yakınlık — ormanlar suyun kenarında toplansın (gerçek coğrafya).
             int[,] waterDist = FeatureDistance(land, t, w, h);
@@ -1083,6 +1189,29 @@ namespace TacticalRPG.Grid
             return bucket[bucket.Length - 1];
         }
 
+        /// <summary>Bölge tablosundan ağırlıklı seçim (aynı deterministik hücre hash'i).</summary>
+        private static string WeightedPick(TileWeight[] table, int q, int r, int seed)
+        {
+            float total = 0f;
+            foreach (var tw in table) total += Math.Max(0f, tw.Weight);
+            if (total <= 0f) return table[0].Id;
+            float pick = MapNoise.White(q, r, seed ^ 0x51ED270B) * total;
+            foreach (var tw in table)
+            {
+                pick -= Math.Max(0f, tw.Weight);
+                if (pick <= 0f) return tw.Id;
+            }
+            return table[table.Length - 1].Id;
+        }
+
+        private static RegionDef RegionOf(int[,] region, RegionPlan plan, int q, int r)
+        {
+            if (region == null || plan == null) return null;
+            if (q < 0 || r < 0 || q >= region.GetLength(0) || r >= region.GetLength(1)) return null;
+            int g = region[q, r];
+            return g >= 0 && g < plan.Regions.Length ? plan.Regions[g] : null;
+        }
+
         /// <summary>Nehir/göl karolarına hex mesafesi (çok kaynaklı BFS).</summary>
         private static int[,] FeatureDistance(bool[,] land, string[,] t, int w, int h)
         {
@@ -1120,7 +1249,8 @@ namespace TacticalRPG.Grid
         /// "şu dikilitaşın orada sola" diye zihinsel harita kurabilmesi için (Lynch: landmark).
         /// Kıyı/dağ eteği/orman içi gibi karakterli yerler tercih edilir.</summary>
         private static int PlaceLandmarks(bool[,] land, string[,] t, float[,] elev, int[,] coastDist,
-                                          PythonRandom rnd, int count, int spacing)
+                                          PythonRandom rnd, int count, int spacing,
+                                          int[,] region = null, RegionPlan plan = null)
         {
             int w = land.GetLength(0), h = land.GetLength(1);
             var pool = new List<(int q, int r)>();
@@ -1129,12 +1259,19 @@ namespace TacticalRPG.Grid
                 {
                     var e = TileCatalog.Get(t[q, r]);
                     if (e != null && e.Family == TileFamily.Crossing) continue;   // geçidi kapatma
+                    if (e != null && e.Family == TileFamily.Landmark) continue;   // bölge tekilini ezme
                     pool.Add((q, r));
                 }
             rnd.Shuffle(pool);
 
             var kinds = TileCatalog.Family(TileFamily.Landmark);
             var placedAt = new List<(int q, int r)>();
+            // Bölge tekilleri de aralık kuralına girsin (yanına ikinci bir landmark yapışmasın).
+            foreach (var (q, r) in Cells(w, h))
+            {
+                var e = TileCatalog.Get(t[q, r]);
+                if (e != null && e.Family == TileFamily.Landmark) placedAt.Add((q, r));
+            }
             int placed = 0;
 
             foreach (var c in pool)
@@ -1150,6 +1287,14 @@ namespace TacticalRPG.Grid
                 if (!special && MapNoise.White(c.q, c.r, 8080) > 0.45f) continue;
 
                 var kind = kinds[rnd.RandRange(kinds.Count)];
+                // Bölge kendi landmark havuzunu söylüyorsa oradan (bataklıkta Alaz ışığı, vadide
+                // uyuyan dev). Havuzu boş bölge → eski genel havuz.
+                RegionDef rd = RegionOf(region, plan, c.q, c.r);
+                if (rd != null && rd.Landmarks != null && rd.Landmarks.Length > 0)
+                {
+                    var own = TileCatalog.Get(rd.Landmarks[rnd.RandRange(rd.Landmarks.Length)]);
+                    if (own != null) kind = own;
+                }
                 // Gemi enkazı kıyıda, krater yüksekte anlamlı — bariz saçmalıkları ele
                 if (kind.Id == TileCatalog.GemiEnkazi && coastDist[c.q, c.r] > 2) continue;
                 if (kind.Id == TileCatalog.Krater && elev[c.q, c.r] < 0.45f) continue;
@@ -1301,6 +1446,142 @@ namespace TacticalRPG.Grid
                 }
             }
             return best;
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        //  BÖLGE ÇEKİRDEKLERİ + BÖLGEDE DOĞMA
+        // ═════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Her bölgenin ÇEKİRDEK karosunu seçer: bölgenin kendi çekirdeğine (site) en yakın, çevresi
+        /// açık, henüz BOŞ (yürünür olacak) kara karosu. Çekirdeğe sırayla çürüme kaynağı ve tekil
+        /// karolar konur; tekiller birbirinden en az 2 karo uzakta, bölge içinde kalır.
+        /// </summary>
+        private static void PlaceRegionCores(bool[,] land, string[,] t, RegionLayout.Result lay, RegionPlan plan,
+                                             List<(int region, int q, int r)> cores, List<RegionSource> sources)
+        {
+            int w = land.GetLength(0), h = land.GetLength(1);
+            var taken = new List<(int q, int r)>();
+
+            for (int g = 0; g < plan.Regions.Length; g++)
+            {
+                RegionDef rd = plan.Regions[g];
+                (int q, int r) site = (-1, -1);
+                foreach (var s in lay.Sites) if (s.region == g) { site = (s.q, s.r); break; }
+                if (site.q < 0) continue;
+
+                var order = FreeCellsByCloseness(land, t, lay.Region, g, site, w, h);
+                if (order.Count == 0) continue;
+
+                var core = order[0];
+                cores.Add((g, core.q, core.r));
+
+                var toPlace = new List<string>();
+                bool hasSource = rd.CorruptionSource && TileCatalog.Get(rd.SourceTile) != null;
+                if (hasSource) toPlace.Add(rd.SourceTile);
+                if (rd.Unique != null)
+                    foreach (var id in rd.Unique) if (TileCatalog.Get(id) != null) toPlace.Add(id);
+
+                for (int i = 0; i < toPlace.Count; i++)
+                {
+                    (int q, int r) at = (-1, -1);
+                    foreach (var c in order)
+                    {
+                        if (t[c.q, c.r] != null) continue;
+                        bool clear = true;
+                        foreach (var tk in taken) if (HexDist(tk, c) < 2) { clear = false; break; }
+                        if (!clear) continue;
+                        at = c; break;
+                    }
+                    if (at.q < 0) break;
+
+                    t[at.q, at.r] = toPlace[i];
+                    taken.Add(at);
+                    if (hasSource && i == 0)
+                        sources.Add(new RegionSource { Q = at.q, R = at.r, Region = g, Permanent = rd.SourcePermanent });
+                }
+            }
+        }
+
+        /// <summary>Bölgenin boş kara karoları, çekirdeğe yakınlık + açıklık sırasıyla.</summary>
+        private static List<(int q, int r)> FreeCellsByCloseness(bool[,] land, string[,] t, int[,] region, int g,
+                                                                 (int q, int r) site, int w, int h)
+        {
+            var list = new List<((int q, int r) c, float key)>();
+            foreach (var (q, r) in Cells(w, h))
+            {
+                if (!land[q, r] || region[q, r] != g || t[q, r] != null) continue;
+                int open = 0;
+                for (int d = 0; d < 6; d++)
+                {
+                    Neighbor(q, r, d, out int nq, out int nr);
+                    if (InBounds(nq, nr, w, h) && land[nq, nr] && t[nq, nr] == null) open++;
+                }
+                if (open < 3) continue;                         // kıstak/çıkmaza tekil koyma
+                list.Add(((q, r), HexDist(site, (q, r)) + (6 - open) * 0.5f));
+            }
+            list.Sort((a, b) => a.key.CompareTo(b.key));
+            var res = new List<(int q, int r)>(list.Count);
+            foreach (var e in list) res.Add(e.c);
+            return res;
+        }
+
+        /// <summary>
+        /// Giriş bölgesinde doğma: ana yürünür bileşenin GİRİŞ bölgesindeki karoları arasından,
+        /// giriş çekirdeği ile merkez çekirdeğinin arasında (%55 merkeze yakın) duran açık karo.
+        /// Oyuncu hikâyedeki gibi Yırtık Koru'da başlar ama köye yüzü dönük — haritanın en uç
+        /// kıyısında değil (yol bütçesi ve zorunlu görev mesafe bandı eski dengeye yakın kalsın).
+        /// Giriş bölgesi bileşenin dışında kalırsa eski <see cref="PickStart"/>'a düşer.
+        /// </summary>
+        private static (int q, int r) PickStartInRegion(bool[,] land, string[,] tiles, float[,] elev,
+                                                       RegionLayout.Result lay, RegionPlan plan)
+        {
+            int w = land.GetLength(0), h = land.GetLength(1);
+            int startReg = -1, hubReg = -1;
+            for (int i = 0; i < plan.Regions.Length; i++)
+            {
+                if (startReg < 0 && plan.Regions[i].Role == RegionRole.Start) startReg = i;
+                if (hubReg   < 0 && plan.Regions[i].Role == RegionRole.Hub)   hubReg   = i;
+            }
+            if (startReg < 0) return PickStart(land, tiles, elev);
+
+            (int q, int r) sSite = (-1, -1), hSite = (-1, -1);
+            foreach (var s in lay.Sites)
+            {
+                if (s.region == startReg && sSite.q < 0) sSite = (s.q, s.r);
+                if (s.region == hubReg   && hSite.q < 0) hSite = (s.q, s.r);
+            }
+            if (sSite.q < 0) return PickStart(land, tiles, elev);
+            if (hSite.q < 0) hSite = sSite;
+
+            World(sSite.q, sSite.r, out float sx, out float sz);
+            World(hSite.q, hSite.r, out float hx, out float hz);
+            float tx = hx + (sx - hx) * 0.55f, tz = hz + (sz - hz) * 0.55f;
+
+            var comps = WalkableComponents(land, tiles);
+            if (comps.Count == 0) return PickStart(land, tiles, elev);
+            comps.Sort((a, b) => b.Count.CompareTo(a.Count));
+            var main = comps[0];
+            var inMain = new HashSet<(int q, int r)>(main);
+
+            for (int pass = 0; pass < 2; pass++)
+            {
+                int minOpen = pass == 0 ? 13 : 0;
+                (int q, int r) best = (-1, -1); double bestKey = double.MaxValue;
+                foreach (var c in main)
+                {
+                    if (lay.Region[c.q, c.r] != startReg) continue;
+                    var e = TileCatalog.Get(tiles[c.q, c.r]);
+                    if (e != null && (e.Family == TileFamily.Landmark || e.Family == TileFamily.Crossing)) continue;
+                    if (minOpen > 0 && OpenNeighborhood(land, tiles, inMain, c.q, c.r, w, h, 2) < minOpen) continue;
+
+                    World(c.q, c.r, out float x, out float z);
+                    double d = (x - tx) * (x - tx) + (z - tz) * (z - tz) + elev[c.q, c.r] * 6.0;
+                    if (d < bestKey) { bestKey = d; best = c; }
+                }
+                if (best.q >= 0) return best;
+            }
+            return PickStart(land, tiles, elev);
         }
 
         /// <summary>(q,r) çevresinde <paramref name="radius"/> hex içinde kaç karo ANA BİLEŞENDEN

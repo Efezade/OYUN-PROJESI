@@ -56,6 +56,14 @@ namespace TacticalRPG.Data
         [Tooltip("Zorunlu görev / düğüm ödülünün hangi özle ödendiği.")]
         [SerializeField] private EssenceType _rewardEssence = EssenceType.Doga;
 
+        [Header("Bölgeler (2026-10-10)")]
+        [Tooltip("Haritanın bölge seti (Minecraft biyomu gibi bölgeler, yeri her koşuda değişir). " +
+                 "Boş = bölgesiz eski iklim üretimi.")]
+        [SerializeField] private RegionSetSO _regions;
+
+        [Tooltip("Kara Aşı çürümesi ayarı. Boş = bu bölümde çürüme YOK.")]
+        [SerializeField] private CorruptionConfigSO _corruption;
+
         [Header("Anlatım")]
         [SerializeField] private ChapterTone _tone = ChapterTone.Ciddi;
 
@@ -69,6 +77,8 @@ namespace TacticalRPG.Data
         public StoryChainConfigSO     StoryChains     => _storyChains;
         public EssenceType            RewardEssence   => _rewardEssence;
         public ChapterTone            Tone            => _tone;
+        public RegionSetSO            Regions         => _regions;
+        public CorruptionConfigSO     Corruption      => _corruption;
 
         /// <summary>Boşsa null döner → tüketici kendi yedeğine düşer.</summary>
         public EssenceType[] ChapterEssences

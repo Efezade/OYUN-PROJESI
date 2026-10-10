@@ -16,6 +16,29 @@
 
 ---
 
+## 2026-10-10 (3) — Harita BÖLGELERE ayrıldı (yarı sabit iskelet) + Kara Aşı çürümesi
+
+**KARAR — Bölüm haritası hikâyedeki 7 bölgeye ayrılır (`RegionSO` / `RegionSetSO`, kural setinde
+`_regions`); her bölgenin kendi karo tablosu, göl/orman/dağ türü, landmark'ı, tekil karosu ve oynanış
+kuralı var.** Yerleşim ayrı bir seed'le (her koşu rastgele) yapılır: giriş kıyıya yakın, final girişten
+en uzak, köy ikisinin ortasında, aşı bölgeleri boşluklara. Büyüme ağırlıklı + gürültülü Voronoi
+(Minecraft biyomu gibi). Üretici saf C# kaldı (`RegionPlan.cs`); varsayılanlar `KokAhdiRegions.cs`.
+Tasarım: `Docs/BOLGELER.md`; karo listesi: `MODELLER/Karolar/KARO_LISTESI.md`.
+**NEDEN (Efe):** "bölgeler Minecraft biyomları gibi, kendine özgü karolar yan yana; yerleri her girişte
+değişebilir". Eski iklim kovaları orman evrenine kar/kum/tundra getiriyordu.
+**KARAR — Kara Aşı çürümesi (`CorruptionManager`):** kaynaklardan her gün yayılır ve derinleşir;
+kıyamet sayacı kararmış karoyu ağırlıklı seçer; aşı bölgesindeki zorunlu görev o kaynağı arındırır.
+Zorunlu görevler sahipsiz aşı noktalarının başına düşer (mesafe bandı korunur).
+**NEDEN:** map çapında baskı mekaniği (Efe: "evet yap") + "karo silinmesi bir sisteme bağlı olmalı"
+(2026-09-02) + görev zincirinin hikâyedeki üç aşı noktasına bağlanması.
+**DOĞRULAMA:** `tara.ps1 -Bolge` (240 harita): erişilebilirlik farkı −0,07 puan, iskelet 240/240.
+Bölgesiz yol birebir aynı (`tara.ps1 -Seeds 12000` sonucu değişmedi). **Play'de görülmedi.**
+**DERS:** Öz toplanınca karo genel "ova"ya dönüyordu → bölgeli haritada bölgenin ana düzlüğüne dönüyor
+(`ChapterMapGenerator.DepletedIdAt`). Çürüme rengi `HexCell.OverlayTint`'te (öz görseli `BaseColor`'ı
+yazıyor; aynı alana iki sistem yazsaydı biri ötekini silerdi).
+
+---
+
 ## 2026-10-10 (2) — Karo GÖRSEL varyantları (aynı id, farklı model; hücreye göre sabit seçim)
 
 **KARAR — Bir palet girişi birden çok model taşıyabilir (`TileEntry.variants` + `mainWeight`);

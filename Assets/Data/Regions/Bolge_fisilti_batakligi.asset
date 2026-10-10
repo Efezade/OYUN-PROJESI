@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e676d4722d0de34581bf6df6a4590ce, type: 3}
+  m_Name: Bolge_fisilti_batakligi
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.RegionSO
+  _id: fisilti_batakligi
+  _displayName: "F\u0131s\u0131lt\u0131 Batakl\u0131\u011F\u0131"
+  _flavor: "Sis, Alaz \u0131\u015F\u0131klar\u0131 ve \xE7\u0131\u011Fl\u0131k atan
+    Mandragora k\xF6kleri. Burada g\xF6z yan\u0131lt\u0131r."
+  _color: {r: 0.48, g: 0.8, b: 0.72, a: 1}
+  _role: 3
+  _seeds: 1
+  _area: 1.1
+  _elevationBias: -0.18
+  _moistureBias: 0.3
+  _ground:
+  - id: bataklik
+    weight: 2.6
+  - id: yosun_tarlasi
+    weight: 0.8
+  - id: sazlik
+    weight: 1.2
+  - id: bataklik_otu
+    weight: 1
+  - id: mandragora_yatagi
+    weight: 0.4
+  - id: mantar_ormani
+    weight: 0.4
+  - id: batik_tas
+    weight: 0.7
+  _forest:
+  - karanlik_orman
+  _lake:
+  - bataklik_golu
+  _mountain:
+  - dag
+  - kayalik
+  - dev_kaya
+  _landmarks:
+  - isik_cukuru
+  _unique: []
+  _corruptionSource: 1
+  _sourceTile: kara_asi
+  _sourcePermanent: 0
+  _visionDelta: -1

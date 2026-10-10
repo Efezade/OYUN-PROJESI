@@ -46,6 +46,9 @@ public static class SeedSearchMain
         // "minimap" modu: minihatita boyamasini PNG olarak yazar (Unity'siz gorsel dogrulama).
         if (args.Length > 0 && args[0] == "minimap") { MinimapPreview.Run(); return; }
 
+        // "bolge" modu: Kok Ahdi bolge planini olcer (iskelet, alan, karo sikligi) + PNG.
+        if (args.Length > 0 && args[0] == "bolge") { RegionReport.Run(); return; }
+
         int seedCount = args.Length > 0 ? int.Parse(args[0]) : 4000;
         int want      = args.Length > 1 ? int.Parse(args[1]) : 30;
         var p = TerrainParams.Default;

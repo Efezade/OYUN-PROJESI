@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e676d4722d0de34581bf6df6a4590ce, type: 3}
+  m_Name: Bolge_yirtik_koru
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.RegionSO
+  _id: yirtik_koru
+  _displayName: "Y\u0131rt\u0131k Koru"
+  _flavor: "Zar'\u0131n y\u0131rt\u0131ld\u0131\u011F\u0131 s\u0131n\u0131r. A\u011Fa\xE7lar
+    yar\u0131 kurumu\u015F, havada hafif mor bir pus."
+  _color: {r: 0.72, g: 0.55, b: 0.92, a: 1}
+  _role: 1
+  _seeds: 1
+  _area: 0.9
+  _elevationBias: 0
+  _moistureBias: -0.15
+  _ground:
+  - id: solgun_cayir
+    weight: 3
+  - id: cayir
+    weight: 0.8
+  - id: kurumus_koru
+    weight: 1.6
+  - id: az_agacli_ova
+    weight: 0.6
+  - id: taslik_ova
+    weight: 0.8
+  - id: obsidyen_tarla
+    weight: 0.35
+  _forest:
+  - dikenli_calilik
+  - karanlik_orman
+  _lake:
+  - bataklik_golu
+  _mountain:
+  - dag
+  - kayalik
+  - dev_kaya
+  _landmarks:
+  - kemik_tarlasi
+  - harabe
+  _unique: []
+  _corruptionSource: 1
+  _sourceTile: zar_yirtigi
+  _sourcePermanent: 1
+  _visionDelta: 0

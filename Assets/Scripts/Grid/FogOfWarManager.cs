@@ -102,6 +102,7 @@ namespace TacticalRPG.Grid
             public Vector3        basePos;   // rüzgar salınımının merkez konumu
             public float          phase;     // her buluta farklı faz (senkron olmasınlar)
             public bool           alarm;     // ALTINDAKİ KARO ÇÖKECEK → bulut kızıl yanar
+            public HexCoordinate  coord;     // bulutun karosu (kalıcı ton sözlüğü bununla aranır)
         }
 
         private Transform _fogRoot;
@@ -466,7 +467,7 @@ namespace TacticalRPG.Grid
                 bc.a = 1f;
 
                 cap = new Cap { go = go, rends = rends, baseColor = bc, alpha = _hiddenAlpha, target = _hiddenAlpha,
-                                phase = Random.Range(0f, 6.283f) };
+                                phase = Random.Range(0f, 6.283f), coord = cell.Coordinate };
                 _caps[cell.Coordinate] = cap;
             }
 
@@ -484,7 +485,37 @@ namespace TacticalRPG.Grid
         /// <see cref="ApplyCapAlpha"/> hem <see cref="TintCloud"/> buradan okur; yoksa çöküş
         /// dalgası geçip kendi rengine döndürdüğünde alarm silinir ve uyarı yine kaybolurdu.</summary>
         private Color CapBaseColor(Cap cap)
-            => cap.alarm ? Color.Lerp(cap.baseColor, _alarmColor, _alarmStrength) : cap.baseColor;
+        {
+            Color c = cap.baseColor;
+            // ÇÜRÜME PUSU: kaydı bulut nesnesinde değil koordinatta tutulur → sis yeniden kurulunca
+            // (yeni harita / savaştan dönüş) kendiliğinden geri gelir, sıra bağımlılığı olmaz.
+            if (_cloudTints.Count > 0 && _cloudTints.TryGetValue(cap.coord, out (Color tint, float t) ct))
+                c = Color.Lerp(c, ct.tint, ct.t);
+            return cap.alarm ? Color.Lerp(c, _alarmColor, _alarmStrength) : c;
+        }
+
+        // ── Kalıcı bulut tonu (Kara Aşı çürümesi, 2026-10-10) ───────────────
+        private readonly Dictionary<HexCoordinate, (Color tint, float t)> _cloudTints = new();
+
+        /// <summary>Karonun bulutunu kalıcı olarak bir renge kaydırır (t=0 → kaldır). Çürüme
+        /// sisin altında da görünsün diye: oyuncu mor pusun nereye yayıldığını uzaktan görür ama
+        /// karonun NE olduğunu görmez (keşif bilgisi sızmaz).</summary>
+        public void SetCloudTint(HexCoordinate coord, Color tint, float t)
+        {
+            if (t <= 0.001f) { if (!_cloudTints.Remove(coord)) return; }
+            else _cloudTints[coord] = (tint, Mathf.Clamp01(t));
+            if (_caps.TryGetValue(coord, out Cap cap) && cap != null) ApplyCapAlpha(cap);
+        }
+
+        /// <summary>Tüm kalıcı bulut tonlarını kaldırır (yeni harita).</summary>
+        public void ClearCloudTints()
+        {
+            if (_cloudTints.Count == 0) return;
+            var keys = new List<HexCoordinate>(_cloudTints.Keys);
+            _cloudTints.Clear();
+            foreach (var k in keys)
+                if (_caps.TryGetValue(k, out Cap cap) && cap != null) ApplyCapAlpha(cap);
+        }
 
         /// <summary>
         /// Bu karonun bulutunu ÇÖKÜŞ ALARMINA alır (ya da alarmı kaldırır).
@@ -570,7 +601,7 @@ namespace TacticalRPG.Grid
         {
             if (cell.MeshRenderer == null) return;
 
-            Color c = cell.BaseColor * brightness;
+            Color c = cell.BaseColor * cell.OverlayTint * brightness;
             c.a = 1f;
 
             _block ??= new MaterialPropertyBlock();

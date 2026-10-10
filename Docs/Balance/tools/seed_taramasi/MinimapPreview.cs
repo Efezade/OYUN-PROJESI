@@ -222,7 +222,7 @@ public static class MinimapPreview
     // ── Minimal PNG yazıcı (bağımlılık yok) ──────────────────────────────────
     // PNG = imza + IHDR + IDAT(zlib) + IEND. Sadece bu önizleme için; oyunun kodunda yok.
 
-    private static void WritePng(string path, byte[] rgba, int w, int h)
+    internal static void WritePng(string path, byte[] rgba, int w, int h)
     {
         using var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
         fs.Write(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }, 0, 8);

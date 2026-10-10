@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e676d4722d0de34581bf6df6a4590ce, type: 3}
+  m_Name: Bolge_kok_ahdi_korulari
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.RegionSO
+  _id: kok_ahdi_korulari
+  _displayName: "K\xF6k Ahdi Korular\u0131"
+  _flavor: "Ahd'e sad\u0131k korular. Ate\u015Fte d\xF6v\xFClen, \xE7arkla d\xF6nen
+    hi\xE7bir \u015Fey topra\u011Fa de\u011Fmez."
+  _color: {r: 0.78, g: 0.86, b: 0.62, a: 1}
+  _role: 0
+  _seeds: 2
+  _area: 0.9
+  _elevationBias: 0
+  _moistureBias: 0
+  _ground:
+  - id: cayir
+    weight: 2.2
+  - id: uzun_ot
+    weight: 1.2
+  - id: yosun_tarlasi
+    weight: 0.6
+  - id: az_agacli_ova
+    weight: 1
+  - id: orman
+    weight: 1.2
+  - id: taslik_ova
+    weight: 0.8
+  - id: kaya_yigini
+    weight: 0.4
+  - id: cakil_yatagi
+    weight: 0.3
+  _forest:
+  - sik_orman
+  _lake:
+  - gol
+  _mountain:
+  - dag
+  - kayalik
+  - dev_kaya
+  _landmarks:
+  - dikilitas
+  - tas_daire
+  - dev_agac
+  _unique: []
+  _corruptionSource: 0
+  _sourceTile: kara_asi
+  _sourcePermanent: 0
+  _visionDelta: 0
