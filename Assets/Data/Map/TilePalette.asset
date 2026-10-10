@@ -587,6 +587,18 @@ MonoBehaviour:
     - name: yosunlu_kaya
       prefab: {fileID: 9136738456159446069, guid: ed72f98bc36cf144692b2816ac1ea389, type: 3}
       weight: 1.5
+    - name: klasik
+      prefab: {fileID: 4863155515355024933, guid: 3711bcb78e7d3654dbc1dec249137622, type: 3}
+      weight: 0.5
+    - name: nemli
+      prefab: {fileID: 5941870137518461817, guid: 12983615688c09949bf4384930b758b5, type: 3}
+      weight: 1.5
+    - name: yassi_tas
+      prefab: {fileID: 3404663637789709354, guid: 1993f62427b13314f86e81c12a136de0, type: 3}
+      weight: 2
+    - name: yonca
+      prefab: {fileID: 7878624711700259963, guid: ebbe82b13c2d7434c9170d1a2178e07b, type: 3}
+      weight: 2
     mainWeight: 0.5
     allowMirror: 1
   - id: uzun_ot

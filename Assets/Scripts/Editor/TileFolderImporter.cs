@@ -65,6 +65,11 @@ namespace TacticalRPG.Editor
             ["cayir__kutuk"]        = 1.5f,
             ["cayir__yosunlu_kaya"] = 1.5f,
             ["cayir__egrelti_kok"]  = 0.5f,
+            // sade ikinci set (Efe 2026-10-10: "çeşitlilik yetmedi")
+            ["cayir__klasik"]       = 0.5f,   // sade DEĞİL: konseptin dolu karosunun başka dizilişi
+            ["cayir__yonca"]        = 2f,
+            ["cayir__yassi_tas"]    = 2f,
+            ["cayir__nemli"]        = 1.5f,
         };
         private static readonly Dictionary<string, float> MainWeightDefaults = new()
         {
