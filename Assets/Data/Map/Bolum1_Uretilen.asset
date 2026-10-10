@@ -63,6 +63,18 @@ MonoBehaviour:
       R: 11
     tileId: bos
   - coord:
+      Q: -4
+      R: 9
+    tileId: bos
+  - coord:
+      Q: -5
+      R: 10
+    tileId: bos
+  - coord:
+      Q: -5
+      R: 11
+    tileId: bos
+  - coord:
       Q: -6
       R: 12
     tileId: bos
@@ -183,6 +195,10 @@ MonoBehaviour:
       R: 7
     tileId: bos
   - coord:
+      Q: -2
+      R: 7
+    tileId: bos
+  - coord:
       Q: -3
       R: 8
     tileId: bos
@@ -227,9 +243,17 @@ MonoBehaviour:
       R: 18
     tileId: bos
   - coord:
-      Q: -8
-      R: 19
-    tileId: bos
+      Q: -9
+      R: 20
+    tileId: sis_perdesi
+  - coord:
+      Q: -9
+      R: 21
+    tileId: sis_perdesi
+  - coord:
+      Q: -10
+      R: 22
+    tileId: sis_perdesi
   - coord:
       Q: -9
       R: 20
@@ -245,7 +269,7 @@ MonoBehaviour:
   - coord:
       Q: -10
       R: 23
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: -11
       R: 24
@@ -257,6 +281,10 @@ MonoBehaviour:
   - coord:
       Q: -12
       R: 26
+    tileId: sis_perdesi
+  - coord:
+      Q: -12
+      R: 27
     tileId: bos
   - coord:
       Q: -12
@@ -265,6 +293,18 @@ MonoBehaviour:
   - coord:
       Q: -13
       R: 28
+    tileId: bos
+  - coord:
+      Q: -13
+      R: 29
+    tileId: bos
+  - coord:
+      Q: -14
+      R: 30
+    tileId: bos
+  - coord:
+      Q: -14
+      R: 31
     tileId: bos
   - coord:
       Q: -13
@@ -315,18 +355,6 @@ MonoBehaviour:
       R: 6
     tileId: bos
   - coord:
-      Q: -1
-      R: 7
-    tileId: bos
-  - coord:
-      Q: -2
-      R: 8
-    tileId: bos
-  - coord:
-      Q: -2
-      R: 9
-    tileId: bos
-  - coord:
       Q: -3
       R: 10
     tileId: bos
@@ -349,23 +377,31 @@ MonoBehaviour:
   - coord:
       Q: -5
       R: 15
-    tileId: bos
-  - coord:
-      Q: -6
-      R: 16
-    tileId: bos
-  - coord:
-      Q: -6
-      R: 17
     tileId: sis_perdesi
-  - coord:
-      Q: -7
-      R: 18
-    tileId: bos
   - coord:
       Q: -7
       R: 19
     tileId: sig_su
+  - coord:
+      Q: -8
+      R: 20
+    tileId: sig_su
+  - coord:
+      Q: -8
+      R: 21
+    tileId: sig_su
+  - coord:
+      Q: -9
+      R: 22
+    tileId: sig_su
+  - coord:
+      Q: -9
+      R: 23
+    tileId: sig_su
+  - coord:
+      Q: -10
+      R: 24
+    tileId: sis_perdesi
   - coord:
       Q: -8
       R: 20
@@ -391,14 +427,58 @@ MonoBehaviour:
       R: 25
     tileId: sig_su
   - coord:
-      Q: -11
-      R: 26
+      Q: -1
+      R: 7
+    tileId: bos
+  - coord:
+      Q: -2
+      R: 8
+    tileId: bos
+  - coord:
+      Q: -2
+      R: 9
+    tileId: bos
+  - coord:
+      Q: -6
+      R: 16
+    tileId: bos
+  - coord:
+      Q: -6
+      R: 17
+    tileId: sig_su
+  - coord:
+      Q: -7
+      R: 18
+    tileId: sig_su
+  - coord:
+      Q: -6
+      R: 17
     tileId: sis_perdesi
   - coord:
       Q: -11
-      R: 27
+      R: 26
     tileId: derin_su
   - coord:
+      Q: -11
+      R: 27
+    tileId: sis_perdesi
+  - coord:
+      Q: -12
+      R: 28
+    tileId: bos
+  - coord:
+      Q: -12
+      R: 29
+    tileId: bos
+  - coord:
+      Q: -13
+      R: 30
+    tileId: bos
+  - coord:
+      Q: -13
+      R: 31
+    tileId: bos
+  - coord:
       Q: -12
       R: 28
     tileId: bos
@@ -481,22 +561,38 @@ MonoBehaviour:
   - coord:
       Q: -4
       R: 14
-    tileId: bos
-  - coord:
-      Q: -4
-      R: 15
     tileId: sis_perdesi
   - coord:
       Q: -5
       R: 16
-    tileId: sis_perdesi
+    tileId: sig_su
   - coord:
       Q: -5
       R: 17
-    tileId: sig_su
+    tileId: ova
   - coord:
       Q: -6
       R: 18
+    tileId: yosun_tarlasi
+  - coord:
+      Q: -6
+      R: 19
+    tileId: sazlik
+  - coord:
+      Q: -7
+      R: 20
+    tileId: sazlik
+  - coord:
+      Q: -7
+      R: 21
+    tileId: sazlik
+  - coord:
+      Q: -8
+      R: 22
+    tileId: ova
+  - coord:
+      Q: -8
+      R: 23
     tileId: sig_su
   - coord:
       Q: -6
@@ -555,6 +651,26 @@ MonoBehaviour:
       R: 32
     tileId: bos
   - coord:
+      Q: -11
+      R: 28
+    tileId: sis_perdesi
+  - coord:
+      Q: -11
+      R: 29
+    tileId: sis_perdesi
+  - coord:
+      Q: -12
+      R: 30
+    tileId: bos
+  - coord:
+      Q: -12
+      R: 31
+    tileId: bos
+  - coord:
+      Q: -13
+      R: 32
+    tileId: bos
+  - coord:
       Q: -13
       R: 33
     tileId: bos
@@ -585,10 +701,6 @@ MonoBehaviour:
   - coord:
       Q: 1
       R: 6
-    tileId: sig_su
-  - coord:
-      Q: 1
-      R: 7
     tileId: sig_su
   - coord:
       Q: 0
@@ -625,7 +737,79 @@ MonoBehaviour:
   - coord:
       Q: -4
       R: 16
+    tileId: yosun_tarlasi
+  - coord:
+      Q: -5
+      R: 18
+    tileId: taslik_ova
+  - coord:
+      Q: -5
+      R: 19
+    tileId: taslik_ova
+  - coord:
+      Q: -6
+      R: 20
+    tileId: yosun_tarlasi
+  - coord:
+      Q: -6
+      R: 21
+    tileId: sazlik
+  - coord:
+      Q: -7
+      R: 22
+    tileId: yosun_tarlasi
+  - coord:
+      Q: -7
+      R: 23
+    tileId: cayir
+  - coord:
+      Q: -8
+      R: 25
+    tileId: ova
+  - coord:
+      Q: -9
+      R: 26
+    tileId: ova
+  - coord:
+      Q: -9
+      R: 27
+    tileId: sahil_kumu
+  - coord:
+      Q: -10
+      R: 28
+    tileId: sig_su
+  - coord:
+      Q: -10
+      R: 29
+    tileId: sig_su
+  - coord:
+      Q: -11
+      R: 30
     tileId: sis_perdesi
+  - coord:
+      Q: -9
+      R: 27
+    tileId: sis_perdesi
+  - coord:
+      Q: -10
+      R: 28
+    tileId: bos
+  - coord:
+      Q: -10
+      R: 29
+    tileId: bos
+  - coord:
+      Q: -11
+      R: 30
+    tileId: bos
+  - coord:
+      Q: -11
+      R: 31
+    tileId: bos
+  - coord:
+      Q: -12
+      R: 32
+    tileId: bos
   - coord:
       Q: -4
       R: 17
@@ -662,30 +846,6 @@ MonoBehaviour:
       Q: -8
       R: 25
     tileId: kok_agi
-  - coord:
-      Q: -9
-      R: 26
-    tileId: sig_su
-  - coord:
-      Q: -9
-      R: 27
-    tileId: sis_perdesi
-  - coord:
-      Q: -10
-      R: 28
-    tileId: bos
-  - coord:
-      Q: -10
-      R: 29
-    tileId: bos
-  - coord:
-      Q: -11
-      R: 30
-    tileId: bos
-  - coord:
-      Q: -11
-      R: 31
-    tileId: bos
   - coord:
       Q: -12
       R: 32
@@ -726,10 +886,6 @@ MonoBehaviour:
       Q: 2
       R: 7
     tileId: bataklik
-  - coord:
-      Q: 1
-      R: 8
-    tileId: sig_su
   - coord:
       Q: 1
       R: 9
@@ -827,6 +983,78 @@ MonoBehaviour:
       R: 32
     tileId: bos
   - coord:
+      Q: 0
+      R: 11
+    tileId: sis_perdesi
+  - coord:
+      Q: -1
+      R: 12
+    tileId: sis_perdesi
+  - coord:
+      Q: -1
+      R: 13
+    tileId: sis_perdesi
+  - coord:
+      Q: -2
+      R: 14
+    tileId: derin_su
+  - coord:
+      Q: -3
+      R: 16
+    tileId: yosun_tarlasi
+  - coord:
+      Q: -3
+      R: 17
+    tileId: yosun_tarlasi
+  - coord:
+      Q: -4
+      R: 18
+    tileId: tundra
+  - coord:
+      Q: -4
+      R: 19
+    tileId: buz_golu
+  - coord:
+      Q: -5
+      R: 20
+    tileId: buz_golu
+  - coord:
+      Q: -5
+      R: 21
+    tileId: buz_golu
+  - coord:
+      Q: -6
+      R: 22
+    tileId: sazlik
+  - coord:
+      Q: -6
+      R: 23
+    tileId: bataklik
+  - coord:
+      Q: -7
+      R: 24
+    tileId: sazlik
+  - coord:
+      Q: -7
+      R: 25
+    tileId: uzun_ot
+  - coord:
+      Q: -9
+      R: 28
+    tileId: ova
+  - coord:
+      Q: -9
+      R: 29
+    tileId: magara
+  - coord:
+      Q: -10
+      R: 31
+    tileId: sis_perdesi
+  - coord:
+      Q: -11
+      R: 32
+    tileId: bos
+  - coord:
       Q: -11
       R: 33
     tileId: bos
@@ -891,13 +1119,93 @@ MonoBehaviour:
       R: 14
     tileId: derin_su
   - coord:
+      Q: 2
+      R: 9
+    tileId: sis_perdesi
+  - coord:
+      Q: 1
+      R: 10
+    tileId: sis_perdesi
+  - coord:
+      Q: 1
+      R: 11
+    tileId: sig_su
+  - coord:
+      Q: 0
+      R: 12
+    tileId: sig_su
+  - coord:
+      Q: 0
+      R: 13
+    tileId: sig_su
+  - coord:
       Q: -1
       R: 15
     tileId: sig_su
   - coord:
       Q: -2
       R: 16
+    tileId: yosun_tarlasi
+  - coord:
+      Q: -2
+      R: 17
+    tileId: sazlik
+  - coord:
+      Q: -3
+      R: 18
+    tileId: tundra
+  - coord:
+      Q: -3
+      R: 19
+    tileId: taslik_ova
+  - coord:
+      Q: -4
+      R: 20
+    tileId: buz_golu
+  - coord:
+      Q: -4
+      R: 21
+    tileId: buz_golu
+  - coord:
+      Q: -5
+      R: 22
+    tileId: buz_golu
+  - coord:
+      Q: -5
+      R: 23
+    tileId: cakil_yatagi
+  - coord:
+      Q: -6
+      R: 24
+    tileId: tas_daire
+  - coord:
+      Q: -7
+      R: 26
+    tileId: kamp
+  - coord:
+      Q: -7
+      R: 27
+    tileId: karanlik_orman
+  - coord:
+      Q: -8
+      R: 28
+    tileId: karanlik_orman
+  - coord:
+      Q: -8
+      R: 29
+    tileId: karanlik_orman
+  - coord:
+      Q: -9
+      R: 30
     tileId: sig_su
+  - coord:
+      Q: -9
+      R: 31
+    tileId: sis_perdesi
+  - coord:
+      Q: -10
+      R: 32
+    tileId: bos
   - coord:
       Q: -2
       R: 17
@@ -1099,6 +1407,90 @@ MonoBehaviour:
       R: 32
     tileId: bos
   - coord:
+      Q: 2
+      R: 10
+    tileId: sis_perdesi
+  - coord:
+      Q: 2
+      R: 11
+    tileId: sig_su
+  - coord:
+      Q: 1
+      R: 12
+    tileId: ova
+  - coord:
+      Q: 1
+      R: 13
+    tileId: cayir
+  - coord:
+      Q: 0
+      R: 14
+    tileId: sig_su
+  - coord:
+      Q: -1
+      R: 16
+    tileId: sig_su
+  - coord:
+      Q: -1
+      R: 17
+    tileId: tundra
+  - coord:
+      Q: -2
+      R: 18
+    tileId: dev_agac
+  - coord:
+      Q: -3
+      R: 20
+    tileId: yosun_tarlasi
+  - coord:
+      Q: -3
+      R: 21
+    tileId: buz_golu
+  - coord:
+      Q: -4
+      R: 22
+    tileId: kamp
+  - coord:
+      Q: -4
+      R: 23
+    tileId: karli_ova
+  - coord:
+      Q: -5
+      R: 24
+    tileId: cam_ormani
+  - coord:
+      Q: -5
+      R: 25
+    tileId: kamp
+  - coord:
+      Q: -6
+      R: 26
+    tileId: yosun_tarlasi
+  - coord:
+      Q: -6
+      R: 27
+    tileId: karanlik_orman
+  - coord:
+      Q: -7
+      R: 28
+    tileId: cakil_yatagi
+  - coord:
+      Q: -7
+      R: 29
+    tileId: kumul
+  - coord:
+      Q: -8
+      R: 30
+    tileId: sig_su
+  - coord:
+      Q: -8
+      R: 31
+    tileId: sis_perdesi
+  - coord:
+      Q: -9
+      R: 32
+    tileId: bos
+  - coord:
       Q: -9
       R: 33
     tileId: bos
@@ -1179,9 +1571,89 @@ MonoBehaviour:
       R: 18
     tileId: kok_agi
   - coord:
+      Q: 1
+      R: 14
+    tileId: gorev_alani
+  - coord:
+      Q: 1
+      R: 15
+    tileId: sahil_kumu
+  - coord:
+      Q: 0
+      R: 16
+    tileId: sig_su
+  - coord:
+      Q: 0
+      R: 17
+    tileId: karli_ova
+  - coord:
+      Q: -1
+      R: 18
+    tileId: cam_ormani
+  - coord:
+      Q: -4
+      R: 24
+    tileId: taslik_ova
+  - coord:
+      Q: -4
+      R: 25
+    tileId: cakil_yatagi
+  - coord:
+      Q: -5
+      R: 26
+    tileId: karanlik_orman
+  - coord:
+      Q: -5
+      R: 27
+    tileId: karanlik_orman
+  - coord:
+      Q: -6
+      R: 28
+    tileId: kadim_kapi
+  - coord:
+      Q: -6
+      R: 29
+    tileId: sahil_kumu
+  - coord:
+      Q: -7
+      R: 30
+    tileId: sig_su
+  - coord:
+      Q: -7
+      R: 31
+    tileId: sis_perdesi
+  - coord:
+      Q: -8
+      R: 32
+    tileId: bos
+  - coord:
+      Q: 3
+      R: 10
+    tileId: sis_perdesi
+  - coord:
+      Q: 3
+      R: 11
+    tileId: sig_su
+  - coord:
+      Q: 2
+      R: 12
+    tileId: ova
+  - coord:
       Q: -1
       R: 19
     tileId: yosun_tarlasi
+  - coord:
+      Q: -2
+      R: 20
+    tileId: taslik_ova
+  - coord:
+      Q: -2
+      R: 21
+    tileId: tundra
+  - coord:
+      Q: -3
+      R: 22
+    tileId: cakil_yatagi
   - coord:
       Q: -2
       R: 20
@@ -1371,6 +1843,98 @@ MonoBehaviour:
       R: 32
     tileId: bos
   - coord:
+      Q: 8
+      R: 3
+    tileId: uzak_kayalik
+  - coord:
+      Q: 7
+      R: 4
+    tileId: uzak_kayalik
+  - coord:
+      Q: 2
+      R: 14
+    tileId: tundra
+  - coord:
+      Q: 2
+      R: 15
+    tileId: cakil_yatagi
+  - coord:
+      Q: 1
+      R: 16
+    tileId: cayir
+  - coord:
+      Q: 1
+      R: 17
+    tileId: taslik_ova
+  - coord:
+      Q: 0
+      R: 18
+    tileId: taslik_ova
+  - coord:
+      Q: 0
+      R: 19
+    tileId: cam_ormani
+  - coord:
+      Q: -1
+      R: 20
+    tileId: taslik_ova
+  - coord:
+      Q: -1
+      R: 21
+    tileId: taslik_ova
+  - coord:
+      Q: -2
+      R: 23
+    tileId: karli_ova
+  - coord:
+      Q: -3
+      R: 24
+    tileId: cam_ormani
+  - coord:
+      Q: -3
+      R: 25
+    tileId: tundra
+  - coord:
+      Q: -4
+      R: 26
+    tileId: az_agacli_ova
+  - coord:
+      Q: -4
+      R: 27
+    tileId: az_agacli_ova
+  - coord:
+      Q: -5
+      R: 28
+    tileId: meyve_bahcesi
+  - coord:
+      Q: -6
+      R: 30
+    tileId: sig_su
+  - coord:
+      Q: -6
+      R: 31
+    tileId: sis_perdesi
+  - coord:
+      Q: -7
+      R: 32
+    tileId: bos
+  - coord:
+      Q: 6
+      R: 7
+    tileId: sis_perdesi
+  - coord:
+      Q: 4
+      R: 10
+    tileId: sis_perdesi
+  - coord:
+      Q: 4
+      R: 11
+    tileId: sig_su
+  - coord:
+      Q: 3
+      R: 12
+    tileId: ova
+  - coord:
       Q: -7
       R: 33
     tileId: bos
@@ -1507,6 +2071,122 @@ MonoBehaviour:
       R: 32
     tileId: bos
   - coord:
+      Q: 9
+      R: 2
+    tileId: uzak_kayalik
+  - coord:
+      Q: 9
+      R: 3
+    tileId: uzak_kayalik
+  - coord:
+      Q: 8
+      R: 5
+    tileId: derin_su
+  - coord:
+      Q: 7
+      R: 6
+    tileId: derin_su
+  - coord:
+      Q: 7
+      R: 7
+    tileId: sig_su
+  - coord:
+      Q: 6
+      R: 8
+    tileId: sis_perdesi
+  - coord:
+      Q: 6
+      R: 9
+    tileId: sig_su
+  - coord:
+      Q: 5
+      R: 10
+    tileId: sig_su
+  - coord:
+      Q: 5
+      R: 11
+    tileId: sig_su
+  - coord:
+      Q: 4
+      R: 12
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 4
+      R: 13
+    tileId: ova
+  - coord:
+      Q: 3
+      R: 14
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 3
+      R: 15
+    tileId: cam_ormani
+  - coord:
+      Q: 2
+      R: 16
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 2
+      R: 17
+    tileId: taslik_ova
+  - coord:
+      Q: 1
+      R: 18
+    tileId: karli_ova
+  - coord:
+      Q: 1
+      R: 19
+    tileId: cam_ormani
+  - coord:
+      Q: 0
+      R: 20
+    tileId: cakil_yatagi
+  - coord:
+      Q: 0
+      R: 21
+    tileId: kayalik
+  - coord:
+      Q: -1
+      R: 22
+    tileId: ucurum
+  - coord:
+      Q: -1
+      R: 23
+    tileId: cam_ormani
+  - coord:
+      Q: -2
+      R: 24
+    tileId: cakil_yatagi
+  - coord:
+      Q: -2
+      R: 25
+    tileId: fundalik
+  - coord:
+      Q: -3
+      R: 26
+    tileId: fundalik
+  - coord:
+      Q: -3
+      R: 27
+    tileId: az_agacli_ova
+  - coord:
+      Q: -4
+      R: 28
+    tileId: uzun_ot
+  - coord:
+      Q: -4
+      R: 29
+    tileId: ova
+  - coord:
+      Q: -5
+      R: 31
+    tileId: uzak_kayalik
+  - coord:
+      Q: -6
+      R: 32
+    tileId: bos
+  - coord:
       Q: -6
       R: 33
     tileId: bos
@@ -1571,9 +2251,61 @@ MonoBehaviour:
       R: 14
     tileId: sazlik
   - coord:
+      Q: 9
+      R: 5
+    tileId: derin_su
+  - coord:
+      Q: 8
+      R: 7
+    tileId: cayir
+  - coord:
+      Q: 7
+      R: 8
+    tileId: sig_su
+  - coord:
+      Q: 7
+      R: 9
+    tileId: karanlik_orman
+  - coord:
+      Q: 6
+      R: 10
+    tileId: karanlik_orman
+  - coord:
+      Q: 2
+      R: 18
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 2
+      R: 19
+    tileId: tundra
+  - coord:
+      Q: -4
+      R: 31
+    tileId: uzak_kayalik
+  - coord:
+      Q: -5
+      R: 32
+    tileId: uzak_kayalik
+  - coord:
+      Q: -5
+      R: 33
+    tileId: uzak_kayalik
+  - coord:
+      Q: 5
+      R: 13
+    tileId: dusmus_dev
+  - coord:
+      Q: 4
+      R: 14
+    tileId: tundra
+  - coord:
       Q: 4
       R: 15
-    tileId: sazlik
+    tileId: az_agacli_ova
+  - coord:
+      Q: 3
+      R: 16
+    tileId: magara
   - coord:
       Q: 3
       R: 16
@@ -1639,13 +2371,41 @@ MonoBehaviour:
       R: 31
     tileId: bos
   - coord:
-      Q: -5
-      R: 32
-    tileId: bos
+      Q: 1
+      R: 21
+    tileId: taslik_ova
   - coord:
-      Q: -5
-      R: 33
-    tileId: bos
+      Q: 0
+      R: 22
+    tileId: taslik_ova
+  - coord:
+      Q: 0
+      R: 23
+    tileId: fundalik
+  - coord:
+      Q: -1
+      R: 24
+    tileId: meyve_bahcesi
+  - coord:
+      Q: -1
+      R: 25
+    tileId: orman
+  - coord:
+      Q: -2
+      R: 26
+    tileId: ova
+  - coord:
+      Q: -2
+      R: 27
+    tileId: az_agacli_ova
+  - coord:
+      Q: -3
+      R: 28
+    tileId: bozkir
+  - coord:
+      Q: -3
+      R: 29
+    tileId: sahil_kumu
   - coord:
       Q: 12
       R: 0
@@ -1771,6 +2531,106 @@ MonoBehaviour:
       R: 30
     tileId: bos
   - coord:
+      Q: 10
+      R: 4
+    tileId: sis_perdesi
+  - coord:
+      Q: 10
+      R: 5
+    tileId: sig_su
+  - coord:
+      Q: 9
+      R: 6
+    tileId: sig_su
+  - coord:
+      Q: 9
+      R: 7
+    tileId: karanlik_orman
+  - coord:
+      Q: 8
+      R: 8
+    tileId: karanlik_orman
+  - coord:
+      Q: 8
+      R: 9
+    tileId: karanlik_orman
+  - coord:
+      Q: 7
+      R: 10
+    tileId: karanlik_orman
+  - coord:
+      Q: 7
+      R: 11
+    tileId: karanlik_orman
+  - coord:
+      Q: 6
+      R: 12
+    tileId: sig_su
+  - coord:
+      Q: 6
+      R: 13
+    tileId: karanlik_orman
+  - coord:
+      Q: 5
+      R: 14
+    tileId: karanlik_orman
+  - coord:
+      Q: 5
+      R: 15
+    tileId: bozkir
+  - coord:
+      Q: 4
+      R: 16
+    tileId: az_agacli_ova
+  - coord:
+      Q: 3
+      R: 19
+    tileId: fundalik
+  - coord:
+      Q: 2
+      R: 20
+    tileId: uzun_ot
+  - coord:
+      Q: 2
+      R: 21
+    tileId: kurak_toprak
+  - coord:
+      Q: 1
+      R: 22
+    tileId: fundalik
+  - coord:
+      Q: 1
+      R: 23
+    tileId: ova
+  - coord:
+      Q: 0
+      R: 24
+    tileId: uzun_ot
+  - coord:
+      Q: 0
+      R: 25
+    tileId: lavanta_tarlasi
+  - coord:
+      Q: -1
+      R: 26
+    tileId: yosun_tarlasi
+  - coord:
+      Q: -1
+      R: 27
+    tileId: sazlik
+  - coord:
+      Q: -2
+      R: 28
+    tileId: sazlik
+  - coord:
+      Q: -2
+      R: 29
+    tileId: sig_su
+  - coord:
+      Q: -3
+      R: 30
+    tileId: sig_su
+  - coord:
       Q: -3
       R: 31
     tileId: bos
@@ -1831,9 +2691,113 @@ MonoBehaviour:
       R: 11
     tileId: uzun_ot
   - coord:
+      Q: 12
+      R: 3
+    tileId: sis_perdesi
+  - coord:
+      Q: 11
+      R: 5
+    tileId: sig_su
+  - coord:
+      Q: 10
+      R: 6
+    tileId: cayir
+  - coord:
+      Q: 10
+      R: 7
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 9
+      R: 8
+    tileId: karanlik_orman
+  - coord:
+      Q: 9
+      R: 9
+    tileId: karanlik_orman
+  - coord:
+      Q: 8
+      R: 10
+    tileId: karanlik_orman
+  - coord:
+      Q: 8
+      R: 11
+    tileId: karanlik_orman
+  - coord:
       Q: 7
       R: 12
-    tileId: taslik_ova
+    tileId: karanlik_orman
+  - coord:
+      Q: 7
+      R: 13
+    tileId: magaza
+  - coord:
+      Q: 6
+      R: 14
+    tileId: lavanta_tarlasi
+  - coord:
+      Q: 6
+      R: 15
+    tileId: cayir
+  - coord:
+      Q: 5
+      R: 16
+    tileId: az_agacli_ova
+  - coord:
+      Q: 5
+      R: 17
+    tileId: az_agacli_ova
+  - coord:
+      Q: 4
+      R: 18
+    tileId: tundra
+  - coord:
+      Q: 4
+      R: 19
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 3
+      R: 20
+    tileId: karli_ova
+  - coord:
+      Q: 3
+      R: 21
+    tileId: meyve_bahcesi
+  - coord:
+      Q: 2
+      R: 22
+    tileId: bozkir
+  - coord:
+      Q: 2
+      R: 23
+    tileId: magaza
+  - coord:
+      Q: 1
+      R: 24
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 1
+      R: 25
+    tileId: sellale
+  - coord:
+      Q: 0
+      R: 26
+    tileId: bataklik_otu
+  - coord:
+      Q: 0
+      R: 27
+    tileId: bataklik
+  - coord:
+      Q: -1
+      R: 28
+    tileId: sahil_kumu
+  - coord:
+      Q: -1
+      R: 29
+    tileId: sig_su
+  - coord:
+      Q: -2
+      R: 30
+    tileId: sis_perdesi
   - coord:
       Q: 7
       R: 13
@@ -1901,10 +2865,6 @@ MonoBehaviour:
   - coord:
       Q: -1
       R: 29
-    tileId: bos
-  - coord:
-      Q: -2
-      R: 30
     tileId: bos
   - coord:
       Q: -2
@@ -2035,13 +2995,109 @@ MonoBehaviour:
       R: 28
     tileId: bos
   - coord:
+      Q: 9
+      R: 11
+    tileId: karli_ova
+  - coord:
+      Q: 8
+      R: 12
+    tileId: karanlik_orman
+  - coord:
+      Q: 8
+      R: 13
+    tileId: cayir
+  - coord:
+      Q: 7
+      R: 14
+    tileId: meyve_bahcesi
+  - coord:
+      Q: 7
+      R: 15
+    tileId: az_agacli_ova
+  - coord:
+      Q: 6
+      R: 16
+    tileId: ova
+  - coord:
+      Q: 6
+      R: 17
+    tileId: cayir
+  - coord:
+      Q: 5
+      R: 18
+    tileId: karli_ova
+  - coord:
+      Q: 5
+      R: 19
+    tileId: taslik_ova
+  - coord:
+      Q: 4
+      R: 20
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 4
+      R: 21
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 3
+      R: 22
+    tileId: uzun_ot
+  - coord:
+      Q: 3
+      R: 23
+    tileId: sellale
+  - coord:
+      Q: 2
+      R: 24
+    tileId: nehir
+  - coord:
+      Q: 2
+      R: 25
+    tileId: bataklik
+  - coord:
+      Q: 1
+      R: 26
+    tileId: sellale
+  - coord:
+      Q: 1
+      R: 27
+    tileId: sellale
+  - coord:
+      Q: 0
+      R: 28
+    tileId: kamp
+  - coord:
       Q: 0
       R: 29
-    tileId: bos
+    tileId: sig_su
   - coord:
       Q: -1
       R: 30
-    tileId: bos
+    tileId: sis_perdesi
+  - coord:
+      Q: 12
+      R: 4
+    tileId: sig_su
+  - coord:
+      Q: 12
+      R: 5
+    tileId: cayir
+  - coord:
+      Q: 11
+      R: 6
+    tileId: cayir
+  - coord:
+      Q: 11
+      R: 7
+    tileId: tundra
+  - coord:
+      Q: 10
+      R: 8
+    tileId: karanlik_orman
+  - coord:
+      Q: 10
+      R: 9
+    tileId: cakil_yatagi
   - coord:
       Q: -1
       R: 31
@@ -2066,38 +3122,6 @@ MonoBehaviour:
       Q: 14
       R: 2
     tileId: sis_perdesi
-  - coord:
-      Q: 14
-      R: 3
-    tileId: sis_perdesi
-  - coord:
-      Q: 13
-      R: 4
-    tileId: sig_su
-  - coord:
-      Q: 13
-      R: 5
-    tileId: az_agacli_ova
-  - coord:
-      Q: 12
-      R: 6
-    tileId: gol
-  - coord:
-      Q: 12
-      R: 7
-    tileId: kule
-  - coord:
-      Q: 11
-      R: 8
-    tileId: cayir
-  - coord:
-      Q: 11
-      R: 9
-    tileId: cayir
-  - coord:
-      Q: 10
-      R: 10
-    tileId: cayir
   - coord:
       Q: 10
       R: 11
@@ -2155,37 +3179,145 @@ MonoBehaviour:
       R: 24
     tileId: sig_su
   - coord:
-      Q: 3
-      R: 25
-    tileId: sig_su
-  - coord:
       Q: 2
       R: 26
-    tileId: sis_perdesi
-  - coord:
-      Q: 2
-      R: 27
     tileId: sis_perdesi
   - coord:
       Q: 1
       R: 28
     tileId: bos
   - coord:
-      Q: 1
-      R: 29
-    tileId: bos
-  - coord:
-      Q: 0
-      R: 30
-    tileId: bos
-  - coord:
-      Q: 0
-      R: 31
-    tileId: bos
-  - coord:
       Q: -1
       R: 32
     tileId: bos
+  - coord:
+      Q: 14
+      R: 3
+    tileId: sis_perdesi
+  - coord:
+      Q: 13
+      R: 4
+    tileId: sig_su
+  - coord:
+      Q: 13
+      R: 5
+    tileId: sig_su
+  - coord:
+      Q: 12
+      R: 6
+    tileId: cayir
+  - coord:
+      Q: 12
+      R: 7
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 11
+      R: 8
+    tileId: karli_ova
+  - coord:
+      Q: 11
+      R: 9
+    tileId: taslik_ova
+  - coord:
+      Q: 10
+      R: 10
+    tileId: kule
+  - coord:
+      Q: 10
+      R: 11
+    tileId: karli_ova
+  - coord:
+      Q: 9
+      R: 12
+    tileId: meyve_bahcesi
+  - coord:
+      Q: 9
+      R: 13
+    tileId: karli_ova
+  - coord:
+      Q: 8
+      R: 14
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 13
+      R: 5
+    tileId: az_agacli_ova
+  - coord:
+      Q: 12
+      R: 6
+    tileId: gol
+  - coord:
+      Q: 12
+      R: 7
+    tileId: kule
+  - coord:
+      Q: 11
+      R: 8
+    tileId: cayir
+  - coord:
+      Q: 11
+      R: 9
+    tileId: cayir
+  - coord:
+      Q: 7
+      R: 16
+    tileId: taslik_ova
+  - coord:
+      Q: 7
+      R: 17
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 6
+      R: 18
+    tileId: karli_ova
+  - coord:
+      Q: 6
+      R: 19
+    tileId: tundra
+  - coord:
+      Q: 5
+      R: 20
+    tileId: sunak
+  - coord:
+      Q: 5
+      R: 21
+    tileId: nehir
+  - coord:
+      Q: 4
+      R: 22
+    tileId: sellale
+  - coord:
+      Q: 4
+      R: 23
+    tileId: cayir
+  - coord:
+      Q: 3
+      R: 24
+    tileId: cayir
+  - coord:
+      Q: 3
+      R: 25
+    tileId: uzun_ot
+  - coord:
+      Q: 2
+      R: 26
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 1
+      R: 28
+    tileId: sig_su
+  - coord:
+      Q: 1
+      R: 29
+    tileId: sig_su
+  - coord:
+      Q: 0
+      R: 30
+    tileId: sis_perdesi
+  - coord:
+      Q: 0
+      R: 31
+    tileId: sis_perdesi
   - coord:
       Q: -1
       R: 33
@@ -2209,7 +3341,7 @@ MonoBehaviour:
   - coord:
       Q: 14
       R: 4
-    tileId: sig_su
+    tileId: sis_perdesi
   - coord:
       Q: 14
       R: 5
@@ -2217,27 +3349,39 @@ MonoBehaviour:
   - coord:
       Q: 13
       R: 6
-    tileId: orman
+    tileId: cayir
   - coord:
       Q: 13
       R: 7
-    tileId: kule
+    tileId: cam_ormani
   - coord:
       Q: 12
       R: 8
-    tileId: cakil_yatagi
+    tileId: yosun_tarlasi
   - coord:
       Q: 12
       R: 9
-    tileId: kaya_yigini
+    tileId: karli_ova
   - coord:
       Q: 11
       R: 10
-    tileId: uzun_ot
+    tileId: yosun_tarlasi
   - coord:
       Q: 11
       R: 11
-    tileId: cayir
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 10
+      R: 12
+    tileId: taslik_ova
+  - coord:
+      Q: 10
+      R: 13
+    tileId: karli_ova
+  - coord:
+      Q: 9
+      R: 14
+    tileId: tundra
   - coord:
       Q: 10
       R: 12
@@ -2267,9 +3411,89 @@ MonoBehaviour:
       R: 18
     tileId: meyve_bahcesi
   - coord:
+      Q: 8
+      R: 16
+    tileId: dag
+  - coord:
+      Q: 14
+      R: 5
+    tileId: sig_su
+  - coord:
+      Q: 13
+      R: 6
+    tileId: orman
+  - coord:
+      Q: 13
+      R: 7
+    tileId: kule
+  - coord:
+      Q: 12
+      R: 8
+    tileId: cakil_yatagi
+  - coord:
+      Q: 12
+      R: 9
+    tileId: kaya_yigini
+  - coord:
+      Q: 11
+      R: 10
+    tileId: uzun_ot
+  - coord:
+      Q: 7
+      R: 18
+    tileId: yosun_tarlasi
+  - coord:
       Q: 7
       R: 19
-    tileId: sellale
+    tileId: cam_ormani
+  - coord:
+      Q: 6
+      R: 20
+    tileId: cakil_yatagi
+  - coord:
+      Q: 6
+      R: 21
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 5
+      R: 22
+    tileId: tundra
+  - coord:
+      Q: 5
+      R: 23
+    tileId: bol_taslik_ova
+  - coord:
+      Q: 4
+      R: 24
+    tileId: hus_korusu
+  - coord:
+      Q: 4
+      R: 25
+    tileId: az_agacli_ova
+  - coord:
+      Q: 3
+      R: 26
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 3
+      R: 27
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 2
+      R: 28
+    tileId: sahil_kumu
+  - coord:
+      Q: 2
+      R: 29
+    tileId: sig_su
+  - coord:
+      Q: 1
+      R: 30
+    tileId: derin_su
+  - coord:
+      Q: 1
+      R: 31
+    tileId: sis_perdesi
   - coord:
       Q: 6
       R: 20
@@ -2307,18 +3531,6 @@ MonoBehaviour:
       R: 28
     tileId: sis_perdesi
   - coord:
-      Q: 2
-      R: 29
-    tileId: bos
-  - coord:
-      Q: 1
-      R: 30
-    tileId: bos
-  - coord:
-      Q: 1
-      R: 31
-    tileId: bos
-  - coord:
       Q: 0
       R: 32
     tileId: bos
@@ -2342,6 +3554,58 @@ MonoBehaviour:
       Q: 16
       R: 3
     tileId: bos
+  - coord:
+      Q: 15
+      R: 4
+    tileId: sis_perdesi
+  - coord:
+      Q: 15
+      R: 5
+    tileId: sig_su
+  - coord:
+      Q: 14
+      R: 6
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 14
+      R: 7
+    tileId: karli_ova
+  - coord:
+      Q: 13
+      R: 8
+    tileId: tundra
+  - coord:
+      Q: 13
+      R: 9
+    tileId: taslik_ova
+  - coord:
+      Q: 12
+      R: 10
+    tileId: tundra
+  - coord:
+      Q: 12
+      R: 11
+    tileId: kayalik
+  - coord:
+      Q: 11
+      R: 12
+    tileId: dag
+  - coord:
+      Q: 11
+      R: 13
+    tileId: cam_ormani
+  - coord:
+      Q: 10
+      R: 14
+    tileId: kayalik
+  - coord:
+      Q: 10
+      R: 15
+    tileId: yuksek_dag
+  - coord:
+      Q: 9
+      R: 16
+    tileId: yuksek_dag
   - coord:
       Q: 15
       R: 4
@@ -2447,17 +3711,49 @@ MonoBehaviour:
       R: 29
     tileId: sis_perdesi
   - coord:
+      Q: 4
+      R: 27
+    tileId: meyve_bahcesi
+  - coord:
+      Q: 3
+      R: 28
+    tileId: ova
+  - coord:
+      Q: 3
+      R: 29
+    tileId: sig_su
+  - coord:
       Q: 2
       R: 30
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 2
       R: 31
-    tileId: bos
+    tileId: sis_perdesi
+  - coord:
+      Q: 7
+      R: 20
+    tileId: kayalik
   - coord:
       Q: 1
       R: 32
     tileId: bos
+  - coord:
+      Q: 6
+      R: 22
+    tileId: taslik_ova
+  - coord:
+      Q: 6
+      R: 23
+    tileId: dag
+  - coord:
+      Q: 5
+      R: 24
+    tileId: bozkir
+  - coord:
+      Q: 5
+      R: 25
+    tileId: fundalik
   - coord:
       Q: 1
       R: 33
@@ -2481,15 +3777,51 @@ MonoBehaviour:
   - coord:
       Q: 16
       R: 4
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 16
       R: 5
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 15
       R: 6
-    tileId: bos
+    tileId: sig_su
+  - coord:
+      Q: 15
+      R: 7
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 14
+      R: 8
+    tileId: tundra
+  - coord:
+      Q: 14
+      R: 9
+    tileId: cam_ormani
+  - coord:
+      Q: 13
+      R: 10
+    tileId: kayalik
+  - coord:
+      Q: 13
+      R: 11
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 12
+      R: 12
+    tileId: kayalik
+  - coord:
+      Q: 12
+      R: 13
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 11
+      R: 14
+    tileId: kayalik
+  - coord:
+      Q: 11
+      R: 15
+    tileId: yuksek_dag
   - coord:
       Q: 15
       R: 7
@@ -2591,9 +3923,61 @@ MonoBehaviour:
       R: 31
     tileId: sis_perdesi
   - coord:
-      Q: 2
-      R: 32
-    tileId: bos
+      Q: 9
+      R: 18
+    tileId: yuksek_dag
+  - coord:
+      Q: 9
+      R: 19
+    tileId: cam_ormani
+  - coord:
+      Q: 8
+      R: 20
+    tileId: magara
+  - coord:
+      Q: 8
+      R: 21
+    tileId: kayalik
+  - coord:
+      Q: 7
+      R: 22
+    tileId: yuksek_dag
+  - coord:
+      Q: 7
+      R: 23
+    tileId: dag
+  - coord:
+      Q: 6
+      R: 24
+    tileId: dag
+  - coord:
+      Q: 6
+      R: 25
+    tileId: dev_kaya
+  - coord:
+      Q: 5
+      R: 26
+    tileId: ova
+  - coord:
+      Q: 5
+      R: 27
+    tileId: cam_ormani
+  - coord:
+      Q: 4
+      R: 28
+    tileId: sazlik
+  - coord:
+      Q: 4
+      R: 29
+    tileId: sig_su
+  - coord:
+      Q: 3
+      R: 30
+    tileId: sis_perdesi
+  - coord:
+      Q: 3
+      R: 31
+    tileId: derin_su
   - coord:
       Q: 2
       R: 33
@@ -2621,27 +4005,103 @@ MonoBehaviour:
   - coord:
       Q: 17
       R: 5
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 16
       R: 6
-    tileId: bos
+    tileId: sig_su
+  - coord:
+      Q: 16
+      R: 7
+    tileId: nehir
+  - coord:
+      Q: 15
+      R: 8
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 15
+      R: 9
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 14
+      R: 10
+    tileId: cam_ormani
+  - coord:
+      Q: 14
+      R: 11
+    tileId: karli_ova
+  - coord:
+      Q: 13
+      R: 12
+    tileId: taslik_ova
+  - coord:
+      Q: 13
+      R: 13
+    tileId: cakil_yatagi
+  - coord:
+      Q: 12
+      R: 14
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 12
+      R: 15
+    tileId: cam_ormani
+  - coord:
+      Q: 11
+      R: 16
+    tileId: yuksek_dag
+  - coord:
+      Q: 11
+      R: 17
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 10
+      R: 18
+    tileId: dag
+  - coord:
+      Q: 10
+      R: 19
+    tileId: tundra
+  - coord:
+      Q: 9
+      R: 20
+    tileId: dev_kaya
+  - coord:
+      Q: 9
+      R: 21
+    tileId: tundra
+  - coord:
+      Q: 8
+      R: 22
+    tileId: nehir
+  - coord:
+      Q: 8
+      R: 23
+    tileId: bozkir
+  - coord:
+      Q: 7
+      R: 24
+    tileId: taslik_ova
+  - coord:
+      Q: 7
+      R: 25
+    tileId: bol_taslik_ova
+  - coord:
+      Q: 6
+      R: 26
+    tileId: az_agacli_ova
+  - coord:
+      Q: 6
+      R: 27
+    tileId: meyve_bahcesi
+  - coord:
+      Q: 5
+      R: 28
+    tileId: sazlik
   - coord:
       Q: 16
       R: 7
     tileId: bos
-  - coord:
-      Q: 15
-      R: 8
-    tileId: sis_perdesi
-  - coord:
-      Q: 15
-      R: 9
-    tileId: sig_su
-  - coord:
-      Q: 14
-      R: 10
-    tileId: sig_su
   - coord:
       Q: 14
       R: 11
@@ -2653,10 +4113,6 @@ MonoBehaviour:
   - coord:
       Q: 13
       R: 13
-    tileId: cayir
-  - coord:
-      Q: 12
-      R: 14
     tileId: cayir
   - coord:
       Q: 12
@@ -2727,9 +4183,17 @@ MonoBehaviour:
       R: 31
     tileId: sis_perdesi
   - coord:
+      Q: 4
+      R: 30
+    tileId: sig_su
+  - coord:
+      Q: 4
+      R: 31
+    tileId: derin_su
+  - coord:
       Q: 3
       R: 32
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 3
       R: 33
@@ -2749,19 +4213,43 @@ MonoBehaviour:
   - coord:
       Q: 19
       R: 3
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 18
       R: 4
-    tileId: bos
+    tileId: derin_su
   - coord:
       Q: 18
       R: 5
-    tileId: bos
+    tileId: sig_su
   - coord:
       Q: 17
       R: 6
-    tileId: bos
+    tileId: sig_su
+  - coord:
+      Q: 17
+      R: 7
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 16
+      R: 8
+    tileId: sellale
+  - coord:
+      Q: 16
+      R: 9
+    tileId: sig_gecit
+  - coord:
+      Q: 15
+      R: 10
+    tileId: cam_ormani
+  - coord:
+      Q: 15
+      R: 11
+    tileId: nehir
+  - coord:
+      Q: 14
+      R: 12
+    tileId: karli_ova
   - coord:
       Q: 17
       R: 7
@@ -2851,6 +4339,66 @@ MonoBehaviour:
       R: 28
     tileId: kok_sirti
   - coord:
+      Q: 13
+      R: 14
+    tileId: obsidyen_tarla
+  - coord:
+      Q: 13
+      R: 15
+    tileId: nehir
+  - coord:
+      Q: 12
+      R: 16
+    tileId: ucurum
+  - coord:
+      Q: 12
+      R: 17
+    tileId: taslik_ova
+  - coord:
+      Q: 11
+      R: 18
+    tileId: cam_ormani
+  - coord:
+      Q: 11
+      R: 19
+    tileId: bozkir
+  - coord:
+      Q: 10
+      R: 20
+    tileId: taslik_ova
+  - coord:
+      Q: 10
+      R: 21
+    tileId: nehir
+  - coord:
+      Q: 9
+      R: 22
+    tileId: sellale
+  - coord:
+      Q: 9
+      R: 23
+    tileId: ova
+  - coord:
+      Q: 8
+      R: 24
+    tileId: cam_ormani
+  - coord:
+      Q: 8
+      R: 25
+    tileId: uzun_ot
+  - coord:
+      Q: 7
+      R: 26
+    tileId: fundalik
+  - coord:
+      Q: 7
+      R: 27
+    tileId: bozkir
+  - coord:
+      Q: 6
+      R: 28
+    tileId: yosun_tarlasi
+  - coord:
       Q: 6
       R: 29
     tileId: sig_su
@@ -2865,7 +4413,7 @@ MonoBehaviour:
   - coord:
       Q: 4
       R: 32
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 4
       R: 33
@@ -2881,6 +4429,10 @@ MonoBehaviour:
   - coord:
       Q: 20
       R: 2
+    tileId: bos
+  - coord:
+      Q: 20
+      R: 3
     tileId: bos
   - coord:
       Q: 20
@@ -2919,9 +4471,49 @@ MonoBehaviour:
       R: 11
     tileId: orman
   - coord:
+      Q: 14
+      R: 14
+    tileId: nehir
+  - coord:
+      Q: 14
+      R: 15
+    tileId: bozkir
+  - coord:
+      Q: 6
+      R: 30
+    tileId: sis_perdesi
+  - coord:
+      Q: 6
+      R: 31
+    tileId: sis_perdesi
+  - coord:
+      Q: 5
+      R: 32
+    tileId: bos
+  - coord:
+      Q: 18
+      R: 6
+    tileId: kumul
+  - coord:
+      Q: 18
+      R: 7
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 17
+      R: 9
+    tileId: karli_ova
+  - coord:
+      Q: 16
+      R: 10
+    tileId: nehir
+  - coord:
+      Q: 16
+      R: 11
+    tileId: nadir_yuksek_orman
+  - coord:
       Q: 15
       R: 12
-    tileId: cayir
+    tileId: nehir
   - coord:
       Q: 15
       R: 13
@@ -2991,17 +4583,53 @@ MonoBehaviour:
       R: 29
     tileId: sig_su
   - coord:
-      Q: 6
-      R: 30
-    tileId: sis_perdesi
+      Q: 13
+      R: 17
+    tileId: killi_yamac
   - coord:
-      Q: 6
-      R: 31
-    tileId: sis_perdesi
+      Q: 12
+      R: 19
+    tileId: kurak_toprak
   - coord:
-      Q: 5
-      R: 32
-    tileId: bos
+      Q: 11
+      R: 20
+    tileId: nehir
+  - coord:
+      Q: 11
+      R: 21
+    tileId: nehir
+  - coord:
+      Q: 10
+      R: 22
+    tileId: nehir
+  - coord:
+      Q: 10
+      R: 23
+    tileId: meyve_bahcesi
+  - coord:
+      Q: 9
+      R: 24
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 9
+      R: 25
+    tileId: cayir
+  - coord:
+      Q: 8
+      R: 26
+    tileId: az_agacli_ova
+  - coord:
+      Q: 8
+      R: 27
+    tileId: uzun_ot
+  - coord:
+      Q: 7
+      R: 28
+    tileId: sazlik
+  - coord:
+      Q: 7
+      R: 29
+    tileId: sig_su
   - coord:
       Q: 5
       R: 33
@@ -3011,9 +4639,41 @@ MonoBehaviour:
       R: 0
     tileId: bos
   - coord:
+      Q: 6
+      R: 32
+    tileId: bos
+  - coord:
       Q: 22
       R: 1
     tileId: bos
+  - coord:
+      Q: 21
+      R: 2
+    tileId: bos
+  - coord:
+      Q: 21
+      R: 3
+    tileId: bos
+  - coord:
+      Q: 20
+      R: 4
+    tileId: sis_perdesi
+  - coord:
+      Q: 20
+      R: 5
+    tileId: sig_su
+  - coord:
+      Q: 19
+      R: 6
+    tileId: cayir
+  - coord:
+      Q: 19
+      R: 7
+    tileId: kule
+  - coord:
+      Q: 18
+      R: 8
+    tileId: cakil_yatagi
   - coord:
       Q: 21
       R: 2
@@ -3135,9 +4795,89 @@ MonoBehaviour:
       R: 31
     tileId: sis_perdesi
   - coord:
-      Q: 6
-      R: 32
-    tileId: bos
+      Q: 17
+      R: 10
+    tileId: tundra
+  - coord:
+      Q: 17
+      R: 11
+    tileId: taslik_ova
+  - coord:
+      Q: 16
+      R: 12
+    tileId: kamp
+  - coord:
+      Q: 16
+      R: 13
+    tileId: bol_taslik_ova
+  - coord:
+      Q: 15
+      R: 14
+    tileId: bozkir
+  - coord:
+      Q: 15
+      R: 15
+    tileId: kurak_toprak
+  - coord:
+      Q: 14
+      R: 16
+    tileId: kaya_yigini
+  - coord:
+      Q: 14
+      R: 17
+    tileId: bozkir
+  - coord:
+      Q: 13
+      R: 18
+    tileId: taslik_ova
+  - coord:
+      Q: 13
+      R: 19
+    tileId: krater
+  - coord:
+      Q: 12
+      R: 20
+    tileId: nehir
+  - coord:
+      Q: 12
+      R: 21
+    tileId: nehir
+  - coord:
+      Q: 11
+      R: 22
+    tileId: nehir
+  - coord:
+      Q: 11
+      R: 23
+    tileId: bozkir
+  - coord:
+      Q: 10
+      R: 24
+    tileId: uzun_ot
+  - coord:
+      Q: 10
+      R: 25
+    tileId: uzun_ot
+  - coord:
+      Q: 9
+      R: 26
+    tileId: bozkir
+  - coord:
+      Q: 9
+      R: 27
+    tileId: mantar_ormani
+  - coord:
+      Q: 8
+      R: 28
+    tileId: sazlik
+  - coord:
+      Q: 8
+      R: 29
+    tileId: sig_su
+  - coord:
+      Q: 7
+      R: 30
+    tileId: sis_perdesi
   - coord:
       Q: 6
       R: 33
@@ -3149,59 +4889,115 @@ MonoBehaviour:
   - coord:
       Q: 23
       R: 1
-    tileId: bos
+    tileId: uzak_kayalik
   - coord:
       Q: 22
       R: 2
-    tileId: bos
+    tileId: uzak_kayalik
   - coord:
       Q: 22
       R: 3
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 21
       R: 4
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 21
       R: 5
-    tileId: bos
+    tileId: sig_su
   - coord:
       Q: 20
       R: 6
-    tileId: sis_perdesi
+    tileId: tas_daire
   - coord:
       Q: 20
       R: 7
-    tileId: derin_su
+    tileId: kamp
   - coord:
       Q: 19
       R: 8
-    tileId: sig_su
+    tileId: taslik_ova
   - coord:
       Q: 19
       R: 9
-    tileId: kamp
+    tileId: cayir
   - coord:
       Q: 18
       R: 10
-    tileId: yosun_tarlasi
+    tileId: cakil_yatagi
   - coord:
       Q: 18
       R: 11
-    tileId: cayir
+    tileId: yosun_tarlasi
   - coord:
       Q: 17
       R: 12
-    tileId: cayir
+    tileId: killi_yamac
   - coord:
       Q: 17
       R: 13
-    tileId: az_agacli_ova
+    tileId: kurak_toprak
   - coord:
       Q: 16
       R: 14
-    tileId: az_agacli_ova
+    tileId: magara
+  - coord:
+      Q: 16
+      R: 15
+    tileId: bozkir
+  - coord:
+      Q: 15
+      R: 16
+    tileId: kurak_toprak
+  - coord:
+      Q: 15
+      R: 17
+    tileId: kurak_toprak
+  - coord:
+      Q: 14
+      R: 18
+    tileId: tundra
+  - coord:
+      Q: 14
+      R: 19
+    tileId: hus_korusu
+  - coord:
+      Q: 13
+      R: 20
+    tileId: kavak_sirasi
+  - coord:
+      Q: 13
+      R: 21
+    tileId: kopru
+  - coord:
+      Q: 12
+      R: 22
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 12
+      R: 23
+    tileId: magara
+  - coord:
+      Q: 11
+      R: 24
+    tileId: dikilitas
+  - coord:
+      Q: 11
+      R: 25
+    tileId: taslik_ova
+  - coord:
+      Q: 10
+      R: 26
+    tileId: ova
+  - coord:
+      Q: 10
+      R: 27
+    tileId: bambu_koru
+  - coord:
+      Q: 9
+      R: 28
+    tileId: sig_su
   - coord:
       Q: 16
       R: 15
@@ -3275,13 +5071,153 @@ MonoBehaviour:
       R: 32
     tileId: bos
   - coord:
+      Q: 22
+      R: 2
+    tileId: bos
+  - coord:
+      Q: 22
+      R: 3
+    tileId: bos
+  - coord:
+      Q: 21
+      R: 4
+    tileId: bos
+  - coord:
+      Q: 21
+      R: 5
+    tileId: bos
+  - coord:
+      Q: 20
+      R: 6
+    tileId: sis_perdesi
+  - coord:
+      Q: 20
+      R: 7
+    tileId: derin_su
+  - coord:
+      Q: 19
+      R: 8
+    tileId: sig_su
+  - coord:
+      Q: 19
+      R: 9
+    tileId: kamp
+  - coord:
+      Q: 18
+      R: 10
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 18
+      R: 11
+    tileId: cayir
+  - coord:
+      Q: 17
+      R: 12
+    tileId: cayir
+  - coord:
+      Q: 17
+      R: 13
+    tileId: az_agacli_ova
+  - coord:
+      Q: 8
+      R: 30
+    tileId: sis_perdesi
+  - coord:
       Q: 7
       R: 33
     tileId: bos
   - coord:
       Q: 24
       R: 0
+    tileId: uzak_kayalik
+  - coord:
+      Q: 24
+      R: 1
+    tileId: uzak_kayalik
+  - coord:
+      Q: 23
+      R: 2
     tileId: bos
+  - coord:
+      Q: 23
+      R: 3
+    tileId: sis_perdesi
+  - coord:
+      Q: 22
+      R: 4
+    tileId: sig_su
+  - coord:
+      Q: 22
+      R: 5
+    tileId: orman
+  - coord:
+      Q: 21
+      R: 6
+    tileId: sazlik
+  - coord:
+      Q: 21
+      R: 7
+    tileId: cayir
+  - coord:
+      Q: 20
+      R: 8
+    tileId: orman
+  - coord:
+      Q: 20
+      R: 9
+    tileId: ova
+  - coord:
+      Q: 19
+      R: 10
+    tileId: tundra
+  - coord:
+      Q: 19
+      R: 11
+    tileId: kurak_toprak
+  - coord:
+      Q: 18
+      R: 12
+    tileId: dev_kaya
+  - coord:
+      Q: 18
+      R: 13
+    tileId: killi_yamac
+  - coord:
+      Q: 17
+      R: 14
+    tileId: kirmizi_kaya
+  - coord:
+      Q: 17
+      R: 15
+    tileId: dag
+  - coord:
+      Q: 16
+      R: 16
+    tileId: tundra
+  - coord:
+      Q: 16
+      R: 17
+    tileId: bol_taslik_ova
+  - coord:
+      Q: 15
+      R: 18
+    tileId: taslik_ova
+  - coord:
+      Q: 15
+      R: 19
+    tileId: uzun_ot
+  - coord:
+      Q: 14
+      R: 20
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 14
+      R: 21
+    tileId: sellale
+  - coord:
+      Q: 13
+      R: 22
+    tileId: kumul
   - coord:
       Q: 24
       R: 1
@@ -3343,9 +5279,17 @@ MonoBehaviour:
       R: 15
     tileId: yosun_tarlasi
   - coord:
-      Q: 16
-      R: 16
-    tileId: yosun_tarlasi
+      Q: 12
+      R: 24
+    tileId: sazlik
+  - coord:
+      Q: 12
+      R: 25
+    tileId: cayir
+  - coord:
+      Q: 11
+      R: 26
+    tileId: kumul
   - coord:
       Q: 16
       R: 17
@@ -3407,6 +5351,10 @@ MonoBehaviour:
       R: 31
     tileId: sis_perdesi
   - coord:
+      Q: 10
+      R: 28
+    tileId: sig_su
+  - coord:
       Q: 8
       R: 32
     tileId: bos
@@ -3418,6 +5366,34 @@ MonoBehaviour:
       Q: 25
       R: 0
     tileId: bos
+  - coord:
+      Q: 25
+      R: 1
+    tileId: bos
+  - coord:
+      Q: 24
+      R: 2
+    tileId: bos
+  - coord:
+      Q: 24
+      R: 3
+    tileId: sis_perdesi
+  - coord:
+      Q: 23
+      R: 4
+    tileId: sig_su
+  - coord:
+      Q: 23
+      R: 5
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 22
+      R: 6
+    tileId: cam_ormani
+  - coord:
+      Q: 22
+      R: 7
+    tileId: yosun_tarlasi
   - coord:
       Q: 25
       R: 1
@@ -3539,6 +5515,62 @@ MonoBehaviour:
       R: 30
     tileId: sis_perdesi
   - coord:
+      Q: 21
+      R: 9
+    tileId: uzun_ot
+  - coord:
+      Q: 20
+      R: 10
+    tileId: cayir
+  - coord:
+      Q: 20
+      R: 11
+    tileId: tundra
+  - coord:
+      Q: 19
+      R: 12
+    tileId: dag
+  - coord:
+      Q: 19
+      R: 13
+    tileId: dag
+  - coord:
+      Q: 18
+      R: 14
+    tileId: yuksek_dag
+  - coord:
+      Q: 18
+      R: 15
+    tileId: yuksek_dag
+  - coord:
+      Q: 17
+      R: 16
+    tileId: dag
+  - coord:
+      Q: 17
+      R: 17
+    tileId: tundra
+  - coord:
+      Q: 16
+      R: 18
+    tileId: kavak_sirasi
+  - coord:
+      Q: 16
+      R: 19
+    tileId: gol
+  - coord:
+      Q: 15
+      R: 20
+    tileId: gol
+  - coord:
+      Q: 15
+      R: 21
+    tileId: kule
+  - coord:
+      Q: 14
+      R: 22
+    tileId: sig_su
+  - coord:
       Q: 10
       R: 31
     tileId: bos
@@ -3546,6 +5578,22 @@ MonoBehaviour:
       Q: 9
       R: 32
     tileId: bos
+  - coord:
+      Q: 13
+      R: 25
+    tileId: sig_su
+  - coord:
+      Q: 12
+      R: 26
+    tileId: sig_su
+  - coord:
+      Q: 12
+      R: 27
+    tileId: sis_perdesi
+  - coord:
+      Q: 11
+      R: 28
+    tileId: derin_su
   - coord:
       Q: 9
       R: 33
@@ -3583,9 +5631,41 @@ MonoBehaviour:
       R: 7
     tileId: sig_su
   - coord:
+      Q: 25
+      R: 2
+    tileId: sis_perdesi
+  - coord:
+      Q: 25
+      R: 3
+    tileId: sis_perdesi
+  - coord:
+      Q: 24
+      R: 4
+    tileId: sig_su
+  - coord:
+      Q: 24
+      R: 5
+    tileId: isik_cukuru
+  - coord:
+      Q: 23
+      R: 6
+    tileId: uzun_ot
+  - coord:
+      Q: 23
+      R: 7
+    tileId: uzun_ot
+  - coord:
       Q: 22
       R: 8
-    tileId: orman
+    tileId: lavanta_tarlasi
+  - coord:
+      Q: 22
+      R: 9
+    tileId: terk_edilmis_kule
+  - coord:
+      Q: 21
+      R: 10
+    tileId: bambu_koru
   - coord:
       Q: 22
       R: 9
@@ -3667,9 +5747,65 @@ MonoBehaviour:
       R: 28
     tileId: taslik_ova
   - coord:
-      Q: 12
-      R: 29
-    tileId: uzak_kayalik
+      Q: 20
+      R: 12
+    tileId: killi_yamac
+  - coord:
+      Q: 20
+      R: 13
+    tileId: taslik_ova
+  - coord:
+      Q: 19
+      R: 14
+    tileId: kayalik
+  - coord:
+      Q: 19
+      R: 15
+    tileId: bol_taslik_ova
+  - coord:
+      Q: 18
+      R: 16
+    tileId: kurak_toprak
+  - coord:
+      Q: 18
+      R: 17
+    tileId: bambu_koru
+  - coord:
+      Q: 17
+      R: 18
+    tileId: lavanta_tarlasi
+  - coord:
+      Q: 17
+      R: 19
+    tileId: bataklik_otu
+  - coord:
+      Q: 16
+      R: 20
+    tileId: gol
+  - coord:
+      Q: 16
+      R: 21
+    tileId: magara
+  - coord:
+      Q: 15
+      R: 22
+    tileId: sig_su
+  - coord:
+      Q: 15
+      R: 23
+    tileId: bos
+  - coord:
+      Q: 14
+      R: 25
+    tileId: sis_perdesi
+  - coord:
+      Q: 13
+      R: 26
+    tileId: sis_perdesi
+  - coord:
+      Q: 13
+      R: 27
+    tileId: bos
   - coord:
       Q: 11
       R: 30
@@ -3681,6 +5817,14 @@ MonoBehaviour:
   - coord:
       Q: 10
       R: 32
+    tileId: bos
+  - coord:
+      Q: 12
+      R: 29
+    tileId: bos
+  - coord:
+      Q: 11
+      R: 30
     tileId: bos
   - coord:
       Q: 10
@@ -3803,9 +5947,89 @@ MonoBehaviour:
       R: 28
     tileId: solgun_cayir
   - coord:
-      Q: 13
-      R: 29
+      Q: 26
+      R: 2
+    tileId: derin_su
+  - coord:
+      Q: 26
+      R: 3
     tileId: sig_su
+  - coord:
+      Q: 25
+      R: 4
+    tileId: sig_su
+  - coord:
+      Q: 25
+      R: 5
+    tileId: orman
+  - coord:
+      Q: 24
+      R: 6
+    tileId: ova
+  - coord:
+      Q: 24
+      R: 7
+    tileId: uzun_ot
+  - coord:
+      Q: 23
+      R: 8
+    tileId: ova
+  - coord:
+      Q: 22
+      R: 10
+    tileId: lavanta_tarlasi
+  - coord:
+      Q: 22
+      R: 11
+    tileId: sellale
+  - coord:
+      Q: 21
+      R: 12
+    tileId: nehir
+  - coord:
+      Q: 21
+      R: 13
+    tileId: cakil_yatagi
+  - coord:
+      Q: 20
+      R: 14
+    tileId: bol_taslik_ova
+  - coord:
+      Q: 20
+      R: 15
+    tileId: cayir
+  - coord:
+      Q: 19
+      R: 16
+    tileId: kayalik
+  - coord:
+      Q: 19
+      R: 17
+    tileId: kaya_yigini
+  - coord:
+      Q: 18
+      R: 18
+    tileId: cam_ormani
+  - coord:
+      Q: 18
+      R: 19
+    tileId: gol
+  - coord:
+      Q: 17
+      R: 20
+    tileId: gol
+  - coord:
+      Q: 17
+      R: 21
+    tileId: sahil_kumu
+  - coord:
+      Q: 16
+      R: 22
+    tileId: sig_su
+  - coord:
+      Q: 16
+      R: 23
+    tileId: sis_perdesi
   - coord:
       Q: 12
       R: 30
@@ -3823,9 +6047,117 @@ MonoBehaviour:
       R: 33
     tileId: bos
   - coord:
+      Q: 14
+      R: 27
+    tileId: bos
+  - coord:
+      Q: 13
+      R: 28
+    tileId: bos
+  - coord:
+      Q: 13
+      R: 29
+    tileId: bos
+  - coord:
+      Q: 12
+      R: 30
+    tileId: bos
+  - coord:
       Q: 28
       R: 0
     tileId: bos
+  - coord:
+      Q: 28
+      R: 1
+    tileId: bos
+  - coord:
+      Q: 27
+      R: 2
+    tileId: sis_perdesi
+  - coord:
+      Q: 27
+      R: 3
+    tileId: sig_su
+  - coord:
+      Q: 26
+      R: 4
+    tileId: kurak_toprak
+  - coord:
+      Q: 26
+      R: 5
+    tileId: fundalik
+  - coord:
+      Q: 25
+      R: 6
+    tileId: cayir
+  - coord:
+      Q: 25
+      R: 7
+    tileId: uzun_ot
+  - coord:
+      Q: 24
+      R: 8
+    tileId: taslik_ova
+  - coord:
+      Q: 24
+      R: 9
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 23
+      R: 10
+    tileId: sik_orman
+  - coord:
+      Q: 23
+      R: 11
+    tileId: hus_korusu
+  - coord:
+      Q: 22
+      R: 12
+    tileId: kurak_toprak
+  - coord:
+      Q: 22
+      R: 13
+    tileId: orman
+  - coord:
+      Q: 21
+      R: 14
+    tileId: cayir
+  - coord:
+      Q: 21
+      R: 15
+    tileId: uzun_ot
+  - coord:
+      Q: 20
+      R: 16
+    tileId: cam_ormani
+  - coord:
+      Q: 20
+      R: 17
+    tileId: gorev_alani
+  - coord:
+      Q: 19
+      R: 18
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 19
+      R: 19
+    tileId: cayir
+  - coord:
+      Q: 18
+      R: 20
+    tileId: gol
+  - coord:
+      Q: 18
+      R: 21
+    tileId: sahil_kumu
+  - coord:
+      Q: 17
+      R: 22
+    tileId: sig_su
+  - coord:
+      Q: 17
+      R: 23
+    tileId: sis_perdesi
   - coord:
       Q: 28
       R: 1
@@ -3875,10 +6207,6 @@ MonoBehaviour:
       R: 12
     tileId: uzun_ot
   - coord:
-      Q: 22
-      R: 13
-    tileId: cayir
-  - coord:
       Q: 21
       R: 14
     tileId: yosun_tarlasi
@@ -3902,10 +6230,6 @@ MonoBehaviour:
       Q: 19
       R: 19
     tileId: sis_perdesi
-  - coord:
-      Q: 18
-      R: 20
-    tileId: sig_su
   - coord:
       Q: 18
       R: 21
@@ -3939,10 +6263,6 @@ MonoBehaviour:
       R: 28
     tileId: cayir
   - coord:
-      Q: 14
-      R: 29
-    tileId: sig_su
-  - coord:
       Q: 13
       R: 30
     tileId: girdap
@@ -3955,6 +6275,22 @@ MonoBehaviour:
       R: 32
     tileId: bos
   - coord:
+      Q: 15
+      R: 27
+    tileId: bos
+  - coord:
+      Q: 14
+      R: 28
+    tileId: bos
+  - coord:
+      Q: 14
+      R: 29
+    tileId: bos
+  - coord:
+      Q: 13
+      R: 30
+    tileId: bos
+  - coord:
       Q: 12
       R: 33
     tileId: bos
@@ -3962,6 +6298,30 @@ MonoBehaviour:
       Q: 29
       R: 0
     tileId: bos
+  - coord:
+      Q: 29
+      R: 1
+    tileId: bos
+  - coord:
+      Q: 28
+      R: 2
+    tileId: sis_perdesi
+  - coord:
+      Q: 28
+      R: 3
+    tileId: sig_su
+  - coord:
+      Q: 27
+      R: 4
+    tileId: cayir
+  - coord:
+      Q: 27
+      R: 5
+    tileId: ova
+  - coord:
+      Q: 26
+      R: 6
+    tileId: meyve_bahcesi
   - coord:
       Q: 29
       R: 1
@@ -4027,9 +6387,85 @@ MonoBehaviour:
       R: 16
     tileId: nehir
   - coord:
+      Q: 15
+      R: 28
+    tileId: solgun_cayir
+  - coord:
+      Q: 15
+      R: 29
+    tileId: solgun_cayir
+  - coord:
+      Q: 14
+      R: 30
+    tileId: sig_su
+  - coord:
+      Q: 14
+      R: 31
+    tileId: sis_perdesi
+  - coord:
+      Q: 13
+      R: 32
+    tileId: sis_perdesi
+  - coord:
+      Q: 25
+      R: 8
+    tileId: obsidyen_tarla
+  - coord:
+      Q: 25
+      R: 9
+    tileId: sik_orman
+  - coord:
+      Q: 24
+      R: 10
+    tileId: sik_orman
+  - coord:
+      Q: 24
+      R: 11
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 23
+      R: 12
+    tileId: nadir_yuksek_orman
+  - coord:
+      Q: 23
+      R: 13
+    tileId: uzun_ot
+  - coord:
+      Q: 22
+      R: 14
+    tileId: gol
+  - coord:
+      Q: 22
+      R: 15
+    tileId: gol
+  - coord:
+      Q: 21
+      R: 16
+    tileId: sazlik
+  - coord:
       Q: 21
       R: 17
-    tileId: uzun_ot
+    tileId: gol
+  - coord:
+      Q: 20
+      R: 18
+    tileId: kavak_sirasi
+  - coord:
+      Q: 20
+      R: 19
+    tileId: sahil_kumu
+  - coord:
+      Q: 19
+      R: 20
+    tileId: bataklik_otu
+  - coord:
+      Q: 19
+      R: 21
+    tileId: kumul
+  - coord:
+      Q: 18
+      R: 22
+    tileId: sig_su
   - coord:
       Q: 20
       R: 18
@@ -4068,28 +6504,24 @@ MonoBehaviour:
     tileId: obsidyen_tarla
   - coord:
       Q: 16
+      R: 26
+    tileId: bos
+  - coord:
+      Q: 16
       R: 27
-    tileId: cayir
+    tileId: bos
   - coord:
       Q: 15
       R: 28
-    tileId: solgun_cayir
+    tileId: bos
   - coord:
       Q: 15
       R: 29
-    tileId: solgun_cayir
+    tileId: bos
   - coord:
       Q: 14
       R: 30
-    tileId: sig_su
-  - coord:
-      Q: 14
-      R: 31
-    tileId: sis_perdesi
-  - coord:
-      Q: 13
-      R: 32
-    tileId: sis_perdesi
+    tileId: bos
   - coord:
       Q: 13
       R: 33
@@ -4098,6 +6530,14 @@ MonoBehaviour:
       Q: 30
       R: 0
     tileId: bos
+  - coord:
+      Q: 30
+      R: 1
+    tileId: bos
+  - coord:
+      Q: 29
+      R: 2
+    tileId: sis_perdesi
   - coord:
       Q: 30
       R: 1
@@ -4155,9 +6595,73 @@ MonoBehaviour:
       R: 14
     tileId: yosun_tarlasi
   - coord:
+      Q: 28
+      R: 4
+    tileId: dusmus_dev
+  - coord:
+      Q: 28
+      R: 5
+    tileId: cayir
+  - coord:
+      Q: 27
+      R: 6
+    tileId: meyve_bahcesi
+  - coord:
+      Q: 27
+      R: 7
+    tileId: kaya_yigini
+  - coord:
+      Q: 26
+      R: 8
+    tileId: cayir
+  - coord:
+      Q: 26
+      R: 9
+    tileId: cayir
+  - coord:
+      Q: 25
+      R: 10
+    tileId: sik_orman
+  - coord:
+      Q: 25
+      R: 11
+    tileId: kavak_sirasi
+  - coord:
+      Q: 24
+      R: 12
+    tileId: uzun_ot
+  - coord:
+      Q: 24
+      R: 13
+    tileId: yosun_tarlasi
+  - coord:
+      Q: 23
+      R: 14
+    tileId: gol
+  - coord:
       Q: 23
       R: 15
-    tileId: yosun_tarlasi
+    tileId: gol
+  - coord:
+      Q: 22
+      R: 16
+    tileId: gol
+  - coord:
+      Q: 20
+      R: 21
+    tileId: sig_su
+  - coord:
+      Q: 19
+      R: 22
+    tileId: sig_su
+  - coord:
+      Q: 19
+      R: 23
+    tileId: sis_perdesi
+  - coord:
+      Q: 18
+      R: 24
+    tileId: sis_perdesi
   - coord:
       Q: 22
       R: 16
@@ -4173,11 +6677,23 @@ MonoBehaviour:
   - coord:
       Q: 21
       R: 19
-    tileId: sis_perdesi
+    tileId: kamp
   - coord:
-      Q: 20
-      R: 20
-    tileId: sis_perdesi
+      Q: 17
+      R: 27
+    tileId: bos
+  - coord:
+      Q: 16
+      R: 28
+    tileId: bos
+  - coord:
+      Q: 16
+      R: 29
+    tileId: bos
+  - coord:
+      Q: 15
+      R: 30
+    tileId: bos
   - coord:
       Q: 20
       R: 21
@@ -4229,6 +6745,18 @@ MonoBehaviour:
   - coord:
       Q: 14
       R: 33
+    tileId: bos
+  - coord:
+      Q: 31
+      R: 0
+    tileId: bos
+  - coord:
+      Q: 31
+      R: 1
+    tileId: bos
+  - coord:
+      Q: 30
+      R: 2
     tileId: bos
   - coord:
       Q: 31
@@ -4315,9 +6843,77 @@ MonoBehaviour:
       R: 20
     tileId: bos
   - coord:
+      Q: 29
+      R: 5
+    tileId: sazlik
+  - coord:
+      Q: 28
+      R: 6
+    tileId: cam_ormani
+  - coord:
+      Q: 28
+      R: 7
+    tileId: cam_ormani
+  - coord:
+      Q: 27
+      R: 8
+    tileId: cam_ormani
+  - coord:
+      Q: 27
+      R: 9
+    tileId: sig_su
+  - coord:
+      Q: 26
+      R: 10
+    tileId: kamp
+  - coord:
+      Q: 26
+      R: 11
+    tileId: cam_ormani
+  - coord:
+      Q: 25
+      R: 12
+    tileId: bataklik_otu
+  - coord:
+      Q: 25
+      R: 13
+    tileId: sazlik
+  - coord:
+      Q: 24
+      R: 14
+    tileId: gol
+  - coord:
+      Q: 24
+      R: 15
+    tileId: gol
+  - coord:
+      Q: 23
+      R: 16
+    tileId: gol
+  - coord:
+      Q: 23
+      R: 17
+    tileId: sig_su
+  - coord:
+      Q: 22
+      R: 18
+    tileId: sig_su
+  - coord:
+      Q: 22
+      R: 19
+    tileId: sig_su
+  - coord:
+      Q: 21
+      R: 20
+    tileId: bambu_koru
+  - coord:
       Q: 21
       R: 21
-    tileId: bos
+    tileId: sig_su
+  - coord:
+      Q: 20
+      R: 22
+    tileId: sis_perdesi
   - coord:
       Q: 20
       R: 22
@@ -4367,6 +6963,18 @@ MonoBehaviour:
       R: 33
     tileId: bos
   - coord:
+      Q: 17
+      R: 28
+    tileId: bos
+  - coord:
+      Q: 17
+      R: 29
+    tileId: bos
+  - coord:
+      Q: 16
+      R: 30
+    tileId: bos
+  - coord:
       Q: 32
       R: 0
     tileId: bos
@@ -4374,6 +6982,34 @@ MonoBehaviour:
       Q: 32
       R: 1
     tileId: bos
+  - coord:
+      Q: 31
+      R: 2
+    tileId: sis_perdesi
+  - coord:
+      Q: 31
+      R: 3
+    tileId: sis_perdesi
+  - coord:
+      Q: 30
+      R: 4
+    tileId: sig_su
+  - coord:
+      Q: 30
+      R: 5
+    tileId: cayir
+  - coord:
+      Q: 29
+      R: 6
+    tileId: cayir
+  - coord:
+      Q: 29
+      R: 7
+    tileId: sig_su
+  - coord:
+      Q: 28
+      R: 8
+    tileId: sig_su
   - coord:
       Q: 31
       R: 2
@@ -4435,29 +7071,65 @@ MonoBehaviour:
       R: 16
     tileId: uzun_ot
   - coord:
+      Q: 27
+      R: 10
+    tileId: cayir
+  - coord:
+      Q: 27
+      R: 11
+    tileId: ova
+  - coord:
+      Q: 26
+      R: 12
+    tileId: cayir
+  - coord:
+      Q: 26
+      R: 13
+    tileId: tas_daire
+  - coord:
+      Q: 25
+      R: 14
+    tileId: ova
+  - coord:
+      Q: 25
+      R: 15
+    tileId: cayir
+  - coord:
+      Q: 24
+      R: 16
+    tileId: gol
+  - coord:
       Q: 24
       R: 17
     tileId: sig_su
   - coord:
       Q: 23
       R: 18
-    tileId: sig_su
+    tileId: sis_perdesi
   - coord:
       Q: 23
       R: 19
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 22
       R: 20
-    tileId: bos
+    tileId: sig_su
   - coord:
       Q: 22
       R: 21
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 21
       R: 22
-    tileId: bos
+    tileId: sis_perdesi
+  - coord:
+      Q: 21
+      R: 23
+    tileId: sis_perdesi
+  - coord:
+      Q: 23
+      R: 18
+    tileId: sig_su
   - coord:
       Q: 21
       R: 23
@@ -4499,6 +7171,26 @@ MonoBehaviour:
       R: 32
     tileId: bos
   - coord:
+      Q: 19
+      R: 27
+    tileId: bos
+  - coord:
+      Q: 18
+      R: 28
+    tileId: bos
+  - coord:
+      Q: 18
+      R: 29
+    tileId: bos
+  - coord:
+      Q: 17
+      R: 30
+    tileId: bos
+  - coord:
+      Q: 16
+      R: 32
+    tileId: bos
+  - coord:
       Q: 16
       R: 33
     tileId: bos
@@ -4533,18 +7225,38 @@ MonoBehaviour:
   - coord:
       Q: 30
       R: 7
-    tileId: sig_su
+    tileId: sis_perdesi
   - coord:
       Q: 29
       R: 8
-    tileId: sig_su
-  - coord:
-      Q: 29
-      R: 9
-    tileId: sig_su
+    tileId: sis_perdesi
   - coord:
       Q: 28
       R: 10
+    tileId: sig_su
+  - coord:
+      Q: 28
+      R: 11
+    tileId: sig_su
+  - coord:
+      Q: 27
+      R: 12
+    tileId: sig_su
+  - coord:
+      Q: 27
+      R: 13
+    tileId: sig_su
+  - coord:
+      Q: 26
+      R: 14
+    tileId: sig_su
+  - coord:
+      Q: 26
+      R: 15
+    tileId: sig_su
+  - coord:
+      Q: 25
+      R: 16
     tileId: sig_su
   - coord:
       Q: 28
@@ -4571,33 +7283,25 @@ MonoBehaviour:
       R: 16
     tileId: sig_su
   - coord:
-      Q: 25
-      R: 17
-    tileId: bos
-  - coord:
-      Q: 24
-      R: 18
-    tileId: bos
-  - coord:
       Q: 24
       R: 19
     tileId: bos
   - coord:
       Q: 23
       R: 20
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 23
       R: 21
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 22
       R: 22
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
-      Q: 22
-      R: 23
-    tileId: uzak_kayalik
+      Q: 24
+      R: 18
+    tileId: sis_perdesi
   - coord:
       Q: 21
       R: 24
@@ -4609,19 +7313,19 @@ MonoBehaviour:
   - coord:
       Q: 20
       R: 26
-    tileId: sig_su
+    tileId: bos
   - coord:
       Q: 20
       R: 27
-    tileId: sig_su
+    tileId: bos
   - coord:
       Q: 19
       R: 28
-    tileId: sig_su
+    tileId: bos
   - coord:
       Q: 19
       R: 29
-    tileId: sis_perdesi
+    tileId: bos
   - coord:
       Q: 18
       R: 30
@@ -4629,6 +7333,10 @@ MonoBehaviour:
   - coord:
       Q: 18
       R: 31
+    tileId: bos
+  - coord:
+      Q: 17
+      R: 32
     tileId: bos
   - coord:
       Q: 17
@@ -4669,15 +7377,15 @@ MonoBehaviour:
   - coord:
       Q: 31
       R: 7
-    tileId: sis_perdesi
+    tileId: bos
   - coord:
       Q: 30
       R: 8
-    tileId: sis_perdesi
+    tileId: bos
   - coord:
       Q: 30
       R: 9
-    tileId: sis_perdesi
+    tileId: bos
   - coord:
       Q: 29
       R: 10
@@ -4693,11 +7401,27 @@ MonoBehaviour:
   - coord:
       Q: 28
       R: 13
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 27
       R: 14
-    tileId: bos
+    tileId: derin_su
+  - coord:
+      Q: 27
+      R: 15
+    tileId: derin_su
+  - coord:
+      Q: 26
+      R: 16
+    tileId: sis_perdesi
+  - coord:
+      Q: 29
+      R: 11
+    tileId: sis_perdesi
+  - coord:
+      Q: 28
+      R: 12
+    tileId: sis_perdesi
   - coord:
       Q: 27
       R: 15
@@ -4715,24 +7439,20 @@ MonoBehaviour:
       R: 18
     tileId: bos
   - coord:
-      Q: 25
-      R: 19
-    tileId: bos
-  - coord:
-      Q: 24
-      R: 20
-    tileId: bos
-  - coord:
       Q: 24
       R: 21
     tileId: bos
   - coord:
       Q: 23
       R: 22
+    tileId: uzak_kayalik
+  - coord:
+      Q: 25
+      R: 19
     tileId: bos
   - coord:
-      Q: 23
-      R: 23
+      Q: 24
+      R: 20
     tileId: bos
   - coord:
       Q: 22
@@ -4755,6 +7475,22 @@ MonoBehaviour:
       R: 28
     tileId: sis_perdesi
   - coord:
+      Q: 22
+      R: 25
+    tileId: bos
+  - coord:
+      Q: 21
+      R: 26
+    tileId: bos
+  - coord:
+      Q: 21
+      R: 27
+    tileId: bos
+  - coord:
+      Q: 20
+      R: 28
+    tileId: bos
+  - coord:
       Q: 20
       R: 29
     tileId: bos
@@ -4799,12 +7535,20 @@ MonoBehaviour:
       R: 5
     tileId: bos
   - coord:
+      Q: 33
+      R: 5
+    tileId: bos
+  - coord:
       Q: 32
       R: 6
     tileId: bos
   - coord:
       Q: 32
       R: 7
+    tileId: bos
+  - coord:
+      Q: 31
+      R: 8
     tileId: bos
   - coord:
       Q: 31
@@ -4833,11 +7577,11 @@ MonoBehaviour:
   - coord:
       Q: 28
       R: 14
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 28
       R: 15
-    tileId: bos
+    tileId: sis_perdesi
   - coord:
       Q: 27
       R: 16
@@ -4869,10 +7613,26 @@ MonoBehaviour:
   - coord:
       Q: 24
       R: 23
-    tileId: bos
+    tileId: uzak_kayalik
   - coord:
       Q: 23
       R: 24
+    tileId: bos
+  - coord:
+      Q: 23
+      R: 25
+    tileId: bos
+  - coord:
+      Q: 22
+      R: 26
+    tileId: bos
+  - coord:
+      Q: 22
+      R: 27
+    tileId: bos
+  - coord:
+      Q: 21
+      R: 28
     tileId: bos
   - coord:
       Q: 23
