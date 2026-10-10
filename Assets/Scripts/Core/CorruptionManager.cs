@@ -20,8 +20,11 @@ namespace TacticalRPG.Core
     ///   • Çöküş (<see cref="MapCollapseManager"/>) karo seçerken <see cref="CollapseWeight"/>'e
     ///     bakar: kararmış karo önce düşer → "karo silinmesi bir sisteme bağlı" (Efe, 2026-09-02).
     ///
-    /// DURUM KOORDİNATTA tutulur, grid hücresinde değil: savaşa girince grid arena olur, dönünce
-    /// yeniden üretilir — görsel her dönüşte buradan yeniden uygulanır. Arenaya ASLA uygulanmaz.
+    ///   • SAVAŞ: çürük karodan (ya da yanından) girilen savaşta düşmanlar Kara Öz ile güçlenir
+    ///     (<see cref="CombatEnemyLevelBonus"/>; <see cref="EnemySpawner"/> okur).
+    ///
+    /// DURUM KOORDİNATTA tutulur, grid hücresinde değil: savaşa girince grid arena olur. GÖRSEL bu
+    /// sınıfın işi değil — <see cref="CorruptionVisuals"/> olayları dinleyip çizer.
     /// Çürüme kapalıysa (kural setinde ve yedekte ayar yoksa) hiçbir şey yapmaz.
     /// </summary>
     public class CorruptionManager : MonoBehaviour
@@ -31,12 +34,15 @@ namespace TacticalRPG.Core
         [SerializeField] private ChapterMapGenerator _map;
         [SerializeField] private ActionPointManager  _ap;
         [SerializeField] private GameStateManager    _state;
-        [SerializeField] private FogOfWarManager     _fog;
         [SerializeField] private ChapterNodeManager  _nodes;
         [Tooltip("Bölümün kural seti çürüme ayarını seçer.")]
         [SerializeField] private ChapterProgress     _progress;
         [Tooltip("YEDEK ayar — kural seti çürüme seçmiyorsa. İkisi de boşsa çürüme KAPALI.")]
         [SerializeField] private CorruptionConfigSO  _fallbackConfig;
+        [Tooltip("Savaşın girildiği karoyu okumak için (Kara Öz güçlendirmesi).")]
+        [SerializeField] private PlayerController    _player;
+        [Tooltip("Savaş açılırken 'Kara Öz: düşmanlar +N seviye' uyarısı.")]
+        [SerializeField] private NoticeFeed          _notice;
 
         private sealed class Source
         {
@@ -50,8 +56,11 @@ namespace TacticalRPG.Core
         private readonly List<Source> _sources = new();
         private int _lastDay;
 
-        /// <summary>Çürüme durumu değişti (yayıldı / geri çekildi / yeni harita). Minimap/HUD dinler.</summary>
+        /// <summary>Çürüme durumu TOPTAN değişti (yeni harita). Görsel her şeyi yeniden çizer.</summary>
         public event Action OnCorruptionChanged;
+
+        /// <summary>Bu karoların kademesi değişti (yayılma / derinleşme / geri çekilme).</summary>
+        public event Action<IReadOnlyCollection<HexCoordinate>> OnCellsChanged;
 
         /// <summary>Bir aşı kaynağı ARINDI (bölge indisi). UI kutlaması için.</summary>
         public event Action<int> OnSourcePurified;
@@ -92,7 +101,15 @@ namespace TacticalRPG.Core
             return false;
         }
 
-        private bool InOverworld => _state == null || _state.State == GameState.Overworld;
+        /// <summary>Tüm çürük karolar (görsel ilk çizimde gezer).</summary>
+        public IEnumerable<HexCoordinate> CorruptedCells => _cells.Keys;
+
+        /// <summary>Şu anki (ya da en son) savaşın girildiği karonun çürüme kademesi.</summary>
+        public int CombatCorruptionLevel { get; private set; }
+
+        /// <summary>Şu anki savaşta düşmanlara eklenen seviye (0 = temiz karodan girildi).</summary>
+        public int CombatEnemyLevelBonus
+            => Config != null ? Config.EnemyLevelBonus(CombatCorruptionLevel) : 0;
 
         // ── Bağlantı ─────────────────────────────────────────────────────────
 
@@ -100,7 +117,6 @@ namespace TacticalRPG.Core
         {
             if (_map   != null) _map.OnMapGenerated      += HandleMapGenerated;
             if (_ap    != null) _ap.OnTimeAdvanced       += HandleTimeAdvanced;
-            if (_grid  != null) _grid.OnGridRegenerated  += ReapplyAll;
             if (_state != null) _state.OnStateChanged    += HandleStateChanged;
             if (_nodes != null) _nodes.OnNodeCompleted   += HandleNodeCompleted;
         }
@@ -109,14 +125,34 @@ namespace TacticalRPG.Core
         {
             if (_map   != null) _map.OnMapGenerated      -= HandleMapGenerated;
             if (_ap    != null) _ap.OnTimeAdvanced       -= HandleTimeAdvanced;
-            if (_grid  != null) _grid.OnGridRegenerated  -= ReapplyAll;
             if (_state != null) _state.OnStateChanged    -= HandleStateChanged;
             if (_nodes != null) _nodes.OnNodeCompleted   -= HandleNodeCompleted;
         }
 
+        /// <summary>Savaş onay ekranı açılırken (grid hâlâ overworld) savaşın girildiği yerin
+        /// kademesi okunur: oyuncunun karosu + yanındaki savaş karoları, en yüksek olanı.
+        /// Overworld'e dönünce sıfırlanır.</summary>
         private void HandleStateChanged(GameState s)
         {
-            if (s == GameState.Overworld) ReapplyAll();
+            if (s == GameState.Overworld) { CombatCorruptionLevel = 0; return; }
+            if (s != GameState.ConfirmMission || !IsActive || _player == null) return;
+
+            HexCoordinate at = _player.CurrentCoord;
+            int lvl = LevelAt(at);
+            for (int d = 0; d < 6; d++)
+            {
+                HexCoordinate n = at.GetNeighbor(d);
+                if (_grid != null && _grid.TryGetCell(n, out HexCell cell) && cell.CanEnterCombat)
+                    lvl = Mathf.Max(lvl, LevelAt(n));
+            }
+            CombatCorruptionLevel = lvl;
+            if (lvl > 0 && CombatEnemyLevelBonus > 0)
+            {
+                Debug.Log($"[Curume] Savas kademe-{lvl} curuk karodan — dusmanlara +{CombatEnemyLevelBonus} seviye.");
+                if (_notice != null)
+                    _notice.Post($"KARA ÖZ — çürümüş topraktan girdin: düşmanlar +{CombatEnemyLevelBonus} seviye",
+                                 Config.EnemyAuraColor, 5f);
+            }
         }
 
         // ── Yeni harita ──────────────────────────────────────────────────────
@@ -142,8 +178,10 @@ namespace TacticalRPG.Core
                 }
             }
 
-            ReapplyAll();
             Debug.Log($"[Curume] {_sources.Count} kaynak ({PurifiableCount} arinabilir) | baslangic {_cells.Count} karo.");
+            if (_notice != null)
+                _notice.Post("Bayterek'in kökleri çürüyor: Kara Aşı her gün yayılır. Zorunlu görevler aşı noktalarını arındırır.",
+                             cfg.EnemyAuraColor, 6f);
             OnCorruptionChanged?.Invoke();
         }
 
@@ -152,7 +190,7 @@ namespace TacticalRPG.Core
             _cells.Clear();
             _sources.Clear();
             _lastDay = 0;
-            if (_fog != null) _fog.ClearCloudTints();
+            CombatCorruptionLevel = 0;
         }
 
         // ── Gün döngüsü ──────────────────────────────────────────────────────
@@ -180,8 +218,24 @@ namespace TacticalRPG.Core
                 Deepen(i, cfg.DeepenChance, rnd, changed);
             }
 
-            ApplyVisuals(changed);
-            if (changed.Count > 0) OnCorruptionChanged?.Invoke();
+            if (changed.Count > 0) OnCellsChanged?.Invoke(changed);
+            AnnounceDay(day);
+        }
+
+        /// <summary>Gün başı bildirimi: çürümenin VAR olduğunu ve nereye yaklaştığını oyuncu bilsin
+        /// (Efe 2026-10-10: "morluk vs yok" — mekanik görünmeden işliyordu).</summary>
+        private void AnnounceDay(int day)
+        {
+            if (_notice == null || Config == null) return;
+            int near = 0;
+            if (_player != null)
+                foreach (var c in _cells.Keys) if (c.DistanceTo(_player.CurrentCoord) <= 5) near++;
+            int active = 0;
+            foreach (var s in _sources) if (!s.Purified) active++;
+            string msg = near > 0
+                ? $"Kara Aşı yaklaşıyor — çevrende {near} karo çürümüş (mor damar)."
+                : $"Kara Aşı yayıldı — {_cells.Count} karo çürük, {active} kaynak etkin. (HARİTA'da mor alanlar)";
+            _notice.Post(msg, Config.EnemyAuraColor, 4.5f);
         }
 
         private static readonly List<(HexCoordinate c, double key)> Frontier = new();
@@ -260,13 +314,12 @@ namespace TacticalRPG.Core
             // Anında bir kademe geri çekil — oyuncu görevin etkisini HEMEN görsün.
             var changed = new HashSet<HexCoordinate>();
             Recede(idx, Config.RecedePerDay, changed);
-            ApplyVisuals(changed);
+            if (changed.Count > 0) OnCellsChanged?.Invoke(changed);
 
             string regionName = _map != null && src.Region >= 0 && src.Region < _map.Regions.Count
                 ? _map.Regions[src.Region].DisplayName : $"bolge {src.Region}";
             Debug.Log($"[Curume] {regionName} ARINDI ({node.Coord}) — {PurifiedCount}/{PurifiableCount} asi noktasi temiz.");
             OnSourcePurified?.Invoke(src.Region);
-            OnCorruptionChanged?.Invoke();
         }
 
         /// <summary>Görevin bölgesindeki arınabilir kaynak; bölgede yoksa yarıçap içindeki en yakını.</summary>
@@ -284,37 +337,6 @@ namespace TacticalRPG.Core
                 if (d < bestD) { bestD = d; best = i; }
             }
             return best;
-        }
-
-        // ── Görsel ───────────────────────────────────────────────────────────
-
-        /// <summary>Tüm çürük karoların görselini yeniden uygular (yeni grid / savaştan dönüş).</summary>
-        private void ReapplyAll()
-        {
-            if (!InOverworld || _grid == null || _grid.Cells == null) return;
-            ApplyVisuals(new List<HexCoordinate>(_cells.Keys));
-        }
-
-        private void ApplyVisuals(IEnumerable<HexCoordinate> coords)
-        {
-            CorruptionConfigSO cfg = Config;
-            if (cfg == null || !InOverworld || _grid == null) return;
-
-            bool any = false;
-            foreach (var c in coords)
-            {
-                int lvl = LevelAt(c);
-                if (_grid.TryGetCell(c, out HexCell cell))
-                {
-                    cell.OverlayTint = cfg.TintFor(lvl);
-                    if (_fog != null) _fog.ReapplyCellBrightness(cell);
-                    any = true;
-                }
-                if (_fog != null)
-                    _fog.SetCloudTint(c, cfg.CloudTint, cfg.CloudStrength * lvl / CorruptionConfigSO.MAX_LEVEL);
-            }
-            // Sis parlaklığını son oyuncu konumuna göre yeniden hesapla (ipucu bandı doğru kalsın).
-            if (any && _fog != null) _fog.RefreshFromLastPosition();
         }
 
         // ── Yardımcılar ──────────────────────────────────────────────────────

@@ -13,69 +13,69 @@
 
 ## Bolgeler (harita basi ortalama)
   bolge                 kara   %kita  duzluk(min-ort)  oz karosu(min-ort)
-  yirtik_koru              77   14.1     15- 34.5        12- 29.8
-  halka_koyu               53    9.6      9- 28.9         2-  9.9
-  fisilti_batakligi        93   16.9     14- 34.3        15- 35.0
-  uyuyanlar_vadisi         97   17.6     21- 42.5        18- 30.5
-  oyuk_tepeler             85   15.5      8- 28.7        12- 27.3
-  bayterek_kalbi           67   12.2     17- 33.0         5- 16.4
-  kok_ahdi_korulari        78   14.2     12- 31.9        12- 28.7
+  yirtik_koru              77   14.1     15- 34.4        12- 29.7
+  halka_koyu               53    9.6      8- 28.8         2-  9.8
+  fisilti_batakligi        93   16.9     14- 34.1        15- 34.9
+  uyuyanlar_vadisi         97   17.6     22- 42.3        18- 30.3
+  oyuk_tepeler             85   15.5      8- 29.2         9- 23.1
+  bayterek_kalbi           67   12.2     17- 33.0         5- 16.3
+  kok_ahdi_korulari        78   14.2     13- 31.8        12- 28.6
 
 ## Karo sikligi (kita karolarinin %'si, tum haritalar) — modelleme onceligi
   karo                      %kita   harita basi   gorulen bolgeler
-  cayir                      9.10       50.1     yirtik_koru:9 halka_koyu:10 uyuyanlar_vadisi:13 oyuk_tepeler:9 kok_ahdi_korulari:22
-  yosun_tarlasi              7.88       43.3     fisilti_batakligi:8 uyuyanlar_vadisi:24 bayterek_kalbi:11 kok_ahdi_korulari:6
-  orman                      5.11       28.1     halka_koyu:4 uyuyanlar_vadisi:11 bayterek_kalbi:9 kok_ahdi_korulari:12
-  solgun_cayir               5.04       27.7     yirtik_koru:35
-  bataklik                   4.77       26.2     fisilti_batakligi:28
+  cayir                      9.13       50.2     yirtik_koru:9 halka_koyu:10 uyuyanlar_vadisi:13 oyuk_tepeler:9 kok_ahdi_korulari:22
+  yosun_tarlasi              7.85       43.2     fisilti_batakligi:8 uyuyanlar_vadisi:24 bayterek_kalbi:11 kok_ahdi_korulari:6
+  orman                      5.07       27.9     halka_koyu:4 uyuyanlar_vadisi:10 bayterek_kalbi:9 kok_ahdi_korulari:12
+  solgun_cayir               5.02       27.6     yirtik_koru:35
+  bataklik                   4.75       26.1     fisilti_batakligi:28
   kok_agi                    4.62       25.4     bayterek_kalbi:37
-  kok_sirti                  3.82       21.0     oyuk_tepeler:24
+  kok_sirti                  3.88       21.3     oyuk_tepeler:24
   dag                        3.32       18.2     yirtik_koru:3 halka_koyu:3 oyuk_tepeler:12 bayterek_kalbi:2
   nehir                      3.29       18.1     yirtik_koru:3 halka_koyu:7 fisilti_batakligi:3 uyuyanlar_vadisi:3 oyuk_tepeler:3 bayterek_kalbi:3 kok_ahdi_korulari:3
-  uzun_ot                    2.92       16.0     uyuyanlar_vadisi:6 kok_ahdi_korulari:12
-  kaya_yigini                2.77       15.3     uyuyanlar_vadisi:6 oyuk_tepeler:7 kok_ahdi_korulari:4
+  uzun_ot                    2.90       16.0     uyuyanlar_vadisi:6 kok_ahdi_korulari:12
+  kaya_yigini                2.78       15.3     uyuyanlar_vadisi:6 oyuk_tepeler:7 kok_ahdi_korulari:4
   taslik_ova                 2.76       15.2     yirtik_koru:9 halka_koyu:4 kok_ahdi_korulari:7
-  kurumus_koru               2.58       14.2     yirtik_koru:18
+  kurumus_koru               2.59       14.2     yirtik_koru:18
   az_agacli_ova              2.33       12.8     yirtik_koru:7 kok_ahdi_korulari:9
-  halka_zemini               2.22       12.2     halka_koyu:22
-  sazlik                     2.10       11.6     fisilti_batakligi:12
+  halka_zemini               2.21       12.1     halka_koyu:22
+  sazlik                     2.08       11.5     fisilti_batakligi:12
   gol                        2.08       11.4     uyuyanlar_vadisi:5 bayterek_kalbi:3 kok_ahdi_korulari:3
   kayalik                    2.04       11.2     halka_koyu:3 oyuk_tepeler:4 bayterek_kalbi:2
   bataklik_golu              1.87       10.3     fisilti_batakligi:9
   karanlik_orman             1.84       10.1     fisilti_batakligi:6 oyuk_tepeler:4
-  nadir_yuksek_orman         1.81        9.9     uyuyanlar_vadisi:5 bayterek_kalbi:7
-  hus_korusu                 1.80        9.9     oyuk_tepeler:11
+  hus_korusu                 1.84       10.1     oyuk_tepeler:11
+  nadir_yuksek_orman         1.79        9.9     uyuyanlar_vadisi:5 bayterek_kalbi:7
   bataklik_otu               1.76        9.7     fisilti_batakligi:10
   sellale                    1.60        8.8     halka_koyu:2
   dev_kaya                   1.43        7.8     halka_koyu:3 bayterek_kalbi:2
-  killi_yamac                1.31        7.2     oyuk_tepeler:8
-  kodama_yuvasi              1.15        6.3     uyuyanlar_vadisi:6
+  killi_yamac                1.34        7.4     oyuk_tepeler:8
+  kodama_yuvasi              1.16        6.4     uyuyanlar_vadisi:6
   batik_tas                  1.15        6.3     fisilti_batakligi:7
-  mantar_ormani              1.15        6.3     fisilti_batakligi:4 uyuyanlar_vadisi:2
+  mantar_ormani              1.14        6.3     fisilti_batakligi:4 uyuyanlar_vadisi:2
   fener_yolu                 1.14        6.3     halka_koyu:11
   kadim_orman                1.13        6.2     uyuyanlar_vadisi:6
   dal_ev                     0.99        5.4     halka_koyu:10
-  kehribar_damari            0.98        5.4     bayterek_kalbi:8
   dev_kokler                 0.98        5.4     bayterek_kalbi:7
+  kehribar_damari            0.98        5.4     bayterek_kalbi:8
   meyve_bahcesi              0.92        5.1     halka_koyu:9
   sik_orman                  0.89        4.9     kok_ahdi_korulari:4
-  agac_kovugu                0.86        4.7     oyuk_tepeler:5
+  agac_kovugu                0.89        4.9     oyuk_tepeler:6
   kara_asi                   0.73        4.0     
-  mandragora_yatagi          0.68        3.7     fisilti_batakligi:4
+  mandragora_yatagi          0.69        3.8     fisilti_batakligi:4
   ucurum                     0.65        3.6     oyuk_tepeler:4
-  obsidyen_tarla             0.58        3.2     yirtik_koru:4
-  isik_cukuru                0.57        3.2     fisilti_batakligi:2
-  cakil_yatagi               0.48        2.7     kok_ahdi_korulari:3
-  dusmus_dev                 0.42        2.3     uyuyanlar_vadisi:2
-  tas_daire                  0.37        2.0     
-  harabe                     0.28        1.6     
+  isik_cukuru                0.63        3.5     fisilti_batakligi:2
+  obsidyen_tarla             0.57        3.2     yirtik_koru:4
+  cakil_yatagi               0.48        2.6     kok_ahdi_korulari:3
+  dusmus_dev                 0.47        2.6     uyuyanlar_vadisi:3
+  tas_daire                  0.29        1.6     
   kopru                      0.26        1.5     
-  dev_agac                   0.21        1.2     
+  dev_agac                   0.23        1.3     
+  harabe                     0.22        1.2     
   ruh_tapinagi               0.18        1.0     
   bayterek                   0.18        1.0     
   halka_meclisi              0.18        1.0     
+  kemik_tarlasi              0.18        1.0     
   zar_yirtigi                0.18        1.0     
-  kemik_tarlasi              0.17        0.9     
   dikilitas                  0.16        0.9     
   sig_gecit                  0.13        0.7     
   dikenli_calilik            0.04        0.2     

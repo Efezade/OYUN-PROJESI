@@ -21,6 +21,12 @@ namespace TacticalRPG.Core
         [Tooltip("Prosedürel arena üretici. Atanmışsa düşmanlar ONUN hesapladığı doğma " +
                  "noktalarına iner; atanmamışsa görevdeki sabit koordinatlar kullanılır.")]
         [SerializeField] private CombatMapGenerator _arena;
+        [Tooltip("KARA ÖZ GÜÇLENDİRMESİ (2026-10-10): çürük karodan girilen savaşta düşmanlar seviye " +
+                 "kazanır ve soğuk mor parlar. Atanmazsa düşmanlar roster'daki seviyede kalır.")]
+        [SerializeField] private CorruptionManager _corruption;
+        [Tooltip("Güçlenen düşmanın mor ışığının şiddeti / menzili.")]
+        [SerializeField] private float _auraIntensity = 2.2f;
+        [SerializeField] private float _auraRange     = 2.4f;
 
         [Header("Görsel")]
         [Tooltip("Opsiyonel — atanmazsa runtime kırmızı kapsül üretilir.")]
@@ -67,6 +73,9 @@ namespace TacticalRPG.Core
             var arenaSpawns = _arena != null ? _arena.EnemySpawns : null;
             int spawnIndex = 0;
 
+            // Kara Öz: çürük karodan girildiyse her düşmana ek seviye (sınıfın tavanında kırpılır).
+            int corruptBonus = _corruption != null ? _corruption.CombatEnemyLevelBonus : 0;
+
             foreach (var entry in mission.EnemyRoster)
             {
                 if (entry.enemyClass == null) continue;
@@ -89,13 +98,15 @@ namespace TacticalRPG.Core
                     continue;
                 }
 
-                var  card = new CharacterCard(entry.enemyClass, Mathf.Max(1, entry.level));
+                var  card = new CharacterCard(entry.enemyClass, Mathf.Max(1, entry.level) + corruptBonus);
                 Unit unit = SpawnUnit(coord, card);
+                if (corruptBonus > 0) AddCorruptAura(unit.gameObject);
                 _spawned.Add(unit);
             }
 
             if (_spawned.Count > 0)
-                Debug.Log($"[EnemySpawner] {_spawned.Count} düşman spawn edildi ({mission.DisplayName}).");
+                Debug.Log($"[EnemySpawner] {_spawned.Count} düşman spawn edildi ({mission.DisplayName})" +
+                          (corruptBonus > 0 ? $" — KARA ÖZ: +{corruptBonus} seviye." : "."));
         }
 
         private Unit SpawnUnit(HexCoordinate coord, CharacterCard card)
@@ -136,6 +147,22 @@ namespace TacticalRPG.Core
             unit.Bind(card);
             unit.PlaceAt(coord);
             return unit;
+        }
+
+        /// <summary>Kara Öz ile güçlenmiş düşman: üstünde soğuk mor ışık (hikâye §9: "kimin kime ait
+        /// olduğu parlamanın renginden okunur" — Kara Öz = soğuk mor).</summary>
+        private void AddCorruptAura(GameObject enemy)
+        {
+            var go = new GameObject("KaraOzAura");
+            go.transform.SetParent(enemy.transform, false);
+            go.transform.localPosition = Vector3.up * 0.8f;
+            var light = go.AddComponent<Light>();
+            light.type      = LightType.Point;
+            light.color     = _corruption != null && _corruption.Config != null
+                              ? _corruption.Config.EnemyAuraColor : new Color(0.62f, 0.32f, 0.95f);
+            light.intensity = _auraIntensity;
+            light.range     = _auraRange;
+            light.shadows   = LightShadows.None;
         }
 
         private void ClearEnemies()

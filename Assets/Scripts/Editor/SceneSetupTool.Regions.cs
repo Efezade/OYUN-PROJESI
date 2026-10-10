@@ -131,28 +131,56 @@ namespace TacticalRPG.Editor
                 so.ApplyModifiedProperties();
             }
 
-            // Çürüme yöneticisi kıyamet sayacının yanında (çöküşün "neden"i o).
+            // Bildirim akışı + pusu başlatıcı + bölge kuralları tek nesnede (harita üreticisinin çocuğu).
+            GameObject rulesGo = null;
+            if (gen != null)
+            {
+                Transform t = gen.transform.Find("BolgeKurallari");
+                rulesGo = t != null ? t.gameObject : new GameObject("BolgeKurallari");
+                rulesGo.transform.SetParent(gen.transform, false);
+            }
+            NoticeFeed     notice = rulesGo != null ? Ensure<NoticeFeed>(rulesGo) : null;
+            AmbushLauncher ambush = rulesGo != null ? Ensure<AmbushLauncher>(rulesGo) : null;
+            if (ambush != null)
+            {
+                var so = new SerializedObject(ambush);
+                Set(so, "_state", state); Set(so, "_player", player); Set(so, "_notice", notice);
+                so.ApplyModifiedProperties();
+            }
+
+            // Çürüme yöneticisi + görüntüsü kıyamet sayacının yanında (çöküşün "neden"i o).
             CorruptionManager corr = null;
+            CorruptionVisuals corrFx = null;
             GameObject host = collapse != null ? collapse.gameObject : gen != null ? gen.gameObject : null;
             if (host != null)
             {
-                corr = host.GetComponent<CorruptionManager>();
-                if (corr == null) corr = host.AddComponent<CorruptionManager>();
+                corr = Ensure<CorruptionManager>(host);
                 var so = new SerializedObject(corr);
-                so.FindProperty("_grid").objectReferenceValue     = grid;
-                so.FindProperty("_map").objectReferenceValue      = gen;
-                so.FindProperty("_ap").objectReferenceValue       = ap;
-                so.FindProperty("_state").objectReferenceValue    = state;
-                so.FindProperty("_fog").objectReferenceValue      = fog;
-                so.FindProperty("_nodes").objectReferenceValue    = nodes;
-                so.FindProperty("_progress").objectReferenceValue = progress;
+                Set(so, "_grid", grid); Set(so, "_map", gen); Set(so, "_ap", ap); Set(so, "_state", state);
+                Set(so, "_nodes", nodes); Set(so, "_progress", progress); Set(so, "_player", player);
+                Set(so, "_notice", notice);
                 so.ApplyModifiedProperties();
+
+                corrFx = Ensure<CorruptionVisuals>(host);
+                var vso = new SerializedObject(corrFx);
+                Set(vso, "_corruption", corr); Set(vso, "_grid", grid); Set(vso, "_fog", fog);
+                Set(vso, "_state", state); Set(vso, "_player", player); Set(vso, "_collapse", collapse);
+                vso.ApplyModifiedProperties();
             }
 
             if (collapse != null)
             {
                 var so = new SerializedObject(collapse);
-                so.FindProperty("_corruption").objectReferenceValue = corr;
+                Set(so, "_corruption", corr);
+                so.ApplyModifiedProperties();
+            }
+
+            // Kara Öz güçlendirmesi: düşman doğurucu çürüme kademesini okur.
+            var spawner = FindComponentAnywhere<EnemySpawner>();
+            if (spawner != null)
+            {
+                var so = new SerializedObject(spawner);
+                Set(so, "_corruption", corr);
                 so.ApplyModifiedProperties();
             }
 
@@ -160,21 +188,103 @@ namespace TacticalRPG.Editor
             RegionPresence presence = null;
             if (gen != null)
             {
-                presence = gen.GetComponent<RegionPresence>();
-                if (presence == null) presence = gen.gameObject.AddComponent<RegionPresence>();
+                presence = Ensure<RegionPresence>(gen.gameObject);
                 var so = new SerializedObject(presence);
-                so.FindProperty("_player").objectReferenceValue = player;
-                so.FindProperty("_map").objectReferenceValue    = gen;
-                so.FindProperty("_state").objectReferenceValue  = state;
+                Set(so, "_player", player); Set(so, "_map", gen); Set(so, "_state", state);
                 so.ApplyModifiedProperties();
+            }
+
+            // ── Bölge kuralları ──────────────────────────────────────────────
+            MissionData huntAmbush = EnsureAmbushMission("Pusu_AvBirligi", "Av Birliği",
+                "Gözcü Kuzgun'un haber verdiği Morvhal av birliği seni yakaladı.", MapNodeType.Encounter,
+                ("Goblin", 2), ("Goblin", 1), ("GoblinSaman", 1));
+            MissionData wakeAmbush = EnsureAmbushMission("Pusu_UyananDev", "Uyanan Dev",
+                "Gürültün uyuyan devi uyandırdı. Acı içinde öfkeli.", MapNodeType.Zindan,
+                ("Yamyam", 3), ("Goblin", 2), ("Goblin", 2));
+
+            RegionSO R(string id) => regions.Find(r => r != null && r.Id == id);
+            var wallet = FindComponentAnywhere<EssenceWallet>();
+            int mechanics = 0;
+            if (rulesGo != null)
+            {
+                var raven = Ensure<RavenWatch>(rulesGo);
+                var rso = WireMechanic(raven, R(KokAhdiRegions.YirtikKoru), gen, grid, player, state, fog, ap, notice, nodes);
+                Set(rso, "_huntAmbush", huntAmbush); Set(rso, "_ambush", ambush); Set(rso, "_safeRegion", R(KokAhdiRegions.HalkaKoyu));
+                rso.ApplyModifiedProperties(); mechanics++;
+
+                var wisp = Ensure<WispLights>(rulesGo);
+                var wso = WireMechanic(wisp, R(KokAhdiRegions.FisiltiBatakligi), gen, grid, player, state, fog, ap, notice, nodes);
+                Set(wso, "_wallet", wallet); Set(wso, "_progress", progress);
+                wso.ApplyModifiedProperties(); mechanics++;
+
+                var sleep = Ensure<SleeperWatch>(rulesGo);
+                var sso = WireMechanic(sleep, R(KokAhdiRegions.UyuyanlarVadisi), gen, grid, player, state, fog, ap, notice, nodes);
+                Set(sso, "_wakeAmbush", wakeAmbush); Set(sso, "_ambush", ambush);
+                sso.ApplyModifiedProperties(); mechanics++;
+
+                var hollow = Ensure<HollowTunnels>(rulesGo);
+                var hso = WireMechanic(hollow, R(KokAhdiRegions.OyukTepeler), gen, grid, player, state, fog, ap, notice, nodes);
+                hso.ApplyModifiedProperties(); mechanics++;
             }
 
             // ── Doğrulama ────────────────────────────────────────────────────
             Debug.Log($"[Bolge] DOGRULAMA — bolge:{regions.Count} set:{(set != null ? set.Count : 0)} " +
                       $"kural-bolge:{(rules != null && rules.Regions != null)} kural-curume:{(rules != null && rules.Corruption != null)} " +
-                      $"uretici:{(gen != null)} curume-yonetici:{(corr != null)} kiyamet-bagi:{(collapse != null && corr != null)} " +
-                      $"bolge-izleyici:{(presence != null)} oyuncu:{(player != null)} sis:{(fog != null)} dugum:{(nodes != null)}");
+                      $"uretici:{(gen != null)} curume-yonetici:{(corr != null)} curume-gorsel:{(corrFx != null)} " +
+                      $"kiyamet-bagi:{(collapse != null && corr != null)} kara-oz-savas:{(spawner != null && corr != null)} " +
+                      $"bolge-izleyici:{(presence != null)} bildirim:{(notice != null)} pusu:{(ambush != null)} " +
+                      $"bolge-kurali:{mechanics}/4 pusu-gorev:{(huntAmbush != null)}/{(wakeAmbush != null)} " +
+                      $"oyuncu:{(player != null)} sis:{(fog != null)} dugum:{(nodes != null)}");
             return 1;
+        }
+
+        private static T Ensure<T>(GameObject go) where T : Component
+        {
+            // "??" KULLANMA: GetComponent sahte null dönebilir (DECISION_LOG tuzaklar).
+            T c = go.GetComponent<T>();
+            if (c == null) c = go.AddComponent<T>();
+            return c;
+        }
+
+        /// <summary>Alan adı yanlışsa sessizce NRE vermesin — uyarı yazsın.</summary>
+        private static void Set(SerializedObject so, string prop, Object value)
+        {
+            SerializedProperty p = so.FindProperty(prop);
+            if (p == null) { Debug.LogWarning($"[Bolge] {so.targetObject.GetType().Name}.{prop} alani yok."); return; }
+            p.objectReferenceValue = value;
+        }
+
+        private static SerializedObject WireMechanic(RegionMechanicBase m, RegionSO region, ChapterMapGenerator gen,
+                                                     HexGridManager grid, PlayerController player, GameStateManager state,
+                                                     FogOfWarManager fog, ActionPointManager ap, NoticeFeed notice,
+                                                     ChapterNodeManager nodes)
+        {
+            var so = new SerializedObject(m);
+            Set(so, "_map", gen); Set(so, "_grid", grid); Set(so, "_player", player); Set(so, "_state", state);
+            Set(so, "_fog", fog); Set(so, "_ap", ap); Set(so, "_notice", notice); Set(so, "_nodes", nodes);
+            Set(so, "_region", region);
+            return so;
+        }
+
+        /// <summary>Pusu görevi (düğümsüz savaş). VARSA DOKUNULMAZ — Efe düşmanları değiştirmiş olabilir.</summary>
+        private static MissionData EnsureAmbushMission(string file, string displayName, string description,
+                                                       MapNodeType tier, params (string cls, int level)[] roster)
+        {
+            string path = $"Assets/Data/Missions/{file}.asset";
+            var existing = AssetDatabase.LoadAssetAtPath<MissionData>(path);
+            if (existing != null) return existing;
+
+            var list = new List<MissionData.EnemySpawn>();
+            foreach (var (cls, level) in roster)
+            {
+                var data = AssetDatabase.LoadAssetAtPath<CharacterClassData>($"Assets/Data/Characters/{cls}.asset");
+                if (data == null) { Debug.LogWarning($"[Bolge] Pusu dusmani yok: {cls}"); continue; }
+                list.Add(new MissionData.EnemySpawn { enemyClass = data, level = level });
+            }
+            MissionData m = EnsureAsset<MissionData>(path);
+            m.EditorInitAmbush(displayName, description, tier, list);
+            EditorUtility.SetDirty(m);
+            return m;
         }
 
         private static RegionSO EnsureRegion(RegionDef def)

@@ -602,7 +602,11 @@ namespace TacticalRPG.Core
             // Savaşa KARO ÜZERİNDEN girildiyse (eski akış: yaklaş → "Savaşa Gir" istemi) düğüm
             // sistemi devrede değildi. İki yolu birleştir: o an oyuncunun üstünde/yanında savaşlı
             // bir düğüm varsa onu bekleyen say → dönüşte tamamlanır ve ÖDÜLÜ verilir.
-            if ((s == GameState.ConfirmMission || s == GameState.Combat) && _pendingCombatNode == null && _player != null)
+            // PUSU savaşı (bölge kuralı açtı — av birliği, uyanan dev) hiçbir düğüme ait DEĞİL: yanındaki
+            // zindan/karşılaşma dönüşte bedavaya "tamamlandı" sayılmasın.
+            MissionData m = _state != null ? (_state.PendingMission != null ? _state.PendingMission : _state.ActiveMission) : null;
+            bool ambush = m != null && m.IsAmbush;
+            if (!ambush && (s == GameState.ConfirmMission || s == GameState.Combat) && _pendingCombatNode == null && _player != null)
             {
                 MapNode n = NodeForCombatEntry(_player.CurrentCoord);
                 if (n != null && !n.Completed && IsCombatNode(n)) _pendingCombatNode = n;

@@ -10,26 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ae6af925f3c31a340a67f2dbdb0b8ff0, type: 3}
-  m_Name: Mission1
+  m_Name: Pusu_AvBirligi
   m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.MissionData
-  _displayName: Goblin Pususu
-  _description: Ilk test gorevi.
-  _tier: 1
-  _combatMap: {fileID: 11400000, guid: 951542e6ea3dd884397181126a132c21, type: 2}
-  _isAmbush: 0
+  _displayName: "Av Birli\u011Fi"
+  _description: "G\xF6zc\xFC Kuzgun'un haber verdi\u011Fi Morvhal av birli\u011Fi
+    seni yakalad\u0131."
+  _tier: 2
+  _combatMap: {fileID: 0}
+  _isAmbush: 1
   _enemyRoster:
   - enemyClass: {fileID: 11400000, guid: 8f1f8e98d62ecf3458a89d4a8ef5de74, type: 2}
     coord:
-      Q: 2
-      R: 7
+      Q: 0
+      R: 0
+    level: 2
+  - enemyClass: {fileID: 11400000, guid: 8f1f8e98d62ecf3458a89d4a8ef5de74, type: 2}
+    coord:
+      Q: 0
+      R: 0
     level: 1
   - enemyClass: {fileID: 11400000, guid: 4be6bd9884b6b2c489b3fa3a9a73177d, type: 2}
     coord:
-      Q: 4
-      R: 7
-    level: 1
-  - enemyClass: {fileID: 11400000, guid: 657252fd86520164b8006de9d3457ff1, type: 2}
-    coord:
-      Q: 3
-      R: 8
+      Q: 0
+      R: 0
     level: 1

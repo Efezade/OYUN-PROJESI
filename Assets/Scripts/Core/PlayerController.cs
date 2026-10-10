@@ -228,6 +228,34 @@ namespace TacticalRPG.Core
             return true;
         }
 
+        /// <summary>
+        /// IŞINLAMA (2026-10-10, bölge kuralları): Kam ANINDA hedef karoya geçer — kovuk tüneli,
+        /// Alaz tuzağı. Süren yürüyüş kesilir. <see cref="OnMoved"/> yayılır (sis, bölge, öz,
+        /// işaretler normal işlesin).
+        ///
+        /// BEDEL: varış bir "adım" sayılmasın diye çağıran ÖNCE
+        /// <see cref="ActionPointManager.GrantForcedMove"/> çağırmalı; asıl bedeli kendisi öder.
+        /// </summary>
+        /// <returns>false = hedef karo yok ya da yürünemez.</returns>
+        public bool TeleportTo(HexCell target)
+        {
+            if (target == null || !target.IsWalkable) return false;
+
+            if (_moveRoutine != null) { StopCoroutine(_moveRoutine); _moveRoutine = null; }
+            IsMoving          = false;
+            StepsRemaining    = 0;
+            _stopRequested    = false;
+            StopReason        = "";
+            _travelMultiplier = 1f;
+            _revealFog        = true;
+
+            CurrentCoord       = target.Coordinate;
+            transform.position = GroundedAt(target);
+            OnMoved?.Invoke(CurrentCoord);
+            RefreshVision();
+            return true;
+        }
+
         /// <summary>İtilme animasyonu: normal yürüyüşten hızlı, küçük bir sıçrama yayıyla —
         /// oyuncu "kendim yürümedim, atladım" diye okusun.</summary>
         private IEnumerator ShoveCoroutine(HexCell target)

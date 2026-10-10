@@ -16,6 +16,23 @@
 
 ---
 
+## 2026-10-10 (4) — Dört bölge kuralı + çürüme savaşa bağlandı + mor katman
+
+**KARAR — Bölge kuralları ortak tabanla (`RegionMechanicBase`) yazıldı:** Gözcü Kuzgun + av birliği
+kovalamacası (Yırtık Koru), Alaz ışıkları hazine/tuzak (Bataklık), uyanış sayacı (Vadi), kovuk
+tünelleri (Tepeler). Ayrıntı ve sayılar: `Docs/BOLGELER.md` §2. Zorla savaş `AmbushLauncher` ile
+açılır; pusu görevi `MissionData.IsAmbush` taşır.
+**NEDEN (Efe):** dört kuralın hepsini seçti + "çürüme savaşı etkilesin: evet".
+**KARAR — Kara Öz güçlendirmesi:** çürük karodan girilen savaşta düşman +0/+1/+2 seviye + mor ışık.
+**DERS:** Çürüme rengi yalnız `_BaseColor` çarpmasıyla verilince oyunda HİÇ görünmedi (Efe: "mor bir
+şey görmedim"). Yeşil doku × mor ≈ koyu gri. Renk vurgusu çarpmayla değil, üstüne binen ayrı bir
+saydam katmanla verilir (`CorruptionVisuals`).
+**DERS:** Pusu savaşı düğüme bağlı değil; `ChapterNodeManager` savaşa girerken oyuncunun yanındaki
+düğümü "bekleyen" sayıyordu. İşaret konmasaydı pusudan dönüşte yandaki zindan bedavaya biterdi.
+**Play'de görülmedi.**
+
+---
+
 ## 2026-10-10 (3) — Harita BÖLGELERE ayrıldı (yarı sabit iskelet) + Kara Aşı çürümesi
 
 **KARAR — Bölüm haritası hikâyedeki 7 bölgeye ayrılır (`RegionSO` / `RegionSetSO`, kural setinde

@@ -35,11 +35,11 @@ Bölgeler yalnız görsel ve düşman olarak değil, **oynanış kuralıyla** da
 |---|---|---|
 | Fısıltı Bataklığı | **Sis:** görüş −1 | ✅ kodda (`RegionSO._visionDelta`) |
 | Hepsi | Bölgeye girince adı ve tek satırlık atmosferi ekranın üstünde görünür | ✅ kodda |
-| Yırtık Koru | **Gözcü Kuzgun:** görüş alanına girersen av birlikleri peşine düşer | öneri |
-| Halka Köyü | Güvenli bölge: karşılaşma/zindan yok, dinlenme + tarif öğrenme | öneri |
-| Fısıltı Bataklığı | **Alazlar** her gün yer değiştirir (hazine ya da tuzak); Mandragora sökülünce çığlık atar ve yakındaki düşmanları uyandırır | öneri |
-| Uyuyanlar Vadisi | **Uyanış sayacı:** uyuyan dev heykellerinin yanından geçtikçe dolar | öneri |
-| Oyuk Tepeler | **Kovuk tünelleri:** bir kovuktan girip diğerinden çık · tapınak = karo üstü bulmaca | öneri (`agac_kovugu` karosu hazır) |
+| Yırtık Koru | **Gözcü Kuzgun** (`RavenWatch`): 3 kuzgun, her gün yer değiştirir; yalnız şu an görülen karoda çizilir, yerde görüş halkası var. Halkaya (2 karo) adım atarsan av birliği 5 karo geriden çıkar ve kovalar: oyuncunun harcadığı her AP ile 1,25 karo ilerler (durup öz toplamak ona mesafe kazandırır). Yetişirse pusu savaşı (`Pusu_AvBirligi`). Halka Köyü'ne varınca ya da gün dönünce iz kaybeder. Gece görüş daraldığı için tehlikeli. | ✅ kodda |
+| Halka Köyü | Av birliği köye giremez (güvenli bölge). Karşılaşma/zindan yasağı ve tarif öğrenme: öneri | kısmen |
+| Fısıltı Bataklığı | **Alaz ışıkları** (`WispLights`): 4 ışık, her gün göçer, sisin içinden de görünür. Üstüne basınca %55 hazine (bölüm özünden 2-4), %45 tuzak (3-5 karo öteye savrulma + 2 AP). İkisi önceden ayırt edilemez. Mandragora çığlığı: öneri | ✅ kodda |
+| Uyuyanlar Vadisi | **Uyanış sayacı** (`SleeperWatch`): dev heykelinin dibinden geçen adım +2, iki karo öteden +1; her gün −3. 8'de en yakın dev uyanır, pusu savaşı (`Pusu_UyananDev`); o dev bir daha uyanmaz. Gözler sayaçla kızarır, vadide alt ortada sayaç görünür. Heykel sayısı 2'den azsa kural ekler. | ✅ kodda |
+| Oyuk Tepeler | **Kovuk tünelleri** (`HollowTunnels`): kovuğun üstünde duran oyuncuya sağda panel açılır. 1 AP ile başka bir kovuğa anında çıkar; görmediği kovuk "bilinmeyen kovuk" diye listelenir. En az 3 kovuk olur. `agac_kovugu` artık Landmark (öz yok). Öz toplanınca kovuk kaybolmasın diye. Tapınak bulmacası: öneri | ✅ kodda |
 | Bayterek'in Kalbi | Kökler her tur yeni hexleri kaplar | öneri (savaş arenası) |
 
 ## 3. Kara Aşı çürümesi: map çapında baskı
@@ -50,8 +50,13 @@ Efe: "evet yap". Kod: `CorruptionManager` + `CorruptionConfigSO`.
   Bayterek'in Kalbi (kalıcı).
 - **Her gün başı:** etkin kaynak yeni karolara yayılır (aşı 3/gün, kalıcı 2/gün, her gün +0,25 artar,
   2. günden başlar). Çürük karo %35 olasılıkla derinleşir: 1 damar · 2 çürük · 3 kararmış.
-- **Görsel:** karo mora çalar (üst renk katmanı), sisli karonun bulutu mor pusa kayar. Oyuncu çürümenin
-  nereye yayıldığını uzaktan görür ama karonun ne olduğunu görmez. HARİTA sekmesinde de görünüyor.
+- **Görsel** (`CorruptionVisuals`): keşfedilmiş çürük karonun üstüne yarı saydam **mor damar katmanı**
+  (damar + obsidyen leke dokusu, kademeyle koyulaşır) + karo hafif kararır; sisli karonun bulutu mor pusa kayar.
+  İlk sürümde yalnız renk ÇARPMASI vardı ve Efe hiç mor görmedi: yeşil doku × mor = koyu gri. İkinci testte de
+  görünmedi (katman soluktu, çürüme hep sisin içindeydi) → katman güçlendirildi, bulut pusu %85, HARİTA sekmesinde
+  keşfedilmemiş çürük karo da mor pus olarak görünüyor, her gün başı "Kara Aşı yayıldı / yaklaşıyor" bildirimi.
+- **Savaş (Kara Öz):** çürük karodan (ya da yanındaki savaş karosundan) girilen savaşta düşmanlara kademe 1/2/3 için
+  +0/+1/+2 seviye; güçlenen düşmanın üstünde soğuk mor ışık; savaş açılırken uyarı yazısı.
 - **Kıyamet bağı:** çökecek karo seçilirken kademe başına ×1,5 ağırlık var; kararmış karo 5,5 kat önce düşer.
   Böylece "karo silinmesi bir sisteme bağlı" (Efe 2026-09-02). Yakın/uzak havuz payı korunuyor.
 - **Arınma:** zorunlu görev = aşı noktası. Bir aşı bölgesindeki zorunlu görev bitince o bölgenin kaynağı
@@ -70,8 +75,8 @@ Mekanik aynen kaldı: başta 2 görev var, zaman ve ekonomiyle artıyor. Görevl
 
 ## 5. Açık sorular / sıradaki adaylar
 
-- Önerilen bölge kurallarından hangileri, hangi sırayla? (Kuzgun, Alaz, uyanış sayacı, kovuk tüneli)
-- Çürümenin savaşa etkisi: kararmış karodan girilen savaşta düşman Kara Öz bonusu almalı mı?
+- Dört bölge kuralı kodda; Play'de ayarlanacak sayılar: kuzgun halkası/av hızı, Alaz hazine oranı, uyanış eşiği, tünel bedeli.
+- Pusu düşmanları geçici (Goblin/Yamyam): hikâyedeki Av Geyiği, Diken Kurdu, Ulu Kayın modelleri gelince değişecek.
 - Kirli öz / temiz öz (hikâye §3): çürük karodan toplanan öz güçlü ama yan etkili olmalı mı?
 - Savaş arenası bölgeye göre (bataklık arenası, kök arenası): arena zemini şu an tek tip.
 - Köksüzler kampı: haritanın kenarında her gün yer değiştiren gezici hex (Taro).

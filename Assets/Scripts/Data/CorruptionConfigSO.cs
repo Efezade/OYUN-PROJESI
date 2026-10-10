@@ -43,6 +43,20 @@ namespace TacticalRPG.Data
                  "Kademe 3 karonun seçilme ağırlığı 1 + 3×bu.")]
         [SerializeField, Min(0f)] private float _collapseWeightPerLevel = 1.5f;
 
+        [Header("Savaş (Kara Öz güçlendirmesi)")]
+        [Tooltip("Çürük karodan (ya da yanından) girilen savaşta düşmanlara eklenen SEVİYE — " +
+                 "kademe 1-2-3 için. Kara Öz ile çağrılmış orman varlıkları (hikâye §9).")]
+        [SerializeField] private int[] _enemyLevelBonus = { 0, 1, 2 };
+        [Tooltip("Güçlenen düşmanın çevresindeki soğuk mor ışık.")]
+        [SerializeField] private Color _enemyAuraColor = new(0.62f, 0.32f, 0.95f);
+
+        [Header("Görünür katman (karonun ÜSTÜNE serilen mor damar)")]
+        [Tooltip("Kademe 1-2-3 katman opaklığı. Renk çarpması tek başına yetmiyor: yeşil × mor = gri.")]
+        [SerializeField] private float[] _overlayAlpha = { 0.6f, 0.82f, 1f };
+        [SerializeField] private Color _overlayColor = new(0.78f, 0.36f, 1f);
+        [Tooltip("Bulut tonunun kademe 1'deki payı (kademe 3 = tam güç). Düşükse yeni çürük sisin altında seçilmez.")]
+        [SerializeField, Range(0f, 1f)] private float _cloudMinShare = 0.65f;
+
         [Header("Görsel")]
         [Tooltip("Kademe 1-2-3 karo rengi (dokuyla ÇARPILIR — beyaz = etkisiz).")]
         [SerializeField] private Color[] _levelTint =
@@ -56,6 +70,24 @@ namespace TacticalRPG.Data
         [SerializeField, Range(0f, 1f)] private float _cloudStrength = 0.55f;
 
         public const int MAX_LEVEL = 3;
+
+        public Color EnemyAuraColor => _enemyAuraColor;
+        public Color OverlayColor   => _overlayColor;
+
+        /// <summary>Bu kademedeki karodan girilen savaşta düşmana eklenecek seviye.</summary>
+        public int EnemyLevelBonus(int level)
+            => level <= 0 || _enemyLevelBonus == null || _enemyLevelBonus.Length == 0 ? 0
+               : Mathf.Max(0, _enemyLevelBonus[Mathf.Clamp(level - 1, 0, _enemyLevelBonus.Length - 1)]);
+
+        /// <summary>Katman opaklığı (0 = katman yok).</summary>
+        public float OverlayAlpha(int level)
+            => level <= 0 || _overlayAlpha == null || _overlayAlpha.Length == 0 ? 0f
+               : _overlayAlpha[Mathf.Clamp(level - 1, 0, _overlayAlpha.Length - 1)];
+
+        /// <summary>Sisli karonun bulut tonu payı.</summary>
+        public float CloudShare(int level)
+            => level <= 0 ? 0f
+               : _cloudStrength * Mathf.Lerp(_cloudMinShare, 1f, (level - 1) / (float)(MAX_LEVEL - 1));
 
         public int   InitialRadius       => _initialRadius;
         public float DeepenChance        => _deepenChance;

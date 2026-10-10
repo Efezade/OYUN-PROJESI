@@ -330,7 +330,8 @@ namespace TacticalRPG.Grid
             E(BatikTas,      "Batık Taşlar (1 taş)",    TileFamily.Stone,  true,  1, EssenceKind.Tas,  Surface.Swamp, 0.40f,0.44f,0.38f),
             E(KodamaYuvasi,  "Kodama Yuvası (2 doğa)",  TileFamily.Nature, true,  2, EssenceKind.Doga, Surface.Moss,  0.38f,0.52f,0.36f),
             E(KokSirti,      "Kök Sırtı",               TileFamily.Plain,  true,  0, EssenceKind.None, Surface.Dirt,  0.52f,0.50f,0.37f),
-            E(AgacKovugu,    "Ağaç Kovuğu (1 doğa)",    TileFamily.Nature, true,  1, EssenceKind.Doga, Surface.Moss,  0.36f,0.34f,0.26f),
+            // Kovuk LANDMARK (öz yok): öz toplanınca karo düzlüğe dönerdi ve tünel kaybolurdu.
+            U(AgacKovugu,    "Ağaç Kovuğu",             TileFamily.Landmark,  0, EssenceKind.None, Surface.Moss,  0.36f,0.34f,0.26f),
             U(RuhTapinagi,   "Eski Ruh Tapınağı",       TileFamily.Landmark,  0, EssenceKind.None, Surface.Stone, 0.53f,0.55f,0.50f),
             E(KokAgi,        "Kök Ağı",                 TileFamily.Plain,  true,  0, EssenceKind.None, Surface.Moss,  0.44f,0.40f,0.28f),
             E(KehribarDamari,"Kehribar Damarı (2 taş)", TileFamily.Stone,  true,  2, EssenceKind.Tas,  Surface.Stone, 0.78f,0.56f,0.22f),

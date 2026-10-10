@@ -23,6 +23,11 @@ namespace TacticalRPG.Data
                  "Normal akışta CombatMapGenerator arenayı üretir, bu alan boş kalabilir.")]
         [SerializeField] private TileMapSO _combatMap;
 
+        [Tooltip("PUSU savaşı (2026-10-10): haritadaki bir düğüme bağlı DEĞİL — bölge kuralı açar " +
+                 "(av birliği yakaladı, dev uyandı). Dönüşte oyuncunun yanındaki savaş düğümü " +
+                 "tamamlanmış SAYILMAZ, ödül verilmez.")]
+        [SerializeField] private bool _isAmbush;
+
         [Header("Düşman Roster (Faz C — savaşa girince spawn olur)")]
         [SerializeField] private List<EnemySpawn> _enemyRoster = new();
 
@@ -31,6 +36,17 @@ namespace TacticalRPG.Data
         public MapNodeType Tier        => _tier;
         public TileMapSO   CombatMap   => _combatMap;
         public IReadOnlyList<EnemySpawn> EnemyRoster => _enemyRoster;
+        public bool        IsAmbush    => _isAmbush;
+
+#if UNITY_EDITOR
+        /// <summary>Kurulum aracı: pusu görevini ilk kez doldurur.</summary>
+        public void EditorInitAmbush(string displayName, string description, MapNodeType tier,
+                                     List<EnemySpawn> roster)
+        {
+            _displayName = displayName; _description = description; _tier = tier;
+            _isAmbush = true; _enemyRoster = roster ?? new List<EnemySpawn>();
+        }
+#endif
 
         /// <summary>Tek bir düşman spawn tanımı: sınıf + savaş haritasındaki konum + seviye.</summary>
         [System.Serializable]

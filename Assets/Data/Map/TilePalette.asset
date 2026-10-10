@@ -1570,7 +1570,7 @@ MonoBehaviour:
     mainWeight: 1
     allowMirror: 0
   - id: agac_kovugu
-    displayName: "A\u011Fa\xE7 Kovu\u011Fu (1 do\u011Fa)"
+    displayName: "A\u011Fa\xE7 Kovu\u011Fu"
     prefab: {fileID: 4011992126213508072, guid: 743013108dc2e2b489996ed64247c8d8, type: 3}
     editorColor: {r: 0.36, g: 0.34, b: 0.26, a: 1}
     isWalkable: 1

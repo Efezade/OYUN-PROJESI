@@ -160,6 +160,12 @@ namespace TacticalRPG.Core
             {
                 // Keşfedilmemiş: karo tipi SIZDIRILMAZ — düz "bilinmiyor" rengi.
                 color = _style != null ? _style.UnexploredColor : new Color(0.2f, 0.18f, 0.14f, 0.5f);
+                // …ama Kara Aşı'nın MOR PUSU uzaktan görünür (sahnedeki bulut tonuyla aynı bilgi):
+                // karo ne olduğu değil, yalnız "orası çürüyor" sızar.
+                float rot = Mathf.Clamp01((1f - cell.OverlayTint.g) * 1.8f);
+                if (rot > 0.01f)
+                    color = Color.Lerp(new Color(color.r, color.g, color.b, Mathf.Max(color.a, 0.55f)),
+                                       new Color(0.55f, 0.22f, 0.80f, 0.85f), rot);
             }
             else
             {
@@ -167,7 +173,8 @@ namespace TacticalRPG.Core
                 color = ColorOf(id) * ShadeOf(coord, id) * DitherOf(coord);
                 // Kara Aşı çürümesi (2026-10-10): karonun üst katman rengi haritada da görünsün —
                 // oyuncu hangi aşı noktasının çürüğü nereye yaydığını HARİTA sekmesinden okur.
-                color *= cell.OverlayTint;
+                float rotK = Mathf.Clamp01((1f - cell.OverlayTint.g) * 1.8f);
+                if (rotK > 0.01f) color = Color.Lerp(color, new Color(0.62f, 0.26f, 0.88f), rotK * 0.7f);
                 if (fog != FogState.Visible)
                     color *= _style != null ? _style.ExploredDim : 0.62f;
                 color.a = 1f;
