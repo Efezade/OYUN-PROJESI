@@ -73,7 +73,7 @@ namespace TacticalRPG.UI
 
         private void OnGUI()
         {
-            if (MenuState.HudsHidden) return;   // tam-ekran menü açıkken IMGUI çizilmez
+            if (MenuState.HudsHidden||StoreHUD.IsOpen) return;
             if (_director == null) return;
             if (_state != null && _state.State != GameState.Overworld) return;
 
@@ -93,7 +93,9 @@ namespace TacticalRPG.UI
 
             var strip = new Rect(x0 - 14f, HudLayout.QuestBarY,
                                  stripW + 28f, HudLayout.QuestBarHeight);
-            ImguiBlocker.Register(strip);   // bar üstündeki tık haritaya düşmesin
+            ImguiBlocker.Register(new Rect(cx-310,HudLayout.QuestBarY,620,HudLayout.QuestBarHeight));
+
+            GUI.Box(new Rect(cx-310,HudLayout.QuestBarY,620,HudLayout.QuestBarHeight),GUIContent.none);
 
             DrawStoneFlourish(strip);
 
@@ -183,8 +185,10 @@ namespace TacticalRPG.UI
             var style = new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize  = 15,
-                fontStyle = FontStyle.Bold
+                fontSize  = 12,
+                fontStyle = FontStyle.Normal,
+                wordWrap = true,
+                padding = new RectOffset(4,4,0,0)
             };
 
             string msg;
@@ -219,7 +223,7 @@ namespace TacticalRPG.UI
                     + (done == open ? "" : " · hepsini bitir → boss taşı");
             }
 
-            GUI.Label(new Rect(cx - 400f, y, 800f, 18f), msg, style);
+            GUI.Label(new Rect(cx - 300f, y, 600f, 40f), msg, style);
         }
 
         /// <summary>" · 3. görev 2 gün sonra (gün 8) · ya da 40 öz daha kazan" — takvim + ekonomi.</summary>

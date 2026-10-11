@@ -137,7 +137,7 @@ namespace TacticalRPG.Core
                 var r = new Rect(rect.x + 10f, rect.y + 40f + i * (rowH + 4f), w - 20f, rowH);
                 bool affordable = _ap == null || _ap.APRemainingToday >= _apCost;
                 GUI.enabled = affordable;
-                if (GUI.Button(r, label, _button)) { _pending = c; _hasPending = true; }
+                if (TacticalRPG.UI.ModernGUI.Button(r, label, TacticalRPG.UI.ModernGUI.Skin.button)) { _pending = c; _hasPending = true; }
                 GUI.enabled = true;
             }
         }

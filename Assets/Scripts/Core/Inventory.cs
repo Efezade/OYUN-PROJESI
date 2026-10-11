@@ -19,6 +19,8 @@ namespace TacticalRPG.Core
     /// </summary>
     public class Inventory : MonoBehaviour
     {
+        [SerializeField] private TestEconomySO _testEconomy;
+        public bool UnlimitedConsumables => _testEconomy != null && _testEconomy.Unlimited;
         public const int SlotsPerCharacter = EquipSlots.Count;
 
         /// <summary>Eşya bu yuvaya takılabilir mi (bölge eşleşmesi)?</summary>
@@ -59,8 +61,10 @@ namespace TacticalRPG.Core
         {
             int n = PotionCount(potion);
             if (n <= 0) return false;
-            if (n == 1) _potions.Remove(potion); else _potions[potion] = n - 1;
+            if (!UnlimitedConsumables)
+            { if (n == 1) _potions.Remove(potion); else _potions[potion] = n - 1; }
             OnChanged?.Invoke();
+            SoundSignals.Play("potion");
             return true;
         }
 
@@ -100,6 +104,7 @@ namespace TacticalRPG.Core
             }
 
             OnChanged?.Invoke();
+            SoundSignals.Play("armor");
             return true;
         }
 
@@ -111,6 +116,7 @@ namespace TacticalRPG.Core
             _equipped[card][slot] = null;
             _bag.Add(item);
             OnChanged?.Invoke();
+            SoundSignals.Play("item_drop");
             return true;
         }
 

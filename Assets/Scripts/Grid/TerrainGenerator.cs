@@ -201,6 +201,9 @@ namespace TacticalRPG.Grid
             // 8) LANDMARK'LAR
             int landmarks = PlaceLandmarks(land, t, elev, coastDist, rnd, p.LandmarkCount, p.LandmarkSpacing,
                                            region, plan);
+            // A world tree occupies real space. Reserve a root collar and a walking ring
+            // before connectivity/start/node selection, never by overwriting runtime nodes.
+            if (plan != null) PrepareStoryLandmarks(land, t, region);
 
             // Tahtaya yaz
             for (int q = 0; q < w; q++)
@@ -211,6 +214,13 @@ namespace TacticalRPG.Grid
             int fringe = PlaceFringe(p, seed, land, tiles);
 
             // ── Sonuç + istatistik ──
+            landCount = 0;
+            if (lay != null) Array.Clear(lay.Size, 0, lay.Size.Length);
+            foreach (var c in Cells(w, h)) if (land[c.q, c.r])
+            {
+                landCount++;
+                if (lay != null && region[c.q, c.r] >= 0) lay.Size[region[c.q, c.r]]++;
+            }
             var res = new MapResult { Tiles = tiles, Land = landCount, Fringe = fringe,
                                       Plan = plan, Region = region, RegionSize = lay?.Size,
                                       Cores = cores, Sources = sources };
@@ -249,6 +259,28 @@ namespace TacticalRPG.Grid
             for (int q = 0; q < w; q++)
                 for (int r = 0; r < h; r++)
                     yield return (q, r);
+        }
+
+        private static void PrepareStoryLandmarks(bool[,] land, string[,] tiles, int[,] regions)
+        {
+            int w = land.GetLength(0), h = land.GetLength(1);
+            var centers = new List<(int q, int r)>();
+            foreach (var c in Cells(w, h))
+                if (tiles[c.q, c.r] == TileCatalog.Bayterek || tiles[c.q, c.r] == TileCatalog.HalkaMeclisi) centers.Add(c);
+            foreach (var center in centers)
+                foreach (var c in Cells(w, h))
+                {
+                    bool village = tiles[center.q, center.r] == TileCatalog.HalkaMeclisi;
+                    int distance = HexDist(center, c);
+                    if (distance == 0 || distance > (village ? 2 : 3)) continue;
+                    var previous = TileCatalog.Get(tiles[c.q, c.r]);
+                    if (previous != null && previous.RegionOnly) continue;
+                    land[c.q, c.r] = true;
+                    tiles[c.q, c.r] = village
+                        ? distance == 1 ? TileCatalog.HalkaZemini : (c.q + c.r) % 3 == 0 ? TileCatalog.DalEv : TileCatalog.FenerYolu
+                        : distance == 1 ? TileCatalog.DevKokler : TileCatalog.KokAgi;
+                    if (regions != null) regions[c.q, c.r] = regions[center.q, center.r];
+                }
         }
 
         // ═════════════════════════════════════════════════════════════════════

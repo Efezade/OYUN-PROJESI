@@ -100,7 +100,7 @@ namespace TacticalRPG.UI
                     if (abilityCount > 0) DrawClassAbilities(cur);
 
                     GUI.enabled = _turnManager.IsPlayerTurn && (_unitAbilities == null || !_unitAbilities.Busy);
-                    if (GUILayout.Button("Turu Bitir", GUILayout.Height(28)))
+                    if (ModernGUI.Button("Turu Bitir", GUILayout.Height(28)))
                         _turnManager.EndPlayerTurn();
                     GUI.enabled = true;
                 }
@@ -129,7 +129,7 @@ namespace TacticalRPG.UI
 
                 string state = cd > 0 ? $"  ({cd} tur)" : "";
                 GUI.enabled = can && !_unitAbilities.Busy;
-                if (GUILayout.Button($"{(armed ? "► " : "")}[{i + 1}] {ab.Name}{state}", GUILayout.Height(28)))
+                if (ModernGUI.Button($"{(armed ? "► " : "")}[{i + 1}] {ab.Name}{state}", GUILayout.Height(28)))
                     _unitAbilities.Arm(i);
                 GUI.enabled = true;
             }
@@ -167,7 +167,7 @@ namespace TacticalRPG.UI
             GUILayout.Label(won ? "★   Z A F E R   ★" : "Y E N I L G I");
             GUILayout.Label(won ? "Tum dusmanlar yok edildi." : "Komutan (Kam) dustu — sefer sona erdi.");
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Overworld'e Don", GUILayout.Height(34)))
+            if (ModernGUI.Button("Overworld'e Don", GUILayout.Height(34)))
                 _state.ReturnToOverworld();
             GUILayout.EndArea();
         }

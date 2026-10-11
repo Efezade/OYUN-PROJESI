@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7ba124cde864526b0451a95a355b90a, type: 3}
+  m_Name: BayterekRoots
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.QuestRootConfigSO
+  _growSecondsPerTile: 0.32
+  _retractSecondsPerTile: 0.12
+  _radius: 0.83
+  _surfaceLift: 0.24
+  _barkMaterial: {fileID: 2100000, guid: 3b73633102153ec40b535280a5cb071c, type: 2}
+  _minimapColor: {r: 0.43, g: 0.24, b: 0.15, a: 1}
+  _burrowAmplitude: 1.05
+  _burrowOffset: -0.42
+  _waveLengthTiles: 3.1
+  _trenchHalfWidth: 0.34
+  _bankLift: 0.23
+  _eruptionHeight: 0.72
+  _settleSeconds: 0.8
+  _earthMaterial: {fileID: 2100000, guid: 36e134c1c41611742be9e14a18be6180, type: 2}
+  _earthTint: {r: 0.28, g: 0.19, b: 0.1, a: 1}
+  _ruptureDustPrefab: {fileID: 384150364369764504, guid: 7f31188fe38f72649bd2811c14bd8d6a, type: 3}

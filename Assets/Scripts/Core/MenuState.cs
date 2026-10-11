@@ -25,6 +25,6 @@ namespace TacticalRPG.Core
 
         /// <summary>IMGUI HUD'ları şu an çizilmeli mi? HER <c>OnGUI</c>'nin İLK satırı bunu sormalı:
         /// <code>if (MenuState.HudsHidden) return;</code></summary>
-        public static bool HudsHidden => IsAnyOpen || IsDraftOpen;
+        public static bool HudsHidden => IsAnyOpen || IsDraftOpen || QuestRootCinematic.IsPlaying;
     }
 }

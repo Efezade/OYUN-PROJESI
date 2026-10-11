@@ -78,15 +78,17 @@ namespace TacticalRPG.Core
         public struct Scope : System.IDisposable
         {
             private readonly Matrix4x4 _saved;
+            private readonly GUISkin _savedSkin;
 
             public Scope(float factor)
             {
                 _saved = GUI.matrix;
+                _savedSkin=GUI.skin;GUI.skin=TacticalRPG.UI.ModernGUI.Skin;
                 GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity,
                                            new Vector3(factor, factor, 1f));
             }
 
-            public void Dispose() => GUI.matrix = _saved;
+            public void Dispose() { GUI.matrix = _saved; GUI.skin=_savedSkin; }
         }
     }
 }

@@ -13,13 +13,15 @@ namespace TacticalRPG.Core
         private readonly List<Unit> _units = new();
 
         public IReadOnlyList<Unit> Units => _units;
+        public event System.Action<Unit> OnUnitRegistered;
+        public event System.Action<Unit> OnUnitRemoved;
 
         public void Register(Unit unit)
         {
-            if (unit != null && !_units.Contains(unit)) _units.Add(unit);
+            if (unit != null && !_units.Contains(unit)) { _units.Add(unit); OnUnitRegistered?.Invoke(unit); }
         }
 
-        public void Unregister(Unit unit) => _units.Remove(unit);
+        public void Unregister(Unit unit) { if (_units.Remove(unit)) OnUnitRemoved?.Invoke(unit); }
 
         /// <summary>Belirtilen koordinattaki yaşayan birimi döndürür (yoksa null).</summary>
         public Unit GetUnitAt(HexCoordinate coord)

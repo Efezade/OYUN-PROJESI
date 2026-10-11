@@ -66,6 +66,7 @@ namespace TacticalRPG.UI
         {
             if (_pages == null || _pages.Length == 0) return;
             index = Mathf.Clamp(index, 0, _pages.Length - 1);
+            if(_current!=index && isActiveAndEnabled)TacticalRPG.Core.SoundSignals.Play("page_turn",.6f);
             _current = index;
 
             for (int i = 0; i < _pages.Length; i++)

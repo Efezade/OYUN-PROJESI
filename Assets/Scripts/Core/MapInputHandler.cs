@@ -115,6 +115,7 @@ namespace TacticalRPG.Core
 
         private void Update()
         {
+            if (QuestRootCinematic.IsPlaying) return;
             if (_player != null && _player.IsMovementLocked)
             {
                 ClearWalkInput();

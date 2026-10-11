@@ -46,8 +46,7 @@ namespace TacticalRPG.UI
 
             foreach (var c in _counters)
             {
-                int amt = _wallet != null ? _wallet.Get(c.type) : 0;
-                if (c.amountLabel != null) c.amountLabel.text = amt.ToString();
+                if (c.amountLabel != null) c.amountLabel.text = _wallet != null ? _wallet.DisplayAmount(c.type) : "0";
 
                 if (_config != null)
                 {

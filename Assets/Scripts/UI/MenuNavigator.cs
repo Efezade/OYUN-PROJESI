@@ -77,6 +77,7 @@ namespace TacticalRPG.UI
 
         private void Update()
         {
+            if (QuestRootCinematic.IsPlaying) return;
             // Esc → açıksa kapat, kapalıysa AYARLAR'ı aç.
             // "Aç" kısmı 2026-08-12'de eklendi: üst sekme barı overworld dışında gizlendiği için
             // savaşta/yerleştirmede ⚙ düğmesine ulaşılamıyor, ayarlar (ses/parlaklık/kamera zoom)

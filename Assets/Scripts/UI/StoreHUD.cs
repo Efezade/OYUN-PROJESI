@@ -34,6 +34,10 @@ namespace TacticalRPG.UI
         [SerializeField] private Color _epic     = new(0.80f, 0.45f, 1.00f);
 
         private bool    _open;
+        public static bool IsOpen{get;private set;}
+        private void LateUpdate()=>IsOpen=_open&&!MenuState.HudsHidden&&_stateManager!=null&&_stateManager.State==GameState.Overworld;
+        private void OnDisable()=>IsOpen=false;
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]private static void ResetOpen()=>IsOpen=false;
         private string  _flash;   // son işlem geri bildirimi
         private float   _flashUntil;
         private Vector2 _scroll;  // stok kaydırma konumu
@@ -61,7 +65,7 @@ namespace TacticalRPG.UI
             ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
             GUILayout.Label("Mağaza yakında");
-            if (GUILayout.Button("Dükkânı Aç", GUILayout.Height(34))) _open = true;
+            if (ModernGUI.Button("Dükkânı Aç", GUILayout.Height(34))) _open = true;
             GUILayout.EndArea();
         }
 
@@ -102,14 +106,14 @@ namespace TacticalRPG.UI
             // REROLL — rafı baştan dizdirir.
             bool canReroll = _wallet == null || _wallet.CanAfford(_store.RerollCost);
             GUI.enabled = canReroll;
-            if (GUILayout.Button($"YENİDEN DİZ (reroll) — {CostText(_store.RerollCost)}", GUILayout.Height(32)))
+            if (ModernGUI.Button($"YENİDEN DİZ (reroll) — {CostText(_store.RerollCost)}", GUILayout.Height(32)))
             {
                 if (_store.TryReroll(_wallet)) Flash("Raf yeniden dizildi!");
                 else                           Flash("Yetersiz öz!");
             }
             GUI.enabled = true;
 
-            if (GUILayout.Button("Kapat", GUILayout.Height(28))) _open = false;
+            if (ModernGUI.Button("Kapat", GUILayout.Height(28))) _open = false;
 
             GUILayout.EndArea();
         }
@@ -134,14 +138,14 @@ namespace TacticalRPG.UI
             if (e.Sold)
             {
                 GUI.enabled = false;
-                GUILayout.Button("SATILDI", GUILayout.Width(140), GUILayout.Height(28));
+                ModernGUI.Button("SATILDI", GUILayout.Width(140), GUILayout.Height(28));
                 GUI.enabled = true;
             }
             else
             {
                 bool afford = _wallet == null || _wallet.CanAfford(e.Price);
                 GUI.enabled = afford && _inventory != null;
-                if (GUILayout.Button(afford ? "Satın Al" : "Yetersiz öz", GUILayout.Width(140), GUILayout.Height(28)))
+                if (ModernGUI.Button(afford ? "Satın Al" : "Yetersiz öz", GUILayout.Width(140), GUILayout.Height(28)))
                 {
                     if (_store.TryBuy(index, _wallet, _inventory)) Flash($"Çantaya eklendi: {e.Name}");
                     else                                           Flash("Alınamadı.");
@@ -161,7 +165,7 @@ namespace TacticalRPG.UI
                 ? _shownTypes : new[] { EssenceType.Tas, EssenceType.Doga };
 
             var sb = new System.Text.StringBuilder("Özler: ");
-            foreach (EssenceType t in types) sb.Append($"  {_wallet.Get(t)} {Name(t)}");
+            foreach (EssenceType t in types) sb.Append($"  {_wallet.DisplayAmount(t)} {Name(t)}");
             GUILayout.Label(sb.ToString());
         }
 

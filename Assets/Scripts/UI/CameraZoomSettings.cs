@@ -140,6 +140,7 @@ namespace TacticalRPG.UI
         private float   _cineTarget  = 1f;
         private Vector3 _shakeBase;
         private Coroutine _shakeCo;
+        [SerializeField] private CameraImpulse _impulse;
 
         /// <summary>1 = normal. Büyü hedeflemesinde >1 verilir; bitince tekrar 1.</summary>
         public void SetCinematicZoom(float multiplier)
@@ -163,6 +164,7 @@ namespace TacticalRPG.UI
         public void Shake(float amount, float seconds)
         {
             if (_camera == null || amount <= 0f || seconds <= 0f) return;
+            if(_impulse!=null){_impulse.Kick(amount,seconds);return;}
             if (_shakeCo != null) StopCoroutine(_shakeCo);
             _shakeCo = StartCoroutine(ShakeRoutine(amount, seconds));
         }

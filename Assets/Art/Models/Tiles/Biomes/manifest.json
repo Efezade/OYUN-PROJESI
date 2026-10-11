@@ -1,0 +1,910 @@
+{
+  "version": 3,
+  "entries": [
+    {
+      "id": "solgun_cayir",
+      "landmark": false,
+      "textures": [
+        "solgun_cayir_color.png"
+      ]
+    },
+    {
+      "id": "solgun_cayir__tasli",
+      "landmark": false,
+      "textures": [
+        "solgun_cayir__tasli_color.png"
+      ]
+    },
+    {
+      "id": "kurumus_koru",
+      "landmark": false,
+      "textures": [
+        "kurumus_koru_color.png"
+      ]
+    },
+    {
+      "id": "bataklik",
+      "landmark": false,
+      "textures": [
+        "bataklik_color.png"
+      ]
+    },
+    {
+      "id": "bataklik__adacik",
+      "landmark": false,
+      "textures": [
+        "bataklik__adacik_color.png"
+      ]
+    },
+    {
+      "id": "sazlik",
+      "landmark": false,
+      "textures": [
+        "sazlik_color.png"
+      ]
+    },
+    {
+      "id": "kok_agi",
+      "landmark": false,
+      "textures": [
+        "kok_agi_color.png"
+      ]
+    },
+    {
+      "id": "kok_agi__kehribar",
+      "landmark": false,
+      "textures": [
+        "kok_agi__kehribar_color.png"
+      ]
+    },
+    {
+      "id": "dev_kokler",
+      "landmark": false,
+      "textures": [
+        "dev_kokler_color.png"
+      ]
+    },
+    {
+      "id": "solgun_cayir__seyrek",
+      "landmark": false,
+      "textures": [
+        "solgun_cayir__seyrek_color.png"
+      ]
+    },
+    {
+      "id": "solgun_cayir__yaprakli",
+      "landmark": false,
+      "textures": [
+        "solgun_cayir__yaprakli_color.png"
+      ]
+    },
+    {
+      "id": "bataklik__kiyi",
+      "landmark": false,
+      "textures": [
+        "bataklik__kiyi_color.png"
+      ]
+    },
+    {
+      "id": "bataklik__koklu",
+      "landmark": false,
+      "textures": [
+        "bataklik__koklu_color.png"
+      ]
+    },
+    {
+      "id": "kok_agi__ince",
+      "landmark": false,
+      "textures": [
+        "kok_agi__ince_color.png"
+      ]
+    },
+    {
+      "id": "kok_agi__yosunlu",
+      "landmark": false,
+      "textures": [
+        "kok_agi__yosunlu_color.png"
+      ]
+    },
+    {
+      "id": "bayterek",
+      "landmark": true,
+      "textures": [
+        "Bayterek_Govde_color.png",
+        "Bayterek_Tac_color.png",
+        "Bayterek_Asi_color.png"
+      ]
+    },
+    {
+      "id": "halka_zemini",
+      "landmark": false,
+      "textures": [
+        "halka_zemini_color.png"
+      ]
+    },
+    {
+      "id": "halka_zemini__yosun",
+      "landmark": false,
+      "textures": [
+        "halka_zemini__yosun_color.png"
+      ]
+    },
+    {
+      "id": "fener_yolu",
+      "landmark": false,
+      "textures": [
+        "fener_yolu_color.png"
+      ]
+    },
+    {
+      "id": "dal_ev",
+      "landmark": false,
+      "textures": [
+        "dal_ev_color.png"
+      ]
+    },
+    {
+      "id": "halka_meclisi",
+      "landmark": false,
+      "textures": [
+        "halka_meclisi_color.png"
+      ]
+    },
+    {
+      "id": "yosun_tarla",
+      "landmark": false,
+      "textures": [
+        "yosun_tarla_color.png"
+      ]
+    },
+    {
+      "id": "yosun_tarla__egrelti",
+      "landmark": false,
+      "textures": [
+        "yosun_tarla__egrelti_color.png"
+      ]
+    },
+    {
+      "id": "kodama_yuvasi",
+      "landmark": false,
+      "textures": [
+        "kodama_yuvasi_color.png"
+      ]
+    },
+    {
+      "id": "dusmus_dev",
+      "landmark": false,
+      "textures": [
+        "dusmus_dev_color.png"
+      ]
+    },
+    {
+      "id": "kadim_orman",
+      "landmark": false,
+      "textures": [
+        "kadim_orman_color.png"
+      ]
+    },
+    {
+      "id": "kok_sirti",
+      "landmark": false,
+      "textures": [
+        "kok_sirti_color.png"
+      ]
+    },
+    {
+      "id": "kok_sirti__tasli",
+      "landmark": false,
+      "textures": [
+        "kok_sirti__tasli_color.png"
+      ]
+    },
+    {
+      "id": "killi_yamac",
+      "landmark": false,
+      "textures": [
+        "killi_yamac_color.png"
+      ]
+    },
+    {
+      "id": "agac_kovugu",
+      "landmark": false,
+      "textures": [
+        "agac_kovugu_color.png"
+      ]
+    },
+    {
+      "id": "ruh_tapinagi",
+      "landmark": false,
+      "textures": [
+        "ruh_tapinagi_color.png"
+      ]
+    },
+    {
+      "id": "hus_korusu",
+      "landmark": false,
+      "textures": [
+        "hus_korusu_color.png"
+      ]
+    },
+    {
+      "id": "uzun_ot",
+      "landmark": false,
+      "textures": [
+        "uzun_ot_color.png"
+      ]
+    },
+    {
+      "id": "az_agacli_ova",
+      "landmark": false,
+      "textures": [
+        "az_agacli_ova_color.png"
+      ]
+    },
+    {
+      "id": "orman",
+      "landmark": false,
+      "textures": [
+        "orman_color.png"
+      ]
+    },
+    {
+      "id": "sik_orman",
+      "landmark": false,
+      "textures": [
+        "sik_orman_color.png"
+      ]
+    },
+    {
+      "id": "meyve_bahcesi",
+      "landmark": false,
+      "textures": [
+        "meyve_bahcesi_color.png"
+      ]
+    },
+    {
+      "id": "taslik_ova",
+      "landmark": false,
+      "textures": [
+        "taslik_ova_color.png"
+      ]
+    },
+    {
+      "id": "kaya_yigini",
+      "landmark": false,
+      "textures": [
+        "kaya_yigini_color.png"
+      ]
+    },
+    {
+      "id": "kara_asi",
+      "landmark": false,
+      "textures": [
+        "kara_asi_color.png"
+      ]
+    },
+    {
+      "id": "zar_yirtigi",
+      "landmark": false,
+      "textures": [
+        "zar_yirtigi_color.png"
+      ]
+    },
+    {
+      "id": "halka_kutuk_aniti",
+      "landmark": true,
+      "textures": [
+        "Halka_Kutuk_Aniti_color.png"
+      ]
+    },
+    {
+      "id": "sig_su",
+      "landmark": false,
+      "textures": [
+        "sig_su_color.png"
+      ]
+    },
+    {
+      "id": "derin_su",
+      "landmark": false,
+      "textures": [
+        "derin_su_color.png"
+      ]
+    },
+    {
+      "id": "sis_perdesi",
+      "landmark": false,
+      "textures": [
+        "sis_perdesi_color.png"
+      ]
+    },
+    {
+      "id": "uzak_kayalik",
+      "landmark": false,
+      "textures": [
+        "uzak_kayalik_color.png"
+      ]
+    },
+    {
+      "id": "girdap",
+      "landmark": false,
+      "textures": [
+        "girdap_color.png"
+      ]
+    },
+    {
+      "id": "ova",
+      "landmark": false,
+      "textures": [
+        "ova_color.png"
+      ]
+    },
+    {
+      "id": "bozkir",
+      "landmark": false,
+      "textures": [
+        "bozkir_color.png"
+      ]
+    },
+    {
+      "id": "kurak_toprak",
+      "landmark": false,
+      "textures": [
+        "kurak_toprak_color.png"
+      ]
+    },
+    {
+      "id": "tundra",
+      "landmark": false,
+      "textures": [
+        "tundra_color.png"
+      ]
+    },
+    {
+      "id": "karli_ova",
+      "landmark": false,
+      "textures": [
+        "karli_ova_color.png"
+      ]
+    },
+    {
+      "id": "kumul",
+      "landmark": false,
+      "textures": [
+        "kumul_color.png"
+      ]
+    },
+    {
+      "id": "sahil_kumu",
+      "landmark": false,
+      "textures": [
+        "sahil_kumu_color.png"
+      ]
+    },
+    {
+      "id": "lavanta_tarlasi",
+      "landmark": false,
+      "textures": [
+        "lavanta_tarlasi_color.png"
+      ]
+    },
+    {
+      "id": "bol_taslik_ova",
+      "landmark": false,
+      "textures": [
+        "bol_taslik_ova_color.png"
+      ]
+    },
+    {
+      "id": "cakil_yatagi",
+      "landmark": false,
+      "textures": [
+        "cakil_yatagi_color.png"
+      ]
+    },
+    {
+      "id": "mermer_damari",
+      "landmark": false,
+      "textures": [
+        "mermer_damari_color.png"
+      ]
+    },
+    {
+      "id": "obsidyen_tarla",
+      "landmark": false,
+      "textures": [
+        "obsidyen_tarla_color.png"
+      ]
+    },
+    {
+      "id": "kirmizi_kaya",
+      "landmark": false,
+      "textures": [
+        "kirmizi_kaya_color.png"
+      ]
+    },
+    {
+      "id": "nadir_yuksek_orman",
+      "landmark": false,
+      "textures": [
+        "nadir_yuksek_orman_color.png"
+      ]
+    },
+    {
+      "id": "bambu_koru",
+      "landmark": false,
+      "textures": [
+        "bambu_koru_color.png"
+      ]
+    },
+    {
+      "id": "mantar_ormani",
+      "landmark": false,
+      "textures": [
+        "mantar_ormani_color.png"
+      ]
+    },
+    {
+      "id": "bataklik_otu",
+      "landmark": false,
+      "textures": [
+        "bataklik_otu_color.png"
+      ]
+    },
+    {
+      "id": "fundalik",
+      "landmark": false,
+      "textures": [
+        "fundalik_color.png"
+      ]
+    },
+    {
+      "id": "kavak_sirasi",
+      "landmark": false,
+      "textures": [
+        "kavak_sirasi_color.png"
+      ]
+    },
+    {
+      "id": "kopru",
+      "landmark": false,
+      "textures": [
+        "kopru_color.png"
+      ]
+    },
+    {
+      "id": "sig_gecit",
+      "landmark": false,
+      "textures": [
+        "sig_gecit_color.png"
+      ]
+    },
+    {
+      "id": "dag_gecidi",
+      "landmark": false,
+      "textures": [
+        "dag_gecidi_color.png"
+      ]
+    },
+    {
+      "id": "dag",
+      "landmark": false,
+      "textures": [
+        "dag_color.png"
+      ]
+    },
+    {
+      "id": "yuksek_dag",
+      "landmark": false,
+      "textures": [
+        "yuksek_dag_color.png"
+      ]
+    },
+    {
+      "id": "kayalik",
+      "landmark": false,
+      "textures": [
+        "kayalik_color.png"
+      ]
+    },
+    {
+      "id": "ucurum",
+      "landmark": false,
+      "textures": [
+        "ucurum_color.png"
+      ]
+    },
+    {
+      "id": "volkanik_kaya",
+      "landmark": false,
+      "textures": [
+        "volkanik_kaya_color.png"
+      ]
+    },
+    {
+      "id": "dev_kaya",
+      "landmark": false,
+      "textures": [
+        "dev_kaya_color.png"
+      ]
+    },
+    {
+      "id": "sutun_kaya",
+      "landmark": false,
+      "textures": [
+        "sutun_kaya_color.png"
+      ]
+    },
+    {
+      "id": "karanlik_orman",
+      "landmark": false,
+      "textures": [
+        "karanlik_orman_color.png"
+      ]
+    },
+    {
+      "id": "dikenli_calilik",
+      "landmark": false,
+      "textures": [
+        "dikenli_calilik_color.png"
+      ]
+    },
+    {
+      "id": "gol",
+      "landmark": false,
+      "textures": [
+        "gol_color.png"
+      ]
+    },
+    {
+      "id": "buz_golu",
+      "landmark": false,
+      "textures": [
+        "buz_golu_color.png"
+      ]
+    },
+    {
+      "id": "bataklik_golu",
+      "landmark": false,
+      "textures": [
+        "bataklik_golu_color.png"
+      ]
+    },
+    {
+      "id": "kaynak_golu",
+      "landmark": false,
+      "textures": [
+        "kaynak_golu_color.png"
+      ]
+    },
+    {
+      "id": "nehir",
+      "landmark": false,
+      "textures": [
+        "nehir_color.png"
+      ]
+    },
+    {
+      "id": "sellale",
+      "landmark": false,
+      "textures": [
+        "sellale_color.png"
+      ]
+    },
+    {
+      "id": "dikilitas",
+      "landmark": false,
+      "textures": [
+        "dikilitas_color.png"
+      ]
+    },
+    {
+      "id": "harabe",
+      "landmark": false,
+      "textures": [
+        "harabe_color.png"
+      ]
+    },
+    {
+      "id": "tas_daire",
+      "landmark": false,
+      "textures": [
+        "tas_daire_color.png"
+      ]
+    },
+    {
+      "id": "dev_agac",
+      "landmark": false,
+      "textures": [
+        "dev_agac_color.png"
+      ]
+    },
+    {
+      "id": "krater",
+      "landmark": false,
+      "textures": [
+        "krater_color.png"
+      ]
+    },
+    {
+      "id": "kemik_tarlasi",
+      "landmark": false,
+      "textures": [
+        "kemik_tarlasi_color.png"
+      ]
+    },
+    {
+      "id": "terk_edilmis_kule",
+      "landmark": false,
+      "textures": [
+        "terk_edilmis_kule_color.png"
+      ]
+    },
+    {
+      "id": "sunak",
+      "landmark": false,
+      "textures": [
+        "sunak_color.png"
+      ]
+    },
+    {
+      "id": "kadim_kapi",
+      "landmark": false,
+      "textures": [
+        "kadim_kapi_color.png"
+      ]
+    },
+    {
+      "id": "isik_cukuru",
+      "landmark": false,
+      "textures": [
+        "isik_cukuru_color.png"
+      ]
+    },
+    {
+      "id": "gemi_enkazi",
+      "landmark": false,
+      "textures": [
+        "gemi_enkazi_color.png"
+      ]
+    },
+    {
+      "id": "mandragora_yatagi",
+      "landmark": false,
+      "textures": [
+        "mandragora_yatagi_color.png"
+      ]
+    },
+    {
+      "id": "batik_tas",
+      "landmark": false,
+      "textures": [
+        "batik_tas_color.png"
+      ]
+    },
+    {
+      "id": "kehribar_damari",
+      "landmark": false,
+      "textures": [
+        "kehribar_damari_color.png"
+      ]
+    },
+    {
+      "id": "aug_ocak",
+      "landmark": false,
+      "textures": [
+        "aug_ocak_color.png"
+      ]
+    },
+    {
+      "id": "aug_tuzak_tasi",
+      "landmark": false,
+      "textures": [
+        "aug_tuzak_tasi_color.png"
+      ]
+    },
+    {
+      "id": "aug_camur",
+      "landmark": false,
+      "textures": [
+        "aug_camur_color.png"
+      ]
+    },
+    {
+      "id": "aug_korku_sisi",
+      "landmark": false,
+      "textures": [
+        "aug_korku_sisi_color.png"
+      ]
+    },
+    {
+      "id": "aug_diken",
+      "landmark": false,
+      "textures": [
+        "aug_diken_color.png"
+      ]
+    },
+    {
+      "id": "aug_sarsinti",
+      "landmark": false,
+      "textures": [
+        "aug_sarsinti_color.png"
+      ]
+    },
+    {
+      "id": "aug_ruh_kapisi",
+      "landmark": false,
+      "textures": [
+        "aug_ruh_kapisi_color.png"
+      ]
+    },
+    {
+      "id": "aug_duvar",
+      "landmark": false,
+      "textures": [
+        "aug_duvar_color.png"
+      ]
+    },
+    {
+      "id": "aug_bosluk",
+      "landmark": false,
+      "textures": [
+        "aug_bosluk_color.png"
+      ]
+    },
+    {
+      "id": "aug_ates_ficisi",
+      "landmark": false,
+      "textures": [
+        "aug_ates_ficisi_color.png"
+      ]
+    },
+    {
+      "id": "aug_buz_kabugu",
+      "landmark": false,
+      "textures": [
+        "aug_buz_kabugu_color.png"
+      ]
+    },
+    {
+      "id": "aug_ruh_bombasi",
+      "landmark": false,
+      "textures": [
+        "aug_ruh_bombasi_color.png"
+      ]
+    },
+    {
+      "id": "aug_cig_tasi",
+      "landmark": false,
+      "textures": [
+        "aug_cig_tasi_color.png"
+      ]
+    },
+    {
+      "id": "aug_kalkan_duvari",
+      "landmark": false,
+      "textures": [
+        "aug_kalkan_duvari_color.png"
+      ]
+    },
+    {
+      "id": "aug_ley_damari",
+      "landmark": false,
+      "textures": [
+        "aug_ley_damari_color.png"
+      ]
+    },
+    {
+      "id": "aug_kutsal_zemin",
+      "landmark": false,
+      "textures": [
+        "aug_kutsal_zemin_color.png"
+      ]
+    },
+    {
+      "id": "aug_golge_yarigi",
+      "landmark": false,
+      "textures": [
+        "aug_golge_yarigi_color.png"
+      ]
+    },
+    {
+      "id": "aug_davul_tasi",
+      "landmark": false,
+      "textures": [
+        "aug_davul_tasi_color.png"
+      ]
+    },
+    {
+      "id": "kule",
+      "landmark": false,
+      "textures": [
+        "kule_color.png"
+      ]
+    },
+    {
+      "id": "magaza",
+      "landmark": false,
+      "textures": [
+        "magaza_color.png"
+      ]
+    },
+    {
+      "id": "magara",
+      "landmark": false,
+      "textures": [
+        "magara_color.png"
+      ]
+    },
+    {
+      "id": "kamp",
+      "landmark": false,
+      "textures": [
+        "kamp_color.png"
+      ]
+    },
+    {
+      "id": "gorev_alani",
+      "landmark": false,
+      "textures": [
+        "gorev_alani_color.png"
+      ]
+    },
+    {
+      "id": "gorev_tamam",
+      "landmark": false,
+      "textures": [
+        "gorev_tamam_color.png"
+      ]
+    },
+    {
+      "id": "aug_ruzgar_tasi",
+      "landmark": false,
+      "textures": [
+        "aug_ruzgar_tasi_color.png"
+      ]
+    },
+    {
+      "id": "aug_kalkan_tasi",
+      "landmark": false,
+      "textures": [
+        "aug_kalkan_tasi_color.png"
+      ]
+    },
+    {
+      "id": "aug_ata_tasi",
+      "landmark": false,
+      "textures": [
+        "aug_ata_tasi_color.png"
+      ]
+    },
+    {
+      "id": "aug_ofke_tasi",
+      "landmark": false,
+      "textures": [
+        "aug_ofke_tasi_color.png"
+      ]
+    },
+    {
+      "id": "aug_agirlik",
+      "landmark": false,
+      "textures": [
+        "aug_agirlik_color.png"
+      ]
+    },
+    {
+      "id": "aug_nisan_kayasi",
+      "landmark": false,
+      "textures": [
+        "aug_nisan_kayasi_color.png"
+      ]
+    },
+    {
+      "id": "cam_ormani",
+      "landmark": false,
+      "textures": [
+        "cam_ormani_color.png"
+      ]
+    }
+  ]
+}

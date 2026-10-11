@@ -1,0 +1,758 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1a5d3afb1b142ad93735d984ae2b7d4, type: 3}
+  m_Name: SoundLibrary
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.SoundLibrarySO
+  _cues:
+  - id: ui_hover
+    variants:
+    - {fileID: 8300000, guid: 0901df54f11b47d78436266d8ef095b7, type: 3}
+    - {fileID: 8300000, guid: 60682c94e50b4f3ba010848c808e887d, type: 3}
+    - {fileID: 8300000, guid: ca6cab6a04b34d459c00953e182d5a03, type: 3}
+    volume: 0.371
+    cooldown: 0.09
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: ui_focus
+    variants:
+    - {fileID: 8300000, guid: 09d28ec84c1c4de9887c2f4cce965644, type: 3}
+    - {fileID: 8300000, guid: 8797204c8ce449cea1f52cde9cd0f273, type: 3}
+    - {fileID: 8300000, guid: fe5189614467495da006541c4e1f9f9c, type: 3}
+    volume: 0.16
+    cooldown: 0.09
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: ui_click
+    variants:
+    - {fileID: 8300000, guid: a931de2f8fea455291de9f7a9c98e045, type: 3}
+    - {fileID: 8300000, guid: 82c3a19ebeda45dc85bba272fc45188b, type: 3}
+    - {fileID: 8300000, guid: 3eab6edb616649a4baee0a22cdcf2058, type: 3}
+    volume: 0.33
+    cooldown: 0.04
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: ui_tab
+    variants:
+    - {fileID: 8300000, guid: 86b51fa7da374534ae4f2cfc309b895a, type: 3}
+    - {fileID: 8300000, guid: e2ddf60aac0a4e5b92e1f7e51a7e8384, type: 3}
+    - {fileID: 8300000, guid: 4f2ec430e5f949539b0818e1d097107e, type: 3}
+    volume: 0.28
+    cooldown: 0.1
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: ui_slider
+    variants:
+    - {fileID: 8300000, guid: 6edf826ac659435faa0060a18ee5115f, type: 3}
+    - {fileID: 8300000, guid: 5aec33221f89409d834d13d9dd0fb1f1, type: 3}
+    - {fileID: 8300000, guid: 696e6e4848f44a9d85a37211b8a196b6, type: 3}
+    volume: 0.19
+    cooldown: 0.07
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: ui_toggle
+    variants:
+    - {fileID: 8300000, guid: bccc596de6f64bcd80a1e03fd944bf4f, type: 3}
+    - {fileID: 8300000, guid: 27f46734d78b40dfaca6c1a1076d774b, type: 3}
+    - {fileID: 8300000, guid: 747299961e7b4c13a3b013b2b0161bd6, type: 3}
+    volume: 0.3
+    cooldown: 0.09
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: ui_open
+    variants:
+    - {fileID: 8300000, guid: 83a851e30a7447388cd545d0f3df8f0d, type: 3}
+    - {fileID: 8300000, guid: 4342bd5286fe482aa69ae6e02923717d, type: 3}
+    - {fileID: 8300000, guid: 71c68e1abb5347cab0d2320469986764, type: 3}
+    volume: 0.32
+    cooldown: 0.15
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: ui_close
+    variants:
+    - {fileID: 8300000, guid: 861f4d5cf1d742edbbb11e385d7c8c20, type: 3}
+    - {fileID: 8300000, guid: 6ba1c6ec6f0a424b88508affc9fcb1c2, type: 3}
+    - {fileID: 8300000, guid: cf9dcb9aa18a4cbf82a4bfe2945e4add, type: 3}
+    volume: 0.25
+    cooldown: 0.15
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: ui_select
+    variants:
+    - {fileID: 8300000, guid: cc3f86b0a7fe42ae95727a9b6a6a46a9, type: 3}
+    - {fileID: 8300000, guid: 5e94fd828b6f4d81964f2bd0b2e12902, type: 3}
+    - {fileID: 8300000, guid: 49c6e1b6b27349e5b398aa962e55ac56, type: 3}
+    volume: 0.26
+    cooldown: 0.06
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: ui_tick
+    variants:
+    - {fileID: 8300000, guid: 6026eea5d8dc47c29132d3c3f3310710, type: 3}
+    - {fileID: 8300000, guid: 308ae7fdc1a64ec3ae200fed535737b4, type: 3}
+    - {fileID: 8300000, guid: 34c8c1f963b342ee9d3634ab95df99d3, type: 3}
+    volume: 0.12
+    cooldown: 0.12
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: page_turn
+    variants:
+    - {fileID: 8300000, guid: 119d2720fd77452fb16596a141f61a1f, type: 3}
+    - {fileID: 8300000, guid: 47424ebcf5434e33a90afbe0945f4738, type: 3}
+    - {fileID: 8300000, guid: 1dfb73ef480047d89933acf5c8e5de87, type: 3}
+    volume: 0.38
+    cooldown: 0.2
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: scroll
+    variants:
+    - {fileID: 8300000, guid: a7a56c1374194110bfd737fad86095c7, type: 3}
+    - {fileID: 8300000, guid: e0045baa844849c686d4dc110723367e, type: 3}
+    - {fileID: 8300000, guid: f01b82888a9d4d769cc9c177c6f686e9, type: 3}
+    volume: 0.14
+    cooldown: 0.15
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: card_pick
+    variants:
+    - {fileID: 8300000, guid: 26bddfa9bee84ac1990540d4164006f7, type: 3}
+    - {fileID: 8300000, guid: 0e10f9db487e432582101af83deb7b9e, type: 3}
+    - {fileID: 8300000, guid: c5c25f0a3a844fadb7684619b99ef2d2, type: 3}
+    volume: 0.36
+    cooldown: 0.1
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: item_drag
+    variants:
+    - {fileID: 8300000, guid: 896d75fd2c7f4262bb12367e65b73b09, type: 3}
+    - {fileID: 8300000, guid: ac9624661c304a69960357a034f1f033, type: 3}
+    - {fileID: 8300000, guid: 1ee48f8b892e46d18ac0c5cd03ddcae1, type: 3}
+    volume: 0.24
+    cooldown: 0.1
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: item_drop
+    variants:
+    - {fileID: 8300000, guid: da127388e27940b39053ea537fe59188, type: 3}
+    - {fileID: 8300000, guid: 87a614bbaee34040861addd9313df240, type: 3}
+    - {fileID: 8300000, guid: 0f5d7ab6eefe4c2aa28b206ea907db16, type: 3}
+    volume: 0.36
+    cooldown: 0.1
+    bus: 1
+    pitchVariation: 0.025
+    voiceLimit: 3
+  - id: denied
+    variants:
+    - {fileID: 8300000, guid: 076d20efdb0f4df1ac5900ee259147d3, type: 3}
+    - {fileID: 8300000, guid: 1977aeb69aee42c094464a3d472837df, type: 3}
+    - {fileID: 8300000, guid: baa1ed1b81154d9ab29f592a7413fd85, type: 3}
+    volume: 0.42
+    cooldown: 0.25
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: step_grass
+    variants:
+    - {fileID: 8300000, guid: 1a3ed1a83d0643daa17a53dc97ae8a1a, type: 3}
+    - {fileID: 8300000, guid: 0b5c69ceb00e42d480cc5aefd787aa45, type: 3}
+    - {fileID: 8300000, guid: a478d2325b4b44798c0a97e0ebccd8e7, type: 3}
+    volume: 0.38
+    cooldown: 0.13
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: step_wood
+    variants:
+    - {fileID: 8300000, guid: fcb15a2b091b4160b16eebe890a111f8, type: 3}
+    - {fileID: 8300000, guid: 16685c9162b74e82871d4ed4dbeade21, type: 3}
+    - {fileID: 8300000, guid: 42cb0304fece4d7dafd969ae06d192aa, type: 3}
+    volume: 0.42
+    cooldown: 0.13
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: step_stone
+    variants:
+    - {fileID: 8300000, guid: 139be32aa3f04bc2bf65b2e3a2514d50, type: 3}
+    - {fileID: 8300000, guid: 28f8807fd8c54aadbfbb73097c9c6267, type: 3}
+    - {fileID: 8300000, guid: 18c9d4a4662c48daa6ba983b2fe113d7, type: 3}
+    volume: 0.4
+    cooldown: 0.13
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: step_gravel
+    variants:
+    - {fileID: 8300000, guid: 0fbefcba5ef9445096673e6113ac4669, type: 3}
+    - {fileID: 8300000, guid: 95b24706726a4288b2e7fac96bc2216f, type: 3}
+    - {fileID: 8300000, guid: 49c0d7efbeef45b7a370b8720307948b, type: 3}
+    volume: 0.36
+    cooldown: 0.13
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: step_water
+    variants:
+    - {fileID: 8300000, guid: 2bc7f0b39d274da482cbb30dcaf96f6b, type: 3}
+    - {fileID: 8300000, guid: 2831bbaad65b4658a4acb8138088da21, type: 3}
+    - {fileID: 8300000, guid: 8601f0e4fbd440adbd0ddf9415e46767, type: 3}
+    volume: 0.4
+    cooldown: 0.13
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: step_mud
+    variants:
+    - {fileID: 8300000, guid: 4e29c4e6ae064db8bd1c9fcd948e380c, type: 3}
+    - {fileID: 8300000, guid: 434a10a01c5e4ad4b560e3500d882ed6, type: 3}
+    - {fileID: 8300000, guid: aa8a3b7c4ed049108a7db44e44b43101, type: 3}
+    volume: 0.38
+    cooldown: 0.13
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: sword
+    variants:
+    - {fileID: 8300000, guid: 74d613176a694537a1bc18fea8e8da2a, type: 3}
+    - {fileID: 8300000, guid: f6a0cf6d185f4844b0d20d52e695b789, type: 3}
+    - {fileID: 8300000, guid: 41ceacf9313f4f928f6cc3a2305ed90a, type: 3}
+    volume: 0.58
+    cooldown: 0.07
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: axe
+    variants:
+    - {fileID: 8300000, guid: 742aa1b78deb482d884daab3b62ff3d9, type: 3}
+    - {fileID: 8300000, guid: e61913c07da14eef900c9e779dcc2069, type: 3}
+    - {fileID: 8300000, guid: c8379c044f424e00854ce68d969624a3, type: 3}
+    volume: 0.66
+    cooldown: 0.08
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: spear
+    variants:
+    - {fileID: 8300000, guid: 9dd58926f25043d4a99fd5a743931716, type: 3}
+    - {fileID: 8300000, guid: 29842a6712094413b79a554a7f63d428, type: 3}
+    - {fileID: 8300000, guid: 5b11c3d0fb054294930ea8ea2beccbfa, type: 3}
+    volume: 0.53
+    cooldown: 0.07
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: bow
+    variants:
+    - {fileID: 8300000, guid: c8794bfe0b674caa83b912f33801cae5, type: 3}
+    - {fileID: 8300000, guid: 4fefa7fb0629453abdb34b71d2291bdc, type: 3}
+    - {fileID: 8300000, guid: 52df685494a94277aab9592955287f29, type: 3}
+    volume: 0.5
+    cooldown: 0.08
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: whoosh
+    variants:
+    - {fileID: 8300000, guid: 3bc0c326d0244943aed17c0f1e4bde81, type: 3}
+    - {fileID: 8300000, guid: 3e4d52ef3456479fb0550f17a369e69d, type: 3}
+    - {fileID: 8300000, guid: 7653d16dd44a432095b848a17f07e310, type: 3}
+    volume: 0.42
+    cooldown: 0.1
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: dodge
+    variants:
+    - {fileID: 8300000, guid: 55c7738dc8574e8f88470feb92e0039d, type: 3}
+    - {fileID: 8300000, guid: 31f8d898e60a4481a198e09a593b5408, type: 3}
+    - {fileID: 8300000, guid: 68bc5973b2544d3685636ec7c33134cf, type: 3}
+    volume: 0.4
+    cooldown: 0.1
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: impact
+    variants:
+    - {fileID: 8300000, guid: a2e9652641b14c808803d4f7e8d063fc, type: 3}
+    - {fileID: 8300000, guid: 61812ef8e6024a0699b85ea571dbc98a, type: 3}
+    - {fileID: 8300000, guid: 8425e985a71f4fc38b776f42b2f5d509, type: 3}
+    volume: 0.6
+    cooldown: 0.05
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: shield
+    variants:
+    - {fileID: 8300000, guid: 9c3dfa1fede544f593b8790c1881f4b8, type: 3}
+    - {fileID: 8300000, guid: 6de444b890e245689a32914d3395ffd5, type: 3}
+    - {fileID: 8300000, guid: 061a6be67c904fcbae2e022d2ef5a5f5, type: 3}
+    volume: 0.56
+    cooldown: 0.08
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: parry
+    variants:
+    - {fileID: 8300000, guid: d25e4588d01b46adae8db4065e901ac3, type: 3}
+    - {fileID: 8300000, guid: d292704ac8264453b94a5906e6343ae6, type: 3}
+    - {fileID: 8300000, guid: ca1b337e58824e6a99689f1ace306653, type: 3}
+    volume: 0.62
+    cooldown: 0.12
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: armor
+    variants:
+    - {fileID: 8300000, guid: f7b8dfd9f5224a3bbbb8c2cff0637b2b, type: 3}
+    - {fileID: 8300000, guid: 28dedccb4ac14adb80d28f3b3430bcf1, type: 3}
+    - {fileID: 8300000, guid: fbd5e359410e4e90a9cf4adc91f67018, type: 3}
+    volume: 0.32
+    cooldown: 0.1
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: trap
+    variants:
+    - {fileID: 8300000, guid: 7ffa0fa63b794dacbcee4e418cf17e80, type: 3}
+    - {fileID: 8300000, guid: 867c8d905f344021944b00509535d45c, type: 3}
+    - {fileID: 8300000, guid: 9b2064e53fef4fdfb0fba7622e3a0169, type: 3}
+    volume: 0.53
+    cooldown: 0.1
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: wood_crack
+    variants:
+    - {fileID: 8300000, guid: 564c94efff7e4a43abc24fee7a16fbba, type: 3}
+    - {fileID: 8300000, guid: ed942f9a1f114078beed4c87cd644437, type: 3}
+    - {fileID: 8300000, guid: 55adcc4ad788428ebc1473eff83d0e13, type: 3}
+    volume: 0.5
+    cooldown: 0.12
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: stone_crack
+    variants:
+    - {fileID: 8300000, guid: b8ee5838ef524400882fdfee7391b798, type: 3}
+    - {fileID: 8300000, guid: 519e5ff465c047ffbe61051fe14e9488, type: 3}
+    - {fileID: 8300000, guid: b35b31b1be304fe281849482af49f82a, type: 3}
+    volume: 0.55
+    cooldown: 0.15
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: collapse
+    variants:
+    - {fileID: 8300000, guid: 3048ee990874494b83cc0a71407f3f39, type: 3}
+    - {fileID: 8300000, guid: f41343e16f9142269fd3075bbd958b47, type: 3}
+    - {fileID: 8300000, guid: 10f5e4f01963494896f716426511b874, type: 3}
+    volume: 0.75
+    cooldown: 0.3
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: quake
+    variants:
+    - {fileID: 8300000, guid: 539e77d43a794d9cad399607d8e9a903, type: 3}
+    - {fileID: 8300000, guid: 8bb2f9ecb4a0442baa097077659d361b, type: 3}
+    - {fileID: 8300000, guid: a1641388a1ea4fbd9a72f07a76779225, type: 3}
+    volume: 0.66
+    cooldown: 0.65
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: root_grow
+    variants:
+    - {fileID: 8300000, guid: ef69c854eb4d4ddcbc6ad8189a6aa922, type: 3}
+    - {fileID: 8300000, guid: d9d4ae5257704871a52f714537b5111c, type: 3}
+    - {fileID: 8300000, guid: f6c62bc70e1c40669a6d1d264f15958c, type: 3}
+    volume: 0.58
+    cooldown: 0.7
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 2
+  - id: root_retract
+    variants:
+    - {fileID: 8300000, guid: 73c7c0a95a274a94818120f18d706782, type: 3}
+    - {fileID: 8300000, guid: d35bd3220c524bdaa98b1435694b2b6c, type: 3}
+    - {fileID: 8300000, guid: 216af1fa9393421ab84d2a9f8d4fd906, type: 3}
+    volume: 0.45
+    cooldown: 0.65
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 2
+  - id: void_open
+    variants:
+    - {fileID: 8300000, guid: 45d14dd33ced427ab78b5f16895916dc, type: 3}
+    - {fileID: 8300000, guid: 5b1dea35f1184ebeb70cd3394e7a61da, type: 3}
+    - {fileID: 8300000, guid: 4c1c9be0762f4cbabc243764809f8850, type: 3}
+    volume: 0.5
+    cooldown: 0.3
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: void_close
+    variants:
+    - {fileID: 8300000, guid: d9972c614cf7445fae331bdfd9b1a67b, type: 3}
+    - {fileID: 8300000, guid: cd99c1b77f2b4150bc1117bbfd1d34ae, type: 3}
+    - {fileID: 8300000, guid: 9f71aca255664e4b8fb0bd40d0866c9c, type: 3}
+    volume: 0.5
+    cooldown: 0.3
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: corruption
+    variants:
+    - {fileID: 8300000, guid: 6bf068d73b4a436f84f74d590ba4fc87, type: 3}
+    - {fileID: 8300000, guid: 8f2a3e6386ba4d1ea8db2ac76d419433, type: 3}
+    - {fileID: 8300000, guid: 092e5d491f5743b2a6367be685279416, type: 3}
+    volume: 0.35
+    cooldown: 0.8
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: purify
+    variants:
+    - {fileID: 8300000, guid: 08a2c5ca3ec54991abdb01ea1e1b6e91, type: 3}
+    - {fileID: 8300000, guid: c05aba3f0d6d4c8799a579252b17a238, type: 3}
+    - {fileID: 8300000, guid: 96a2feaaa5b7496f888a1592a6313a36, type: 3}
+    volume: 0.48
+    cooldown: 0.5
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: fire
+    variants:
+    - {fileID: 8300000, guid: dcdf8349b75b459bb8bcd95259d041fc, type: 3}
+    - {fileID: 8300000, guid: b746be316c9644009204d9a4ab262330, type: 3}
+    - {fileID: 8300000, guid: 165affdd35ea49b09ec142c15c9a73d9, type: 3}
+    volume: 0.56
+    cooldown: 0.1
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: ice
+    variants:
+    - {fileID: 8300000, guid: b1de822eac614ea7a604827ced64b1ac, type: 3}
+    - {fileID: 8300000, guid: a7bcad2a15ca41049cefbf0092baf048, type: 3}
+    - {fileID: 8300000, guid: a40eb9f47f2b42b7927b1719438e8759, type: 3}
+    volume: 0.52
+    cooldown: 0.1
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: lightning
+    variants:
+    - {fileID: 8300000, guid: 69b09d0d3120428a893d01f731245d14, type: 3}
+    - {fileID: 8300000, guid: e411b019416a46bf8bd4338655dc5381, type: 3}
+    - {fileID: 8300000, guid: 8ec36ada0a1e4779af2ac3010bb96997, type: 3}
+    volume: 0.64
+    cooldown: 0.12
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: spell
+    variants:
+    - {fileID: 8300000, guid: 72ce1d833bc447898b7eea2575164851, type: 3}
+    - {fileID: 8300000, guid: 1e50a9f94dfb45d49f3cc1eef39029a1, type: 3}
+    - {fileID: 8300000, guid: 046811b06c4c4085b7f739e92a426137, type: 3}
+    volume: 0.5
+    cooldown: 0.12
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: heal
+    variants:
+    - {fileID: 8300000, guid: fe5e4210b3d04f9a8ceacbc55bd0cee7, type: 3}
+    - {fileID: 8300000, guid: 2946a73634994ba4bfa4789c9139ecf3, type: 3}
+    - {fileID: 8300000, guid: 1a6bd866811d414da31497e69b96b3c1, type: 3}
+    volume: 0.45
+    cooldown: 0.14
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: summon
+    variants:
+    - {fileID: 8300000, guid: 84fec36e00ec4ede8b01e54f44f0bedc, type: 3}
+    - {fileID: 8300000, guid: f622c90ed8e04887805cf64f545b7c89, type: 3}
+    - {fileID: 8300000, guid: dfb783b3960b4cdca98c7ec9ee385838, type: 3}
+    volume: 0.5
+    cooldown: 0.15
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: teleport
+    variants:
+    - {fileID: 8300000, guid: a322eaabb6054c0788b0db3255634fe4, type: 3}
+    - {fileID: 8300000, guid: 4453e818e4e64c6e8f97566df8e0b2aa, type: 3}
+    - {fileID: 8300000, guid: de3242b010f44c858d794ba444b5cea5, type: 3}
+    volume: 0.54
+    cooldown: 0.4
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: potion
+    variants:
+    - {fileID: 8300000, guid: 5b5d9e8e6c5c412c8af31af4d8cece5e, type: 3}
+    - {fileID: 8300000, guid: ef22f41a8ddd4b62999663d139e22ec0, type: 3}
+    - {fileID: 8300000, guid: f7653cbec3e747ee97e66c8f9ba06ae5, type: 3}
+    volume: 0.44
+    cooldown: 0.15
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: death
+    variants:
+    - {fileID: 8300000, guid: b9c9e7e7441545faaa1cdf5b2ffaae34, type: 3}
+    - {fileID: 8300000, guid: 41119bac0e97403c8ffb451178158ffd, type: 3}
+    - {fileID: 8300000, guid: 25e5fdb1e53e432eb3bdae549942b161, type: 3}
+    volume: 0.55
+    cooldown: 0.15
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: hurt
+    variants:
+    - {fileID: 8300000, guid: f817c6c3383044afa840d7fc83c8fa32, type: 3}
+    - {fileID: 8300000, guid: 213ebfde939e4aba8de023fc9230d77c, type: 3}
+    - {fileID: 8300000, guid: 436f2025834943eabb967166b70d85a3, type: 3}
+    volume: 0.35
+    cooldown: 0.13
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: defeat
+    variants:
+    - {fileID: 8300000, guid: c9596c526b904969acaff65f577c0ea6, type: 3}
+    - {fileID: 8300000, guid: 0d251a9f94e946c891f103f1db6ef715, type: 3}
+    - {fileID: 8300000, guid: f7657acf430848de8dcd768bc74bab94, type: 3}
+    volume: 0.55
+    cooldown: 0.6
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: reward
+    variants:
+    - {fileID: 8300000, guid: ce8efb1c9c814ddf8ea98cd24ad8f959, type: 3}
+    - {fileID: 8300000, guid: 8b0301d778a245c7b91a421f952026fd, type: 3}
+    - {fileID: 8300000, guid: 02a79afe76e7407c8de33fa932c28dd4, type: 3}
+    volume: 0.45
+    cooldown: 0.3
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: quest_complete
+    variants:
+    - {fileID: 8300000, guid: ee2ed95f90dd430f86ef5263e7b73978, type: 3}
+    - {fileID: 8300000, guid: 2aee4c357c6e459f986f9584993ace7c, type: 3}
+    - {fileID: 8300000, guid: 89fa28d01e5b42b2a82f3718bf6a7525, type: 3}
+    volume: 0.62
+    cooldown: 0.7
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: quest_new
+    variants:
+    - {fileID: 8300000, guid: 85031423119a4272b87f2477eea34803, type: 3}
+    - {fileID: 8300000, guid: 83dabf147c914b81a5a64e6623407676, type: 3}
+    - {fileID: 8300000, guid: 4da91556930146f7a954ca4b0be1e425, type: 3}
+    volume: 0.6
+    cooldown: 0.6
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: level_up
+    variants:
+    - {fileID: 8300000, guid: fa7808175ecc4c4496cf0e9b9aa7d70f, type: 3}
+    - {fileID: 8300000, guid: 23c8b840b5474a52aa7fee82f236e502, type: 3}
+    - {fileID: 8300000, guid: ca4e60ce9a2f435da4e47dbb73db6b26, type: 3}
+    volume: 0.58
+    cooldown: 0.8
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: victory
+    variants:
+    - {fileID: 8300000, guid: 052e964f11034264aa47a3d84c9cf8d1, type: 3}
+    - {fileID: 8300000, guid: 847b63571fd04229ac60b4a06457d1df, type: 3}
+    - {fileID: 8300000, guid: 28932b00cd574296835423e1ae098c8d, type: 3}
+    volume: 0.65
+    cooldown: 0.8
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: chapter_complete
+    variants:
+    - {fileID: 8300000, guid: e185a3a621a0410b9578aa0df021ca3b, type: 3}
+    - {fileID: 8300000, guid: ebebfb089e644549b55b2479ce1075ac, type: 3}
+    - {fileID: 8300000, guid: ba3450f3d08f42bca58b6fdc36de6739, type: 3}
+    volume: 0.65
+    cooldown: 1
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: turn_player
+    variants:
+    - {fileID: 8300000, guid: a0f546ac4a744bfbb0ef5f97c9cffe38, type: 3}
+    - {fileID: 8300000, guid: fb0d047542fe4a54a6d4f4551d6f3c36, type: 3}
+    - {fileID: 8300000, guid: 17784bd7c8694b1db9ac92ef5f3ccf5c, type: 3}
+    volume: 0.3
+    cooldown: 0.3
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: turn_enemy
+    variants:
+    - {fileID: 8300000, guid: ce2f24307fe04c4687c2cef683339931, type: 3}
+    - {fileID: 8300000, guid: e26dc87ec3af40318d25fe9d504b805d, type: 3}
+    - {fileID: 8300000, guid: 2312c43fb7b34ec79ec7efb366c9f8e6, type: 3}
+    volume: 0.22
+    cooldown: 0.3
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: round
+    variants:
+    - {fileID: 8300000, guid: 54f0c8c0d3f849b199984cbecda84fac, type: 3}
+    - {fileID: 8300000, guid: a9c4aeaf828e462a8da476a7f7aaf6b8, type: 3}
+    - {fileID: 8300000, guid: a271d7c1f8c040b2882689fbf342dc49, type: 3}
+    volume: 0.37
+    cooldown: 0.5
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: purchase
+    variants:
+    - {fileID: 8300000, guid: 9c0c4dab34e849bdad39443f86c6ee61, type: 3}
+    - {fileID: 8300000, guid: 16cdbb0da3214dcba8a3034b9652bac0, type: 3}
+    - {fileID: 8300000, guid: 3ecdf79ed3944dabbd31f431c50d6511, type: 3}
+    volume: 0.4
+    cooldown: 0.25
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: harvest
+    variants:
+    - {fileID: 8300000, guid: fa47d8dd1feb4c2c95bc147d2333c45c, type: 3}
+    - {fileID: 8300000, guid: 3a3618a3fd5d406ba4b1ab2e16b49797, type: 3}
+    - {fileID: 8300000, guid: 80caaac74f16467c989052a0059cbaeb, type: 3}
+    volume: 0.35
+    cooldown: 0.12
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: day
+    variants:
+    - {fileID: 8300000, guid: 41feddc198b045ad9b0eaeeb9650f46a, type: 3}
+    - {fileID: 8300000, guid: b8e1e202851a49eda58285b50b1fea65, type: 3}
+    - {fileID: 8300000, guid: cc13410c5c244532ab1728c02c3df3bf, type: 3}
+    volume: 0.35
+    cooldown: 0.6
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: night
+    variants:
+    - {fileID: 8300000, guid: 9cec4509b71c4591a2074b01e61bbe91, type: 3}
+    - {fileID: 8300000, guid: ae5f4050c42e49a3854e046d7110dff2, type: 3}
+    - {fileID: 8300000, guid: 46c06d166b8d406cbc8a3de03d00e16e, type: 3}
+    volume: 0.3
+    cooldown: 0.6
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: region
+    variants:
+    - {fileID: 8300000, guid: 7acbfb690bf64cb7ba4656b4daf0f344, type: 3}
+    - {fileID: 8300000, guid: f5146d6538dd4fa88b348c15af47cea1, type: 3}
+    - {fileID: 8300000, guid: f68abee2a7144817831d6d3b23253dc1, type: 3}
+    volume: 0.28
+    cooldown: 1
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: tower
+    variants:
+    - {fileID: 8300000, guid: b824b6fc4bd34dae83be5735fced476c, type: 3}
+    - {fileID: 8300000, guid: 91f81973b9c147cdb182af6133c402a6, type: 3}
+    - {fileID: 8300000, guid: 7d43495ecda84f19ac1a86336cc7c613, type: 3}
+    volume: 0.45
+    cooldown: 0.5
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: travel_end
+    variants:
+    - {fileID: 8300000, guid: 3571931ab8704a789754d9f53a7f7a0f, type: 3}
+    - {fileID: 8300000, guid: 86597054a43d4a7a8447600fc837fdbc, type: 3}
+    - {fileID: 8300000, guid: 3ef7f88734c04b8a8f71d2086df9dc02, type: 3}
+    volume: 0.42
+    cooldown: 0.4
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 3
+  - id: root_awaken
+    variants:
+    - {fileID: 8300000, guid: 9d4c0e59ae3544189aaaa66842f72586, type: 3}
+    - {fileID: 8300000, guid: 39b863ca9a4940c6a0b500d9ff5e88bf, type: 3}
+    - {fileID: 8300000, guid: 868703d0f6214502b504e2f966ef432f, type: 3}
+    volume: 0.85
+    cooldown: 4
+    bus: 0
+    pitchVariation: 0.045
+    voiceLimit: 2
+  _themes:
+  - id: menu
+    music: {fileID: 8300000, guid: 5bbe91747bb24869b4129713f8ed26cd, type: 3}
+    ambience: {fileID: 8300000, guid: 712115b0b83145eea6ed7d099949ec73, type: 3}
+  - id: yirtik_koru
+    music: {fileID: 8300000, guid: 94e373f3b25645b3a18bbf0c03b1b421, type: 3}
+    ambience: {fileID: 8300000, guid: 95e70a01d3214d149dece35f8191202e, type: 3}
+  - id: halka_koyu
+    music: {fileID: 8300000, guid: 1fd2be405ee949a08bb639664aca59aa, type: 3}
+    ambience: {fileID: 8300000, guid: 0174faf5a78140e1ba3303a190e1b8dc, type: 3}
+  - id: fisilti_batakligi
+    music: {fileID: 8300000, guid: d698df19eb4d4f5e9b30979742332f3c, type: 3}
+    ambience: {fileID: 8300000, guid: 5ba17c9f1ed441568615b19c9363a519, type: 3}
+  - id: uyuyanlar_vadisi
+    music: {fileID: 8300000, guid: a5fe386a8d20495d8699cef0b2ae144b, type: 3}
+    ambience: {fileID: 8300000, guid: 44b2eb71af9a40a4a5982e72ed0dd020, type: 3}
+  - id: oyuk_tepeler
+    music: {fileID: 8300000, guid: 44a42844404c4d468119b6e6cae5e280, type: 3}
+    ambience: {fileID: 8300000, guid: a9dd68e268c74eb1a7481290407d4c98, type: 3}
+  - id: bayterek_kalbi
+    music: {fileID: 8300000, guid: 737a20706d38422e91657397c4fa057c, type: 3}
+    ambience: {fileID: 8300000, guid: 3d3b3116c01746678704e3bb96306746, type: 3}
+  - id: kok_ahdi_korulari
+    music: {fileID: 8300000, guid: ceea371bbd6f43fc831547305a0f7df0, type: 3}
+    ambience: {fileID: 8300000, guid: 712115b0b83145eea6ed7d099949ec73, type: 3}
+  - id: combat
+    music: {fileID: 8300000, guid: 866bc0dbd7cd4ebf8cc036a2dfdc4214, type: 3}
+    ambience: {fileID: 8300000, guid: c23975fb729e4ede89388f7a99e98fa0, type: 3}
+  - id: boss
+    music: {fileID: 8300000, guid: 8f5c57c71fc04b77adfc8133ec28d824, type: 3}
+    ambience: {fileID: 8300000, guid: c23975fb729e4ede89388f7a99e98fa0, type: 3}
+  _crossfadeSeconds: 3.2
+  _voices: 24

@@ -112,7 +112,7 @@ namespace TacticalRPG.Core
 
         private void Update()
         {
-            float target = _userEnabled && _stateAllows ? 1f : 0f;
+            float target = _userEnabled && _stateAllows && !QuestRootCinematic.IsPlaying ? 1f : 0f;
             if (!_weightSnapped) { _weight = target; _weightSnapped = true; } // açılışta solma yok
             else _weight = Mathf.MoveTowards(_weight, target, _fadeSpeed * Time.unscaledDeltaTime);
         }

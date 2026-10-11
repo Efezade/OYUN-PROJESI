@@ -130,9 +130,9 @@ namespace TacticalRPG.UI
         {
             if (_essenceLabel == null || _wallet == null) return;
             _essenceLabel.text =
-                $"Öz  {EssenceType.Ates}:{_wallet.Get(EssenceType.Ates)}  " +
-                $"{EssenceType.Su}:{_wallet.Get(EssenceType.Su)}  " +
-                $"{EssenceType.Toprak}:{_wallet.Get(EssenceType.Toprak)}";
+                $"Öz  {EssenceType.Ates}:{_wallet.DisplayAmount(EssenceType.Ates)}  " +
+                $"{EssenceType.Su}:{_wallet.DisplayAmount(EssenceType.Su)}  " +
+                $"{EssenceType.Toprak}:{_wallet.DisplayAmount(EssenceType.Toprak)}";
         }
 
         private void HandleManaChanged(int current, int max)

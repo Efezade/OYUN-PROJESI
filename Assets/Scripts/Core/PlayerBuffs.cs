@@ -21,6 +21,7 @@ namespace TacticalRPG.Core
     /// </summary>
     public class PlayerBuffs : MonoBehaviour
     {
+        [SerializeField] private TestEconomySO _testEconomy;
         [Header("Bağımlılıklar")]
         [SerializeField] private PlayerController    _player;
         [SerializeField] private MapInputHandler     _input;
@@ -90,7 +91,7 @@ namespace TacticalRPG.Core
         private int _stones;
 
         /// <summary>Taşlar tükenmiyor mu? (test ayarı)</summary>
-        public bool UnlimitedTravelTokens => _unlimitedTravelTokens;
+        public bool UnlimitedTravelTokens => _testEconomy != null ? _testEconomy.Unlimited : _unlimitedTravelTokens;
 
         /// <summary>Taş sayısı değişti — harita ekranındaki sayaç dinler.</summary>
         public event System.Action OnTravelStonesChanged;
@@ -98,7 +99,7 @@ namespace TacticalRPG.Core
         public int Stones() => _stones;
 
         /// <summary>Bu kadar taş var mı? (sınırsız modda hep true)</summary>
-        public bool HasStones(int count = 1) => _unlimitedTravelTokens || _stones >= count;
+        public bool HasStones(int count = 1) => UnlimitedTravelTokens || _stones >= count;
 
         public void GrantStones(int count)
         {
@@ -111,7 +112,7 @@ namespace TacticalRPG.Core
         public bool TrySpendStones(int count)
         {
             if (count <= 0) return true;
-            if (_unlimitedTravelTokens) return true;
+            if (UnlimitedTravelTokens) return true;
             if (_stones < count) return false;
 
             _stones -= count;

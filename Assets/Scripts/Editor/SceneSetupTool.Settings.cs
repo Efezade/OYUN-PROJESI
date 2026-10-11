@@ -26,6 +26,13 @@ namespace TacticalRPG.Editor
         private const float RowValueX  =  310f;
         private const float RowBtnX    =  330f;
 
+        public static void RebuildPresentationSettings()
+        {
+            var settings=Object.FindFirstObjectByType<SettingsController>(FindObjectsInactive.Include);if(settings==null)return;
+            var go=settings.gameObject;Object.DestroyImmediate(settings);
+            for(int i=go.transform.childCount-1;i>=0;i--)Object.DestroyImmediate(go.transform.GetChild(i).gameObject);
+            PopulateSettingsScreen(go);
+        }
         private static void PopulateSettingsScreen(GameObject panelGO)
         {
             Transform t = panelGO.transform;
@@ -33,8 +40,8 @@ namespace TacticalRPG.Editor
             Transform modelParent = sceneRoot != null ? sceneRoot.transform : null;
 
             // ── Eski model/kaplama nesnelerini temizle (idempotent) ───────────
-            DestroyIfExists<GameAudio>();
-            DestroyIfExists<DisplaySettings>();
+            // Preserve the existing audio model and authored library.
+            // Preserve display preferences and references.
             GameObject oldBr = GameObject.Find("Brightness_Canvas");
             if (oldBr != null) Object.DestroyImmediate(oldBr);
 
@@ -42,17 +49,10 @@ namespace TacticalRPG.Editor
             Image brightnessOverlay = CreateBrightnessOverlay(modelParent);
 
             // ── Modeller (hep aktif çocuklar) ─────────────────────────────────
-            GameObject audioGO = new GameObject("GameAudio");
-            if (modelParent != null) audioGO.transform.SetParent(modelParent, false);
-            GameAudio audio = audioGO.AddComponent<GameAudio>();
-            AudioClip music = AssetDatabase.LoadAssetAtPath<AudioClip>(MusicClipPath);
-            var aso = new SerializedObject(audio);
-            aso.FindProperty("_backgroundMusic").objectReferenceValue = music;
-            aso.ApplyModifiedProperties();
-
-            GameObject dispGO = new GameObject("DisplaySettings");
-            if (modelParent != null) dispGO.transform.SetParent(modelParent, false);
-            DisplaySettings display = dispGO.AddComponent<DisplaySettings>();
+            GameAudio audio=FindComponentAnywhere<GameAudio>();
+            if(audio==null){var go=new GameObject("GameAudio");go.transform.SetParent(modelParent,false);audio=go.AddComponent<GameAudio>();}
+            DisplaySettings display=FindComponentAnywhere<DisplaySettings>();
+            if(display==null){var go=new GameObject("DisplaySettings");go.transform.SetParent(modelParent,false);display=go.AddComponent<DisplaySettings>();}
             var dso = new SerializedObject(display);
             dso.FindProperty("_brightnessOverlay").objectReferenceValue = brightnessOverlay;
             dso.FindProperty("_miniature").objectReferenceValue = EnsureMiniatureEffect(); // ana kamerada
@@ -64,11 +64,27 @@ namespace TacticalRPG.Editor
                 new Color(0.95f, 0.90f, 0.75f), 54f);
 
             // ── SES bölümü ─────────────────────────────────────────────────────
-            float y = -140f;
+            // A clipped scroll area keeps every control reachable at all aspect ratios.
+            Transform outer=t;
+            var scrollGO=new GameObject("SettingsScroll",typeof(RectTransform),typeof(ScrollRect));scrollGO.transform.SetParent(t,false);
+            var scrollRT=scrollGO.GetComponent<RectTransform>();scrollRT.anchorMin=new Vector2(.5f,0);scrollRT.anchorMax=new Vector2(.5f,1);scrollRT.sizeDelta=new Vector2(1120,-270);scrollRT.anchoredPosition=new Vector2(0,-5);
+            var viewportGO=new GameObject("Viewport",typeof(RectTransform),typeof(Image),typeof(RectMask2D));viewportGO.transform.SetParent(scrollGO.transform,false);StretchFull(viewportGO.GetComponent<RectTransform>());
+            viewportGO.GetComponent<Image>().color=new Color(.055f,.079f,.09f,.98f);
+            var contentGO=new GameObject("Content",typeof(RectTransform));contentGO.transform.SetParent(viewportGO.transform,false);
+            var content=contentGO.GetComponent<RectTransform>();content.anchorMin=new Vector2(0,1);content.anchorMax=Vector2.one;content.pivot=new Vector2(.5f,1);content.sizeDelta=new Vector2(0,1240);
+            var scroll=scrollGO.GetComponent<ScrollRect>();scroll.viewport=viewportGO.GetComponent<RectTransform>();scroll.content=content;scroll.horizontal=false;scroll.vertical=true;scroll.movementType=ScrollRect.MovementType.Clamped;scroll.scrollSensitivity=40;
+            var barGO=new GameObject("SettingsScrollbar",typeof(RectTransform),typeof(Image),typeof(Scrollbar));barGO.transform.SetParent(scrollGO.transform,false);
+            var barRT=barGO.GetComponent<RectTransform>();barRT.anchorMin=new Vector2(1,0);barRT.anchorMax=Vector2.one;barRT.pivot=new Vector2(1,.5f);barRT.sizeDelta=new Vector2(10,-28);barRT.anchoredPosition=new Vector2(-12,0);barGO.GetComponent<Image>().color=new Color(.10f,.14f,.15f);
+            var thumbGO=new GameObject("Thumb",typeof(RectTransform),typeof(Image));thumbGO.transform.SetParent(barRT,false);StretchFull(thumbGO.GetComponent<RectTransform>());var thumb=thumbGO.GetComponent<Image>();thumb.color=new Color(.5f,.55f,.47f);
+            var scrollbar=barGO.GetComponent<Scrollbar>();scrollbar.handleRect=thumb.rectTransform;scrollbar.targetGraphic=thumb;scrollbar.direction=Scrollbar.Direction.BottomToTop;scroll.verticalScrollbar=scrollbar;scroll.verticalScrollbarVisibility=ScrollRect.ScrollbarVisibility.AutoHide;
+            t=content;
+            float y = -42f;
             CreateSectionHeader(t, "SES", ref y);
             var masterSlider = CreateSliderRow(t, "MASTER", ref y, 0f, 1f, out var masterVal);
             var musicSlider  = CreateSliderRow(t, "MÜZİK",  ref y, 0f, 1f, out var musicVal);
             var sfxSlider    = CreateSliderRow(t, "SFX",    ref y, 0f, 1f, out var sfxVal);
+            var ambienceSlider=CreateSliderRow(t,"ORTAM",ref y,0,1,out var ambienceVal);
+            var interfaceSlider=CreateSliderRow(t,"ARAYUZ",ref y,0,1,out var interfaceVal);
 
             // ── GÖRÜNTÜ bölümü ─────────────────────────────────────────────────
             y -= 24f;
@@ -110,8 +126,10 @@ namespace TacticalRPG.Editor
             }
 
             // ── Görünüm bileşeni + tüm bağlar ─────────────────────────────────
-            SettingsController ctrl = panelGO.AddComponent<SettingsController>();
+            SettingsController ctrl = panelGO.GetComponent<SettingsController>();if(ctrl==null)ctrl=panelGO.AddComponent<SettingsController>();
             var cso = new SerializedObject(ctrl);
+            cso.FindProperty("_ambienceSlider").objectReferenceValue=ambienceSlider;cso.FindProperty("_interfaceSlider").objectReferenceValue=interfaceSlider;
+            cso.FindProperty("_ambienceValue").objectReferenceValue=ambienceVal;cso.FindProperty("_interfaceValue").objectReferenceValue=interfaceVal;
             cso.FindProperty("_audio").objectReferenceValue   = audio;
             cso.FindProperty("_display").objectReferenceValue = display;
             cso.FindProperty("_masterSlider").objectReferenceValue = masterSlider;
@@ -139,8 +157,8 @@ namespace TacticalRPG.Editor
             UnityEditor.Events.UnityEventTools.AddPersistentListener(vsyncBtn.onClick,      ctrl.OnToggleVSync);
             UnityEditor.Events.UnityEventTools.AddPersistentListener(miniatureBtn.onClick,  ctrl.OnToggleMiniature);
 
-            CreateCenteredLabel(t, "SettingsHint",
-                "Değişiklikler anında kaydolur (PlayerPrefs) · müzik telifsiz placeholder · Kapat: Esc",
+            CreateCenteredLabel(outer, "SettingsHint",
+                "Ayarlar otomatik kaydedilir.   Kaydir: fare tekerlegi   /   Kapat: Esc",
                 new Vector2(0.5f, 0f), new Vector2(0f, 28f), new Vector2(1300f, 40f),
                 new Color(0.60f, 0.55f, 0.48f), 24f);
         }
@@ -166,7 +184,7 @@ namespace TacticalRPG.Editor
                 new Color(0.88f, 0.84f, 0.72f), 28f);
 
             Slider slider = CreateSlider(parent, "Sld_" + label,
-                new Vector2(RowSliderX, y - 6f), new Vector2(420f, 30f), min, max);
+                new Vector2(RowSliderX, y - 6f), new Vector2(420f, 42f), min, max);
 
             valueLabel = CreateCenteredLabel(parent, "Val_" + label, "0%",
                 new Vector2(0.5f, 1f), new Vector2(RowValueX, y), new Vector2(140f, 46f),
@@ -200,12 +218,13 @@ namespace TacticalRPG.Editor
         private static Slider CreateSlider(Transform parent, string name,
             Vector2 anchoredPos, Vector2 size, float min, float max)
         {
-            GameObject go = new GameObject(name, typeof(RectTransform), typeof(Slider));
+            GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Slider));
             go.transform.SetParent(parent, false);
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 1f);
             rt.anchoredPosition = anchoredPos; rt.sizeDelta = size;
 
+            go.GetComponent<Image>().color=new Color(0,0,0,.001f); // Full-width hit target.
             // Arka oluk
             Image bg = CreateStretchImage(go.transform, "Background",
                 new Color(0.08f, 0.07f, 0.05f, 1f));
@@ -226,7 +245,7 @@ namespace TacticalRPG.Editor
             var hRt = handleGO.GetComponent<RectTransform>();
             hRt.anchorMin = new Vector2(0f, 0f); hRt.anchorMax = new Vector2(0f, 1f);
             hRt.pivot = new Vector2(0.5f, 0.5f);
-            hRt.sizeDelta = new Vector2(22f, 6f);
+            hRt.sizeDelta = new Vector2(24f, -8f);
             Image handleImg = handleGO.GetComponent<Image>();
             handleImg.color = new Color(0.95f, 0.90f, 0.75f, 1f);
 

@@ -19,7 +19,7 @@ namespace TacticalRPG.UI
         public CharacterCard    FromCard;
         public int              FromSlot = -1;
 
-        public void OnBeginDrag(PointerEventData e) { if (View != null) View.BeginDrag(this, e); }
+        public void OnBeginDrag(PointerEventData e) { if (View != null) { TacticalRPG.Core.SoundSignals.Play("item_drag"); View.BeginDrag(this, e); } }
         public void OnDrag(PointerEventData e)      { if (View != null) View.Drag(e); }
         public void OnEndDrag(PointerEventData e)   { if (View != null) View.EndDrag(); }
 
@@ -27,7 +27,7 @@ namespace TacticalRPG.UI
         {
             if (View == null) return;
             if (e.button == PointerEventData.InputButton.Right && FromCard != null) View.QuickUnequip(this);
-            else View.Select(Item);
+            else { TacticalRPG.Core.SoundSignals.Play("ui_select"); View.Select(Item); }
         }
     }
 

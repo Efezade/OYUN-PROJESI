@@ -74,7 +74,7 @@ namespace TacticalRPG.UI
             var panel = new Rect((HudScale.Width - width) * 0.5f, _topMargin, width, height);
 
             ImguiBlocker.Register(panel);   // bar üstündeki tık hex tıklaması sayılmasın
-            DrawRect(panel, _panelColor);
+            GUI.Box(panel,GUIContent.none);
 
             float x = panel.x + _spacing * 1.5f;
             for (int i = 0; i < _upcoming.Count; i++)
@@ -105,6 +105,7 @@ namespace TacticalRPG.UI
             CharacterClassData data = unit.Card != null ? unit.Card.Data : null;
             Color teamTint = unit.Team == UnitTeam.Player ? _playerTint : _enemyTint;
             Color baseCol  = data != null ? data.UnitColor : teamTint;
+            if(PresentationTheme.Current!=null)baseCol=Color.Lerp(PresentationTheme.Current.raised,baseCol,.16f);
 
             // Zemin: portre varsa onu bas, yoksa sınıf rengi.
             Sprite portrait = data != null ? data.Portrait : null;
@@ -132,7 +133,7 @@ namespace TacticalRPG.UI
             var hpBg = new Rect(card.x, card.yMax - 7f, card.width, 7f);
             DrawRect(hpBg, new Color(0f, 0f, 0f, 0.65f));
             DrawRect(new Rect(hpBg.x, hpBg.y, hpBg.width * hp, hpBg.height),
-                     Color.Lerp(new Color(0.9f, 0.2f, 0.15f), new Color(0.35f, 0.9f, 0.35f), hp));
+                     Color.Lerp(new Color(.7f,.3f,.24f),new Color(.35f,.67f,.55f),hp));
 
             // İsim (kartın altında) — yalnız sırası gelende, kalabalık olmasın.
             if (active)

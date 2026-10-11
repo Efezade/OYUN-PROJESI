@@ -41,6 +41,8 @@ namespace TacticalRPG.Core
         [SerializeField] private HexCoordinate _startCoord;
 
         public HexCoordinate CurrentCoord { get; private set; }
+        /// <summary>The tile already being stepped onto; roots must wait for this step.</summary>
+        public HexCoordinate? StepTarget { get; private set; }
 
         /// <summary>Pottan gelen ek görüş (Kartal Gözü İksiri). PlayerBuffs yönetir.</summary>
         public int VisionBonus { get; set; }
@@ -228,6 +230,7 @@ namespace TacticalRPG.Core
             if (_moveRoutine != null) StopCoroutine(_moveRoutine);
             _moveRoutine      = null;
             IsMoving          = false;
+            StepTarget        = null;
             StepsRemaining    = 0;
             _stopRequested    = false;
             StopReason        = "";
@@ -338,10 +341,11 @@ namespace TacticalRPG.Core
                 // karakter boşluğa basmasın: bulunduğu karoda durur, oyuncu yeni yol seçer.
                 if (!_gridManager.TryGetCell(target.Coordinate, out HexCell live) || !live.IsWalkable)
                 {
-                    RequestStop("önündeki karo çöktü");
+                    RequestStop(live != null && live.HasMovementBlock ? "önündeki yolu kökler kapladı" : "önündeki karo çöktü");
                     break;
                 }
 
+                StepTarget = target.Coordinate;
                 Vector3 fromXZ   = new Vector3(from.WorldPosition.x,   0f, from.WorldPosition.z);
                 Vector3 targetXZ = new Vector3(target.WorldPosition.x, 0f, target.WorldPosition.z);
                 float   fromY    = SurfaceY(from);
@@ -365,6 +369,7 @@ namespace TacticalRPG.Core
 
                 transform.position = new Vector3(targetXZ.x, toY, targetXZ.z);
                 CurrentCoord       = target.Coordinate;
+                StepTarget         = null;
 
                 // Sis Update()'te canlı konumla sürekli güncellenir; burada sadece tur/olay eventi.
                 OnMoved?.Invoke(CurrentCoord);
@@ -380,6 +385,7 @@ namespace TacticalRPG.Core
             _stopRequested    = false;
             StopReason        = "";
             IsMoving          = false;
+            StepTarget        = null;
             _moveRoutine      = null;
             _travelMultiplier = 1f;   // hızlanma TEK yürüyüşe özeldi
             _revealFog        = true; // sis kapatma da TEK yürüyüşe özeldi

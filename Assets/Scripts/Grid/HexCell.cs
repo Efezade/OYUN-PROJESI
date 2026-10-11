@@ -13,7 +13,23 @@ namespace TacticalRPG.Grid
     {
         public HexCoordinate Coordinate    { get; }
         public Vector3       WorldPosition { get; }
-        public bool          IsWalkable    { get; set; } = true;
+        private bool _terrainWalkable = true;
+        private System.Collections.Generic.HashSet<object> _movementBlocks;
+        // Temporary roots never overwrite terrain/collapse state. Multiple quest branches
+        // can share a cell; removing one owner must not open the other branch's cell.
+        public bool IsWalkable
+        {
+            get => _terrainWalkable && !HasMovementBlock;
+            set => _terrainWalkable = value;
+        }
+        public bool TerrainWalkable => _terrainWalkable;
+        public bool HasMovementBlock => _movementBlocks != null && _movementBlocks.Count > 0;
+        public void SetMovementBlock(object owner, bool blocked)
+        {
+            if (owner == null) return;
+            if (blocked) { _movementBlocks ??= new(); _movementBlocks.Add(owner); }
+            else _movementBlocks?.Remove(owner);
+        }
         public CellType      CellType      { get; set; } = CellType.Normal;
 
         // Boyalı SAVAŞ karosu (palet canEnterCombat) — MissionManager buradan görev üretir.
@@ -26,7 +42,25 @@ namespace TacticalRPG.Grid
         public FogState FogState { get; set; } = FogState.Hidden;
 
         // Görsel bileşen referansları — SpawnVisual tarafından doldurulur
-        public GameObject   Visual       { get; set; }
+        private GameObject _visual;
+        private System.Collections.Generic.HashSet<object> _visualSuppressors;
+        public GameObject Visual
+        {
+            get => _visual;
+            set { _visual = value; RefreshVisualVisibility(); }
+        }
+        // A restored collapse must not reveal terrain still torn up by another root.
+        public void SetVisualSuppressed(object owner, bool suppressed)
+        {
+            if (suppressed) { _visualSuppressors ??= new(); _visualSuppressors.Add(owner); }
+            else _visualSuppressors?.Remove(owner);
+            RefreshVisualVisibility();
+        }
+        public void RefreshVisualVisibility()
+        {
+            bool shown = _visualSuppressors == null || _visualSuppressors.Count == 0;
+            if (_visual != null && _visual.activeSelf != shown) _visual.SetActive(shown);
+        }
         public MeshRenderer MeshRenderer { get; set; }
 
         // Sisten bağımsız TEMEL renk (placeholder tint için editorColor, dokulu/authored

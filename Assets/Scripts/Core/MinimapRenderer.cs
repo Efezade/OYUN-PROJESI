@@ -37,6 +37,9 @@ namespace TacticalRPG.Core
         [SerializeField] private FogOfWarManager  _fog;
         [SerializeField] private GameStateManager _state;
         [SerializeField] private MinimapStyleSO   _style;
+        [SerializeField] private QuestRootConfigSO _roots;
+        [SerializeField] private BiomeTerrainStyleSO _terrainStyle;
+        [SerializeField] private ChapterMapGenerator _map;
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId     = Shader.PropertyToID("_Color");
@@ -170,11 +173,18 @@ namespace TacticalRPG.Core
             else
             {
                 string id = TileIdAt(coord);
-                color = ColorOf(id) * ShadeOf(coord, id) * DitherOf(coord);
+                color = ColorOf(id);
+                var catalog = TileCatalog.Get(id);
+                if (_terrainStyle != null && _map != null && _map.HasRegions &&
+                    (_state == null || _state.State == GameState.Overworld) &&
+                    catalog != null && catalog.Surface != Surface.Water && catalog.Family != TileFamily.Fringe)
+                    color = _terrainStyle.Ground(_map.RegionAt(coord)?.Id);
+                color *= ShadeOf(coord, id) * DitherOf(coord);
                 // Kara Aşı çürümesi (2026-10-10): karonun üst katman rengi haritada da görünsün —
                 // oyuncu hangi aşı noktasının çürüğü nereye yaydığını HARİTA sekmesinden okur.
                 float rotK = Mathf.Clamp01((1f - cell.OverlayTint.g) * 1.8f);
                 if (rotK > 0.01f) color = Color.Lerp(color, new Color(0.62f, 0.26f, 0.88f), rotK * 0.7f);
+                if (cell.HasMovementBlock && _roots != null) color = _roots.MinimapColor;
                 if (fog != FogState.Visible)
                     color *= _style != null ? _style.ExploredDim : 0.62f;
                 color.a = 1f;
@@ -250,6 +260,8 @@ namespace TacticalRPG.Core
 
             if (entry != null && entry.prefab != null)
             {
+                var authored = entry.prefab.GetComponent<BiomeTileAppearance>();
+                if (authored != null) return authored.GroundColor;
                 Renderer r = entry.prefab.GetComponent<Renderer>()
                           ?? entry.prefab.GetComponentInChildren<Renderer>(true);
                 Material m = r != null ? r.sharedMaterial : null;

@@ -22,6 +22,7 @@ namespace TacticalRPG.UI
         [SerializeField] private ActionPointManager _ap;
         [Tooltip("Opsiyonel — atanmışsa düğümün hikaye zincirindeki adımı yazılır.")]
         [SerializeField] private StoryChainManager  _chains;
+        private Vector2 _scroll;
 
         private void OnGUI()
         {
@@ -31,11 +32,13 @@ namespace TacticalRPG.UI
 
             using var _scale = HudScale.Scaled();
 
-            const float w = 330f, h = 260f;
+            const float w = 330f;
+            float h=Mathf.Min(_nodes.NodeForPlayer(_player.CurrentCoord)!=null?350:260,HudScale.Height-HudLayout.LeftDialBottom-24);
             var rect = new Rect(16f, HudScale.Height - h - 16f, w, h);
             ImguiBlocker.Register(rect);   // panel üstündeki tık haritaya düşmesin
 
             GUILayout.BeginArea(rect, GUI.skin.box);
+            _scroll=GUILayout.BeginScrollView(_scroll,false,false,GUIStyle.none,GUI.skin.verticalScrollbar,GUILayout.Height(Mathf.Max(60,h-180)));
 
             _nodes.MandatoryProgress(out int done, out int total);
             GUILayout.Label($"ZORUNLU GÖREVLER: {done}/{total}");
@@ -43,8 +46,8 @@ namespace TacticalRPG.UI
             GUILayout.Space(6f);
 
             DrawNodeHere();
-
-            GUILayout.FlexibleSpace();
+            GUILayout.EndScrollView();
+            GUILayout.Space(8);
             DrawBoss();
 
             GUILayout.EndArea();
@@ -81,7 +84,7 @@ namespace TacticalRPG.UI
                 GUILayout.Label("(yanındaki kule)");
 
             GUI.enabled = _nodes.CanEnter(n);
-            if (GUILayout.Button(EnterLabel(n), GUILayout.Height(28))) _nodes.Enter(n);
+            if (ModernGUI.Button(EnterLabel(n), GUILayout.Height(28))) _nodes.Enter(n);
             GUI.enabled = true;
 
             string blocked = _nodes.EnterBlockReason(n);
@@ -141,7 +144,7 @@ namespace TacticalRPG.UI
             }
 
             GUI.enabled = _nodes.CanEnter(boss);
-            if (GUILayout.Button("BOSS'A GİR", GUILayout.Height(30))) _nodes.Enter(boss);
+            if (ModernGUI.Button("BOSS'A GİR", GUILayout.Height(30))) _nodes.Enter(boss);
             GUI.enabled = true;
         }
 

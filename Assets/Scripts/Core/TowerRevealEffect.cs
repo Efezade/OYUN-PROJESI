@@ -28,6 +28,7 @@ namespace TacticalRPG.Core
         public void Play(Vector3 worldPos)
         {
             if (IsPlaying || !isActiveAndEnabled) return;
+            SoundSignals.At("tower",worldPos);
             StartCoroutine(Routine(worldPos));
         }
 

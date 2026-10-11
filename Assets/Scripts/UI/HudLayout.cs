@@ -17,11 +17,11 @@ namespace TacticalRPG.UI
         /// <summary>ZORUNLU GÖREV ZİNCİRİ barı — üst-ortanın EN ÜSTÜ. Oyunun ana kararı
         /// ("zinciri şimdi mi kapatayım") buradan okunduğu için gün barının da üstünde durur.</summary>
         public const float QuestBarY      = 8f;
-        public const float QuestBarHeight = 38f;
+        public const float QuestBarHeight = 68f;
 
         /// <summary>Bölüm durum barı (Gün X/14 · çöküş bilgisi).</summary>
         public const float RunBarY      = QuestBarY + QuestBarHeight + 6f;   // 52
-        public const float RunBarHeight = 30f;
+        public const float RunBarHeight = 36f;
 
         /// <summary>Gün barının hemen ALTI — üst-orta ikinci sıra (görev istemi vb.).</summary>
         public const float SecondRowY = RunBarY + RunBarHeight + 10f;   // 48
@@ -37,9 +37,9 @@ namespace TacticalRPG.UI
         // ── SAĞ-ÜST yığını ───────────────────────────────────────────────────
         public const float RightMargin  = 12f;
         /// <summary>Öz deposu paneli.</summary>
-        public const float RightFirstY  = 12f;
+        public const float RightFirstY  = 124f;
         /// <summary>Öz deposunun altı (yetenek test paneli gibi ikincil paneller).</summary>
-        public const float RightSecondY = RightFirstY + 242f;           // 254
+        public const float RightSecondY = RightFirstY + 180f;
 
         // ── SOL-ÜST ──────────────────────────────────────────────────────────
         /// <summary>Zaman kadranı burada (TimeDialHUD kendi marjlarını kullanır).

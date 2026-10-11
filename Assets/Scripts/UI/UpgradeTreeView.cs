@@ -249,8 +249,8 @@ namespace TacticalRPG.UI
         private void RefreshWallet()
         {
             if (_walletLabel == null || _wallet == null) return;
-            _walletLabel.text = $"KESEDE  {_wallet.Get(EssenceType.Tas)} taş · " +
-                                $"{_wallet.Get(EssenceType.Doga)} doğa";
+            _walletLabel.text = $"KESEDE  {_wallet.DisplayAmount(EssenceType.Tas)} taş · " +
+                                $"{_wallet.DisplayAmount(EssenceType.Doga)} doğa";
         }
 
         private static string Label(EssenceType t) => t switch

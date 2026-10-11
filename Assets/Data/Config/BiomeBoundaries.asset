@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 238e107acb5a4a55927246f38173354d, type: 3}
+  m_Name: BiomeBoundaries
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Data.BiomeBoundaryConfigSO
+  _material: {fileID: 2100000, guid: 01e2befa570fbe7469d6ee8200cd8d93, type: 2}
+  _halfWidth: 0.1
+  _irregularity: 0.055
+  _surfaceLift: 0.045
+  _regionTint: 0.35
+  _opacity: 0.45
+  _maxHeightDifference: 0.8

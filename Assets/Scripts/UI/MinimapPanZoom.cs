@@ -98,6 +98,7 @@ namespace TacticalRPG.UI
 
             // Merkeze göre yakınlaş: kaydırma da aynı oranda büyür ki ekranın ortasındaki yer
             // ortada kalsın (yoksa yakınlaştırma haritayı kaydırıyormuş gibi hissettirir).
+            TacticalRPG.Core.SoundSignals.Play("scroll",.3f);
             _pan *= next / _zoom;
             _zoom = next;
             Apply();

@@ -101,13 +101,15 @@ namespace TacticalRPG.UI
             img.sprite = _potSprite != null ? _potSprite : potion.Icon;
             img.color = potion.Color; img.preserveAspect = true; img.raycastTarget = false;
 
-            Label(row, "Text", $"<b>{potion.DisplayName}</b>  ×{count}\n<size=75%>{potion.Description}  ·  {potion.DurationText}</size>",
+            string amount = _inventory != null && _inventory.UnlimitedConsumables ? "Sınırsız" : "×" + count;
+            Label(row, "Text", $"<b>{potion.DisplayName}</b>  {amount}\n<size=75%>{potion.Description}  ·  {potion.DurationText}</size>",
                   20f, _ink, new Vector2(520f, 72f), TextAlignmentOptions.Left);
 
             var btnRT = Rect("Drink", row, new Vector2(100f, 56f));
             var btnImg = btnRT.gameObject.AddComponent<Image>();
             btnImg.sprite = _cellSprite; btnImg.type = Image.Type.Sliced; btnImg.color = new Color(0.55f, 0.75f, 0.45f);
             var btn = btnRT.gameObject.AddComponent<Button>();
+            btn.gameObject.AddComponent<UISoundFeedback>();
             btn.targetGraphic = btnImg;
             btn.onClick.AddListener(() => Drink(potion));
             Label(btnRT, "L", "İÇ", 24f, _ink, new Vector2(96f, 52f));

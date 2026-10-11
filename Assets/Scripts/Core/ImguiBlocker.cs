@@ -24,6 +24,9 @@ namespace TacticalRPG.Core
         private static readonly List<Rect> _lastFrame = new List<Rect>();
         private static int _frame = -1;
 
+        public static bool Overlaps(Rect guiRect)
+        {SyncFrame();foreach(var panel in _lastFrame)if(panel.Overlaps(guiRect))return true;return false;}
+
         /// <summary>OnGUI içinden çağrılır: bu panelin GUI-koordinatlı (sol-ÜST orijin) alanı.</summary>
         public static void Register(Rect guiRect)
         {

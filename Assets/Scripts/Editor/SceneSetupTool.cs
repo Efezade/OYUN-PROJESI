@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
@@ -64,6 +64,8 @@ namespace TacticalRPG.Editor
                                      // otomatik yuruyus durdurucu (ChapterProgress'ten SONRA olmali)
                 SetupRegions();      // BOLGELER + KARA ASI CURUMESI (kural setinden SONRA, harita
                                      // uretiminden ONCE — onizleme haritasi da bolgeli ciksin)
+                SetupBiomeWorld();   // authored region art + animated, impassable Bayterek quest roots
+                SetupPresentation();
                 // EN SON: haritayi editorde uret ki Play'e basmadan da yeni harita gorunsun.
                 // (Store'dan SONRA olmali — magaza karosunun modeli o adimda kesinlesiyor.)
                 GenerateChapterMapInEditor();
@@ -160,6 +162,7 @@ namespace TacticalRPG.Editor
             light.intensity = 1.6f;
             light.color     = new Color(1f, 0.96f, 0.9f); // hafif sicak gunes
             light.shadows   = LightShadows.Soft;          // gercekci yumusak golgeler
+            RenderSettings.sun = light;                 // Gece kısılınca başka ışık ana güneş olmasın.
 
             // GameManager
             new GameObject("GameManager").transform.SetParent(root.transform);

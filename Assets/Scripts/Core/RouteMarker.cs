@@ -212,11 +212,13 @@ namespace TacticalRPG.Core
         private void OnEnable()
         {
             if (_player != null) _player.OnMoved += OnPlayerMoved;
+            if (_grid != null) _grid.OnWalkabilityChanged += Invalidate;
         }
 
         private void OnDisable()
         {
             if (_player != null) _player.OnMoved -= OnPlayerMoved;
+            if (_grid != null) _grid.OnWalkabilityChanged -= Invalidate;
             Hide();
         }
 

@@ -144,6 +144,7 @@ namespace TacticalRPG.Core
             _activeWaves++;
             int version = _gridVersion;
             if (delay > 0f) yield return new WaitForSeconds(delay);
+            SoundSignals.Play("quake",.6f);
 
             // Aktif adanın karoları + merkeze uzaklıkları + ada sınırları (klip için).
             var tiles = new List<WTile>();
@@ -346,7 +347,8 @@ namespace TacticalRPG.Core
             lr.positionCount     = 6;
             lr.widthMultiplier   = _strikeWidth;
             lr.material          = mat;
-            lr.numCornerVertices = 1;
+            lr.numCornerVertices = 3;
+            lr.textureMode=LineTextureMode.Tile;
             lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lr.receiveShadows    = false;
 
@@ -389,8 +391,9 @@ namespace TacticalRPG.Core
             for (int i = 0; i < n; i++)
             {
                 float ang = (i / (float)n) * Mathf.PI * 2f;
-                float x = center.x + Mathf.Cos(ang) * radius;
-                float z = center.z + Mathf.Sin(ang) * radius;
+                float irregular=1+Mathf.Sin(ang*7+center.x)*.012f+Mathf.Sin(ang*13+center.z)*.007f;
+                float x = center.x + Mathf.Cos(ang) * radius*irregular;
+                float z = center.z + Mathf.Sin(ang) * radius*irregular;
                 pts[i] = new Vector3(x, _lift, z);
                 vis[i] = x >= minX && x <= maxX && z >= minZ && z <= maxZ;
                 if (vis[i]) visCount++;
@@ -454,9 +457,10 @@ namespace TacticalRPG.Core
 
         private Material MakeRingMaterial()
         {
-            Shader sh = Shader.Find("Universal Render Pipeline/Unlit")
+            Shader sh = Shader.Find("TacticalRPG/WorldAtmosphere") ?? Shader.Find("Universal Render Pipeline/Unlit")
                      ?? Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
             var m = new Material(sh);
+            if(m.HasProperty("_Mode"))m.SetFloat("_Mode",2);
             if (m.HasProperty("_Surface"))
             {
                 m.SetFloat("_Surface",  1f);
@@ -491,7 +495,8 @@ namespace TacticalRPG.Core
             lr.positionCount     = 0;
             lr.widthMultiplier   = _ringWidth;
             lr.material          = mat;
-            lr.numCornerVertices = 1;
+            lr.numCornerVertices = 3;
+            lr.textureMode=LineTextureMode.Tile;
             lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lr.receiveShadows    = false;
             lr.enabled           = false;

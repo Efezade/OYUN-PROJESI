@@ -185,6 +185,7 @@ namespace TacticalRPG.Core
 
         private IEnumerator Execute(Unit u, ClassAbility ab, int index, HexCoordinate center, Unit target)
         {
+            SoundSignals.At(ab.Kind==UnitAbilityKind.AreaBlast?"fire":ab.Kind==UnitAbilityKind.HealAlly?"heal":ab.Kind==UnitAbilityKind.ShieldAlly?"shield":"whoosh",u.transform.position,.55f);
             Busy       = true;
             ArmedIndex = -1;
             OnChanged?.Invoke();

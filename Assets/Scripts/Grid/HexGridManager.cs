@@ -34,6 +34,14 @@ namespace TacticalRPG.Grid
         /// <summary>Grid her (yeniden) üretildiğinde tetiklenir. FogOfWarManager dinler →
         /// harita değişince (SetTileMap) sisi yeniden kurar.</summary>
         public event System.Action OnGridRegenerated;
+        public event System.Action OnWalkabilityChanged;
+        public event System.Action<HexCoordinate> OnCellVisualRegenerated;
+        public int WalkabilityVersion { get; private set; }
+        public void NotifyWalkabilityChanged()
+        {
+            WalkabilityVersion++;
+            OnWalkabilityChanged?.Invoke();
+        }
 
         public Vector3 GridCenter
         {
@@ -117,6 +125,7 @@ namespace TacticalRPG.Grid
                 DestroyImmediate(cell.Visual);
 
             SpawnVisual(cell);
+            OnCellVisualRegenerated?.Invoke(coord);
         }
 
         // ── Görsel üretimi ────────────────────────────────────────────────────
@@ -196,8 +205,11 @@ namespace TacticalRPG.Grid
             go.name           = $"Hex_{cell.Coordinate}";
             cell.Visual       = go;
             // Kompleks prefablarda (child MeshRenderer) kök önce denenir
-            cell.MeshRenderer = go.GetComponent<MeshRenderer>()
-                             ?? go.GetComponentInChildren<MeshRenderer>();
+            cell.MeshRenderer = go.GetComponent<MeshRenderer>();
+            // Unity's missing-component wrapper compares equal to null but can survive
+            // C#'s ?? check in the Editor. Use Unity equality before the child lookup.
+            if (cell.MeshRenderer == null)
+                cell.MeshRenderer = go.GetComponentInChildren<MeshRenderer>(true);
 
             if (entry == null)
             {
@@ -234,6 +246,8 @@ namespace TacticalRPG.Grid
 
             // Birimlerin basacağı yüzey yüksekliğini belirle (engebe/köprü desteği).
             cell.SurfaceHeight = ResolveSurfaceHeight(cell, go, entry);
+            var landmark = go.GetComponent<TacticalRPG.Core.BiomeLandmarkVisibility>();
+            if (landmark != null) landmark.Initialize(cell.Coordinate);
         }
 
         // Birimin basacağı YÜRÜME yüzeyi yüksekliği (taban üstü). Karonun zirvesi değil:

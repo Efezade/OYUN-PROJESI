@@ -12,6 +12,9 @@ namespace TacticalRPG.Core
     /// </summary>
     public class EssenceWallet : MonoBehaviour
     {
+        [SerializeField] private TestEconomySO _testEconomy;
+        public bool Unlimited => _testEconomy != null && _testEconomy.Unlimited;
+        public string DisplayAmount(EssenceType type) => Unlimited ? "Sınırsız" : Get(type).ToString();
         [Header("Başlangıç özleri (TEST için)")]
         [Tooltip("Bölüm 1'in gerçek özleri TAŞ ve DOĞA'dır. Ateş/Su/Toprak eski denemeden kalma " +
                  "(GAME_DESIGN §0) — tarifler hâlâ kullanabildiği için alanlar duruyor.")]
@@ -73,7 +76,7 @@ namespace TacticalRPG.Core
 
         public bool CanAfford(IReadOnlyList<EssenceAmount> cost)
         {
-            if (cost == null) return true;
+            if (Unlimited || cost == null) return true;
             foreach (var c in cost)
                 if (_amounts[(int)c.type] < c.amount) return false;
             return true;
@@ -81,6 +84,7 @@ namespace TacticalRPG.Core
 
         public bool TrySpend(IReadOnlyList<EssenceAmount> cost)
         {
+            if (Unlimited) return true;
             if (!CanAfford(cost)) return false;
             if (cost != null)
                 foreach (var c in cost)

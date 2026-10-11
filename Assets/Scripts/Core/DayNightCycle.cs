@@ -9,11 +9,9 @@ namespace TacticalRPG.Core
     /// Gece/gündüz döngüsü. ActionPointManager'ın zaman event'lerine abone olur:
     ///   • Her DİLİM değişiminde o dilimin atmosferini (DayNightProfile) uygular —
     ///     güneş/ay açısı, rengi, şiddeti, gölge sertliği, ortam ışığı, gökyüzü.
-    ///     Geçiş KESKİNdir (varsayılan 0 sn) — akışkan lerp istenmedi.
-    ///   • GÜNDÜZ↔GECE sınırında ayrıca gösteri oynatılır: ışık sert geçer, ardından tüm
-    ///     karolar aşağı süzülüp yerlerine yukarıdan inen kopyaları geçer (DayNightTileSwap),
-    ///     sonunda gece sis kuralı devreye girer (görüş yarıya iner, kule açık olsa bile
-    ///     karanlık tavanı uygulanır — FogOfWarManager.SetNightMode).
+    ///     Işık, gölge ve gökyüzü mevcut değerlerinden yeni dilime yumuşakça geçer.
+    ///   • İlk dört dilim gündüz, son iki dilim gece. Görüş kuralı sınırda güncellenir;
+    ///     sis ve karo parlaklığı kendi görsel geçişlerini birlikte yapar.
     ///
     /// Karo renklerine DOKUNMAZ — karo/bulut renkleri MaterialPropertyBlock ile
     /// FogOfWarManager'ın sorumluluğunda; burası sahne ışığını sürer, karolar doğal etkilenir.
@@ -35,8 +33,10 @@ namespace TacticalRPG.Core
         [SerializeField] private PlayerController _player;
 
         [Header("Geçiş")]
-        [Tooltip("Dilim değişince yeni atmosfere kaç saniyede geçilir. 0 = KESKİN (istenen davranış).")]
-        [SerializeField, Min(0f)] private float _transitionSeconds = 0f;
+        [Tooltip("Dilim değişince ışık, gölge ve gökyüzü birlikte bu sürede yumuşar. Art arda AP harcamak mevcut geçişi keskinleştirmez.")]
+        [SerializeField, Min(0f)] private float _transitionSeconds = 2.4f;
+        public float TransitionSeconds => _transitionSeconds;
+        public bool IsTransitioning => _transition != null;
 
         [Header("Neyi sürsün?")]
         [Tooltip("Kapatılırsa sahnenin ortam (ambient) ışığına dokunulmaz.")]
@@ -49,6 +49,9 @@ namespace TacticalRPG.Core
         // Sahnenin başlangıç değerleri — profil/ışık eksikse geri dönülecek güvenli taban.
         private AmbientMode _originalAmbientMode;
         private bool        _ambientModeCaptured;
+        private bool _started;
+        private Snapshot _original;
+        private Light _originalSun;
 
         private void OnEnable()
         {
@@ -56,6 +59,12 @@ namespace TacticalRPG.Core
             {
                 _apManager.OnTimeAdvanced   += HandleTimeAdvanced;
                 _apManager.OnDayNightChanged += HandleDayNightChanged;
+            }
+            if (_started)
+            {
+                if (_controlAmbient) RenderSettings.ambientMode = AmbientMode.Flat;
+                ApplySlot(_apManager != null ? _apManager.CurrentSlot : 0, instant: false);
+                ApplyNightVision(_apManager != null && _apManager.IsNight);
             }
         }
 
@@ -67,15 +76,30 @@ namespace TacticalRPG.Core
                 _apManager.OnDayNightChanged -= HandleDayNightChanged;
             }
 
-            // Play modundan çıkarken sahnenin ambient ayarını bulduğumuz gibi bırak.
+            if (_transition != null) { StopCoroutine(_transition); _transition = null; }
+        }
+
+        private void OnDestroy()
+        {
+            // Editor Play çıkışında sahnenin ışığı ve global ortam ayarları sızmasın.
             if (_ambientModeCaptured)
+            {
+                RenderSettings.ambientLight = _original.Ambient;
                 RenderSettings.ambientMode = _originalAmbientMode;
+            }
+            if (_started && RenderSettings.sun == _sun) RenderSettings.sun = _originalSun;
+            if (_started && _sun != null)
+            { _sun.transform.rotation = _original.SunRotation; _sun.color = _original.SunColor; _sun.intensity = _original.SunIntensity; _sun.shadowStrength = _original.ShadowStrength; }
+            if (_started && _controlSky && _camera != null) _camera.backgroundColor = _original.Sky;
         }
 
         private void Start()
         {
             // Find* çağrıları yalnızca Start içinde serbest (CLAUDE.md) — wiring eksikse son çare.
             if (_camera == null) _camera = Camera.main;
+            _original = ReadCurrent();
+            _originalSun = RenderSettings.sun;
+            if (_sun != null) RenderSettings.sun = _sun;
 
             if (_profile == null || _profile.Count == 0)
             {
@@ -95,16 +119,15 @@ namespace TacticalRPG.Core
             // Açılış: mevcut dilimi geçişsiz uygula (oyun başlarken gösteri/fade görülmesin).
             ApplySlot(_apManager != null ? _apManager.CurrentSlot : 0, instant: true);
             if (_fog != null) _fog.SetNightMode(_apManager != null && _apManager.IsNight);
+            _started = true;
         }
 
         private void HandleTimeAdvanced(int day, int slot, string slotName)
         {
-            // Dilim atmosferi. Gündüz↔gece sınırıysa bu çağrı ışığı ZATEN geceye çevirir;
-            // hemen ardından gelen OnDayNightChanged gösteriyi oynatır → karolar karanlıkta takas olur.
             ApplySlot(slot, instant: false);
         }
 
-        // ── Gündüz ↔ gece sınırı: ışık zaten HandleTimeAdvanced'te sert geçti; burada görüş kuralı ──
+        // Mantık anında güncellenir, görsel sis kendi fade'ini uygular.
         private void HandleDayNightChanged(bool isNight) => ApplyNightVision(isNight);
 
         private void ApplyNightVision(bool night)
@@ -142,10 +165,10 @@ namespace TacticalRPG.Core
             float elapsed = 0f;
             while (elapsed < _transitionSeconds)
             {
-                elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / _transitionSeconds);
                 Apply(target, Mathf.SmoothStep(0f, 1f, t), from);
                 yield return null;
+                elapsed += Time.deltaTime;
             }
 
             Apply(target, 1f, from);
@@ -158,8 +181,9 @@ namespace TacticalRPG.Core
         {
             if (_sun != null)
             {
-                _sun.transform.rotation = Quaternion.Slerp(from.SunRotation,
-                                                           Quaternion.Euler(target.sunEuler), t);
+                Vector3 euler = from.SunRotation.eulerAngles;
+                _sun.transform.rotation = Quaternion.Euler(Mathf.LerpAngle(euler.x,target.sunEuler.x,t),
+                    Mathf.LerpAngle(euler.y,target.sunEuler.y,t),Mathf.LerpAngle(euler.z,target.sunEuler.z,t));
                 _sun.color          = Color.Lerp(from.SunColor,       target.sunColor,       t);
                 _sun.intensity      = Mathf.Lerp(from.SunIntensity,   target.sunIntensity,   t);
                 _sun.shadowStrength = Mathf.Lerp(from.ShadowStrength, target.shadowStrength, t);

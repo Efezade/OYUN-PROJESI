@@ -217,9 +217,9 @@ namespace TacticalRPG.Grid
 
         /// <summary>Bölgeye özel tekil karo (bkz <see cref="Entry.RegionOnly"/>).</summary>
         private static Entry U(string id, string name, TileFamily fam, int ess, EssenceKind kind,
-                               Surface surf, float r, float g, float b)
+                               Surface surf, float r, float g, float b, bool walkable = true)
         {
-            Entry e = E(id, name, fam, true, ess, kind, surf, r, g, b);
+            Entry e = E(id, name, fam, walkable, ess, kind, surf, r, g, b);
             e.RegionOnly = true;
             return e;
         }
@@ -336,7 +336,7 @@ namespace TacticalRPG.Grid
             E(KokAgi,        "Kök Ağı",                 TileFamily.Plain,  true,  0, EssenceKind.None, Surface.Moss,  0.44f,0.40f,0.28f),
             E(KehribarDamari,"Kehribar Damarı (2 taş)", TileFamily.Stone,  true,  2, EssenceKind.Tas,  Surface.Stone, 0.78f,0.56f,0.22f),
             E(DevKokler,     "Dev Kökler",              TileFamily.Blob,   false, 0, EssenceKind.None, Surface.Moss,  0.30f,0.26f,0.18f),
-            U(Bayterek,      "Bayterek",                TileFamily.Landmark,  0, EssenceKind.None, Surface.Grass, 0.30f,0.44f,0.24f),
+            U(Bayterek,      "Bayterek",                TileFamily.Landmark,  0, EssenceKind.None, Surface.Grass, 0.30f,0.44f,0.24f, false),
             U(KaraAsi,       "Kara Aşı",                TileFamily.Landmark,  0, EssenceKind.None, Surface.Ash,   0.28f,0.16f,0.34f),
 
             // ── DAVUL KAROLARI (yalnız savaş; ağırlık 0 → arazi üreticisi asla seçmez) ──

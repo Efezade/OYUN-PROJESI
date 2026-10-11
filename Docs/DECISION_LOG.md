@@ -16,6 +16,88 @@
 
 ---
 
+## 2026-10-11 — Zemini yaran kök, sınırsız test ekonomisi ve yumuşak gün/gece
+
+**KARAR:** Beğenilen kamera akışı korundu. Kök gövdesi yer altına dalıp çıkar;
+karolar geçici kırık toprak mesh'ine dönüşür, taş ve toz savrulur. Asıl model,
+son dal geri çekilince döner. Görsel gizleme de hareket engeli gibi sahiplik taşır.
+Test ekonomisi ortak bir SO anahtarıyla tüm öz bedellerini ve tüketim sınırlarını
+kaldırır; gerçek kazanımı şişirip görev zincirini açmaz.
+
+**NEDEN:** Kullanıcı havada çizgi gibi kök yerine zemini tahrip eden devasa kök,
+serbest test ekonomisi ve daha okunaklı ışık istedi. Son yönlendirmesi: dört gündüz,
+iki gece dilimi; AP harcanınca sert ışık sıçraması olmamalı. Işık, gölge ve gökyüzü
+2,4 saniyede değişir. Sisli karonun parlaklığı da hedef yerine o anki opaklığı izler.
+
+**DERS:** İki Directional Light ve atanmamış RenderSettings.sun, URP'nin karanlık
+dilimde başka ana ışığa geçmesine neden olur. Yalnız interpolasyon eklemek yetmez.
+Gerçek render örneğinde öğlen/gece nötr yüzey parlaklığı 0,680 / 0,265 ölçüldü.
+İzole test sahnesinin GUID'leri, açık editörün aynı sırada ürettiği asset'lerin
+GUID'lerini ezmemeli; aktarım yerel kimlikleri korur.
+
+**COMMIT:** Yerel çalışma; senkron/push istenmedi.
+
+## 2026-10-11 — Özgün ses, sinematik kökler ve ortak sunum katmanı
+
+**KARAR:** Sesler olay kanalından 24 seslik havuza gider; 71 efektin üçer varyasyonu,
+yedi bölge/menü/savaş/boss müzikleri ve ortam döngüleri ortak modal tema kullanır.
+Arayüz, efekt, ortam ve müzik ayrı kalıcı ses ayarlarına sahiptir. Kayıtlar yerel
+üreticiden gelir; dış örnek kullanılmaz. UI tek tema SO'suna bağlanır; mevcut çizim
+ve portreler korunur. Kaydırıcıların olayları yanında gerçek raycast alanları da sınanır.
+
+**KARAR:** Yeni görev kamerayı Bayterek'e taşır, kök ucunu izler ve bütün kontrolü
+geri verir. Sinematik görüş kalıcı keşif değildir. Kalın kökün yan dalları gerçek
+hareket engeli taşır; ek karo yalnız hedeflere erişim korunabiliyorsa kullanılır.
+Sis komşu opaklık/renkleri karıştırır. Çöküş aynı oyun kurallarıyla toz cephesi,
+damped sarsıntı ve animasyonlu boşluk olarak sunulur.
+
+**NEDEN:** Kullanıcı küçük kökü, yapay sisi, sert kırmızı dalgaları, sessiz oyunu ve
+ilkel/bozuk UI'ları birlikte yenilemek istedi. Görsel gösteri oyun kurallarını veya
+keşif bilgisini değiştirmemeli. Yeni asset grafiği önceki kişisel varlıkları korur.
+
+**DERS:** `Camera.Render` ekran katmanındaki IMGUI'yi doğrulamaz; gerçek oyuncu
+yakalamaları gerekir. Gizli Settings paneli `FindObjectsInactive.Include` ile
+bulunmalı. MaterialPropertyBlock MonoBehaviour field initializer'ında yaratılamaz.
+UI renklerini yalnız sahnede değiştirmek yetmez; runtime controller renkleri de
+aynı temayı kullanmalıdır. Harici QA sahnesinin test seed/hızları ana sahneye kopyalanmaz.
+
+**COMMIT:** Yerel çalışma; bu istekte senkron veya commit talep edilmedi.
+
+## 2026-10-11 — Biyom sınırları, hikâye yapıları ve Bayterek görev kökleri
+
+**SON GENİŞLETME:** Efe alakasız açık/koyu karoların yan yana gelmesini istemedi;
+kule, pazar, savaş ve kalan bütün geçici karoları da modellemeyi istedi. 129 benzersiz
+Blender çıktı (127 karo + iki büyük yapı), pişirilmiş atlas ve semantik vertex maskesi
+kullanılıyor. Zemin/yaprak/taş bölgenin ölçülü paletine uyarlanır. Altı komşulu yumuşak
+renk karışımı, rastgele haritada yarım geçiş karosu ihtiyacını shader'da çözer.
+Sınır şeridi aynı zemin paletinden ve sahne ışığından renk alır; bağımsız parlak çizgi olmaz.
+Kişisel çayır dosyaları değişmez; runtime materyalleri geçicidir.
+
+**KARAR:** Yedi bölgeye ayrı geçici mesh/doku seti; Bayterek ve köy kütüğü çok karolu
+yapılar. 36×34 tahta korunur, yapı çevrelerine yerel açıklık açılır. Biyom sınırına iki
+zemin rengini taşıyan ince ve yumuşak toprak şeridi eklenir. Keşfedilmemiş sınırlar gizlidir.
+Yeni zorunlu görevde kök ağaçtan göreve büyür, tamamlanınca ters yönde parça parça çekilir.
+Kök karosu ayrı sahiplikli hareket engelidir; ortak dallar ve çöküş birbirini ezmez.
+
+**NEDEN:** Efe bölgeler arası farkı ve hikâyedeki büyük yapıları haritada görmek istedi.
+Geçiş izi, karo modellerinin yerini almadan bölgeyi okunur yapar. Ayrı engel sahipliği,
+bir görev bitince diğer görevin kökünün veya çökmüş zeminin yanlışlıkla açılmasını önler.
+Kişisel karolar korunur; nihai modeller paletten değiştirilebilir.
+
+**DERS:** Ayrı Unity test kopyasına yeni FBX metadata'sı taşınırsa, ona referans veren
+prefab/materyaller de aynı GUID kümesinden taşınmalı. Yalnız model metadata'sı kopyalamak
+sağlam bir prefabi test kopyasında kayıp model gibi gösterir. Vertex renkleri özel URP
+shader'ına yazılırken lineer renk uzayı dönüşümü gerekir; aksi halde toprak sınırı tebeşir
+gibi açık görünür. Görev rotası testi köy/kovuk/tapınak erişimini de içermeli.
+Yeni texture metadata'sı yalnız GUID'den oluşmamalı: Texture2D importer ayarları
+açıkça tanımlanmalı. Export kimlikleri küçük harfle tekilleştirilip yinelenen kimlik
+reddedilir; `Bayterek`/`bayterek` aynı çıktı dosyasını sessizce ezmemeli.
+Unity `GetComponent` eksik nesne wrapper'ı `??` ile güvenli elenmez. Çocuk renderer
+aramasında açık `== null` kontrolü ve gizli grid için `includeInactive: true` gerekir;
+yoksa sis ve biyom ayarı modelin ilk görünüşünde uygulanmayabilir.
+
+**COMMIT:** Henüz commit yok (`feature/biome-bayterek-roots`).
+
 ## 2026-10-11 — Av birliğinin sabit merkezi ve animasyonlu karşılaşma
 
 **KARAR:** Goblinler harita kurulduğunda mor görüş halkalarının merkezlerine yerleştirilir.

@@ -416,6 +416,7 @@ namespace TacticalRPG.Core
 
         private void Explode(Placed p)
         {
+            SoundSignals.At("fire",WorldOf(p.Origin));
             int    dmg    = p.Entry.Magnitude;
             float  radius = RadiusWorld(p.Entry.Radius);
             Vector3 center = WorldOf(p.Origin);
@@ -496,6 +497,7 @@ namespace TacticalRPG.Core
         /// bağını kurar; yalnız yazı olsaydı hangi karodan geldiği belirsiz kalırdı).</summary>
         private void Feedback(Placed p, Unit unit, string text, Color color)
         {
+            SoundSignals.At("trap",unit.transform.position,.4f);
             if (_fx == null) return;
             _fx.FloatingText(unit.transform.position, text, color);
             _fx.Burst(WorldOf(p.Origin), RadiusWorld(p.Entry.Radius) * 0.75f, color);

@@ -100,6 +100,7 @@ namespace TacticalRPG.Core
                 ? $"[{LogLabel}] '{id}' ACILDI — artik draft havuzunda."
                 : $"[{LogLabel}] '{id}' seviye {lv} -> {lv + 1}.");
             OnChanged?.Invoke();
+            SoundSignals.Play("level_up");
             return true;
         }
 

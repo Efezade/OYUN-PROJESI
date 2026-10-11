@@ -77,7 +77,7 @@ namespace TacticalRPG.UI
             GUILayout.Label($"COKMUS KARO YANINDA  {target}   ·   elde hak: {_recovery.Credits}");
             GUILayout.BeginHorizontal();
 
-            if (GUILayout.Button("RISKE GIR (bedava)", GUILayout.Height(34)))
+            if (ModernGUI.Button("RISKE GIR (bedava)", GUILayout.Height(34)))
             {
                 _recovery.AttemptRisk(target, out string msg);
                 ShowMessage(msg);
@@ -85,7 +85,7 @@ namespace TacticalRPG.UI
 
             bool canPay = _recovery.CanAffordPaid();
             GUI.enabled = canPay;
-            if (GUILayout.Button($"OZ ODE ({CostText()})", GUILayout.Height(34)))
+            if (ModernGUI.Button($"OZ ODE ({CostText()})", GUILayout.Height(34)))
             {
                 _recovery.AttemptPaid(target, out string msg);
                 ShowMessage(msg);

@@ -118,6 +118,7 @@ namespace TacticalRPG.Core
             if (wallet != null && !wallet.TrySpend(_rerollCost)) return false;
             Restock(avoidCurrent: true);
             Debug.Log("[Market] REROLL — stok yeniden dizildi.");
+            SoundSignals.Play("scroll");
             return true;
         }
 
@@ -132,6 +133,7 @@ namespace TacticalRPG.Core
             if (e.IsItem) inventory.AddItem(e.Item); else inventory.AddPotion(e.Potion);
             e.Sold = true;
             OnStockChanged?.Invoke();
+            SoundSignals.Play("purchase");
             return true;
         }
 

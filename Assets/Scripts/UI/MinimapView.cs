@@ -90,6 +90,7 @@ namespace TacticalRPG.UI
         {
             if (_renderer != null) _renderer.OnTextureRebuilt += BindTexture;
             if (_nodes    != null) _nodes.OnNodesChanged      += MarkIconsDirty;
+            if (_grid     != null) _grid.OnWalkabilityChanged += MarkIconsDirty;
             PaintLegend();
             Refresh();
         }
@@ -98,6 +99,7 @@ namespace TacticalRPG.UI
         {
             if (_renderer != null) _renderer.OnTextureRebuilt -= BindTexture;
             if (_nodes    != null) _nodes.OnNodesChanged      -= MarkIconsDirty;
+            if (_grid     != null) _grid.OnWalkabilityChanged -= MarkIconsDirty;
             ClearIcons();
         }
 

@@ -165,6 +165,8 @@ namespace TacticalRPG.UI
             Color accent = card.IsSkill
                 ? new Color(card.Skill.R, card.Skill.G, card.Skill.B)
                 : (GroupColor.TryGetValue(card.Tile.Group, out var c) ? c : Color.gray);
+            var theme=PresentationTheme.Current;
+            if(theme!=null)accent=Color.Lerp(accent,theme.muted,.32f);
 
             string groupLabel = card.IsSkill
                 ? "BÜYÜ · Kam"
@@ -174,7 +176,7 @@ namespace TacticalRPG.UI
 
             // ── Dış çerçeve ──
             var cardGO = new GameObject($"Card_{id}", typeof(RectTransform), typeof(Image),
-                                        typeof(Button), typeof(LayoutElement));
+                                        typeof(Button), typeof(UISoundFeedback), typeof(LayoutElement));
             var rt = (RectTransform)cardGO.transform;
             rt.SetParent(_cardRow, false);
 
@@ -187,25 +189,27 @@ namespace TacticalRPG.UI
             le.minHeight       = _cardSize.y;
 
             cardGO.GetComponent<Image>().color = accent;        // çerçevenin kendisi
+            RoundPanel(cardGO.GetComponent<Image>());
 
             // ── İç panel (çerçeveden 5px içeri) ──
             var innerGO = new GameObject("Inner", typeof(RectTransform), typeof(Image));
             var inner = (RectTransform)innerGO.transform;
             inner.SetParent(rt, false);
             inner.anchorMin = Vector2.zero; inner.anchorMax = Vector2.one;
-            inner.offsetMin = new Vector2(5f, 5f); inner.offsetMax = new Vector2(-5f, -5f);
-            innerGO.GetComponent<Image>().color = new Color(0.07f, 0.07f, 0.10f, 0.98f);
+            inner.offsetMin = new Vector2(2f, 2f); inner.offsetMax = new Vector2(-2f, -2f);
+            innerGO.GetComponent<Image>().color = theme!=null?theme.panel:new Color(0.07f, 0.07f, 0.10f, 0.98f);
+            RoundPanel(innerGO.GetComponent<Image>());
             innerGO.GetComponent<Image>().raycastTarget = false;
 
             // ── Üst şerit: grup adı ──
             var strip = NewRect("Strip", inner, new Vector2(0.5f, 1f), Vector2.zero,
                                 new Vector2(_cardSize.x - 10f, 52f));
             var stripImg = strip.gameObject.AddComponent<Image>();
-            stripImg.color = accent;
+            stripImg.color = theme!=null?Color.Lerp(theme.raised,accent,.22f):accent;RoundPanel(stripImg);
             stripImg.raycastTarget = false;
             Label(strip, "GroupName", groupLabel,
                   new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(_cardSize.x - 20f, 48f),
-                  new Color(0.05f, 0.05f, 0.07f), 21f, FontStyles.Bold);
+                  theme!=null?theme.text:Color.white, 18f, FontStyles.Normal);
 
             // ── Başlık ──
             Label(inner, "Name", card.Name, new Vector2(0.5f, 1f), new Vector2(0f, -64f),
@@ -228,6 +232,7 @@ namespace TacticalRPG.UI
                                  new Vector2(_cardSize.x - 40f, 46f));
             var areaImg = areaBg.gameObject.AddComponent<Image>();
             areaImg.color = new Color(accent.r * 0.30f, accent.g * 0.30f, accent.b * 0.30f, 0.85f);
+            RoundPanel(areaImg);
             areaImg.raycastTarget = false;
             Label(areaBg, "Area", card.AreaLabel, new Vector2(0.5f, 0.5f), Vector2.zero,
                   new Vector2(_cardSize.x - 48f, 42f), accent, 20f, FontStyles.Bold);
@@ -241,7 +246,7 @@ namespace TacticalRPG.UI
             var badge = NewRect("Mana", rt, new Vector2(1f, 1f), new Vector2(-6f, 14f), new Vector2(66f, 66f));
             badge.pivot = new Vector2(1f, 1f);
             var badgeImg = badge.gameObject.AddComponent<Image>();
-            badgeImg.color = _manaColor;
+            badgeImg.color = theme!=null?theme.teal:_manaColor;RoundPanel(badgeImg);
             badgeImg.raycastTarget = false;
             Label(badge, "Cost", card.ManaCost.ToString(), new Vector2(0.5f, 0.5f), new Vector2(0f, 6f),
                   new Vector2(60f, 40f), Color.white, 34f, FontStyles.Bold);
@@ -269,6 +274,9 @@ namespace TacticalRPG.UI
             cardGO.GetComponent<Button>().onClick.AddListener(() => OnCardClicked(captured));
             return cardGO;
         }
+
+        private static void RoundPanel(Image image)
+        {var theme=PresentationTheme.Current;if(theme!=null&&theme.panelSprite!=null){image.sprite=theme.panelSprite;image.type=Image.Type.Sliced;}}
 
         private void OnCardClicked(int index)
         {
@@ -386,7 +394,9 @@ namespace TacticalRPG.UI
                                  new Vector2(0f, 70f), new Vector2(420f, 72f));
             var skipImg = skipRT.gameObject.AddComponent<Image>();
             skipImg.color = new Color(0.16f, 0.15f, 0.20f, 0.95f);
+            if(PresentationTheme.Current!=null)skipImg.color=PresentationTheme.Current.raised;RoundPanel(skipImg);
             var skipBtn = skipRT.gameObject.AddComponent<Button>();
+            skipBtn.gameObject.AddComponent<UISoundFeedback>();
             skipBtn.targetGraphic = skipImg;
             skipBtn.onClick.AddListener(() => { if (_drum != null) _drum.Skip(); });
             Label(skipRT, "SkipLabel", "PAS GEÇ — manayı sakla", new Vector2(0.5f, 0.5f), Vector2.zero,

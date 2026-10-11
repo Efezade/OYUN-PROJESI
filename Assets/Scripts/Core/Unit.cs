@@ -397,7 +397,7 @@ namespace TacticalRPG.Core
                 remaining -= absorbed;
             }
 
-            if (remaining <= 0) { OnStatsChanged?.Invoke(this); return; }
+            if (remaining <= 0) { SoundSignals.At("shield",transform.position); OnStatsChanged?.Invoke(this); return; }
 
             if (_card != null)
             {
@@ -466,6 +466,7 @@ namespace TacticalRPG.Core
 
         public void Heal(int amount)
         {
+            if(amount>0 && CurrentHP<MaxHP)SoundSignals.At("heal",transform.position,.5f);
             if (amount <= 0 || !IsAlive) return;
 
             if (_card != null) { _card.Heal(amount); return; }
@@ -476,6 +477,7 @@ namespace TacticalRPG.Core
 
         public void AddShield(int amount)
         {
+            if(amount>0)SoundSignals.At("shield",transform.position,.45f);
             if (amount <= 0 || !IsAlive) return;
             Shield += amount;
             OnStatsChanged?.Invoke(this);

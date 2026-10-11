@@ -73,7 +73,56 @@ Mekanik aynen kaldı: başta 2 görev var, zaman ve ekonomiyle artıyor. Görevl
 - Hangi aşı noktasının önce düşeceğini oyuncunun nerede dolaştığı belirliyor. Hikâyedeki "sırayı oyuncu seçer"
   böylece kendiliğinden oluyor.
 
-## 5. Açık sorular / sıradaki adaylar
+## 5. Biyom görselleri, büyük yapılar ve görev kökleri (2026-10-11)
+
+Yedi bölgenin varyantları, tüm aktif arazi kataloğu, 24 savaş karosu ve altı etkileşim
+karosu dahil 127 karo görünüşü ile iki büyük yapı var. Gerçek mesh/UV ve pişirilmiş
+renk dokuları kullanılır. Kule, pazar, kamp, mağara, görev ve bitmiş görev de modellenmiştir.
+Kişisel çayır modelleri korunur; yeni set `Assets/Art/Models/Tiles/Biomes` ve
+`Assets/Prefabs/Grid/Biomes` altında. Kaynak: `MODELLER/Biyom-Onizleme/biyom_tam_set_v007.blend`.
+Kullanıcının kendi nihai çizim/model seti geldiğinde paletten tek tek değiştirilebilir.
+
+- **Yırtık Koru:** solgun kuru zemin, çıplak dallar ve kırık koru.
+- **Halka Köyü:** sıcak ahşap halkaları, fener yolları, dal evler; merkezde birkaç karoyu
+  kaplayan tek dev kütük tabanı. Çevresinde iki halkalık köy açıklığı ayrılır.
+- **Fısıltı Bataklığı:** koyu nemli zemin, su gözleri, saz ve yüzey kökleri.
+- **Uyuyanlar Vadisi:** serin yosun, eğreltiler, Kodama yuvaları ve yatan taş dev.
+- **Oyuk Tepeler:** kızıl toprak, kök sırtları, oyuk gövde geçitleri ve ruh tapınağı.
+- **Bayterek'in Kalbi:** yoğun kök ağı, kehribar; yaklaşık 12 m Bayterek tek karoya
+  küçültülmez. Bir halkalık geçilmez kök yakası ve dışarıda yürünebilir açıklık vardır.
+- **Kök Ahdi Koruları:** yeşil çayır, ağaç kümeleri ve meyve bahçesiyle ara doku.
+
+Tahta 36×34 kalır; büyük yapılar için yerel açıklıklar üretim sırasında açılır. Bölge
+sınırlarında iki bölgenin zemin/kimlik renklerini taşıyan ince, düzensiz ve kenarı yumuşak
+şeritler vardır. Tek mesh kullanılır; yalnız iki tarafı da keşfedilmiş kenarlar çizilir.
+Boyut ve renk ayarları `BiomeBoundaries.asset` içindedir. Bölge giriş yazısı korunur.
+
+`BiomeTerrainStyle.asset`, komşu karoların zemin ve bitki tonlarını ortak, ölçülü bir
+palete yaklaştırır. Mesh vertex renkleri zemin/yaprak/taşı ayrı işaretler; su, ahşap,
+bez ve fenerlerin kendi dokuları korunur. Sınırdaki altı komşudan ağırlıklı renk alınır:
+ortak kenarda iki biyom, köşede üç biyom yumuşakça karışır. Dünya koordinatlı hesap
+haritanın rastgele yerleşiminde ve aynalanan varyantlarda da çalışır; sabit yarım-karo
+envanteri gerektirmez. Kişisel çayır kaynaklarına yazılmaz, yalnız oyun sırasında
+geçici materyal uygulanır. Minimap aynı bölge paletini izler. Savaş zemini kendi
+ortak tonunu kullanır; bölge sınır şeritleri savaşta görünmez.
+
+Zorunlu görev açıldığında Bayterek'ten görev karosunun kenarına doğru kök **karo karo
+büyür**. Büyümeye başlayan karo yürünemez olur. Görev bitince dal **görevden ağaca doğru
+karo karo çekilir**; her parça sıfırlanınca o karodaki geçici engel kalkar. Paylaşılan
+kök karosu, kullanan son dal da çekilene kadar kapalıdır. Görev karosu, oyuncunun
+bulunduğu/adım attığı karo ve önemli yapıların erişimi korunur. Güvenli rota bulunamayan
+durumda büyüme ertelenir ve oyuncu hareketi/harita değişimiyle tekrar denenir.
+
+Kök engeli arazi yürünebilirliğinden ayrıdır: çekilen kök çökmüş karoyu geri açmaz;
+karoyu geri getirmek de hâlâ etkin olan kökü kaldırmaz. Savaş arenasına kök taşınmaz,
+overworld'e dönünce dal ilerlemesi ve engeller geri uygulanır. Minimap ve rota gösterimi
+engelleri izler. Süre/kalınlık/materyal `BayterekRoots.asset` üzerinden ayarlanır.
+Bu animasyon, mor Kara Aşı katmanının **gün gün arınmasından ayrı** çalışır.
+
+Kurulum `TAM KURULUM` zincirine bağlıdır; var olan kullanıcı prefab ve ayarlarını ezmez.
+`BiomeWorldQA.Run` yalnız `.biome-qa-copy` işaretli ayrı proje kopyasında çalıştırılır.
+
+## 6. Açık sorular / sıradaki adaylar
 
 - Dört bölge kuralı kodda; Play'de ayarlanacak sayılar: kuzgun halkası/av hızı, Alaz hazine oranı, uyanış eşiği, tünel bedeli.
 - Pusu düşmanları geçici (Goblin/Yamyam): hikâyedeki Av Geyiği, Diken Kurdu, Ulu Kayın modelleri gelince değişecek.

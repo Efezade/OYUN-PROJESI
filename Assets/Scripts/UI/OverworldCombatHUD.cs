@@ -49,7 +49,7 @@ namespace TacticalRPG.UI
             ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
             GUILayout.Label($"Gorev yakinda: '{mission.DisplayName}'");
-            if (GUILayout.Button("Savasa Gir", GUILayout.Height(34)))
+            if (ModernGUI.Button("Savasa Gir", GUILayout.Height(34)))
                 _stateManager.RequestMission(mission);
             GUILayout.EndArea();
         }
@@ -66,8 +66,8 @@ namespace TacticalRPG.UI
             GUILayout.Label($"'{missionName}' gorevine girmek istiyor musun?");
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Evet, Savasa Gir", GUILayout.Height(36))) _stateManager.ConfirmMission();
-            if (GUILayout.Button("Hayir",            GUILayout.Height(36))) _stateManager.CancelMission();
+            if (ModernGUI.Button("Evet, Savasa Gir", GUILayout.Height(36))) _stateManager.ConfirmMission();
+            if (ModernGUI.Button("Hayir",            GUILayout.Height(36))) _stateManager.CancelMission();
             GUILayout.EndHorizontal();
             GUILayout.EndArea();
         }
@@ -83,7 +83,7 @@ namespace TacticalRPG.UI
             ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
             GUILayout.Label($"SAVAS — {missionName}");
-            if (GUILayout.Button("Geri Don (Overworld)", GUILayout.Height(30)))
+            if (ModernGUI.Button("Geri Don (Overworld)", GUILayout.Height(30)))
                 _stateManager.ReturnToOverworld();
             GUILayout.EndArea();
         }

@@ -55,7 +55,7 @@ namespace TacticalRPG.Core
         public event Action<int> OnAPSpent;
         public event Action<int, int, string> OnTimeAdvanced; // (day, slot, slotName)
         /// <summary>Gündüz↔gece SINIRI geçildiğinde tetiklenir (her dilimde DEĞİL). true = gece oldu.
-        /// DayNightCycle bunu dinleyip karo değiş-tokuş animasyonunu + sert ışık geçişini oynatır.</summary>
+        /// DayNightCycle görüş kuralını günceller; ışık dilimler arasında yumuşak geçer.</summary>
         public event Action<bool>        OnDayNightChanged;
 
         private void Awake()

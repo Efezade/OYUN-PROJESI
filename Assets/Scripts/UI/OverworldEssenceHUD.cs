@@ -42,7 +42,7 @@ namespace TacticalRPG.UI
             using var _scale = HudScale.Scaled();
 
             const float w = 300f;
-            var rect = new Rect(HudScale.Width - w - HudLayout.RightMargin, HudLayout.RightFirstY, w, 252f);
+            var rect = new Rect(HudScale.Width - w - HudLayout.RightMargin, HudLayout.RightFirstY, w, 166f);
             ImguiBlocker.Register(rect);
             GUILayout.BeginArea(rect, GUI.skin.box);
 
@@ -65,9 +65,9 @@ namespace TacticalRPG.UI
             Color prev = GUI.color;
             foreach (var t in Types)
             {
-                if (_config != null) GUI.color = _config.ColorOf(t);
+                if (_config != null) GUI.color = Color.Lerp(_config.ColorOf(t),Color.white,.65f);
                 string name = _config != null ? _config.NameOf(t) : t.ToString();
-                GUILayout.Label($"● {name}: {_wallet.Get(t)}");
+                GUILayout.Label($"● {name}: {_wallet.DisplayAmount(t)}");
             }
             GUI.color = prev;
         }
@@ -82,13 +82,13 @@ namespace TacticalRPG.UI
             if (_field.AutoCollect)
             {
                 // OTOMATİK TOPLAMA (2026-10-03): düğme yok — öz karosuna basınca alınır.
-                GUILayout.Label("Öz karosuna bas → öz otomatik toplanır.");
+                // Automatic collection needs no permanent tutorial paragraph in the compact HUD.
             }
             else if (_field.HasEssenceAt(here))
             {
                 GUILayout.Label($"Bu karoda: {_field.Describe(here)}");
                 GUI.enabled = _field.CanCollect(here);
-                if (GUILayout.Button($"Topla ({_field.CollectAPCost} AP)", GUILayout.Height(26)))
+                if (ModernGUI.Button($"Topla ({_field.CollectAPCost} AP)", GUILayout.Height(26)))
                     _field.CollectAt(here);
                 GUI.enabled = true;
             }
@@ -102,7 +102,7 @@ namespace TacticalRPG.UI
         {
             if (_party == null) return;
 
-            var sb = new System.Text.StringBuilder("Roster: ");
+            var sb = new System.Text.StringBuilder("Ekip: ");
             bool first = true;
             foreach (var c in _party.Party)
             {
@@ -113,7 +113,6 @@ namespace TacticalRPG.UI
                 first = false;
             }
             GUILayout.Label(sb.ToString());
-            GUILayout.Label("(Birim üretme: savaş öncesi yerleştirme ekranında)");
         }
     }
 }

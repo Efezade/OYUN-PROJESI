@@ -46,10 +46,14 @@ namespace TacticalRPG.UI
         [SerializeField] private TextMeshProUGUI _overworldZoomValue;
         [SerializeField] private TextMeshProUGUI _combatZoomValue;
 
+        [SerializeField] private Slider _ambienceSlider,_interfaceSlider;
+        [SerializeField] private TextMeshProUGUI _ambienceValue,_interfaceValue;
         private bool _syncing; // OnEnable senkronunda onValueChanged'i yut
 
         private void Awake()
         {
+            if (_ambienceSlider != null) _ambienceSlider.onValueChanged.AddListener(OnAmbience);
+            if (_interfaceSlider != null) _interfaceSlider.onValueChanged.AddListener(OnInterface);
             if (_masterSlider != null) _masterSlider.onValueChanged.AddListener(OnMaster);
             if (_musicSlider  != null) _musicSlider.onValueChanged.AddListener(OnMusic);
             if (_sfxSlider    != null) _sfxSlider.onValueChanged.AddListener(OnSfx);
@@ -58,6 +62,19 @@ namespace TacticalRPG.UI
             if (_combatZoomSlider    != null) _combatZoomSlider.onValueChanged.AddListener(OnCombatZoom);
         }
 
+        private void OnDestroy()
+        {
+            if(_masterSlider!=null)_masterSlider.onValueChanged.RemoveListener(OnMaster);
+            if(_musicSlider!=null)_musicSlider.onValueChanged.RemoveListener(OnMusic);
+            if(_sfxSlider!=null)_sfxSlider.onValueChanged.RemoveListener(OnSfx);
+            if(_ambienceSlider!=null)_ambienceSlider.onValueChanged.RemoveListener(OnAmbience);
+            if(_interfaceSlider!=null)_interfaceSlider.onValueChanged.RemoveListener(OnInterface);
+            if(_brightnessSlider!=null)_brightnessSlider.onValueChanged.RemoveListener(OnBrightness);
+            if(_overworldZoomSlider!=null)_overworldZoomSlider.onValueChanged.RemoveListener(OnOverworldZoom);
+            if(_combatZoomSlider!=null)_combatZoomSlider.onValueChanged.RemoveListener(OnCombatZoom);
+        }
+        private void OnAmbience(float v){if(_syncing)return;_audio?.SetAmbience(v);UpdatePercent(_ambienceValue,v);}
+        private void OnInterface(float v){if(_syncing)return;_audio?.SetInterface(v);UpdatePercent(_interfaceValue,v);}
         private void OnEnable() => SyncFromModel();
 
         private void SyncFromModel()
@@ -65,9 +82,12 @@ namespace TacticalRPG.UI
             _syncing = true;
             if (_audio != null)
             {
-                if (_masterSlider != null) _masterSlider.value = _audio.Master;
-                if (_musicSlider  != null) _musicSlider.value  = _audio.Music;
-                if (_sfxSlider    != null) _sfxSlider.value    = _audio.Sfx;
+                if(_ambienceSlider!=null)_ambienceSlider.SetValueWithoutNotify(_audio.Ambience);
+                if(_interfaceSlider!=null)_interfaceSlider.SetValueWithoutNotify(_audio.Interface);
+                UpdatePercent(_ambienceValue,_audio.Ambience);UpdatePercent(_interfaceValue,_audio.Interface);
+                if (_masterSlider != null) _masterSlider.SetValueWithoutNotify(_audio.Master);
+                if (_musicSlider  != null) _musicSlider.SetValueWithoutNotify(_audio.Music);
+                if (_sfxSlider    != null) _sfxSlider.SetValueWithoutNotify(_audio.Sfx);
                 UpdatePercent(_masterValue, _audio.Master);
                 UpdatePercent(_musicValue,  _audio.Music);
                 UpdatePercent(_sfxValue,    _audio.Sfx);
@@ -78,13 +98,13 @@ namespace TacticalRPG.UI
                 {
                     _overworldZoomSlider.minValue = _zoom.MinScale;
                     _overworldZoomSlider.maxValue = _zoom.MaxScale;
-                    _overworldZoomSlider.value    = _zoom.OverworldScale;
+                    _overworldZoomSlider.SetValueWithoutNotify(_zoom.OverworldScale);
                 }
                 if (_combatZoomSlider != null)
                 {
                     _combatZoomSlider.minValue = _zoom.MinScale;
                     _combatZoomSlider.maxValue = _zoom.MaxScale;
-                    _combatZoomSlider.value    = _zoom.CombatScale;
+                    _combatZoomSlider.SetValueWithoutNotify(_zoom.CombatScale);
                 }
                 UpdateZoom(_overworldZoomValue, _zoom.OverworldScale);
                 UpdateZoom(_combatZoomValue,    _zoom.CombatScale);
@@ -95,7 +115,7 @@ namespace TacticalRPG.UI
                 {
                     _brightnessSlider.minValue = _display.BrightnessMin;
                     _brightnessSlider.maxValue = _display.BrightnessMax;
-                    _brightnessSlider.value    = _display.Brightness;
+                    _brightnessSlider.SetValueWithoutNotify(_display.Brightness);
                 }
                 UpdatePercent(_brightnessValue, _display.Brightness);
                 if (_qualityValue != null)

@@ -192,6 +192,7 @@ namespace TacticalRPG.UI
                 // HudScale ölçeği altında çizdiğimiz için SANAL ekran ölçüsüyle çarpılır.
                 float gx = vp.x * HudScale.Width;
                 float gy = (1f - vp.y) * HudScale.Height;
+                if(ImguiBlocker.Overlaps(new Rect(gx-70,gy-25,140,40)))continue;
 
                 int shown = u.CurrentHP, pending = 0;
                 if (_tracks.TryGetValue(u, out HpTrack tr)) { shown = tr.shown; pending = tr.timer > 0f ? tr.pending : 0; }

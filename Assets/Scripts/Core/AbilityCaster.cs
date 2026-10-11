@@ -123,6 +123,7 @@ namespace TacticalRPG.Core
                 Message($"Yetersiz {res} ({ability.ManaCost} gerek)."); return false;
             }
 
+            SoundSignals.At(ability.Effect==AbilityEffectType.Damage?"fire":ability.Effect==AbilityEffectType.Heal?"heal":"shield",target.transform.position);
             _kam.TryPay(ability.ManaCost);
             // EŞİK ETKİSİ: güç, bedel ÖDENDİKTEN sonra okunur — "kaynağın azaldıkça güçlenirsin"
             // türü bir mekanikte son ödenen bedel de eşiğe sayılmalı.

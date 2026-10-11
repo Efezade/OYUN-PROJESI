@@ -244,6 +244,7 @@ namespace TacticalRPG.Core
         // (sakin sütunların parlaklığı RefreshStages'te bir kez yazılır).
         private void Update()
         {
+            if(_root!=null)_root.gameObject.SetActive((_state==null||_state.State==GameState.Overworld)&&!QuestRootCinematic.IsPlaying);
             if (!_anyFresh) return;
 
             for (int i = 0; i < _beacons.Count; i++)

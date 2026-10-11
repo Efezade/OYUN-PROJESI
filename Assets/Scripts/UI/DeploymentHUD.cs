@@ -33,8 +33,7 @@ namespace TacticalRPG.UI
 
         private Vector2 _scroll;   // içerik taşınca kaydırma (roster/tarif sayısı büyüyor)
 
-        private static readonly EssenceType[] Types =
-            { EssenceType.Ates, EssenceType.Su, EssenceType.Toprak };
+        private readonly HashSet<EssenceType> _types=new();
 
         private void OnGUI()
         {
@@ -51,14 +50,14 @@ namespace TacticalRPG.UI
             //     1080 DEĞİL. HudScale.UiScale = 1.5 olduğu için sanal yükseklik
             //     Screen.height / (min(w/1920, h/1080) × 1.5) — 16:9'da ~720, geniş ekranda daha az.
             //     Yükseklik artık EKRANDAN türetiliyor; sabit sayı yazılmaz.
-            const float w = 360f, top = 96f, bottomMargin = 14f, footer = 112f;
+            const float w = 360f, top = 24f, bottomMargin = 14f, footer = 164f;
             float h = Mathf.Max(240f, HudScale.Height - top - bottomMargin);
             var rect = new Rect(14f, top, w, h);
             ImguiBlocker.Register(rect);   // panel üstündeki tık hex'e yerleştirme sayılmasın
             GUILayout.BeginArea(rect, GUI.skin.box);
 
             // ── Kaydırılabilir içerik ──
-            _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.Height(Mathf.Max(80f, h - footer)));
+            _scroll = GUILayout.BeginScrollView(_scroll,false,false,GUIStyle.none,GUI.skin.verticalScrollbar,GUILayout.Height(Mathf.Max(80f, h - footer)));
 
             GUILayout.Label("ÖZ DEPOSU");
             DrawWallet();
@@ -91,11 +90,11 @@ namespace TacticalRPG.UI
             }
 
             GUI.enabled = canStart;
-            if (GUILayout.Button("SAVASI BASLAT", GUILayout.Height(34)))
+            if (ModernGUI.Button("SAVASI BASLAT", GUILayout.Height(34)))
                 _deployment.TryStartBattle();
             GUI.enabled = true;
 
-            if (GUILayout.Button("Geri Don (Overworld)", GUILayout.Height(26)))
+            if (ModernGUI.Button("Geri Don (Overworld)", GUILayout.Height(26)))
                 _state.ReturnToOverworld();
 
             GUILayout.EndArea();
@@ -106,11 +105,12 @@ namespace TacticalRPG.UI
             if (_wallet == null) { GUILayout.Label("(cüzdan yok)"); return; }
 
             Color prev = GUI.color;
-            foreach (var t in Types)
+            _types.Clear();foreach(var recipe in _recipes)if(recipe!=null&&recipe.Cost!=null)foreach(var cost in recipe.Cost)_types.Add(cost.type);
+            foreach (var t in _types)
             {
-                if (_config != null) GUI.color = _config.ColorOf(t);
+                if (_config != null) GUI.color = Color.Lerp(_config.ColorOf(t),Color.white,.65f);
                 string name = _config != null ? _config.NameOf(t) : t.ToString();
-                GUILayout.Label($"● {name}: {_wallet.Get(t)}");
+                GUILayout.Label($"● {name}: {_wallet.DisplayAmount(t)}");
             }
             GUI.color = prev;
         }
@@ -125,7 +125,7 @@ namespace TacticalRPG.UI
 
                 bool can = _wallet != null && _wallet.CanAfford(r.Cost);
                 GUI.enabled = can;
-                if (GUILayout.Button($"Üret: {r.DisplayName}  ({r.CostString(_config)})", GUILayout.Height(26)))
+                if (ModernGUI.Button($"Üret: {r.DisplayName}  ({r.CostString(_config)})", GUILayout.Height(26)))
                     _party.TryCreate(r);
                 GUI.enabled = true;
             }
@@ -154,13 +154,13 @@ namespace TacticalRPG.UI
             string tag = deployed ? "  [yerlesti - kaldir]"
                        : selected ? "  < secili, mavi hex'e tikla"
                        : "";
-            string label = $"* {card.Data.ClassName} (KOMUTAN, ucretsiz){tag}";
+            string label = $"{card.Data.ClassName} · Komutan\n"+(deployed?"Yerleşti · kaldır":selected?"Seçili · mavi karoya tıkla":"Ücretsiz · seç");
 
             Color prevColor = GUI.color;
             GUILayout.BeginHorizontal();
             DrawBust(card);
             GUI.color = deployed ? new Color(0.72f, 1f, 0.72f) : new Color(1f, 0.92f, 0.55f);
-            if (GUILayout.Button(label, GUILayout.Height(_bustSize)))
+            if (ModernGUI.Button(label, GUILayout.Height(_bustSize),GUILayout.Width(238)))
             {
                 if (deployed) _deployment.TryUndeploy(card);
                 else          _deployment.SelectedCard = selected ? null : card;
@@ -180,7 +180,7 @@ namespace TacticalRPG.UI
             Sprite portrait = card != null && card.Data != null ? card.Data.Portrait : null;
 
             Color prev = GUI.color;
-            GUI.color = portrait != null ? _bustPaper : (card != null && card.Data != null ? card.Data.UnitColor : Color.gray);
+            GUI.color = PresentationTheme.Current!=null?PresentationTheme.Current.raised:_bustPaper;
             GUI.DrawTexture(r, Texture2D.whiteTexture);
             if (portrait != null && portrait.texture != null)
             {
@@ -209,7 +209,7 @@ namespace TacticalRPG.UI
                 // Yerlesmis kart da tiklanabilir: yanlis hucreye konan birim geri alinabilsin.
                 GUILayout.BeginHorizontal();
                 DrawBust(card);
-                if (GUILayout.Button(label, GUILayout.Height(_bustSize)))
+                if (ModernGUI.Button(label, GUILayout.Height(_bustSize),GUILayout.Width(238)))
                 {
                     if (deployed) _deployment.TryUndeploy(card);
                     else          _deployment.SelectedCard = selected ? null : card;

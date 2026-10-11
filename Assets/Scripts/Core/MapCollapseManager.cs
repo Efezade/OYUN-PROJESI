@@ -73,6 +73,7 @@ namespace TacticalRPG.Core
 
         /// <summary>Bir karo çöküşten GERİ GETİRİLDİ (madde 10). Minihatita ve HUD bunu dinler.</summary>
         public event Action<HexCoordinate> OnTileRestored;
+        public event Action<HexCoordinate> OnTileVanished;
 
         private int _lastProcessedDay = 0;
 
@@ -536,16 +537,16 @@ namespace TacticalRPG.Core
                             : _wave != null ? _wave.BasePositionOf(vis)
                             : vis.position;
 
+            SoundSignals.At("collapse",basePos,.75f);
             float t = 0f;
             while (t < _shakeDuration && vis != null)
             {
                 t += Time.deltaTime;
                 float damp = 1f - (t / _shakeDuration);              // sönümlenen sarsıntı
-                Vector3 j = new Vector3(
-                    (UnityEngine.Random.value - 0.5f),
-                    (UnityEngine.Random.value - 0.5f) * 0.6f,
-                    (UnityEngine.Random.value - 0.5f)) * (_shakeMagnitude * damp);
-                vis.position = basePos + j;
+                float phase=cell.Coordinate.VariantHash()*.017f;
+                Vector3 j=new Vector3(Mathf.Sin(t*43+phase),Mathf.Sin(t*37)*.2f,Mathf.Sin(t*51+phase)) * (_shakeMagnitude*damp);
+                float sink=Mathf.Pow(t/_shakeDuration,3)*1.1f;
+                vis.position=basePos+j-Vector3.up*sink;
                 yield return null;
             }
             if (vis != null) vis.position = basePos;
@@ -561,7 +562,7 @@ namespace TacticalRPG.Core
             // Çöküş öncesi hâli SAKLA (madde 10). Yalnız gerçekten ayakta olan karo için: bu metot
             // savaştan dönüşte de çağrılıyor (ApplyCollapseStateForCurrentMap) ve orada karo
             // yeniden üretilmiş, yani ORİJİNAL hâlinde oluyor — çökmüş hâli kaydetmiş olmayalım.
-            if (cell.IsWalkable)
+            if (cell.TerrainWalkable)
                 _preCollapse[cell.Coordinate] =
                     (cell.CellType,
                      cell.MeshRenderer != null ? cell.MeshRenderer.sharedMaterial : null,
@@ -573,10 +574,8 @@ namespace TacticalRPG.Core
             // karonun bayrağına bakıyor, çukura girilmesin.
             cell.CanEnterCombat = false;
 
-            if (cell.MeshRenderer != null && _collapsedMaterial != null)
-                cell.MeshRenderer.sharedMaterial = _collapsedMaterial;
-            else if (cell.Visual != null)
-                cell.Visual.SetActive(false);
+            cell.SetVisualSuppressed(this, true);
+            OnTileVanished?.Invoke(cell.Coordinate);
         }
 
         // ── GERİ GETİRME (madde 10) ─────────────────────────────────────────
@@ -618,7 +617,7 @@ namespace TacticalRPG.Core
             }
 
             cell.IsWalkable = true;
-            if (cell.Visual != null && !cell.Visual.activeSelf) cell.Visual.SetActive(true);
+            cell.SetVisualSuppressed(this, false);
 
             OnTileRestored?.Invoke(coord);
             OnTileCollapsed?.Invoke(0, TotalRemovedTiles);   // HUD sayacı tazelensin

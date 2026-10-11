@@ -53,6 +53,7 @@ namespace TacticalRPG.Core
             int lv = LevelOf(data) + 1;
             _levels[data] = lv;
             Debug.Log($"[Evrim] {data.ClassName} {lv}. evrim acildi: {next.Name} — {next.Description}");
+            SoundSignals.Play("level_up");
             OnChanged?.Invoke();
             return true;
         }

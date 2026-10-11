@@ -69,6 +69,9 @@ namespace TacticalRPG.Core
             Color color = new(skill.R, skill.G, skill.B);
             Vector3 c   = World(center);
             float   r   = AreaRadius(skill.Radius);
+            SoundSignals.At("spell",c,.4f);
+            var originalImpact=onImpact;
+            onImpact=()=>{SoundSignals.At(skill.Effect switch{KamSkillEffect.Meteor=>"fire",KamSkillEffect.Heal=>"heal",KamSkillEffect.Petrify=>"stone_crack",KamSkillEffect.Push=>"whoosh",_=>"void_open"},c);originalImpact?.Invoke();};
 
             // Bu atışta üretilecek materyaller: bittiğinde SİLİNİR. Her büyü ~50 materyal
             // üretiyor; savaş boyunca birikselerdi bellek sessizce şişerdi.

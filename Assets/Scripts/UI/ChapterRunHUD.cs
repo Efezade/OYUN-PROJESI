@@ -109,6 +109,7 @@ namespace TacticalRPG.UI
         /// <summary>Üst orta: gün / son gün / çöküş uyarısı.</summary>
         private void DrawPressureStrip()
         {
+            if(StoreHUD.IsOpen)return;
             if (_ap == null) return;
 
             int day     = _ap.CurrentDay;
@@ -126,7 +127,7 @@ namespace TacticalRPG.UI
             var rect = new Rect((HudScale.Width - w) * 0.5f, HudLayout.RunBarY, w, h);
             ImguiBlocker.Register(rect);
 
-            var style = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.MiddleCenter, fontSize = 18 };
+            var style = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.MiddleCenter, fontSize = 15, padding = new RectOffset(10,10,0,0) };
             style.normal.textColor = day >= start ? new Color(1f, 0.55f, 0.4f) : Color.white;
             GUI.Box(rect, msg, style);
         }
@@ -156,7 +157,7 @@ namespace TacticalRPG.UI
             GUILayout.Label("burada bitiyor (geçici). 8 bölümlük akış eklenince zafer 2. haritaya geçirecek.");
 
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("YENİDEN BAŞLA (farklı harita)", GUILayout.Height(34f)))
+            if (ModernGUI.Button("YENİDEN BAŞLA (farklı harita)", GUILayout.Height(34f)))
                 _run.RestartChapter();
             GUILayout.EndArea();
         }
@@ -180,7 +181,7 @@ namespace TacticalRPG.UI
             GUILayout.Label("Tüm oyun sıfırlanmadı — sadece bu harita baştan başlıyor.");
 
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("YENİDEN BAŞLA (farklı harita)", GUILayout.Height(34f)))
+            if (ModernGUI.Button("YENİDEN BAŞLA (farklı harita)", GUILayout.Height(34f)))
                 _run.RestartChapter();
             GUILayout.EndArea();
         }

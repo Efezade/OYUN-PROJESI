@@ -37,52 +37,52 @@ namespace TacticalRPG.Core
         {
             new SlotAtmosphere {
                 label = "Sabah",
-                sunEuler = new Vector3(22f, -45f, 0f),
-                sunColor = new Color(1f, 0.82f, 0.62f),
-                sunIntensity = 1.25f, shadowStrength = 0.85f,
-                ambientColor = new Color(0.30f, 0.29f, 0.33f),
-                skyColor     = new Color(0.45f, 0.47f, 0.58f)
+                sunEuler = new Vector3(32f, -45f, 0f),
+                sunColor = new Color(1f, 0.90f, 0.77f),
+                sunIntensity = 1.45f, shadowStrength = 0.65f,
+                ambientColor = new Color(0.46f, 0.46f, 0.49f),
+                skyColor     = new Color(0.45f, 0.55f, 0.66f)
             },
             new SlotAtmosphere {
                 label = "Öğle",
                 sunEuler = new Vector3(62f, -20f, 0f),
                 sunColor = new Color(1f, 0.97f, 0.92f),
-                sunIntensity = 1.60f, shadowStrength = 1f,
-                ambientColor = new Color(0.40f, 0.41f, 0.44f),
+                sunIntensity = 1.65f, shadowStrength = 0.72f,
+                ambientColor = new Color(0.50f, 0.51f, 0.53f),
                 skyColor     = new Color(0.50f, 0.63f, 0.80f)
             },
             new SlotAtmosphere {
                 label = "Öğleden Sonra",
-                sunEuler = new Vector3(45f, 25f, 0f),
-                sunColor = new Color(1f, 0.93f, 0.79f),
-                sunIntensity = 1.45f, shadowStrength = 0.95f,
-                ambientColor = new Color(0.36f, 0.35f, 0.36f),
+                sunEuler = new Vector3(48f, 20f, 0f),
+                sunColor = new Color(1f, 0.95f, 0.85f),
+                sunIntensity = 1.50f, shadowStrength = 0.68f,
+                ambientColor = new Color(0.47f, 0.48f, 0.49f),
                 skyColor     = new Color(0.52f, 0.57f, 0.68f)
             },
             new SlotAtmosphere {
                 label = "Akşam",
-                sunEuler = new Vector3(12f, 62f, 0f),
-                sunColor = new Color(1f, 0.58f, 0.36f),
-                sunIntensity = 1.05f, shadowStrength = 0.75f,
-                ambientColor = new Color(0.28f, 0.22f, 0.24f),
-                skyColor     = new Color(0.40f, 0.24f, 0.24f)
+                sunEuler = new Vector3(27f, 58f, 0f),
+                sunColor = new Color(1f, 0.79f, 0.58f),
+                sunIntensity = 1.22f, shadowStrength = 0.60f,
+                ambientColor = new Color(0.42f, 0.40f, 0.42f),
+                skyColor     = new Color(0.50f, 0.43f, 0.42f)
             },
             new SlotAtmosphere {
                 label = "Gece",
                 // Ay: ufkun ÜSTÜNDE tutulur (ışık altta kalırsa her şey düz siyah olur).
-                sunEuler = new Vector3(38f, 140f, 0f),
-                sunColor = new Color(0.45f, 0.58f, 0.95f),
-                sunIntensity = 0.38f, shadowStrength = 0.5f,
-                ambientColor = new Color(0.12f, 0.14f, 0.22f),
-                skyColor     = new Color(0.05f, 0.06f, 0.13f)
+                sunEuler = new Vector3(42f, 125f, 0f),
+                sunColor = new Color(0.61f, 0.72f, 1f),
+                sunIntensity = 0.65f, shadowStrength = 0.38f,
+                ambientColor = new Color(0.27f, 0.32f, 0.40f),
+                skyColor     = new Color(0.085f, 0.12f, 0.20f)
             },
             new SlotAtmosphere {
                 label = "Gece Yarısı",
-                sunEuler = new Vector3(58f, 175f, 0f),
-                sunColor = new Color(0.38f, 0.50f, 0.90f),
-                sunIntensity = 0.24f, shadowStrength = 0.4f,
-                ambientColor = new Color(0.08f, 0.09f, 0.16f),
-                skyColor     = new Color(0.03f, 0.03f, 0.09f)
+                sunEuler = new Vector3(52f, 150f, 0f),
+                sunColor = new Color(0.56f, 0.68f, 1f),
+                sunIntensity = 0.50f, shadowStrength = 0.32f,
+                ambientColor = new Color(0.23f, 0.28f, 0.36f),
+                skyColor     = new Color(0.065f, 0.09f, 0.16f)
             }
         };
 

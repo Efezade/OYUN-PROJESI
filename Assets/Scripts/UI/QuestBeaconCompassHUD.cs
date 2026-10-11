@@ -54,7 +54,7 @@ namespace TacticalRPG.UI
 
         private void OnGUI()
         {
-            if (MenuState.HudsHidden) return;                       // tam-ekran menü açıkken çizme
+            if (MenuState.HudsHidden||StoreHUD.IsOpen) return;
             if (_beacons == null || _camera == null) return;
             if (_state != null && _state.State != GameState.Overworld) return;
 
@@ -65,7 +65,7 @@ namespace TacticalRPG.UI
 
             if (_labelStyle == null)
                 _labelStyle = new GUIStyle(GUI.skin.label)
-                { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold, fontSize = 13 };
+                { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Normal, fontSize = 12, wordWrap=false, padding=new RectOffset() };
 
             float w = HudScale.Width, h = HudScale.Height;
             var center = new Vector2(w * 0.5f, h * 0.5f);
@@ -97,6 +97,7 @@ namespace TacticalRPG.UI
                 float mx = (w * 0.5f - _margin) / Mathf.Max(0.0001f, Mathf.Abs(dir.x));
                 float my = (h * 0.5f - _margin) / Mathf.Max(0.0001f, Mathf.Abs(dir.y));
                 Vector2 edge = onScreen ? g : center + dir * Mathf.Min(mx, my);
+                for(int attempt=0;attempt<12&&ImguiBlocker.Overlaps(new Rect(edge.x-100,edge.y-44,200,88));attempt++)edge-=dir.normalized*24;
 
                 float alpha = b.Fresh
                             ? 0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * _pulseSpeed)
@@ -116,12 +117,14 @@ namespace TacticalRPG.UI
             string text = _player != null
                         ? $"{_player.CurrentCoord.DistanceTo(b.Coord)} karo"
                         : string.Empty;
-            if (b.Fresh) text = string.IsNullOrEmpty(text) ? "ZORUNLU GÖREV" : $"ZORUNLU GÖREV · {text}";
+            if (b.Fresh) text = string.IsNullOrEmpty(text) ? "ZORUNLU GÖREV" : $"Görev · {text}";
             if (string.IsNullOrEmpty(text)) return;
 
             // Yazı okun EKRANIN İÇİNE bakan yanına konur, yoksa kenarın dışına taşardı.
             Vector2 inward = -dir.normalized * (_arrowSize + 14f);
             var rect = new Rect(edge.x + inward.x - 90f, edge.y + inward.y - 10f, 180f, 20f);
+            _labelStyle.alignment=TextAnchor.MiddleCenter;
+            if(Mathf.Abs(dir.normalized.x)>.55f){rect.x=dir.x<0?edge.x+_arrowSize:edge.x-_arrowSize-180;rect.y=edge.y-10;_labelStyle.alignment=dir.x<0?TextAnchor.MiddleLeft:TextAnchor.MiddleRight;}
 
             _labelStyle.normal.textColor = new Color(0f, 0f, 0f, color.a * 0.8f);
             GUI.Label(new Rect(rect.x + 1f, rect.y + 1f, rect.width, rect.height), text, _labelStyle);
@@ -137,9 +140,10 @@ namespace TacticalRPG.UI
         private static void DrawArrow(Vector2 center, float angleDeg, float size, Color color)
         {
             Matrix4x4 saved = GUI.matrix;
-            GUIUtility.RotateAroundPivot(angleDeg, center);
+            // Compose in HUD coordinates; RotateAroundPivot treats a scaled pivot as screen space.
+            GUI.matrix=saved*Matrix4x4.Translate(new Vector3(center.x,center.y,0))*Matrix4x4.Rotate(Quaternion.Euler(0,0,angleDeg))*Matrix4x4.Translate(new Vector3(-center.x,-center.y,0));
 
-            const int rows = 9;
+            const int rows = 32;
             float rowH = size / rows;
             for (int i = 0; i < rows; i++)
             {

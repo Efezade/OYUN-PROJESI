@@ -318,6 +318,7 @@ namespace TacticalRPG.Core
                     var c = HexCoordinate.FromOffset(col, row);
                     if (c.Equals(from)) continue;
                     if (!_map.IsReachable(c)) continue;
+                    if (!_grid.TryGetCell(c, out var liveCell) || !liveCell.IsWalkable) continue;
                     var entry = TileCatalog.Get(_map.TerrainIdAt(c));
                     if (entry == null || entry.Family != TileFamily.Plain) continue;
                     if (_nodes.NodeAt(c) != null) continue;

@@ -244,6 +244,7 @@ namespace TacticalRPG.UI
                 bg.sprite = _cellSprite; bg.type = Image.Type.Sliced;
                 bg.color = card == _selected ? _selectedRow : new Color(_paper.r, _paper.g, _paper.b, 0.6f);
                 var btn = row.gameObject.AddComponent<Button>();
+            btn.gameObject.AddComponent<UISoundFeedback>();
                 btn.targetGraphic = bg;
                 CharacterCard captured = card;
                 btn.onClick.AddListener(() => SelectCharacter(captured));
