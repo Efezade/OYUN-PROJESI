@@ -28,7 +28,7 @@ namespace TacticalRPG.Core
         }
         private void LateUpdate()
         {
-            bool known = _fog == null || _fog.IsVisuallyRevealed(_coord);
+            bool known = _fog == null || _fog.CanRenderWorldModel(_coord);
             foreach (var r in _all) if (r != null) r.forceRenderingOff = !known;
             if (!known || _canopy == null || _camera == null || _player == null) return;
             Vector3 target = _player.transform.position + Vector3.up;

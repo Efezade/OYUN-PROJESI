@@ -456,7 +456,7 @@ namespace TacticalRPG.Core
             foreach (var kv in _decor)
             {
                 if (kv.Value.Root == null) continue;
-                bool visible = _fog.IsKnown(kv.Key);
+                bool visible = _fog.CanRenderWorldModel(kv.Key);
                 if (kv.Value.Root.activeSelf != visible) kv.Value.Root.SetActive(visible);
             }
         }

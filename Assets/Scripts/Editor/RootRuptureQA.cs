@@ -19,7 +19,7 @@ namespace TacticalRPG.Editor
         private static HexCoordinate _goal,_scar;private static int _before;private static HashSet<HexCoordinate> _originalScars;
         private static int _lightSteps;private static Light _sun;private static DayNightProfile _profile;
         private static float _lightBefore;private static Quaternion _rotationBefore;private static HexCell _fogSample;private static Color _fogBefore;
-        private static float _noonLuminance;
+        private static float _noonLuminance, _fogOpacityBefore;
         private static string Output=>Path.GetFullPath("RootRuptureQAResults");
         static RootRuptureQA(){if(SessionState.GetBool("RootRuptureQA.Play",false))EditorApplication.update+=Tick;}
         public static void Run()
@@ -60,7 +60,11 @@ namespace TacticalRPG.Editor
                     _scar=scars.OrderByDescending(s=>s.Coordinate.DistanceTo(tree)).First().Coordinate;
                     Capture("root_fracture_close",grid.Cells[_scar].WorldPosition,3.5f);Capture("root_landscape",tree.ToWorldPosition(grid.HexSize)+Vector3.up*2,14);
                     _originalScars=new HashSet<HexCoordinate>(scars.Select(s=>s.Coordinate));
-                    _goal=grid.Cells.Where(kv=>kv.Value.IsWalkable&&map.IsReachable(kv.Key)&&nodes.NodeAt(kv.Key)==null&&TileCatalog.Get(map.TerrainIdAt(kv.Key))?.Family==TileFamily.Plain&&kv.Key.DistanceTo(player.CurrentCoord)>3).OrderByDescending(kv=>kv.Key.DistanceTo(tree)).First().Key;
+                    // The synthetic test objective must be reachable BEFORE the new branch.
+                    // A free tile can already be in a pocket behind an older root; choosing it
+                    // would falsely attribute that pre-existing disconnection to the new branch.
+                    var liveReachable=QuestRootPlanner.Flood(grid.Cells.ToDictionary(kv=>kv.Key,kv=>kv.Value.IsWalkable),new HashSet<HexCoordinate>(),player.CurrentCoord);
+                    _goal=grid.Cells.Where(kv=>liveReachable.Contains(kv.Key)&&map.IsReachable(kv.Key)&&nodes.NodeAt(kv.Key)==null&&TileCatalog.Get(map.TerrainIdAt(kv.Key))?.Family==TileFamily.Plain&&kv.Key.DistanceTo(player.CurrentCoord)>3).OrderByDescending(kv=>kv.Key.DistanceTo(tree)).First().Key;
                     nodes.SpawnMandatory(_goal,3);
                     var callback=(Action<int,HexCoordinate>)typeof(MandatoryQuestDirector).GetField("OnQuestUnlocked",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(Find<MandatoryQuestDirector>());callback?.Invoke(3,_goal);
                     _before=roots.RupturedTileCount;Next(2.8);return;
@@ -126,7 +130,9 @@ namespace TacticalRPG.Editor
                     Check((-_sun.transform.forward).y>0,"Sun went below horizon during transition");
                     if(Find<ActionPointManager>().CurrentSlot==4)
                     {
-                        var tint=Tint(_fogSample);Check(tint.r<_fogBefore.r&&tint.r>_fogBefore.r*.08f,"Fog tile brightness did not fade");
+                        float opacity=Find<FogOfWarManager>().VisualOpacity(_fogSample.Coordinate);
+                        Check(opacity>_fogOpacityBefore+.01f&&opacity<.99f,"Night fog did not pass through intermediate opacity");
+                        Check(Vector4.Distance(Tint(_fogSample),_fogBefore)<.001f,"Volume fog blackened terrain material");
                     }
                     _phase=11;Wait(2.1);return;
                 }
@@ -187,6 +193,7 @@ namespace TacticalRPG.Editor
         private static void BeginLightStep()
         {
             _lightBefore=_sun.intensity;_rotationBefore=_sun.transform.rotation;_fogBefore=Tint(_fogSample);
+            _fogOpacityBefore=Find<FogOfWarManager>().VisualOpacity(_fogSample.Coordinate);
             var ap=Find<ActionPointManager>();ap.SpendAP(ap.CurrentAP);
             Check(Mathf.Abs(_sun.intensity-_lightBefore)<.0001f&&Quaternion.Angle(_sun.transform.rotation,_rotationBefore)<.01f,"AP event snapped sun");
             Check(Vector4.Distance(_fogBefore,Tint(_fogSample))<.0001f,"AP event snapped fog brightness");

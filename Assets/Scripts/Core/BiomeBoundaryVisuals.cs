@@ -78,7 +78,7 @@ namespace TacticalRPG.Core
             if (!_dirty) return;
             _dirty = false; Rebuild();
         }
-        private bool Known(HexCoordinate c) => (_fog == null || _fog.IsKnown(c)) &&
+        private bool Known(HexCoordinate c) => (_fog == null || _fog.CanRenderWorldModel(c)) &&
             (_collapse == null || !_collapse.IsCollapsed(c));
         private void Rebuild()
         {

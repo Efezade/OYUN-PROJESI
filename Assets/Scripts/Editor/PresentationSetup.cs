@@ -45,13 +45,13 @@ namespace TacticalRPG.Editor
             var dust=Material("RootDust","Universal Render Pipeline/Particles/Unlit",new Color(.7f,.52f,.25f,.65f));
             dust.SetFloat("_Surface",1);dust.SetFloat("_Blend",0);dust.SetFloat("_ZWrite",0);dust.SetFloat("_SrcBlend",5);dust.SetFloat("_DstBlend",10);dust.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");dust.renderQueue=3000;
             dust.SetTexture("_BaseMap",theme.panelSprite.texture);Set(cinematic,"_dustPrefab",RootDust(dust));
-            InstallRootRupture();
             var mist=Material("Mist","TacticalRPG/WorldAtmosphere",new Color(.29f,.36f,.36f));
             var voidMat=Material("Void","TacticalRPG/WorldAtmosphere",new Color(.22f,.34f,.32f));voidMat.SetFloat("_Mode",1);
             var fogPrefab=SurfacePrefab("Mist",mist,true);
             var voidPrefab=SurfacePrefab("Void",voidMat,false);
             var fog=Find<FogOfWarManager>();if(fog!=null)
-            {Set(fog,"_fogTilePrefab",fogPrefab);Set(fog,"_fogLift",.3f);Set(fog,"_windAmount",0f);Set(fog,"_fadeSpeed",1.8f);Set(fog,"_fogFalloff",1.7f);Set(fog,"_alarmColor",new Color(.65f,.32f,.18f));Set(fog,"_alarmStrength",.42f);}
+            {Set(fog,"_fogTilePrefab",fogPrefab);Set(fog,"_fogLift",.3f);Set(fog,"_windAmount",0f);Set(fog,"_alarmColor",new Color(.65f,.32f,.18f));Set(fog,"_alarmStrength",.42f);}
+            InstallRootRupture();
             var abyss=Ensure<WorldVoidPresentation>();Bind(abyss);Set(abyss,"_voidPrefab",voidPrefab);
             var wave=Find<CollapseWaveEffect>();if(wave!=null)
             {Set(wave,"_waveColor",new Color(.58f,.48f,.33f,.55f));Set(wave,"_ringCount",2);Set(wave,"_ringWidth",.95f);Set(wave,"_segments",160);Set(wave,"_lift",.58f);Set(wave,"_bobHeight",.055f);Set(wave,"_tileFlashColor",new Color(.62f,.44f,.24f));Set(wave,"_tileFlashStrength",.13f);Set(wave,"_strikeColor",new Color(.68f,.48f,.23f,.7f));Set(wave,"_strikeHeight",3.5f);Set(wave,"_strikeWidth",.22f);Set(wave,"_strikeDuration",.85f);}
@@ -96,10 +96,26 @@ namespace TacticalRPG.Editor
                 if(roots.Config.RuptureDustPrefab==null)
                     Set(roots.Config,"_ruptureDustPrefab",RuptureDust(AssetDatabase.LoadAssetAtPath<Material>(Root+"/RootDust.mat")));
             }
+            InstallContinuousFog();
             var marker=Find<PresentationTheme>();if(marker!=null)Set(marker,"_revision",PresentationTheme.CurrentRevision);
             AssetDatabase.SaveAssets();EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         }
         public static T Find<T>() where T:Component=>Object.FindFirstObjectByType<T>(FindObjectsInactive.Include);
+        private static void InstallContinuousFog()
+        {
+            var camera=Camera.main;var fog=Find<FogOfWarManager>();
+            if(camera==null||fog==null)return;
+            var effect=camera.GetComponent<WorldFogEffect>();bool first=effect==null;
+            if(first)effect=camera.gameObject.AddComponent<WorldFogEffect>();
+            Set(effect,"_camera",camera);Set(effect,"_fog",fog);
+            Set(effect,"_shader",AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/WorldFogComposite.shader"));
+            // One-time migration; FullSetup thereafter preserves the user's mist tuning.
+            if(first)
+            {
+                Set(fog,"_fadeSpeed",1.1f);Set(fog,"_fogFalloff",2.6f);
+                Set(fog,"_edgeHintTiles",1.8f);Set(fog,"_edgeHintAlpha",.74f);
+            }
+        }
         private static T EnsureOn<T>(GameObject go) where T:Component {var component=go.GetComponent<T>();if(component==null)component=go.AddComponent<T>();return component;}
         private static T Ensure<T>() where T:Component
         {var found=Find<T>();if(found!=null)return found;var go=new GameObject(typeof(T).Name);var parent=GameObject.Find("TacticalRPG");if(parent!=null)go.transform.SetParent(parent.transform);return go.AddComponent<T>();}

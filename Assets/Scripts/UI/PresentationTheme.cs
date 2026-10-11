@@ -7,7 +7,7 @@ namespace TacticalRPG.UI
     public sealed class PresentationTheme : MonoBehaviour
     {
         [SerializeField] private PresentationThemeSO _theme;
-        public const int CurrentRevision=2;
+        public const int CurrentRevision=3;
         [SerializeField] private int _revision=1;
         public int Revision=>_revision;
         public static PresentationThemeSO Current{get;private set;}

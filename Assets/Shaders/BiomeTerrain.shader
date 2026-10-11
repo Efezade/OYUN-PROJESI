@@ -8,6 +8,8 @@ Shader "TacticalRPG/Biome Terrain"
         _UseHeightMask("Legacy authored mesh mask",Float)=0
         _GroundReference("Ground luminance reference",Float)=.095
         _Cutoff("Alpha Cutoff",Range(0,1))=.5
+        _AmbientLift("Soft sky fill",Range(1,2))=1.35
+        _LightWrap("Soft side lighting",Range(0,.4))=.16
     }
     SubShader
     {
@@ -27,7 +29,7 @@ Shader "TacticalRPG/Biome Terrain"
             TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);
             CBUFFER_START(UnityPerMaterial)
             float4 _BaseMap_ST, _BaseColor;
-            float _UseHeightMask, _GroundReference, _Cull, _Cutoff;
+            float _UseHeightMask, _GroundReference, _Cull, _Cutoff, _AmbientLift, _LightWrap;
             float4 _BiomeCenter, _BiomeGround, _BiomeFoliage, _BiomeStone, _BiomeStrength;
             float4 _Neighbour0, _Neighbour1, _Neighbour2, _Neighbour3, _Neighbour4, _Neighbour5;
             float4 _Leaf0, _Leaf1, _Leaf2, _Leaf3, _Leaf4, _Leaf5;
@@ -79,8 +81,8 @@ Shader "TacticalRPG/Biome Terrain"
                 albedo=lerp(albedo,_BiomeStone.rgb*clamp(lum/.10,.65,1.3),mask.b*_BiomeStrength.z);
                 float3 n=IS_FRONT_VFACE(face,normalize(i.normal),-normalize(i.normal));
                 Light main=GetMainLight(TransformWorldToShadowCoord(i.world));
-                float diffuse=saturate(dot(n,main.direction));
-                float3 light=SampleSH(n)+main.color*diffuse*main.shadowAttenuation;
+                float diffuse=saturate((dot(n,main.direction)+_LightWrap)/(1+_LightWrap));
+                float3 light=SampleSH(n)*_AmbientLift+main.color*diffuse*main.shadowAttenuation;
                 float3 rgb=albedo*_BaseColor.rgb*light;
                 return half4(MixFog(rgb,i.fog),1);
             }

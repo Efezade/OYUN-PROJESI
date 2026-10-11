@@ -61,18 +61,20 @@ güneş/ay açısı, rengi, şiddeti, gölgesi, ortam ve gökyüzü birlikte Smo
 geçer. Arka arkaya AP harcamak o andaki gerçek değerlerden yeni hedefe yönelir.
 Güneşin yatay/dikey açıları ayrı karışır; geçiş sırasında ışık ufkun altına dönmez.
 
-`DayNightProfile.asset` artık daha yüksek dolgu ışığı ve daha yumuşak gölgeler
-kullanır. Akşam sıcak fakat gündüz olarak okunur; iki gece dilimi serin ve daha
-loştur. Karo paletleri değiştirilmedi. Yerel lambalar yerine önce genel ışık
-dengesi düzeltildi; mevcut Biome Terrain shader'ı ana ışık ve ortam ışığını okur.
+Son Play geri bildiriminde önceki aydınlatma hâlâ fazla karanlıktı. `DayNightProfile.asset`
+yeniden açıldı: gündüz ana ışık 1,7–2,1; gece 1,15–1,3. Gece ortam renkleri
+(0,53–0,57; 0,62–0,66; 0,75–0,78) seviyesinde. Akşam sıcak, gece serin mavi kalır;
+karolar ve ağaçların gölge yüzleri artık karanlıkta kaybolmaz. Paletler değiştirilmedi.
+Biome Terrain materyallerinde `_AmbientLift=1.35` ve `_LightWrap=.16`, gökyüzü
+dolgusunu ve yan yüzeylerin yumuşak ışığını düzenler; ekran üstüne beyaz perde eklenmez.
 Sahnede kalan ikinci varsayılan Directional Light kapatıldı; nesnesi silinmedi.
 `RenderSettings.sun` gün/gece sisteminin ışığına bağlıdır. Aksi durumda URP,
 gece ışık kısılınca daha parlak sabit ışığı seçip hem gölgeyi sıçratıyor hem geceyi
 gündüz ışığıyla gösteriyordu. Referans: [Unity URP ışık seçimi](https://docs.unity3d.com/6000.0/Documentation/Manual/urp/universalrp-asset.html#lighting).
 
-Gece sınırında sis de 2,4 saniyede değişir. Karoların `_BaseColor` çarpanı hedef
-opaklığa aniden sıçramaz, sisin **o anki** opaklığını izler. Normal yürüyüşteki
-sis hızı korunur. Keşif, gece görüşü ve savaşta sisin kapanması aynı kurallardadır.
+Gece sınırında sis ve sis rengi de 2,4 saniyede değişir. Yeni hacim sunumunda
+`_BaseColor` sise göre siyaha çarpılmaz. Keşif, gece görüşü ve savaşta sisin
+kapanması aynı kurallardadır.
 
 ## Geçici sınırsız ekonomi
 
@@ -86,7 +88,7 @@ toplanan gerçek özü sayar. AP, takvim, savaş manası, maksimum seviye ve gel
 önkoşulları işlemeye devam eder. Unlimited kapatılınca gerçek miktarlar ve normal
 tüketim geri gelir; tek ayar cüzdan, pot ve yol taşlarını birlikte yönetir.
 
-Son doğrulama: `RootRuptureQA.Run` izole projede 300 kontrol / sıfır hata.
+Önceki kök/ekonomi turunun doğrulaması: `RootRuptureQA.Run` izole projede 300 kontrol / sıfır hata.
 Gerçek AP ile altı dilimin öncesi/arası/sonu, yarım geçişte hedef değişimi ve
 component kapatma/açma; kök/çöküş/arena/iyileşme; ekonomi ve normal moda dönüş
 kontrol edildi. Render edilmiş nötr yüzeyin ölçülen parlaklığı öğlen 0,680,
@@ -95,11 +97,23 @@ Rapor: `../Tools/SunumTasarimi/kontrol/kok_ekonomi_isik.json`.
 
 ## Sis ve çöküş
 
-Yeni sis, dünya koordinatında akan çok ölçekli gürültü kullanır. Komşu karoların
-opaklığı ve renkleri kenarlarda karışır; ayrı ayrı şişkin altıgen bulutlar oluşturmaz.
-Keşif kuralları, gece görüşü, kuleler ve savaşta sisin kapanması korunur.
-Tam gizli model renderer'ları kapatılır; görüş sınırında siluetler belirir.
-Eski sis materyali/prefabı kaynak olarak korunmuştur; sahne yeni Mist prefabını kullanır.
+`WorldFogEffect`, ana kamerada URP Render Graph geçişiyle derinlikten dünya
+konumunu kurar; sekiz yükseklik örneğiyle sis yoğunluğunu toplar. Sis alanı,
+FogOfWarManager'ın mevcut opaklığından küçük bir RGBAHalf dokuya yazılır; yalnız
+değişen karelerde yüklenir. Üst üste gelen modeller, yüksek taçlar, kökler ve
+saydam dünya efektleri aynı sis perdesinden geçer. HUD ve veri tabanlı minimap etkilenmez.
+
+Eski `alpha > .92` renderer kapatma eşiği kaldırıldı. Ağaç/çevre/öz/çürüme/kovuk
+görselleri de `CanRenderWorldModel` üzerinden hacme bırakılır; `IsKnown` ve rota
+kuralları değişmez. Yaklaşırken önce soluk siluet, sonra renk ve yüzey ayrıntısı
+açılır. İpucu bandının dış ucundaki ani opaklık değişimi de yumuşatıldı.
+Keşfedilmiş yüzeye öndeki bulut taşmaz; sisin üstüne yükselen taçlar yine örtülür.
+
+Inspector: WorldFogEffect yüksekliği 12 m, yoğunluğu 0,24, gündüz/gece sis renkleri;
+FogOfWarManager yürüyüş solma hızı 1,1/sn, geçiş bandı 2,6 karo, ipucu bandı 1,8 karo.
+Gece sınırında 2,4 sn geçiş sürer. Eski Mist prefabı efekt devre dışı kalırsa yedektir.
+Tam gizli geometri de bellekte/render'da tutulur; ani belirmeyi önlemek için çizim
+maliyeti arttı. Bu turdaki kontroller FPS profili yerine geçmez.
 
 Deprem karoları rastgele titreşmek yerine birlikte sarsılıp aşağı çöker. Eski sert
 kırmızı çemberler, düzensiz ve yer yer dağılan toprak/toz cephesine dönüştürüldü.
@@ -133,8 +147,17 @@ mevcut kütüphane ayarları yeniden kurulumda korunur. Editör geçişi eski a�
 değiştirmeden önce `Temp/PresentationBeforeUpgrade/` içine kaydedilmemiş düzenlemeler
 dahil bir kopya alır. Ana sahne `Assets/Scenes/xd.unity`.
 
-QA girişleri `PresentationQA.Run` ve `BiomeWorldQA.Run` yalnız işaretlenmiş ayrı
+Revision 3 geçişi yeni sis bileşenini ana kameraya bağlar; tekrarlı kurulum mevcut
+sis ince ayarlarını korur. `FogLightingQA.Run` yürüyüş yaklaşımını ve sis örtmesini,
+`RootRuptureQA.Run` gerçek AP geçişleri ve kök/arena dönüşünü kontrol eder.
+QA girişleri `PresentationQA.Run` ve `BiomeWorldQA.Run` dahil yalnız işaretlenmiş ayrı
 test projesinde çalıştırılır. Ana projede açık Unity varken ikinci editör açılmaz.
 Raporlar ve görseller `../Tools/SunumTasarimi/kontrol/` ve `onizleme/` altındadır.
 Teknik ses kontrolü bütün dosyaları çözüp kırpılma, sessizlik, sonlu örnekler ve
 döngü birleşimlerini ölçer; insanın kulakla dinleme/onay vermesi yerine geçmez.
+
+Son sis/ışık turu: 207 sis kontrolü + 311 kök/AP/ekonomi regresyon kontrolü,
+toplam **518 / 0 hata**. Windows derlemesi ve dokuz karoluk gerçek yürüyüş geçti;
+altı gerçek AP dilimi HUD ile yakalandı. 17 metrelik test yapı ve gerçek model
+örtme deneyi de geçti. Rapor `kontrol/sis-isik/final_validation.json`, sessiz
+yürüyüş videosu `onizleme/sis-isik/siste-yuruyus.mp4` altında.

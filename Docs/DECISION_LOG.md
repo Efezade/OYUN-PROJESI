@@ -16,6 +16,25 @@
 
 ---
 
+## 2026-10-11 — Model belirmesini kaldıran sis ve okunabilir gece
+
+**KARAR:** Modeller sis eşiğinde açılıp kapatılmıyor. Ortak derinlik geçişi bütün
+model yüksekliğini örtüyor; değişen keşif opaklığı küçük bir dünya dokusundan
+okunuyor. Keşfedilmiş alanı ön plandaki bulut kapatmıyor. Gündüz ve gece ortam
+ışığı belirgin yükseltildi; paletler ve 4 gündüz / 2 gece takvimi korunuyor.
+
+**NEDEN:** Zemin düzlemindeki sis yüksek ağaçları örtmüyordu; `alpha > .92`
+kesmesi, üstü bütünüyle görünen modelin tek karede belirmesine neden oluyordu.
+İlk renderer'ı siyaha çarpmak da hem çok parçalı modellerde tutarsızdı hem
+oynanabilir alanı gereksiz karartıyordu. Kullanıcı önceki ışığı yetersiz buldu.
+
+**DERS:** Sadece nötr yüzey ışığı ölçmek yeterli değil. Gerçek zemin/ağaç
+malzemelerini altı dilimde ve sis altında görmek gerekiyor. Örtme testinde
+yoğun sisin arkasındaki büyük modeli kaldırmak görüntüyü değiştirmedi;
+aynı model açık alanda belirgin piksel farkı üretti.
+
+**COMMIT:** Yerel çalışma; senkron/push istenmedi.
+
 ## 2026-10-11 — Zemini yaran kök, sınırsız test ekonomisi ve yumuşak gün/gece
 
 **KARAR:** Beğenilen kamera akışı korundu. Kök gövdesi yer altına dalıp çıkar;

@@ -4,17 +4,13 @@ using UnityEngine;
 namespace TacticalRPG.Grid
 {
     /// <summary>
-    /// Hex karolarının görünürlük durumunu (sis) yönetir — SAYDAMLIK yöntemiyle.
-    /// Her karonun ÜSTÜNDE KALICI bir bulut kapağı durur (Instantiate/Destroy YOK — pop yok);
-    /// bulutun OPAKLIĞI (alpha) yumuşakça değişir:
-    ///   Visible  = alpha 0 (tam saydam → karo net görünür),
-    ///   Hidden   = alpha _hiddenAlpha (opak → alttaki karo görünmez).
-    /// Görüş baloncuğu (RevealArea) karakterle gezer; kule (SetFullReveal) tüm adayı saydamlaştırır.
-    /// Ayrıca karonun temel rengi de parlaklıkla karartılır (ikinci katman).
-    /// Grid yeniden üretilince (harita geçişi) HexGridManager.OnGridRegenerated ile sis yeniden kurulur.
+    /// Hex exploration rules and continuous opacity. WorldFogEffect samples the uploaded
+    /// field across the full model height; renderers are never switched on at a reveal threshold.
+    /// Persistent low cloud caps remain as a fallback if the camera effect is disabled.
+    /// Logic visibility, permanent exploration and cinematic reveal are independent of rendering.
     /// </summary>
     [DefaultExecutionOrder(-50)] // HexGridManager'dan sonra, PlayerController'dan önce
-    public class FogOfWarManager : MonoBehaviour
+    public partial class FogOfWarManager : MonoBehaviour
     {
         [Header("Bağımlılık")]
         [SerializeField] private HexGridManager _gridManager;
@@ -37,9 +33,6 @@ namespace TacticalRPG.Grid
         [Tooltip("Bulutsuz baloncuğun kenarındaki geçiş bandı (karo). Karakter yürürken saydamlık " +
                  "bu bant üzerinden sürekli/dinamik değişir.")]
         [SerializeField] private float _fogFalloff = 1.4f;
-        [Tooltip("Gerçek karo yalnız bulut bundan OPAKKEN gizli (ağaçlar sızmasın). Yüksek(0.9) → " +
-                 "sadece TAM sisliyken gizli; bulut inceldikçe karo altından yumuşak belirir (pat yok).")]
-        [SerializeField, Range(0f, 1f)] private float _tileRevealAlpha = 0.9f;
 
         [Header("Rüzgar (bulutlar hafif hareketli)")]
         [SerializeField] private float _windSpeed = 0.7f;
@@ -100,6 +93,8 @@ namespace TacticalRPG.Grid
             public MeshRenderer[] rends;      // kahverengi örtünün render'ları
             public Renderer[]     tileRends;  // GERÇEK karonun render'ları (gizliyken kapalı)
             public Color          baseColor;
+            public Color          transientTint;
+            public float          transientTintWeight;
             public float          alpha;
             public float          target;
             public float          brightnessFloor;
@@ -132,6 +127,7 @@ namespace TacticalRPG.Grid
         private void OnDestroy()
         {
             if (_gridManager != null) {_gridManager.OnGridRegenerated -= InitializeFog;_gridManager.OnCellVisualRegenerated -= RefreshTileRenderers;}
+            ReleaseFogField();
         }
 
         private void RefreshTileRenderers(HexCoordinate coord)
@@ -141,6 +137,7 @@ namespace TacticalRPG.Grid
             if (_gridManager.Cells == null) return;
             _fading.Clear();
             BumpExploration();
+            RebuildFogField();
 
             // Sis kapalıysa (savaş haritası) hiç bulut ÜRETİLMEZ. Eskiden burada bulutlar kurulur,
             // hemen ardından RevealAll ile söndürülürdü → savaşın ilk yarım saniyesi sisli açılıyordu.
@@ -210,6 +207,7 @@ namespace TacticalRPG.Grid
         private void ApplyFogDisabled()
         {
             _fading.Clear();
+            _fieldDirty = true;
 
             foreach (var kv in _caps)
             {
@@ -299,7 +297,12 @@ namespace TacticalRPG.Grid
                 // Sızan tek şey renk ve siluet, tam bilgi değil.
                 float visualAlpha = a;
                 bool  hinted      = _edgeHintTiles > 0f && a > 0.001f && d <= hintEdge;
-                if (hinted) visualAlpha = Mathf.Min(a, _edgeHintAlpha * _hiddenAlpha);
+                // No step at hintEdge: the silhouette band joins fully hidden fog continuously.
+                if (hinted)
+                {
+                    float fringe = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(radius + band, hintEdge, d));
+                    visualAlpha = Mathf.Min(a, Mathf.Lerp(_edgeHintAlpha, 1, fringe) * _hiddenAlpha);
+                }
 
                 if(_cinematicReveals.Contains(cell.Coordinate))visualAlpha=0;
                 if (_caps.TryGetValue(cell.Coordinate, out Cap cap) && cap != null &&
@@ -434,7 +437,8 @@ namespace TacticalRPG.Grid
 
                     cap.alpha = Mathf.MoveTowards(cap.alpha, cap.target, step);
                     ApplyCapAlpha(cap);
-                    for(int d=0;d<6;d++)if(_caps.TryGetValue(coord.GetNeighbor(d),out var neighbor))ApplyCapAlpha(neighbor);
+                    if (!_volumeRendering)
+                        for(int d=0;d<6;d++)if(_caps.TryGetValue(coord.GetNeighbor(d),out var neighbor))ApplyCapAlpha(neighbor);
                     if (Mathf.Approximately(cap.alpha, cap.target)) _doneTmp.Add(coord);
                 }
                 for (int i = 0; i < _doneTmp.Count; i++) _fading.Remove(_doneTmp[i]);
@@ -494,8 +498,8 @@ namespace TacticalRPG.Grid
                 _caps[cell.Coordinate] = cap;
             }
 
-            // Bulut karonun ÜSTÜNDE havada dursun. GERÇEK karonun render'larını önbelleğe al (grid
-            // yeniden üretilmişse yenile) — sadece TAM sisliyken kapatacağız (yumuşak beliriş).
+            // Cache replacement model renderers when the grid regenerates. Fog never toggles
+            // their presence; the camera mist pass handles the entire model height.
             cap.basePos = cell.WorldPosition + Vector3.up * (HexMetrics.TileHeight + _fogLift);
             cap.tileRends=cell.Visual!=null?cell.Visual.GetComponentsInChildren<Renderer>(true):null;
             cap.go.transform.position = cap.basePos;
@@ -503,8 +507,6 @@ namespace TacticalRPG.Grid
             return cap;
         }
 
-        // Örtüye opaklığı yaz (MPB) + GERÇEK karoyu aç/kapat: örtü opaksa gerçek karo GİZLİ (kahverengi
-        // görünür), örtü yeterince solunca gerçek karo (ağaçlar dahil) BELİRİR → "var oluyor" hissi.
         /// <summary>Bulutun O ANKİ temel rengi — alarm açıksa kızıla karışmış hâli. Hem
         /// <see cref="ApplyCapAlpha"/> hem <see cref="TintCloud"/> buradan okur; yoksa çöküş
         /// dalgası geçip kendi rengine döndürdüğünde alarm silinir ve uyarı yine kaybolurdu.</summary>
@@ -515,7 +517,8 @@ namespace TacticalRPG.Grid
             // (yeni harita / savaştan dönüş) kendiliğinden geri gelir, sıra bağımlılığı olmaz.
             if (_cloudTints.Count > 0 && _cloudTints.TryGetValue(cap.coord, out (Color tint, float t) ct))
                 c = Color.Lerp(c, ct.tint, ct.t*.48f);
-            return cap.alarm ? Color.Lerp(c, _alarmColor, _alarmStrength) : c;
+            if (cap.alarm) c = Color.Lerp(c, _alarmColor, _alarmStrength);
+            return Color.Lerp(c, cap.transientTint, cap.transientTintWeight);
         }
 
         // ── Kalıcı bulut tonu (Kara Aşı çürümesi, 2026-10-10) ───────────────
@@ -577,7 +580,17 @@ namespace TacticalRPG.Grid
 
         private void ApplyCapAlpha(Cap cap)
         {
+            _fieldDirty = true;
             if (cap.rends == null) return;
+            // Geometry remains present throughout the reveal. The depth-aware mist veils its
+            // entire height, including roots and multi-renderer/transparent authored models.
+            if(cap.tileRends!=null)foreach(var tile in cap.tileRends)if(tile!=null)tile.forceRenderingOff=false;
+            if (_volumeRendering)
+            {
+                foreach (var renderer in cap.rends) if (renderer != null) renderer.enabled = false;
+                if (_gridManager.TryGetCell(cap.coord, out var visibleCell)) ReapplyCellBrightness(visibleCell);
+                return;
+            }
             _block ??= new MaterialPropertyBlock();
 
             Color c = CapBaseColor(cap);
@@ -591,7 +604,6 @@ namespace TacticalRPG.Grid
                 _block.SetColor(FogColors[d],neighbor!=null?CapBaseColor(neighbor):c);
                 _block.SetVector(FogNeighbours[d],new Vector4(position.x,position.z,alpha,0));coverVisible|=alpha>.001f;
             }
-            if(cap.tileRends!=null)foreach(var tile in cap.tileRends)if(tile!=null)tile.forceRenderingOff=cap.alpha>.92f;
 
             foreach (var r in cap.rends)
             {
@@ -614,6 +626,8 @@ namespace TacticalRPG.Grid
         /// değişikliğini geri alırken çağırır; böylece karo sis-doğru parlaklığa döner.</summary>
         public void ReapplyCellBrightness(HexCell cell)
         {
+            // Fog is scattering, not a black multiplier on the first child mesh.
+            if (_volumeRendering) { SetCellBrightness(cell, _visibleBrightness); return; }
             float alpha = _fogEnabled && _caps.TryGetValue(cell.Coordinate, out var cap) ? cap.alpha : 0;
             float brightness = Mathf.Lerp(_visibleBrightness, _hiddenBrightness, alpha / Mathf.Max(.001f, _hiddenAlpha));
             if (_fogEnabled && _caps.TryGetValue(cell.Coordinate, out var hint) && hint.brightnessFloor > _hiddenBrightness)
@@ -627,9 +641,10 @@ namespace TacticalRPG.Grid
         public void TintCloud(HexCoordinate coord, Color tint, float t)
         {
             if (!_caps.TryGetValue(coord, out Cap cap) || cap == null || cap.rends == null) return;
+            cap.transientTint=tint;cap.transientTintWeight=Mathf.Clamp01(t);_fieldDirty=true;
             if (cap.alpha <= 0.01f) return;                    // bulut zaten görünmez
             _block ??= new MaterialPropertyBlock();
-            Color c = Color.Lerp(CapBaseColor(cap), tint, Mathf.Clamp01(t));
+            Color c = CapBaseColor(cap);
             c.a = cap.alpha;
             foreach (var r in cap.rends)
             {

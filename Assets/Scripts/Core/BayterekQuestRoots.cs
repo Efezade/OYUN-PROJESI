@@ -136,7 +136,7 @@ namespace TacticalRPG.Core
                 if (CanAnimate) changed |= Advance(branch, Time.deltaTime);
                 foreach (var piece in branch.Pieces)
                 {
-                    bool visible = (_fog == null || _fog.IsVisuallyRevealed(piece.Coord)) &&
+                    bool visible = (_fog == null || _fog.VolumeRendering || _fog.IsVisuallyRevealed(piece.Coord)) &&
                         (_collapse == null || !_collapse.IsCollapsed(piece.Coord));
                     if (piece.Visual != null) piece.Visual.Show(piece.Amount, visible);
                     if(piece.SideVisual!=null)piece.SideVisual.Show(piece.Amount,piece.Side.HasValue && Revealed(piece.Side.Value));
@@ -159,7 +159,7 @@ namespace TacticalRPG.Core
             foreach (var coord in _releasedScars) _scars.Remove(coord);
             if (changed) _grid.NotifyWalkabilityChanged();
         }
-        private bool Revealed(HexCoordinate coord) => (_fog == null || _fog.IsVisuallyRevealed(coord)) &&
+        private bool Revealed(HexCoordinate coord) => (_fog == null || _fog.VolumeRendering || _fog.IsVisuallyRevealed(coord)) &&
             (_collapse == null || !_collapse.IsCollapsed(coord));
         private void AccumulateScar(HexCoordinate coord, float amount, Vector3 direction)
         {

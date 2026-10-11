@@ -74,7 +74,7 @@ namespace TacticalRPG.Core
         private void RefreshMarkers()
         {
             foreach (var kv in _markers)
-                if (kv.Value != null) kv.Value.SetActive(_fog == null || _fog.IsKnown(kv.Key));
+                if (kv.Value != null) kv.Value.SetActive(_fog == null || _fog.CanRenderWorldModel(kv.Key));
         }
 
         private bool OnHollow(out HexCoordinate at)

@@ -113,7 +113,7 @@ namespace TacticalRPG.Core
             {
                 if (kv.Value == null) continue;
                 bool standing = _grid.TryGetCell(kv.Key, out HexCell cell) && cell.CellType != CellType.Obstacle;
-                kv.Value.enabled = standing && (_fog == null || _fog.IsKnown(kv.Key));
+                kv.Value.enabled = standing && (_fog == null || _fog.CanRenderWorldModel(kv.Key));
             }
         }
 
@@ -178,7 +178,7 @@ namespace TacticalRPG.Core
             _mpb.SetColor(BaseColorId, col);
             _mpb.SetColor(ColorId, col);
             r.SetPropertyBlock(_mpb);
-            r.enabled = cell.CellType != CellType.Obstacle && (_fog == null || _fog.IsKnown(c));
+            r.enabled = cell.CellType != CellType.Obstacle && (_fog == null || _fog.CanRenderWorldModel(c));
         }
 
         /// <summary>Katmanın oturacağı zemin. Karonun ORTASINDA ağaç/kütük varsa SurfaceHeight onun

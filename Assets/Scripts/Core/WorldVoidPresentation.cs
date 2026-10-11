@@ -32,7 +32,7 @@ namespace TacticalRPG.Core
             if(world)foreach(var coord in _collapse.CollapsedTiles)Create(coord,false);
             foreach(var kv in _voids)
             {
-                bool active=world&&_collapse.IsCollapsed(kv.Key)&&(_fog==null||_fog.IsKnown(kv.Key));
+                bool active=world&&_collapse.IsCollapsed(kv.Key)&&(_fog==null||_fog.CanRenderWorldModel(kv.Key));
                 if(kv.Value!=null)kv.Value.SetActive(active);
                 if(world&&_collapse.IsCollapsed(kv.Key)&&_grid.TryGetCell(kv.Key,out var cell))cell.RefreshVisualVisibility();
             }

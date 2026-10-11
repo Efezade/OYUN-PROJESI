@@ -193,7 +193,7 @@ namespace TacticalRPG.Core
         {
             foreach (var r in _ravens)
             {
-                bool visible = !r.spent && (_fog == null || _fog.IsVisible(r.at));
+                bool visible = !r.spent && (_fog == null || _fog.CanRenderWorldModel(r.at));
                 if (r.go != null) r.go.SetActive(visible);
                 if (r.guard != null) r.guard.SetActive(r == _activeRaven || visible);
             }
