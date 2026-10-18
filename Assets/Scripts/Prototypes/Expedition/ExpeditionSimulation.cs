@@ -133,7 +133,10 @@ namespace TacticalRPG.Prototypes.Expedition
                     // Opening wave showcases power; elites join later waves.
                     tactic=i==0?EnemyTactic.Charger:i==1?EnemyTactic.Flanker:i==4?EnemyTactic.Sniper:EnemyTactic.Normal;
                     if(Stage>0&&_wave>1){if(i==2)tactic=EnemyTactic.Protector;if(i==3)tactic=EnemyTactic.Bomber;}
-                    role=tactic==EnemyTactic.Sniper?LabRole.Gunner:LabRole.Raider;
+                    if(i==1)tactic=EnemyTactic.Leaper;
+                    if(Stage>0&&_wave>1&&i==5)tactic=EnemyTactic.Frenzied;
+                    if(Stage==2&&_wave>1&&i==6)tactic=EnemyTactic.Cloner;
+                    role=tactic==EnemyTactic.Sniper||tactic==EnemyTactic.Cloner?LabRole.Gunner:LabRole.Raider;
                 }
                 if(tactic==EnemyTactic.Charger)role=LabRole.Raider;
                 if(tactic==EnemyTactic.Protector)role=LabRole.Gunner;
@@ -220,7 +223,8 @@ namespace TacticalRPG.Prototypes.Expedition
             bool chain=trigger&&!target.Ally&&target.Mark>0;if(chain)target.Mark=0;
             int amount=Mathf.Min(damage,target.Health);target.Health-=amount;
             Effect?.Invoke(new LabFx(source,target.Position,amount,0));
-            if(!target.Alive&&!target.Ally&&_credited.Add(target.Id))XP+=target.Role==LabRole.Boss?4:1;
+            if(!target.Alive&&!target.Ally&&!IsClone(target)&&_credited.Add(target.Id))XP+=target.Role==LabRole.Boss?4:1;
+            if(!target.Alive&&IsMastery)DismissClones(target.Id);
             if(!chain)return;
             Chains++;
             if(_levels[4]>0&&_siphonClock<=0){Mana=Mathf.Min(_config.Mana,Mana+_levels[4]);_siphonClock=.4f;}
@@ -243,6 +247,7 @@ namespace TacticalRPG.Prototypes.Expedition
                 if(Kam.Position.x>Map.Center(Stage+1).x-6){Stage++;BeginStage();}
                 return;
             }
+            if(IsMastery)MaintainClones(dt);
             for(int i=_pending.Count-1;i>=0;i--){_pending[i].Remaining-=dt;if(_pending[i].Remaining<=0){_units.Add(_pending[i].Unit);_pending.RemoveAt(i);Changed?.Invoke();}}
             _packClock+=dt;
             TickVortex(dt);
@@ -289,6 +294,7 @@ namespace TacticalRPG.Prototypes.Expedition
         }
         private void EnemyTick(LabUnit u,float dt)
         {
+            if(IsMastery&&TickDynamicEnemy(u,dt))return;
             if(IsJourney&&TickEncounter(u,dt))return;
             if(TickTactic(u,dt))return;
             if(u.Windup>0)

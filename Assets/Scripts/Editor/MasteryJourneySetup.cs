@@ -48,9 +48,9 @@ namespace TacticalRPG.Editor
         public static void Open(){if(!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())return;EnsureScene();EditorSceneManager.OpenScene(ScenePath);}
         public static void BuildWindows()
         {
-            EnsureScene();CombatLabValidation.RunChecks();ExpeditionValidation.RunChecks();ExpeditionTacticsValidation.RunChecks();WeaponJourneyValidation.RunChecks();EncounterValidation.RunChecks();MasteryValidation.RunChecks();
-            Directory.CreateDirectory("Builds/MasteryJourney");
-            var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions{scenes=new[]{ScenePath},locationPathName="Builds/MasteryJourney/KamMastery.exe",target=BuildTarget.StandaloneWindows64,options=BuildOptions.Development});
+            EnsureScene();CombatLabValidation.RunChecks();ExpeditionValidation.RunChecks();ExpeditionTacticsValidation.RunChecks();WeaponJourneyValidation.RunChecks();EncounterValidation.RunChecks();MasteryValidation.RunChecks();DynamicEnemyValidation.RunChecks();
+            Directory.CreateDirectory("Builds/MasteryJourneyV6");
+            var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions{scenes=new[]{ScenePath},locationPathName="Builds/MasteryJourneyV6/KamMastery.exe",target=BuildTarget.StandaloneWindows64,options=BuildOptions.Development});
             if(report.summary.result!=BuildResult.Succeeded)throw new Exception("Mastery build failed: "+report.summary.result);
             Debug.Log("MASTERY_BUILD_OK");
         }

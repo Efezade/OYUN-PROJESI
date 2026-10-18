@@ -108,6 +108,9 @@ namespace TacticalRPG.Prototypes.Expedition
         private IEnumerator Capture()
         {
             bool encounterCapture=Array.IndexOf(Environment.GetCommandLineArgs(),"--encounter-capture")>=0;
+            bool leapCapture=Array.IndexOf(Environment.GetCommandLineArgs(),"--leap-capture")>=0;
+            bool cloneCapture=Array.IndexOf(Environment.GetCommandLineArgs(),"--clone-capture")>=0;
+            bool dynamicCapture=leapCapture||cloneCapture;bool dynamicReady=false;
             if(_simulation.IsJourney)
             {
                 var args=Environment.GetCommandLineArgs();bool spear=Array.IndexOf(args,"--weapon-spear")>=0;
@@ -119,12 +122,28 @@ namespace TacticalRPG.Prototypes.Expedition
                     _view.Bind(_simulation,_config);
                 }
             }
+            if(dynamicCapture)
+            {
+                // Explicit visual fixture: no allied attacks, high health, no player save writes.
+                _simulation.Load(new ExpeditionSave{version=_simulation.JourneySaveVersion,seed=12345,nextStage=2,xp=0,picks=0,weapon=1,powers=new int[9],credited=Array.Empty<int>(),offerState=12345});
+                _view.Bind(_simulation,_config);
+            }
             // Deterministic unattended visual check. Never writes a player checkpoint.
-            int limit=_captureChoice?5000:_simulation.IsJourney?500:60;
+            int limit=dynamicCapture?1200:_captureChoice?5000:_simulation.IsJourney?500:60;
             for(int i=0;i<limit;i++)
             {
                 if(_simulation.Phase==ExpeditionPhase.Choosing){if(encounterCapture){_simulation.Choose(0);continue;}break;}
                 if(_simulation.Phase==ExpeditionPhase.Lost)break;
+                if(dynamicCapture)
+                {
+                    foreach(var u in _simulation.Units)if(u.Ally){u.Cooldown=100;u.Health=u.MaxHealth=10000;}
+                    // Clear opening wave in this no-attack fixture so the cloner wave can spawn.
+                    if(cloneCapture&&_simulation.Wave==1&&_simulation.Elapsed>10)foreach(var u in _simulation.Units)if(!u.Ally)u.Health=0;
+                    _simulation.Tick(.05f,Vector2.zero);bool ready=false;
+                    foreach(var u in _simulation.Units)if(u.Alive&&(leapCapture?_simulation.EnemyAirHeight(u)>2.5f:_simulation.IsClone(u)))ready=true;
+                    if(ready){dynamicReady=true;break;}
+                    if(i%10==0){_view.Refresh();_hud.Refresh();yield return null;}continue;
+                }
                 if(_simulation.IsJourney)
                 {
                     LabUnit captureEnemy=null;float best=float.MaxValue;
@@ -143,7 +162,8 @@ namespace TacticalRPG.Prototypes.Expedition
                 }
                 if(i%10==0){_view.Refresh();_hud.Refresh();yield return null;}
             }
-            _view.Refresh();_hud.Refresh();yield return new WaitForSecondsRealtime(.4f);
+            if(dynamicCapture&&!dynamicReady)Debug.LogError("DYNAMIC_CAPTURE_TARGET_NOT_REACHED");
+            _view.Refresh();_hud.Refresh();yield return new WaitForSecondsRealtime(dynamicCapture?1.1f:.4f);
             var camera=_view.Camera;var canvas=_hud.GetComponent<Canvas>();var target=new RenderTexture(1440,900,24);target.Create();
             camera.targetTexture=target;canvas.renderMode=RenderMode.ScreenSpaceCamera;canvas.worldCamera=camera;canvas.planeDistance=1;
             Canvas.ForceUpdateCanvases();yield return new WaitForEndOfFrame();

@@ -15,6 +15,10 @@ namespace TacticalRPG.Prototypes.CombatLab
         [SerializeField] private float _followSpeed = 14f;
         [SerializeField] private float _healthWidth = 1f;
         [SerializeField] private Vector3 _labelOffset = new Vector3(0, 2.1f, 0);
+        private bool _suppressWarning;
+        public void SuppressWarning(bool value){_suppressWarning=value;}
+        private float _elevation;
+        public void SetElevation(float value){_elevation=value;}
         private LabUnit _unit;
         private Camera _camera;
         private System.Func<Vector2, float> _groundHeight;
@@ -29,7 +33,7 @@ namespace TacticalRPG.Prototypes.CombatLab
         {
             if (_unit == null) return;
             if (!_unit.Alive) { _warning.gameObject.SetActive(false); gameObject.SetActive(false); return; }
-            Vector3 destination = new Vector3(_unit.Position.x, Ground(_unit.Position), _unit.Position.y);
+            Vector3 destination = new Vector3(_unit.Position.x, Ground(_unit.Position)+_elevation, _unit.Position.y);
             Vector3 delta = destination - transform.position;
             if (_animator != null) _animator.SetBool(Moving, delta.sqrMagnitude > .003f);
             transform.position = Vector3.Lerp(transform.position, destination, 1 - Mathf.Exp(-_followSpeed * Time.deltaTime));
@@ -40,7 +44,7 @@ namespace TacticalRPG.Prototypes.CombatLab
             _healthFill.localScale = new Vector3(_healthWidth * Mathf.Clamp01((float)_unit.Health / _unit.MaxHealth), .07f, .07f);
             _caption.transform.position = transform.position + _labelOffset;
             _caption.transform.rotation = _camera.transform.rotation;
-            _warning.gameObject.SetActive(realtime && _unit.Windup > 0);
+            _warning.gameObject.SetActive(realtime && _unit.Windup > 0 && !_suppressWarning);
             if (_unit.Windup > 0)
             {
                 _warning.position = new Vector3(_unit.Aim.x, Ground(_unit.Aim) + .03f, _unit.Aim.y);

@@ -1,5 +1,16 @@
 # B · Büyüyen Sefer — oynanabilir prototip
 
+## Güncel — Hareketli düşmanlar v6
+
+Efe sıçrama, hızlanma/özel hareket ve klonlama gibi farklı düşman davranışları istedi. Üç rol MasteryJourney'ye eklendi: ilk görevden Sıçrayan (kilitli iniş halkası, gerçek görsel yükseklik yayı, iniş sonrası açık); ikinci görev ikinci dalgadan Hiddetli (hazırlık, süreli hızlı kovalama, kilitli yakın vuruş, yorgunluk); üçüncü görev ikinci dalgadan Yansıtıcı (iki kırılgan geçici kopya).
+
+Yansımalar 6 canlı, 7 saniyelik ve 2 hasarlı; ilerleme puanı vermez, çoğalmaz; asıl düşman ölünce canlı ve bekleyen kopyalar hemen kaldırılır. Sahada en çok dört kopya, kaynak başına iki. Sıçrayışın havadaki bölümü de iki saldırılık hazırlık/atılış bütçesine dahil. Yeni roller eski düşük canlı grupların bir kısmını değiştirir; ustalık ve seçkinler korunur.
+
+`USTALIK_BASLAT.cmd` artık `OYUN/Builds/MasteryJourneyV6/KamMastery.exe` açar. Önceki v5 exe korunur; aynı checkpoint-v5.json kullanılır. Tamamı ayrı prototip; final düşman modelleri/rig animasyonları üretilmedi. Hareket ve renk/şekil işaretleri mevcut aktörlere uygulanır. Modelci için `DUSMAN_HAREKET_NOTU_V006.txt`: önce mevcut rig üstünde kaba sıçrama, final sipariş değil.
+
+21 yeni + 363 eski = 384 işlev kontrolü geçti. Windows build ve gerçek player sıçrama/kopya görüntüleri kontrol edildi: Logs/dynamic-leap.png, dynamic-clone.png; günlüklerde exception/LogError/LogWarning yok. Bu iki açık QA yakalaması yüksek can, kapalı dost saldırıları ve kopya örneğinde ilk dalgayı temizleme kullanır; normal oyun veya denge kanıtı değildir, oyuncu kaydı yazmaz. Sıçrama kilidi/kaçış/hasar/havada duraklatma, hızlanma/yorgunluk, klon sınırı/ödülsüzlük/ölüm/sona erme kontrol edildi. İnsan keyif ve zorluk kabulü bekliyor. Sonraki adım Efe'nin Yeni Sefer ile rol tanıtımını ve üçüncü görevde birleşen baskıyı denemesi. Kaynak `OYUN/Logs/dynamic-enemy-validation.json`; kod `ExpeditionDynamicEnemies.cs`. Push/senkron yok.
+
+
 ## v5 — Ustalık ve dönüşüm v5
 
 Efe garantili silah ustalığı, üçüncü görevde eski düşmanları ezme ve seçkin baskısını onayladı. Aç: `Tools/SavasPrototipleri/USTALIK_BASLAT.cmd` → Yeni Sefer. Build `OYUN/Builds/MasteryJourney/KamMastery.exe`; sahne `MasteryJourney.unity`; ayrı `checkpoint-v5.json`. Mevcut IKI_SILAH_BASLAT.cmd'deki yerel v3'e dönüş değişikliği korunarak ayrı başlatıcı oluşturuldu.

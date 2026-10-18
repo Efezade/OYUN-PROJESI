@@ -96,7 +96,7 @@ namespace TacticalRPG.Prototypes.Expedition
             // Fixed pitch: follow without continually tilting the horizon.
             _camera.transform.rotation=Quaternion.LookRotation(-_config.CameraOffset);
             _camera.orthographicSize=Mathf.Lerp(_camera.orthographicSize,_zoom,Time.unscaledDeltaTime*6);
-            foreach(var pair in _views)pair.Value.Refresh(pair.Key==0,true);
+            foreach(var pair in _views){pair.Value.SuppressWarning(_simulation.SelfPreparation(_simulation.Find(pair.Key)));pair.Value.SetElevation(_simulation.EnemyAirHeight(_simulation.Find(pair.Key)));pair.Value.Refresh(pair.Key==0,true);}
             RefreshWeaponVisuals();
             RefreshEncounterVisuals();
             foreach(var pair in _chargeLines)

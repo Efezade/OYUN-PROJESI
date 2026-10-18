@@ -20,7 +20,7 @@ namespace TacticalRPG.Prototypes.Expedition
         private void ResetEncounters(){_hazards.Clear();}
         private bool AttackSlotAvailable(LabUnit source)
         {
-            int attacks=0;foreach(var u in _units)if(!u.Ally&&u.Alive&&u.Id!=source.Id&&(u.Windup>0||ChargeActive(u)))attacks++;
+            int attacks=0;foreach(var u in _units)if(!u.Ally&&u.Alive&&u.Id!=source.Id&&(u.Windup>0||ChargeActive(u)||Leaping(u)))attacks++;
             // At most two enemy preparations/rushes at once, including the boss.
             return attacks<2;
         }
@@ -57,7 +57,7 @@ namespace TacticalRPG.Prototypes.Expedition
         }
         private bool TickEncounter(LabUnit u,float dt)
         {
-            var tactic=TacticOf(u);
+            var tactic=TacticOf(u);if(tactic==EnemyTactic.Clone)tactic=EnemyTactic.Flanker;
             if(tactic!=EnemyTactic.Flanker&&tactic!=EnemyTactic.Sniper&&tactic!=EnemyTactic.Bomber&&tactic!=EnemyTactic.Protector)return false;
             if(u.Windup>0)
             {

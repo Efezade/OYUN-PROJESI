@@ -16,7 +16,8 @@ namespace TacticalRPG.Prototypes.Expedition
             _text.Append("\nGelişim ").Append(s.XP);if(s.NextThreshold>0)_text.Append(" / ").Append(s.NextThreshold);else _text.Append(" · TAMAM");
             _text.Append("\n").Append(s.Picks).Append(" yeni davranış\n\n").Append(s.Weapon==JourneyWeapon.Crescent?"Yaklaş · ön yayda biç\nÜç isabetle E hazır":"Hizala · del · yer değiştir\nQ: mızrakları geri çağır");_build.text=_text.ToString()+(s.IsMastery?"\n\n"+s.MasterySummary:"");
             _objective.text=s.Phase==ExpeditionPhase.Travel?"DOĞUYA İLERLE →\nSonraki görev\nSilah ve güçler korunuyor":"GÖREV "+(s.Stage+1)+" · "+s.StageName+"\nDALGA "+s.Wave+" / 3\n"+s.LivingEnemies+" düşman · "+s.Pending.Count+" yaklaşan";
-            if(s.Phase==ExpeditionPhase.Fighting)_objective.text+=s.Stage==0?"\nAvcı: atış çizgisinden çık":"\nKuşatmacı: halkayı terk et";
+            if(s.Phase==ExpeditionPhase.Fighting&&s.IsMastery)_objective.text+=s.Stage==0?"\nSıçrayan: iniş halkasından çık":s.Stage==1?"\nHiddetli: yorulunca saldır":"\nYansıtıcı: asıl düşmanı avla";
+            else if(s.Phase==ExpeditionPhase.Fighting)_objective.text+=s.Stage==0?"\nAvcı: atış çizgisinden çık":"\nKuşatmacı: halkayı terk et";
             _ground.text=s.Map.Description(s.Kam.Position);
             if(s.Map.Ground(s.Kam.Position)==GroundKind.Water)_ground.text="SU · düşman nişancısının elektriği +2 hasar verir";
             if(s.Map.Ground(s.Kam.Position)==GroundKind.High)_ground.text="YÜKSELTİ · uzak saldırılar +1,4 menzil kazanır; yakın hilal değişmez";

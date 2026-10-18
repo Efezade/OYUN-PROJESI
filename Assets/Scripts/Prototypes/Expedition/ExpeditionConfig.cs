@@ -60,6 +60,21 @@ namespace TacticalRPG.Prototypes.Expedition
         [SerializeField] private float _masterySpeedPerStage=.12f;
         [SerializeField] private float _eliteHealthMultiplier=2.5f;
         [SerializeField] private float _masteryFanAngle=22f;
+        [Header("Dynamic enemies")]
+        [SerializeField] private float _leapWarning=1.1f;
+        [SerializeField] private float _leapTime=.7f;
+        [SerializeField] private float _leapHeight=2.8f;
+        [SerializeField] private float _leapRadius=1.2f;
+        [SerializeField] private float _frenzyMultiplier=2.4f;
+        [SerializeField] private float _cloneLife=7f;
+        [SerializeField] private int _cloneHealth=6;
+        public float LeapWarning=>_leapWarning;
+        public float LeapTime=>_leapTime;
+        public float LeapHeight=>_leapHeight;
+        public float LeapRadius=>_leapRadius;
+        public float FrenzyMultiplier=>_frenzyMultiplier;
+        public float CloneLife=>_cloneLife;
+        public int CloneHealth=>_cloneHealth;
         public bool MasteryJourney=>_masteryJourney;
         public float MasteryDamagePerStage=>_masteryDamagePerStage;
         public float MasterySpeedPerStage=>_masterySpeedPerStage;
