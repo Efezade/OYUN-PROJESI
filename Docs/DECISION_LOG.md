@@ -1480,3 +1480,8 @@ Tarihsel gerekçeleri arşivde; burada sadece **hâlâ geçerli olan** hüküm v
 **KARAR:** Efe’nin isteğiyle üçüncü görevde ayrı Kül Yeminli Muhafız karşılaşması. %65/%30 eşikleri, geniş biçiş/hücum/zemin darbesi/genişleyen dalga, ikinci ve üçüncü aşamada sınırlı muhafız çağrısı. Normal dalgalar önce tamamlanır; güç kombinasyonu boss başlamadan kurulabilir. Çekirdek açığı alan temizliği ve patlama hasarını bağlar; tek bir kart zorunlu tutulmaz.
 
 **NEDEN:** Boss yalnız fazla can taşıyan normal düşman olmasın; her baskıdan sonra okunabilir karşılık fırsatı versin. Muhafızlar XP üretmez, kaynak ölünce temizlenir. Faz eşiklerinde hasar sınırı ve kısa koruma vardır; büyük patlama fazları atlamaz. Orijinal kaba zırh/taç/kılıç prefabı sonradan değiştirilebilir. 21 yeni + 384 eski kontrol geçti; yüksek canlı sürücü insan zorluk kabulü değildir. **COMMIT:** Bu kaydı ekleyen commit.
+
+## 2026-10-18 — Hibrit savaş haritası
+KARAR: Efe'nin onayıyla tekil 2 m zeminler ve çok hücreli bağımsız yapılar; kaynak atölye sahnesi korunarak ayrı HybridBattle prototipi. Avlu/bağlantı/yükselti verisi hareket, görüş ve saldırı işaretlerini besler. Gerçek zemin/kapı + geçici köprü/siper; ayrı kayıt ve savaşsız gezi.
+NEDEN: Kaynak sanatın ölçülerini bozmadan mevcut savaş döngüsünü gerçek modeller üzerinde denemek; köprü altı/üstü aynı anda yürünmesini şimdilik kapsam dışında tutmak. 41 karo üretim örneğiydi, savaş denemesi 309 karoya genişletildi. Keyfi sahne düzenlemesi otomatik nav verisi üretmez; veri ve geometri birlikte düzenlenir.
+DOĞRULAMA: 441 işlev, 1.257 sahne kontrolü / 271 yüzey örneği. Normal zorluk ve keyif testi Efe'de; kolaylık geri bildirimi açık. Yerel checkpoint, senkron/push yok.

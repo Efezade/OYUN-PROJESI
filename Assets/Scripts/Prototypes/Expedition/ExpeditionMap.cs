@@ -17,10 +17,27 @@ namespace TacticalRPG.Prototypes.Expedition
         private readonly Queue<LabHex> _queue = new Queue<LabHex>();
         private readonly Dictionary<LabHex,LabHex> _parents = new Dictionary<LabHex,LabHex>();
         public IReadOnlyList<LabHex> Cells => _ordered;
+        private readonly List<LabHex> _platforms=new List<LabHex>();
+        public IReadOnlyList<LabHex> Platforms=>_platforms;
+        public HybridBattleLayout Layout=>_config.HybridLayout;
+        public float EncounterEdge(int stage)=>Layout!=null?Layout.RiseStart(stage):Center(stage).x+10;
         public IReadOnlyList<Vector2> Cover => _cover;
         public ExpeditionMap(ExpeditionConfig config)
         {
             _config = config;
+            if(Layout!=null)
+            {
+                for(int stage=0;stage<3;stage++)
+                {
+                    int radius=Layout.Radius(stage);
+                    for(int q=-radius;q<=radius;q++)for(int r=-radius;r<=radius;r++)
+                        if(new LabHex(q,r).Distance(default)<=radius){var h=new LabHex(q+Layout.Spacing*stage,r);Add(h);_platforms.Add(h);}
+                    foreach(var offset in Layout.CoverOffsets)_cover.Add(Center(stage)+offset);
+                }
+                for(int stage=0;stage<2;stage++)for(int q=0;q<=Layout.Spacing;q++)for(int r=-1;r<=1;r++)
+                {var h=new LabHex(q+Layout.Spacing*stage,r);if(Layout.OnBridge(h.World(config.Radius),stage))Add(h);}
+                return;
+            }
             for (int stage=0;stage<3;stage++)
             {
                 for(int q=-7;q<=7;q++) for(int r=-7;r<=7;r++)
@@ -32,7 +49,7 @@ namespace TacticalRPG.Prototypes.Expedition
             for(int s=0;s<2;s++) for(int q=7+16*s;q<=9+16*s;q++) for(int r=-1;r<=1;r++) Add(new LabHex(q,r));
         }
         private void Add(LabHex h) { if(_cells.Add(h)) _ordered.Add(h); }
-        public Vector2 Center(int stage) => new LabHex(stage*16,0).World(_config.Radius);
+        public Vector2 Center(int stage) => new LabHex(stage*(Layout!=null?Layout.Spacing:16),0).World(_config.Radius);
         public Vector2 Entrance(int stage) => Center(stage)+new LabHex(-4,0).World(_config.Radius);
         public Vector2 Exit(int stage) => Center(stage)+new LabHex(6,0).World(_config.Radius);
         public int Region(Vector2 p) => Mathf.Clamp(Mathf.RoundToInt(p.x / Center(1).x),0,2);
@@ -44,9 +61,16 @@ namespace TacticalRPG.Prototypes.Expedition
             if(dx>dy&&dx>dz)rx=-ry-rz;else if(dy<=dz)rz=-rx-ry;
             return new LabHex(rx,rz);
         }
-        public bool Contains(Vector2 p) => _cells.Contains(Hex(p));
+        public bool Contains(Vector2 p)
+        {
+            if(Layout==null)return _cells.Contains(Hex(p));
+            for(int i=0;i<2;i++)if(Layout.OnBridge(p,i))return true;
+            var h=Hex(p);int stage=Layout.Region(p);
+            return new LabHex(h.Q-stage*Layout.Spacing,h.R).Distance(default)<=Layout.Radius(stage);
+        }
         public float Height(Vector2 p)
         {
+            if(Layout!=null)return Layout.Height(p);
             var v=p-Center(Region(p));
             float ramp=Mathf.Clamp01((v.x-1f)/3.2f);
             float edge=Mathf.Min(Mathf.Clamp01((7.2f-v.x)/.5f),Mathf.Min(Mathf.Clamp01((v.y-1.2f)/.5f),Mathf.Clamp01((6.8f-v.y)/.5f)));
@@ -54,6 +78,7 @@ namespace TacticalRPG.Prototypes.Expedition
         }
         public GroundKind Ground(Vector2 p)
         {
+            if(Layout!=null)return Layout.IsSlope(p)?GroundKind.Ramp:Layout.Region(p)>0?GroundKind.High:GroundKind.Grass;
             float h=Height(p)-.3f;if(h>_config.Height*.85f)return GroundKind.High;if(h>.08f)return GroundKind.Ramp;
             var v=p-Center(Region(p));
             if(v.x>1&&v.x<5&&v.y>-3.5f&&v.y<.2f)return GroundKind.Water;
@@ -62,7 +87,7 @@ namespace TacticalRPG.Prototypes.Expedition
         }
         public bool Walkable(Vector2 p)
         {
-            if(!Contains(p))return false;
+            if(!Contains(p)||Layout!=null&&Layout.GateBlocks(p))return false;
             foreach(var c in _cover)if((p-c).sqrMagnitude<.68f*.68f)return false;
             return true;
         }
@@ -77,6 +102,7 @@ namespace TacticalRPG.Prototypes.Expedition
         public bool HasLine(Vector2 a,Vector2 b)
         {
             var delta=b-a;float distance=delta.magnitude;
+            if(Layout!=null)for(float t=0;t<=distance;t+=.1f)if(Layout.GateBlocks(a+delta*(t/Mathf.Max(.001f,distance))))return false;
             float ah=Height(a)+.85f,bh=Height(b)+.85f;
             foreach(var c in _cover)
             {
@@ -107,7 +133,7 @@ namespace TacticalRPG.Prototypes.Expedition
             while(!_parents[best].Equals(start))best=_parents[best];
             return best.World(_config.Radius);
         }
-        public string Description(Vector2 p) => Ground(p) switch {
+        public string Description(Vector2 p) => Layout!=null?(Layout.IsSlope(p)?"KÖPRÜ RAMPASI · Kenarlar geçilemez; yükseltiye bağlı geçiş":Layout.Region(p)>0?"YÜKSEK TERAS · Menzil avantajı; sütunlar görüşü keser":"TAŞ AVLU · Kapı ayakları ve sütunlar geçilemez"):Ground(p) switch {
             GroundKind.Mud=>"ÇAMUR · herkes yavaşlar; düşmanı burada tut",
             GroundKind.Water=>"SU · iletim gücünü besler; nişancı elektriği +2 hasar",
             GroundKind.Ramp=>"RAMPA · yükseltiye güvenli çıkış",

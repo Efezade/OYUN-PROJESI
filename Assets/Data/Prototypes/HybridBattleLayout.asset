@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d9eb2a331f9f0342a2be9c459769deb, type: 3}
+  m_Name: HybridBattleLayout
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Prototypes.Expedition.HybridBattleLayout
+  _groundPrefab: {fileID: 3168479786646446553, guid: b204f9cdd6c25314dad73415d7377a34, type: 3}
+  _gatePrefab: {fileID: 8636733821373806131, guid: 682ae7f9058f3434aa252d6d5e807181, type: 3}
+  _bridgeMaterial: {fileID: 2100000, guid: 2a5a9e77f366a90429794e201ed97569, type: 2}
+  _trimMaterial: {fileID: 2100000, guid: 1be4460568055274fa1fd51d0a7b0aa8, type: 2}
+  _arenaRadii: {x: 5, y: 5, z: 6}
+  _levels: {x: 0.3, y: 0.9, z: 1.5}
+  _stageSpacing: 16
+  _bridgeHalfWidth: 2.1
+  _gatePosition: {x: -5.2, y: 0}
+  _coverOffsets:
+  - {x: -1, y: -3}
+  - {x: -1, y: 2.8}
+  - {x: 3, y: 4}

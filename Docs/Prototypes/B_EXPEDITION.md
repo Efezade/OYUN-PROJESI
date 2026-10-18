@@ -1,5 +1,20 @@
 # B · Büyüyen Sefer — oynanabilir prototip
 
+## Güncel — Hibrit savaş atölyesi v8 (18 Ekim 2026)
+
+Efe hibrit üretimi onayladı: tekil zemin + bağımsız çok hücreli yapılar. Zeynep'in MODELLER/Savas-Karo-Atolyesi_Paylasim_2026-10-18.zip paketi incelendi; 85 BattleMapPack/BattleTilePack dosyası GUID çakışması olmadan, kaynak baytları korunarak alındı. ProjectSettings/Packages, atölye Editor otomatik açılışları ve başka kişinin companion notları aktarılmadı. Kaynak 41 karolu sahne ve Blender dosyaları korunur. Aktarım SHA-256 listesi Tools/SavasPrototipleri/HIBRIT_AKTARIM_KAYDI.json.
+
+Ayrı HybridBattle.unity + HybridBattle.asset + HybridBattleLayout.asset. Kaynak 2 m uçtan uca, 0,30 m taban korunur. 91 + 91 + 127 = 309 tekil zemin; 0,30 / 0,90 / 1,50 m üç avlu; iki bağımsız geçici köprü, gerçek LOD kapı ve geçici taş siperler. Köprüler 4,20 m yürünebilir genişlik; altı yürünmez. Yükseklik, geçilebilirlik ve görüş aynı harita modelini kullanır. Kapı ayakları engel; kemer ortası açık. Eğik kamera ve kameraya göre WASD hareketi yalnız hibrit sahnede.
+
+Yeni Sefer mevcut iki silah / altı seçim / üç görev / boss akışını kullanır. Haritayı Gez düşmansız, ödülsüz ve kayıtsız dolaşım sağlar. checkpoint-hybrid-v8.json ayrıdır; eski checkpoint-v5 ve USTALIK_BASLAT.cmd korunur. Yeni HIBRIT_BASLAT.cmd, Builds/HybridBattleV8/KamHybrid.exe açar. Ana xd.unity entegrasyonu yapılmadı. FullSetup asset zincirine bağlı; EnsureScene var olan düzeni ezmez. Yerleşim SO'su ile görsel düzen birlikte tutulmalı; keyfi sahne model taşıması otomatik navigasyon üretmez.
+
+Kontroller: 405 eski + 36 yeni = 441 işlev kontrolü; iki silahla üç görev/boss, mabet geçişi ve kapı-köprü-teras gidiş/dönüş geçti. Otomatik savaş sürücüsü yüksek can kullanır, normal zorluk/keyif kabulü değildir. Sahne denetimi 1.257 kontrol, 271 gerçek collider zemin örneği: hareket yüksekliği ile görünür yüzey eşleşir, eksik script/materyal yok, kapıda 3 LOD, tekrar kurulum sahneyi değiştirmez. Kanıt: OYUN/Logs/hybrid-validation.json, hybrid-scene-validation.json.
+
+Sonraki insan denemesi: geçiş genişliği, kapı okunurluğu, kamera/WASD ve yüksek terasta boss. Efe bossu genel olarak onayladı ama oyunun kolay olduğunu belirtti; bu tur hasar/can dengesi yükseltilmedi. Modelcinin sonraki işi, onaylanan geçici köprü ölçülerini ve siperleri finalleştirmek: Tools/SavasPrototipleri/MODELCI_HIBRIT_V008.txt. Kule/varyant seri üretimi henüz gerekmiyor.
+
+
+Windows build tamamlandı: Logs/hybrid-final-build.log. Son player görüntüleri: hybrid-gate-final.png, hybrid-bridge-final.png, hybrid-terrace-final.png, hybrid-boss-final.png; dördü incelendi, günlüklerde CAPTURE_OK ve exception/LogError/LogWarning yok. Gezi yakalamaları normal hareketle köprüye 99, son teras merkezine 296 simülasyon adımında ulaştı; boss görseli yüksek canlı açık QA fixture kullanır. Oyuncu kayıtları yazılmadı.
+
 ## Güncel — Üç aşamalı boss v7
 
 Efe, aşamalı ve özel saldırılı bir boss; epik ama geçici görünüm; muhafız çağırma aşaması istedi. MasteryJourney üçüncü normal dalgası artık boss içermez; normal düşmanlar temizlenip güç seçimleri alındıktan sonra Kül Yeminli Muhafız ayrı giriş yapar. Geçici özgün görünüm: koyu zırh/kırık taç/iri kılıç/kor çekirdek; prefab `Assets/Data/Prototypes/Warden/AshWarden.prefab`. Final model veya final rig animasyonu değildir.

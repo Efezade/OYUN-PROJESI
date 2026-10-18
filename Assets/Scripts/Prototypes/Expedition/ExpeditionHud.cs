@@ -22,6 +22,7 @@ namespace TacticalRPG.Prototypes.Expedition
         [SerializeField] private Text _resultLabel;
         [SerializeField] private Text _campLabel;
         [SerializeField] private Text _saveLabel;
+        [SerializeField] private Button _explore;
         [SerializeField] private Button _newRun;
         [SerializeField] private Button _load;
         [SerializeField] private Button _quit;
@@ -44,6 +45,7 @@ namespace TacticalRPG.Prototypes.Expedition
         public void Bind(ExpeditionController controller,ExpeditionConfig config)
         {
             _controller=controller;_config=config;
+            if(_explore!=null)_explore.onClick.AddListener(controller.Explore);
             _pullLabel=_pull.GetComponentInChildren<Text>();_burstLabel=_burst.GetComponentInChildren<Text>();
             _newRun.onClick.AddListener(controller.NewRun);_load.onClick.AddListener(controller.Load);_quit.onClick.AddListener(controller.Quit);
             _resume.onClick.AddListener(controller.Resume);

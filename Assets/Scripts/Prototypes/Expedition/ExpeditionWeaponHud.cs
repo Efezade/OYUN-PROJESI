@@ -20,6 +20,7 @@ namespace TacticalRPG.Prototypes.Expedition
             if(s.Phase==ExpeditionPhase.Fighting&&s.IsMastery)_objective.text+=s.Stage==0?"\nSıçrayan: iniş halkasından çık":s.Stage==1?"\nHiddetli: yorulunca saldır":"\nYansıtıcı: asıl düşmanı avla";
             else if(s.Phase==ExpeditionPhase.Fighting)_objective.text+=s.Stage==0?"\nAvcı: atış çizgisinden çık":"\nKuşatmacı: halkayı terk et";
             if(s.WardenVisible)_objective.text="SON KARŞILAŞMA\nAŞAMA "+s.WardenStage+" / 3\n"+s.WardenAddCountForView+" bağlı muhafız\nÇekirdek rengini izle";
+            if(s.Exploring)_objective.text="SERBEST GEZİ\nKapı → Avlu → Köprü\n→ Yüksek teras\nSavaş ve kayıt yok";
             _ground.text=s.Map.Description(s.Kam.Position);
             if(s.Map.Ground(s.Kam.Position)==GroundKind.Water)_ground.text="SU · düşman nişancısının elektriği +2 hasar verir";
             if(s.Map.Ground(s.Kam.Position)==GroundKind.High)_ground.text="YÜKSELTİ · uzak saldırılar +1,4 menzil kazanır; yakın hilal değişmez";

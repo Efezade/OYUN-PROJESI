@@ -71,6 +71,7 @@ namespace TacticalRPG.Prototypes.Expedition
         public IReadOnlyList<int> Offers=>_offers;
         public IReadOnlyList<int> Levels=>_levels;
         public LabUnit Kam=>_units[0];
+        public bool Exploring {get;private set;}
         public int Seed {get;private set;}
         public int Stage {get;private set;}
         public int Wave=>_wave;
@@ -88,20 +89,27 @@ namespace TacticalRPG.Prototypes.Expedition
         public bool MovingAllowed=>!Paused&&(Phase==ExpeditionPhase.Fighting||Phase==ExpeditionPhase.Travel);
         public int NextThreshold=>_picks<_config.Thresholds.Length?_config.Thresholds[_picks]:0;
         public string Hint {get;private set;}="Yeni sefer başlat veya mabet kaydından devam et.";
-        public string StageName=>Stage switch {0=>"KIRIK GEÇİT",1=>"SULARIN HAFIZASI",_=>"YÜKSEK MABET"};
+        public string StageName=>_config.HybridLayout!=null?_config.HybridLayout.StageName(Stage):Stage switch {0=>"KIRIK GEÇİT",1=>"SULARIN HAFIZASI",_=>"YÜKSEK MABET"};
         public int Modifier=>Math.Abs((Seed/7+Stage*5)%3);
         public string ModifierName=>Modifier switch {0=>"Akın: fazladan yakın dövüşçü",1=>"Avcılar: daha çok elektrikli nişancı",_=>"Zırhlılar: daha dayanıklı, daha yavaş düşmanlar"};
         public int LivingEnemies {get{int n=0;foreach(var u in _units)if(u.Alive&&!u.Ally)n++;return n;}}
         public ExpeditionSimulation(ExpeditionConfig config){_config=config;Map=new ExpeditionMap(config);}
         public void Start(int seed)
         {
-            Seed=Math.Max(1,seed);Stage=0;XP=_picks=Chains=Deaths=0;Elapsed=0;Array.Clear(_levels,0,_levels.Length);_credited.Clear();_offerState=(uint)Seed;
+            Exploring=false;Seed=Math.Max(1,seed);Stage=0;XP=_picks=Chains=Deaths=0;Elapsed=0;Array.Clear(_levels,0,_levels.Length);_credited.Clear();_offerState=(uint)Seed;
             ResetJourney();
             BeginStage();
             if(IsJourney){Phase=ExpeditionPhase.WeaponChoice;int first=NextRandom(2);_offers[0]=first;_offers[1]=1-first;_offers[2]=-1;Changed?.Invoke();}
         }
+        public void StartExploration()
+        {
+            Start(12345);if(Phase==ExpeditionPhase.WeaponChoice)Choose(0);
+            _pending.Clear();_units.RemoveAll(u=>!u.Ally);Exploring=true;Phase=ExpeditionPhase.Travel;
+            Hint="SERBEST GEZİ · Kapı → avlu → köprü → yüksek teras. Kayıt ve ödül oluşturmaz.";Changed?.Invoke();
+        }
         private void BeginStage()
         {
+            Exploring=false;
             _units.Clear();_pending.Clear();_waypoints.Clear();_routeTimers.Clear();_focus=-1;
             ResetTactics();
             ResetJourneyCombat();
@@ -247,6 +255,7 @@ namespace TacticalRPG.Prototypes.Expedition
             if(Phase==ExpeditionPhase.Travel)
             {
                 for(int i=1;i<3;i++)if(_units[i].Alive)Navigate(_units[i],Kam.Position+new Vector2(-i,.5f*i),_config.MoveSpeed*dt,dt);
+                if(Exploring){Stage=Map.Region(Kam.Position);return;}
                 if(Kam.Position.x>Map.Center(Stage+1).x-6){Stage++;BeginStage();}
                 return;
             }
@@ -333,7 +342,7 @@ namespace TacticalRPG.Prototypes.Expedition
             var delta=direction.normalized*Mathf.Min(distance,direction.magnitude);
             var candidate=u.Position+delta;
             // Closed encounter perimeter; an unfinished fight cannot be bypassed into the next room.
-            float right=Phase==ExpeditionPhase.Travel?Map.Center(Mathf.Min(2,Stage+1)).x+10:Map.Center(Stage).x+10;
+            float right=Exploring?float.PositiveInfinity:Phase==ExpeditionPhase.Travel?Map.Center(Mathf.Min(2,Stage+1)).x+10:Map.EncounterEdge(Stage);
             if(candidate.x>right)return;
             if(Map.CanStep(u.Position,candidate)){u.Position=candidate;return;}
             candidate=u.Position+new Vector2(delta.x,0);if(Map.CanStep(u.Position,candidate)){u.Position=candidate;return;}

@@ -5,6 +5,8 @@ namespace TacticalRPG.Prototypes.Expedition
     [CreateAssetMenu(menuName = "TacticalRPG/Prototypes/Expedition")]
     public sealed class ExpeditionConfig : ScriptableObject
     {
+        [SerializeField] private HybridBattleLayout _hybridLayout;
+        public HybridBattleLayout HybridLayout=>_hybridLayout;
         [SerializeField] private float _tileRadius = .8f;
         [SerializeField] private float _moveSpeed = 4.2f;
         [SerializeField] private float _enemySpeed = 1.8f;

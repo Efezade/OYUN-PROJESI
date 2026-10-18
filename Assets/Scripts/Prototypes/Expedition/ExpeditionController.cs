@@ -27,7 +27,7 @@ namespace TacticalRPG.Prototypes.Expedition
         public bool Aiming=>_aiming;
         public bool CanLoad=>_saved!=null;
         public string SaveStatus {get;private set;}="Mabet kaydı bekleniyor.";
-        public string SavePath=>Path.Combine(Application.persistentDataPath,"KamExpedition",_config.MasteryJourney?"checkpoint-v5.json":_config.WeaponJourney?"checkpoint-v3.json":"checkpoint-v1.json");
+        public string SavePath=>Path.Combine(Application.persistentDataPath,"KamExpedition",_config.HybridLayout!=null?"checkpoint-hybrid-v8.json":_config.MasteryJourney?"checkpoint-v5.json":_config.WeaponJourney?"checkpoint-v3.json":"checkpoint-v1.json");
         private void Start()
         {
             _simulation=new ExpeditionSimulation(_config);_simulation.Changed+=Changed;_hud.Bind(this,_config);
@@ -55,6 +55,7 @@ namespace TacticalRPG.Prototypes.Expedition
             }
         }
         private void StartRun(int seed){_savedStage=-1;_aiming=false;_simulation.Start(seed);_view.Bind(_simulation,_config);_hud.ShowGame();}
+        public void Explore(){_savedStage=-1;_aiming=false;_simulation.StartExploration();_view.Bind(_simulation,_config);_hud.ShowGame();}
         public void NewRun(){StartRun(UnityEngine.Random.Range(1,999999));}
         public void SameSeed(){StartRun(_simulation.Seed);}
         public void Load(){if(_saved==null)return;_savedStage=-1;_aiming=false;if(_simulation.Load(_saved)){_view.Bind(_simulation,_config);_hud.ShowGame();}}
@@ -89,6 +90,11 @@ namespace TacticalRPG.Prototypes.Expedition
             var k=Keyboard.current;var m=Mouse.current;
             if(k==null)return;
             _move=new Vector2((k.dKey.isPressed||k.rightArrowKey.isPressed?1:0)-(k.aKey.isPressed||k.leftArrowKey.isPressed?1:0),(k.wKey.isPressed||k.upArrowKey.isPressed?1:0)-(k.sKey.isPressed||k.downArrowKey.isPressed?1:0));
+            if(_config.HybridLayout!=null)
+            {
+                var right=_view.Camera.transform.right;var forward=_view.Camera.transform.forward;
+                _move=new Vector2(right.x,right.z).normalized*_move.x+new Vector2(forward.x,forward.z).normalized*_move.y;
+            }
             if(_move.sqrMagnitude>.01f)_lastDirection=_move.normalized;
             if(k.escapeKey.wasPressedThisFrame){if(_aiming)_aiming=false;else Pause();}
             if(_simulation.Phase==ExpeditionPhase.Choosing||_simulation.Phase==ExpeditionPhase.WeaponChoice){if(k.digit1Key.wasPressedThisFrame)Choose(0);else if(k.digit2Key.wasPressedThisFrame)Choose(1);else if(k.digit3Key.wasPressedThisFrame)Choose(2);return;}
@@ -165,6 +171,16 @@ namespace TacticalRPG.Prototypes.Expedition
                     _simulation.Cast(LabSkill.Burst,_simulation.Kam.Position);
                 }
                 if(i%10==0){_view.Refresh();_hud.Refresh();yield return null;}
+            }
+            if(_config.HybridLayout!=null&&Array.IndexOf(Environment.GetCommandLineArgs(),"--hybrid-tour")>=0)
+            {
+                Explore();var args=Environment.GetCommandLineArgs();
+                Vector2 tourTarget=Array.IndexOf(args,"--hybrid-terrace")>=0?_simulation.Map.Center(2):Array.IndexOf(args,"--hybrid-bridge")>=0?new Vector2((_config.HybridLayout.BridgeStart(0)+_config.HybridLayout.BridgeEnd(0))*.5f,0):_simulation.Map.Entrance(0);
+                int steps=0;
+                while(Vector2.Distance(_simulation.Kam.Position,tourTarget)>.2f&&steps++<6000)
+                {_simulation.Tick(.05f,_simulation.Map.NextStep(_simulation.Kam.Position,tourTarget)-_simulation.Kam.Position);if(steps%8==0){_view.Refresh();_hud.Refresh();yield return null;}}
+                if(Vector2.Distance(_simulation.Kam.Position,tourTarget)>.25f)Debug.LogError("HYBRID_TOUR_TARGET_NOT_REACHED");
+                else Debug.Log("HYBRID_TOUR_REACHED "+tourTarget+" steps="+steps);
             }
             if(dynamicCapture&&!dynamicReady)Debug.LogError("DYNAMIC_CAPTURE_TARGET_NOT_REACHED");
             _view.Refresh();_hud.Refresh();yield return new WaitForSecondsRealtime(dynamicCapture?1.1f:.4f);

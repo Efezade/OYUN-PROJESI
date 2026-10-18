@@ -109,8 +109,8 @@ namespace TacticalRPG.Prototypes.Expedition
                 bool active=i<_simulation.Pending.Count;_warnings[i].SetActive(active);
                 if(active){var pending=_simulation.Pending[i];_warnings[i].transform.position=Point(pending.Unit.Position,.05f);float size=.8f+.25f*Mathf.Sin(pending.Remaining*8);_warnings[i].transform.localScale=new Vector3(size,.015f,size);}
             }
-            bool travel=_simulation.Phase==ExpeditionPhase.Travel;
-            if(_gates!=null)for(int i=0;i<_gates.Length;i++)_gates[i].SetActive(i>=_simulation.Stage&&!(i==_simulation.Stage&&travel));
+            bool travel=_simulation.Phase==ExpeditionPhase.Travel&&!_simulation.Exploring;
+            if(_gates!=null)for(int i=0;i<_gates.Length;i++)_gates[i].SetActive(!_simulation.Exploring&&i>=_simulation.Stage&&!(i==_simulation.Stage&&travel));
             _exitMarker.gameObject.SetActive(travel);_route.gameObject.SetActive(travel);
             if(travel){var destination=_simulation.Map.Center(_simulation.Stage+1);_exitMarker.position=Point(destination,1.4f);_route.SetPosition(0,center+Vector3.up*.12f);_route.SetPosition(1,Point(destination,.12f));}
             float dt=_simulation.Paused||_simulation.Phase==ExpeditionPhase.Choosing?0:Time.deltaTime;
