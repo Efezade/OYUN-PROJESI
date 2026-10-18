@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22ef08e71e9dc1741a6a318f38e806be, type: 3}
+  m_Name: CombatLab
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Prototypes.CombatLab.CombatLabConfig
+  _arenaRadius: 5
+  _tileRadius: 0.8
+  _kamHealth: 32
+  _guardHealth: 28
+  _archerHealth: 20
+  _enemyHealth: 12
+  _bossHealth: 55
+  _mana: 12
+  _pullCost: 3
+  _burstCost: 4
+  _chainDamage: 4
+  _chainRadius: 2.1
+  _pullRadius: 2.8
+  _burstRadius: 3.3
+  _burstDamage: 5
+  _moveHexes: 3
+  _enemyStepSeconds: 0.28
+  _manaPerRound: 3
+  _moveSpeed: 3.6
+  _enemySpeed: 1.65
+  _allyAttackSeconds: 1.35
+  _enemyAttackSeconds: 2.4
+  _enemyWindup: 0.8
+  _manaPerSecond: 0.65
+  _pullCooldown: 5
+  _burstCooldown: 5
+  _groundA: {r: 0.27, g: 0.34, b: 0.35, a: 1}
+  _groundB: {r: 0.31, g: 0.39, b: 0.4, a: 1}
+  _kamColor: {r: 0.32, g: 0.85, b: 1, a: 1}
+  _guardColor: {r: 0.65, g: 0.81, b: 0.37, a: 1}
+  _archerColor: {r: 1, g: 0.78, b: 0.35, a: 1}
+  _enemyColor: {r: 0.95, g: 0.36, b: 0.35, a: 1}
+  _panelColor: {r: 0.045, g: 0.075, b: 0.1, a: 0.96}
+  _textColor: {r: 0.91, g: 0.95, b: 0.95, a: 1}
+  _accentColor: {r: 0.35, g: 0.87, b: 0.83, a: 1}

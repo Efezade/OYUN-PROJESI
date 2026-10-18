@@ -66,6 +66,7 @@ namespace TacticalRPG.Editor
                                      // uretiminden ONCE — onizleme haritasi da bolgeli ciksin)
                 SetupBiomeWorld();   // authored region art + animated, impassable Bayterek quest roots
                 SetupPresentation();
+                CombatLabSetup.EnsureAssets(); // isolated A/B prototype data; no campaign scene changes
                 // EN SON: haritayi editorde uret ki Play'e basmadan da yeni harita gorunsun.
                 // (Store'dan SONRA olmali — magaza karosunun modeli o adimda kesinlesiyor.)
                 GenerateChapterMapInEditor();
