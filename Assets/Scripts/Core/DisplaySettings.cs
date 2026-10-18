@@ -40,7 +40,7 @@ namespace TacticalRPG.Core
         [SerializeField, Range(0.5f, 1.5f)] private float _defaultBrightness = 1f;
         [SerializeField] private bool _defaultFullscreen = true;
         [SerializeField] private bool _defaultVSync      = true;
-        [SerializeField] private bool _defaultMiniature  = true;
+        [SerializeField] private bool _defaultMiniature  = false;
 
         public float Brightness { get; private set; }
         public int   QualityLevel  => QualitySettings.GetQualityLevel();
@@ -66,7 +66,15 @@ namespace TacticalRPG.Core
             Screen.fullScreen = IsFullscreen;
             QualitySettings.vSyncCount = VSyncOn ? 1 : 0;
             if (_miniature != null) _miniature.SetUserEnabled(MiniatureOn);
+#if UNITY_EDITOR
+            if (!Application.isBatchMode) Invoke(nameof(LogEditorResolution), 1f);
+#endif
         }
+
+#if UNITY_EDITOR
+        private void LogEditorResolution()
+            => Debug.Log($"[Goruntu] Play GameView {Screen.width}x{Screen.height}");
+#endif
 
         public void SetBrightness(float v)
         {

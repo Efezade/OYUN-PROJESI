@@ -1,0 +1,22 @@
+Play ready. Gfx=NVIDIA GeForce RTX 3050 Ti Laptop GPU; API=Direct3D11; cells=849; start=Hex(7,19); miniature=False
+Move 1 started toward Hex(7,18); locked=False
+Move 1 finished at Hex(7,18)
+Move 2 started toward Hex(6,18); locked=False
+Move 2 finished at Hex(6,18)
+Move 3 started toward Hex(6,17); locked=False
+Move 3 finished at Hex(6,17)
+Move 4 started toward Hex(5,18); locked=False
+Move 4 finished at Hex(5,18)
+Move 5 started toward Hex(4,19); locked=False
+Move 5 finished at Hex(4,19)
+Move 6 started toward Hex(4,20); locked=False
+Move 6 finished at Hex(4,20)
+Move 7 started toward Hex(5,20); locked=False
+Move 7 finished at Hex(5,20)
+Move 8 started toward Hex(5,19); locked=False
+Move 8 finished at Hex(5,19)
+Move 9 started toward Hex(5,18); locked=False
+Move 9 finished at Hex(5,18)
+Move 10 started toward Hex(4,18); locked=False
+Move 10 finished at Hex(4,18)
+Completed 10 moves; captured final frame; errors=0

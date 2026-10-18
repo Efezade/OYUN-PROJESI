@@ -282,6 +282,7 @@ namespace TacticalRPG.Core
 
         private void StartHunterMotion()
         {
+            if (!isActiveAndEnabled || !gameObject.activeInHierarchy) return;
             if (_hunterMotion == null && _hunterGo != null) _hunterMotion = StartCoroutine(HunterMotion());
         }
 

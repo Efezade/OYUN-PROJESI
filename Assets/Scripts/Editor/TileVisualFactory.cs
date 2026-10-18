@@ -255,9 +255,10 @@ namespace TacticalRPG.Editor
         private static bool WriteSurfaceTexture(Surface s, bool force)
         {
             string path = TexPath(s);
-            if (!force && AssetDatabase.LoadAssetAtPath<Texture2D>(path) != null) return false;
+            var existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (!force && existing != null && existing.width >= 512 && existing.height >= 512) return false;
 
-            const int N = 128;
+            const int N = 512;
             var tex = new Texture2D(N, N, TextureFormat.RGB24, false);
             int seed = (int)s * 7717 + 13;
 
@@ -281,8 +282,8 @@ namespace TacticalRPG.Editor
             imp.wrapMode           = TextureWrapMode.Repeat;
             imp.filterMode         = FilterMode.Bilinear;
             imp.mipmapEnabled      = true;
-            imp.maxTextureSize     = 256;
-            imp.textureCompression = TextureImporterCompression.CompressedLQ;
+            imp.maxTextureSize     = 512;
+            imp.textureCompression = TextureImporterCompression.CompressedHQ;
             imp.SaveAndReimport();
         }
 

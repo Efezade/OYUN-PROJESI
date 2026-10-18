@@ -78,6 +78,14 @@ namespace TacticalRPG.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
+            if (Application.isBatchMode)
+            {
+                Debug.Log("[TacticalRPG] TAM KURULUM batch modunda tamamlandi.");
+                return;
+            }
+
+            GameViewResolutionTool.Configure();
+
             EditorUtility.DisplayDialog(
                 "TAM KURULUM Tamamlandi!",
                 "Tum oyun TEK TIKLA kuruldu:\n\n" +

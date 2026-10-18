@@ -67,7 +67,7 @@ Shader "Hidden/TacticalRPG/MiniatureTiltShift"
         {
             UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
             float2 uv = input.texcoord;
-            half4 sharp = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_PointClamp, uv);
+            half4 sharp = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_LinearClamp, uv);
             half4 blur  = SAMPLE_TEXTURE2D_X(_MiniatureBlurTex, sampler_LinearClamp, uv);
 
             float d       = MiniEyeDepth(SampleSceneDepth(uv)) - _MiniFocus.x; // + uzak, - yakın
