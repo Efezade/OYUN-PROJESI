@@ -2,6 +2,34 @@
 
 18 Ekim 2026. Efe'nin seçtiği gerçek zamanlı B yönünün devamı. Bu küçük deney, büyük arena + savaş içinde büyüme + savaşlar arasında kombinasyon sürekliliğini birlikte sınar. Tam ilk harita veya Steam demosu değildir.
 
+## Güncel deney: İki Silah / Üç Görev (v3)
+
+Efe, önceki güçlerin yeterince farklı hissettirmediğini ve Q/E spamını bildirdi. İki ayrı başlangıç saldırısı ve görevler arasında korunan gelişim isteği üzerine **ayrı** sahne/derleme oluşturuldu. `Tools/SavasPrototipleri/IKI_SILAH_BASLAT.cmd`; Windows `Builds/WeaponJourney/KamWeaponJourney.exe`; Unity menüsü `TacticalRPG > Prototipler > B - Iki Silah Uc Gorev`; sahne `Assets/Scenes/Prototypes/WeaponJourney.unity`. Önceki B v2 kendi başlatıcısında korunuyor.
+
+Başta iki gerçek seçenek vardır; ikisi de sunulur, yalnız sıraları tohuma göre değişir. Dört silahlık rastgele havuz henüz uygulanmadı. Hilal 2,7 metre ön yayı otomatik biçer; Q imleç yönüne atılıp biçer, E üç isabetli temel saldırıyla dolan çevre bitirişidir. Mızrak 7,5 metre hattı otomatik deler ve en fazla dört mızrak bırakır; Q bunları oyuncunun **yeni konumuna** geri çağırır. Dönüş hattı görüş engeline uyar. Mızrağın E'si yakınları iter ve kısa kalkan verir. Q/E mana kullanmaz; E isabetlerle dolar. Boş mızrak geri çağırması reddedilir. Temel saldırının hedefi en yakın düşmandır; sol tık odağı değiştirebilir. Q ekran düğmesi hilalde son saldırı yönünü, klavyedeki Q imleci kullanır. SPACE kaçışı ayrı kalır.
+
+Üç bağlı görev alanı önceki prototipin coğrafyasını kullanır; ana harita görev seçme UI'sı henüz bağlanmadı. Her görevde üç dalga, son görevde boss vardır. Gelişim eşikleri 3/9/22/29/41/49: bu mevcut dalga sayılarında görev başına iki, toplam altı farklı seçim verir. XP ve seçimler ortak; öldürülen düşmanlardan doğrudan kazanılır, yerde öz/küre toplama yok. Tohumla teklifler değişir; tekrar kartı yok, Kırılma önkoşulu Üçüncü Darbe/Çifte Mızrak. İlk teklif her zaman bir yeni otomatik saldırı ve silah dönüşümü içerir.
+
+| Seçim | Gerçek uygulama |
+|---|---|
+| Üçüncü Darbe / Çifte Mızrak | Hilalin her üçüncü darbesi ileri yarık; mızrak iki kollu atış ve iki saplı mızrak. |
+| Dönen Bıçaklar | Oyuncu çevresinde iki temas bıçağı; otomatik yakın hasar. |
+| Çekim Alanı | Q sonunda 2,4 saniyelik çekim/yavaşlatma alanı. |
+| Bitirici Yankısı | E 0,6 saniye sonra oyuncunun yeni konumunda tekrar eder; ikinci yük harcamaz. |
+| Seken Disk | Yakın hedefe otomatik uzak destek atışı, uygun ikinci hedefe sekme. |
+| Kaçış İzi | SPACE sırasında geçilen hat hasar verir; kalıcı hasar zemini değildir. |
+| Kırılan Mühür | E kalkanı; hasarla kırılınca geri itme. |
+| Kırılma | Hilalin üçüncü darbe hattındaki isabetler veya geri çağrılan mızrak başlangıçları patlar. |
+| Karşı Hamle | E ayrıca kaçışı hazırlar ve geri iter. |
+
+Seçimler, silah, XP ve öldürülmüş düşman kayıtları görev geçişinde, mabette diske kayıt/yüklemede ve ölüm sonrası aynı görevi tekrar denemede korunur. Geçici vuruş gücü, yerdeki mızraklar ve aktif efektler yeni göreve/ölümden dönüşe taşınmaz. **Yeni Sefer** açıkça seçilirse kombinasyon sıfırlanır. Mabet kaydı yalnız ilk iki görev sonunda, `KamExpedition/checkpoint-v3.json` yoluna yazılır; v1/v2 kaydını okumaz veya ezmez. Savaş ortası diske kayıt henüz yoktur.
+
+Destek ekibi bu deneyde daha düşük temel hasarla destek olur; oyuncunun silah etkisini görünür kılmak içindir, dengelenmiş son değer değildir. Yeni efektler havuzdan çizilir; final silah mesh'i/saldırı animasyonu üretilmedi. Modelci çevre paketi ayrı iş olarak sürüyor.
+
+Doğrulama: `WeaponJourneyValidation` iki silahla üç görev, altı farklı güç, ön yay/delici hat, siper, boş geri çağırma, E yük tüketimi, otomatik ek yetenekler, silah dönüşümleri ve v3 kayıt/ölüm devamını kontrol eder. Rapor `Logs/weapon-journey-validation.json`. Akış sürücüsü yüksek canlı işlev testidir; normal zorluk/keyif onayı değildir. Eski 140 kontrol de çalıştırılır. Gerçek oyuncu görüntüleri için mevcut `--expedition-capture` ile `--weapon-menu`, `--weapon-spear`, `--expedition-choice` kullanılabilir. `--weapon-evolved` dört güçle son görevi açan **yalnız görsel test** örneğidir; oyuncu kaydını değiştirmez.
+
+Aşağıdaki bölümler önceki v1/v2 deneyinin kurallarıdır; v3 için yukarıdaki silah/gelişim kuralları geçerlidir.
+
 ## Açılış ve kontroller
 
 - Windows: proje kökündeki `Tools/SavasPrototipleri/B_SEFER_BASLAT.cmd` → **YENİ SEFER**.

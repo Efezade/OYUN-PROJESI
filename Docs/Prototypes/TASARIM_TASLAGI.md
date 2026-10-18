@@ -138,3 +138,36 @@ Savaş arenasında genel sis önerilmiyor; düşman hazırlığı ve kaçış al
 5. Steamworks/mağaza durumu. Tam ilk harita hedefi ancak gerçek üretim hızına göre sabitlenecek.
 
 **Çalışma adı önerisi:** KAM: Son Yankı. Efe henüz onaylamadı; proje/ürün adı değiştirilmedi, isim uygunluğu araştırılmadı.
+
+## 18 Ekim — Güncel oynanış geri bildirimi ve savaş kimliği önerisi
+
+**Sonraki kullanıcı onayı ve uygulama kapsamı:** Efe iki başlangıç saldırısını ve görevler arasında korunan gelişimi, üç görevlik oynanabilir prototip olarak uygulamamızı istedi. Hilal/Mızrak v3 uygulamasının gerçek kapsamı `B_EXPEDITION.md` başındaki güncel bölümde. Aşağıdaki dört başlangıçlı havuz ve bazı slot önerileri taslak olarak kaldı; iki silah seçimi, dokuz tek alımlık geliştirmeden altı seçim ve ayrı v3 kayıt uygulandı. Ana harita görev seçme ekranı bağlanmadı.
+
+**Kullanıcı geri bildirimi:** skill sayısı az; aynı güçleri yükseltmek yeterince farklı hissettirmiyor; Q/E spam baskın. Yakın/uzak oynayış ayrımı ve geliştirdikçe yeni şeyler kazanma isteği var. Efe ayrıca başlangıç yönünü rastgele gelen seçeneklerden seçmeyi önerdi. Önceki işlev testleri bu keyif sorununu doğrulamış veya çözmüş sayılmaz.
+
+**Kodda görülen nedenler:** Kam sabit menzilli aynı atışla başlıyor. Yedi gücün çoğu aynı çekim/patlama/işaret döngüsüne ekleniyor. MakeOffers mevcut birinci seviyeli gücü ilk karta koymayı tercih ediyor. Akış mana, Mühür Kalkanı büyü kullanımı üzerinden mevcut döngüyü destekliyor. v2'de davranış değişiklikleri var, fakat farklı bir temel saldırı veya seçilebilir aktif yetenek yok.
+
+### Öneri v1 — henüz uygulanmadı ve kesin karar değil
+
+Başlangıçta dört adaydan üç rastgele seçenek; en az bir yakın ve bir uzak seçenek. İki silah ailesinin iki farklı başlangıç davranışı, dört ayrı final model gerektirmeden denenebilir:
+
+| Başlangıç | Temel saldırı ve konum kararı | Örnek dönüşüm |
+|---|---|---|
+| Hilal darbesi | Yakın ön yay; düşmanları aynı yöne toplamak | Üçüncü vuruş ileri yarık açar; yaklaşma/çıkma ritmi |
+| Dönen bıçaklar | Yakın çevrede belirli yarıçapta dönen bıçaklar; temas mesafesini korumak | Kaçışta bıçakları geride bırakıp dönüşünde toplamak |
+| Delici mızrak | Uzaktan doğrusal atış; düşmanları hizalamak | Saplanan mızrakları geri çağırıp dönüş hattıyla vurmak |
+| Sekme diski | Uzakta ilk hedef ve komşu hedefler arasında sekme; hedef kümesi seçmek | Son sekmede kısa ömürlü alan bırakmak |
+
+Bunlar çalışma adlarıdır. Ana saldırı otomatik kalabilir; oyuncunun yön/odak kontrolü ve konum değiştirmesi sonucu değiştirmeli. Başlangıç menüsünde kısa hareketli önizleme ve tek cümle kullanım amacı; kart yalnız isim/istatistik göstermemeli.
+
+**Gelişim katmanları:** (1) yeni yetenek edinme, (2) mevcut saldırıyı davranışça dönüştürme, (3) iki edinilmiş yetenek arasında etkileşim. İlk deneyde bir ana saldırı + bir ek otomatik yetenek sınırı; Q silaha bağlı karar becerisi, E seçilebilir savunma/alan becerisi, SPACE kaçış. İlk koşuda bütün yuvaları zorunlu dolu başlatma; erken bir seçim yeni yetenek açsın. Bu kontrol düzeni test önerisidir.
+
+**Q/E sorunu:** herkesin aynı çekim/patlamayı taşıması bırakılmalı. Örneğin yakın stil Q ile yaklaşır, vuruşlarla dolan göstergeden bitirici çıkarır; uzak stil mızrak yerleştirip Q ile geri çağırır, kaçış için diğer yeteneğini saklar. Tek seferde bütün yetenekleri bu kurala çevirmek yerine önce iki örneği sınayalım. Temel saldırı kendi başına tatmin edici olmalı; düşük mana vererek oyunu beklemeye çevirmek çözüm değil.
+
+**Teklif kuralları:** ilk büyüme yeni davranış getirsin; aynı üç kartı tekrarlama; sahip olunan güçle çalışan en az bir teklif; bir yeni yetenek veya uyumlu yön değiştirme; kullanılabilir savunma/yardım seçeneği. Önkoşulu eksik birleşim kartı verme. Slot doluysa değiştirmenin neyi sileceğini göster. Aynı kartı tekrar almak temel ilerleme yöntemi olmasın. Seçimler savaşlar arasında korunur; yeni seferde teklifler yeniden değişir. Mabet değiştirmesi eski gücü ücretsiz kopyalayarak biriktirmesin; kayıp/bedel ayrıntısı açık.
+
+**RNG sınırı:** rastgele tek silahı zorla verme; başta hem canı hem hasarı ayrıca zar atarak düşürme. Yeniden başlayıp iyi başlangıç aramayı baskın çözüme dönüştürme. İlk prototipte tekrar atma butonu eklemeden, bütün başlangıçların yaşayabildiğini ve seçeneklerin gerçek fark yarattığını gözle. Seçim sayısı ve garanti dağılımı hipotezdir.
+
+**Üretim sırası:** önce iki zıt temel saldırıyı mevcut arenada deneyelim; sonra dört başlangıç davranışı/üçlü kura ve altı davranış değiştiren kartı ekleyelim. Tam silah kataloğu, final rig veya yeni hikâye bu deneyin önkoşulu değil. Modelci mevcut beş çevre modülüyle devam edebilir; silahlar için yalnız ölçek/tutuş denemesi, final set siparişi yok.
+
+**Kabul ölçütü:** ilk seçimden sonraki 30 saniyede yeni saldırı veya davranış görünmeli; üçüncü seçimde başlangıçtan belirgin farklı oynanmalı; yakın/uzak seçimleri farklı güvenli mesafe ve hareket rotası üretmeli; başka kombinasyon ikinci sefer isteği yaratmalı. Bunlar tasarım hedefi, ölçülmüş sonuç değil. Ekip katkısının oyuncunun değişimini gizleyip gizlemediği ayrıca gözlenmeli.

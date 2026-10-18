@@ -4,7 +4,7 @@ using TacticalRPG.Prototypes.CombatLab;
 
 namespace TacticalRPG.Prototypes.Expedition
 {
-    public sealed class ExpeditionView : MonoBehaviour
+    public sealed partial class ExpeditionView : MonoBehaviour
     {
         [SerializeField] private Camera _camera;
         [SerializeField] private CombatLabActorView[] _actors;
@@ -42,6 +42,7 @@ namespace TacticalRPG.Prototypes.Expedition
         {
             if(_simulation!=null)_simulation.Effect-=Effect;
             _simulation=simulation;_config=config;_simulation.Effect+=Effect;_zoom=config.CameraSize;
+            PrepareWeaponVisuals();
             if(_effects.Count==0)for(int i=0;i<_poolSize;i++)
             {var f=new Fx{Pulse=Instantiate(_pulsePrefab,transform),Line=Instantiate(_linePrefab,transform),Text=Instantiate(_textPrefab,transform)};f.Pulse.SetActive(false);f.Line.gameObject.SetActive(false);f.Text.gameObject.SetActive(false);_effects.Add(f);}
             if(_warnings.Count==0)for(int i=0;i<24;i++){var go=Instantiate(_spawnPrefab,transform);go.SetActive(false);_warnings.Add(go);}
@@ -79,7 +80,7 @@ namespace TacticalRPG.Prototypes.Expedition
                 actor.gameObject.SetActive(u.Alive);actor.RefreshCaption(true,_simulation.DisplayName(u));
                 var tactic=_simulation.TacticOf(u);
                 if((tactic==EnemyTactic.Charger||tactic==EnemyTactic.Boss)&&!_chargeLines.ContainsKey(u.Id))
-                {var line=Instantiate(_linePrefab,transform);line.positionCount=2;line.startWidth=line.endWidth=_chargeLineWidth;line.startColor=line.endColor=_chargeColor;line.gameObject.SetActive(false);_chargeLines.Add(u.Id,line);}
+                {var line=Instantiate(_linePrefab,transform);line.positionCount=2;line.startWidth=line.endWidth=_chargeLineWidth;line.startColor=line.endColor=_chargeColor;if(_simulation.IsJourney)TintWeapon(line,_chargeColor);line.gameObject.SetActive(false);_chargeLines.Add(u.Id,line);}
                 if(tactic==EnemyTactic.Protector&&!_auras.ContainsKey(u.Id))
                 {var aura=Instantiate(_pulsePrefab,transform);var renderer=aura.GetComponent<Renderer>();if(renderer!=null){var block=new MaterialPropertyBlock();block.SetColor("_BaseColor",_protectionColor);renderer.SetPropertyBlock(block);}_auras.Add(u.Id,aura);}
             }
@@ -93,6 +94,7 @@ namespace TacticalRPG.Prototypes.Expedition
             _camera.transform.rotation=Quaternion.LookRotation(-_config.CameraOffset);
             _camera.orthographicSize=Mathf.Lerp(_camera.orthographicSize,_zoom,Time.unscaledDeltaTime*6);
             foreach(var pair in _views)pair.Value.Refresh(pair.Key==0,true);
+            RefreshWeaponVisuals();
             foreach(var pair in _chargeLines)
             {var u=_simulation.Find(pair.Key);bool active=u!=null&&_simulation.ChargeActive(u);pair.Value.gameObject.SetActive(active);if(active){pair.Value.SetPosition(0,Point(u.Position,.08f));pair.Value.SetPosition(1,Point(u.Aim,.08f));}}
             foreach(var pair in _auras)
@@ -124,6 +126,7 @@ namespace TacticalRPG.Prototypes.Expedition
             free.Line.gameObject.SetActive(e.Kind==0||e.Kind==2);free.Line.SetPosition(0,Point(e.From,.8f));free.Line.SetPosition(1,Point(e.To,.8f));
             var color=e.Kind==1||e.Kind==2?_chainColor:_hitColor;free.Line.startColor=free.Line.endColor=color;
             free.Text.gameObject.SetActive(e.Amount>0);free.Text.text=e.Amount.ToString();free.Text.color=color;
+            DrawWeaponEffect(free,e);
             if(_audio!=null&&Time.unscaledTime>_soundAt){_soundAt=Time.unscaledTime+.07f;var clip=e.Kind==1?_chain:_hit;if(clip!=null)_audio.PlayOneShot(clip,e.Kind==1?.22f:.1f);}
         }
         private void OnDestroy(){if(_simulation!=null)_simulation.Effect-=Effect;}

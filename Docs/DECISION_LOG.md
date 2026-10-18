@@ -1450,3 +1450,9 @@ Tarihsel gerekçeleri arşivde; burada sadece **hâlâ geçerli olan** hüküm v
 **KARAR:** Efe, zeminlerle yapıların ayrı modellenip Unity’de birleştirilmesini seçti; önceki zorunlu tam-karo teslimi güncellendi. B’de çeşitlilik geri bildirimine karşı atılış/koruma davranışları ve ikinci seviye güçlerin işlevsel ayrışması ayrı prototipte uygulandı.
 
 **NEDEN:** Aynı yapı farklı zeminlerde kullanılabilsin; savaşta kaçış yönü, hedef önceliği ve güç kombinasyonu kararları belirginleşsin. Nihai denge/hikâye kararı değildir. **COMMIT:** Bu kaydı ekleyen commit; ayrıntı B_EXPEDITION.md.
+
+## 2026-10-18 — İki silah ve görevler boyunca korunmuş gelişim
+
+**KARAR:** Efe'nin onayıyla ayrı WeaponJourney prototipi: yakın ön yay ve delici/geri çağrılabilir mızrak; göreve girince sıfırlanmayan silah, XP ve yeni yetenek seçimleri. Eski yedi güç/seviye mantığı v2'de korunur, v3 dokuz tek alımlık davranıştan altı seçim sunar. E bekleme süresi spamı yerine isabetlerle hazırlanır. Yeni görevde geçici efekt/yükler sıfırlanır, kombinasyon korunur.
+
+**NEDEN:** Kullanıcı aynı Q/E döngüsünün güçlenme hissettirmediğini söyledi; farklı mesafe ve hareket kararını, üç görevde biriken kombinasyonla sınamak istiyor. v3 JSON dosyası/versiyonu ayrıldı: eski seviyeler yeni yeteneklere yanlış yorumlanmaz, v2 kayıtları ezilmez. Yeni SO/sahne idempotent kuruluma bağlandı. **COMMIT:** Bu kaydı ekleyen commit. İşlev testi keyif/denge onayı değildir.

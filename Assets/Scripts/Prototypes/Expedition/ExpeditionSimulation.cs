@@ -5,7 +5,7 @@ using TacticalRPG.Prototypes.CombatLab;
 
 namespace TacticalRPG.Prototypes.Expedition
 {
-    public enum ExpeditionPhase { Ready, Fighting, Choosing, Camp, Travel, Won, Lost }
+    public enum ExpeditionPhase { Ready, Fighting, Choosing, Camp, Travel, Won, Lost, WeaponChoice }
     public enum ExpeditionPower { Arc, Conduction, Vortex, Echo, Siphon, Orbit, Ward }
     public static class ExpeditionPowers
     {
@@ -38,6 +38,8 @@ namespace TacticalRPG.Prototypes.Expedition
         public int[] credited;
         public uint offerState;
         public float elapsed;
+        public int weapon;
+        public int[] powers;
     }
     public sealed partial class ExpeditionSimulation
     {
@@ -94,20 +96,25 @@ namespace TacticalRPG.Prototypes.Expedition
         public void Start(int seed)
         {
             Seed=Math.Max(1,seed);Stage=0;XP=_picks=Chains=Deaths=0;Elapsed=0;Array.Clear(_levels,0,_levels.Length);_credited.Clear();_offerState=(uint)Seed;
+            ResetJourney();
             BeginStage();
+            if(IsJourney){Phase=ExpeditionPhase.WeaponChoice;int first=NextRandom(2);_offers[0]=first;_offers[1]=1-first;_offers[2]=-1;Changed?.Invoke();}
         }
         private void BeginStage()
         {
             _units.Clear();_pending.Clear();_waypoints.Clear();_routeTimers.Clear();_focus=-1;
             ResetTactics();
+            ResetJourneyCombat();
             _wave=0;_packClock=0;_orbitClock=1;_echoRemaining=0;_echoClock=_siphonClock=_shieldClock=_dashClock=0;
             Shield=PullCooldown=BurstCooldown=0;Mana=_config.Mana;Paused=false;
             var p=Map.Entrance(Stage);
             _units.Add(Unit(0,LabRole.Kam,p,_config.KamHealth,5,5.4f));
             _units.Add(Unit(1,LabRole.Guard,p+new Vector2(.8f,-1),_config.AllyHealth,7,1.8f));
             _units.Add(Unit(2,LabRole.Archer,p+new Vector2(-.6f,1),_config.AllyHealth,3,6));
+            if(IsJourney){Kam.Range=WeaponRange;Kam.Damage=WeaponDamage;_units[1].Damage=3;_units[2].Damage=2;}
             Phase=ExpeditionPhase.Fighting;QueuePack();
             Hint="Q ile topla ve işaretle, E ile zincirle. SPACE: kısa kaçış. Güçler alanlar arasında korunur.";Changed?.Invoke();
+            if(IsJourney)Hint="Görev "+(Stage+1)+" · "+WeaponName+". Otomatik saldır; Q silah becerisi, E vuruşlarla dolar.";
         }
         private static LabUnit Unit(int id,LabRole role,Vector2 p,int hp,int damage,float range)=>new LabUnit {Id=id,Role=role,Position=p,Health=hp,MaxHealth=hp,Damage=damage,Range=range,Cooldown=.7f};
         private void QueuePack()
@@ -139,11 +146,12 @@ namespace TacticalRPG.Prototypes.Expedition
         }
         public LabUnit Find(int id){foreach(var u in _units)if(u.Id==id)return u;return null;}
         public bool SetFocus(int id){var u=Find(id);if(!MovingAllowed||u==null||u.Ally||!u.Alive)return false;_focus=id;Hint="Ekip hedefi: "+DisplayName(u);Changed?.Invoke();return true;}
-        public float Range(LabUnit u)=>u.Range+(Map.Ground(u.Position)==GroundKind.High?_config.HighRange:0);
+        public float Range(LabUnit u)=>u.Range+(Map.Ground(u.Position)==GroundKind.High&&(!IsJourney||u.Role!=LabRole.Kam||Weapon==JourneyWeapon.Spear)?_config.HighRange:0);
         public bool CanHit(LabUnit a,LabUnit b)=>a.Alive&&b.Alive&&Vector2.Distance(a.Position,b.Position)<=Range(a)&&Map.HasLine(a.Position,b.Position);
         public void TogglePause(){if(Phase==ExpeditionPhase.Fighting||Phase==ExpeditionPhase.Travel){Paused=!Paused;Changed?.Invoke();}}
         public bool Cast(LabSkill skill,Vector2 target)
         {
+            if(IsJourney)return CastWeapon(skill,target);
             if(!MovingAllowed||Phase!=ExpeditionPhase.Fighting)return false;
             float cost=skill==LabSkill.Pull?3:4;
             if(Mana<cost||(skill==LabSkill.Pull?PullCooldown:BurstCooldown)>0)return false;
@@ -175,11 +183,13 @@ namespace TacticalRPG.Prototypes.Expedition
         {
             if(!MovingAllowed||_dashClock>0||direction.sqrMagnitude<.01f)return false;
             for(int i=0;i<18;i++)Move(Kam,direction,.13f);
+            if(IsJourney)JourneyDash(direction);
             if(_levels[5]>=2)OrbitPulse();
             _dashClock=3.2f;Effect?.Invoke(new LabFx(Kam.Position,Kam.Position,0,4));return true;
         }
         private void Strike(LabUnit source,LabUnit target)
         {
+            if(IsJourney&&source.Role==LabRole.Kam){WeaponStrike(target);return;}
             if(source.Role==LabRole.Archer)target.Mark=8;
             Hit(target,source.Damage,source.Position,source.Role!=LabRole.Archer);
             if(source.Role!=LabRole.Kam||_levels[0]==0)return;
@@ -194,7 +204,7 @@ namespace TacticalRPG.Prototypes.Expedition
         private void Hit(LabUnit target,int damage,Vector2 source,bool trigger)
         {
             if(!target.Alive)return;
-            if(target.Role==LabRole.Kam&&Shield>0){int absorb=Mathf.Min(Mathf.CeilToInt(Shield),damage);Shield=Mathf.Max(0,Shield-absorb);damage-=absorb;if(Shield<=0&&_levels[6]>=2)ShieldBreak();}
+            if(target.Role==LabRole.Kam&&Shield>0){int absorb=Mathf.Min(Mathf.CeilToInt(Shield),damage);Shield=Mathf.Max(0,Shield-absorb);damage-=absorb;if(Shield<=0&&(_levels[6]>=2||(IsJourney&&HasPower(6))))ShieldBreak();}
             if(!target.Ally&&IsProtected(target))damage=Mathf.Max(1,Mathf.CeilToInt(damage*_config.ProtectorDamageMultiplier));
             bool chain=trigger&&!target.Ally&&target.Mark>0;if(chain)target.Mark=0;
             int amount=Mathf.Min(damage,target.Health);target.Health-=amount;
@@ -225,6 +235,7 @@ namespace TacticalRPG.Prototypes.Expedition
             for(int i=_pending.Count-1;i>=0;i--){_pending[i].Remaining-=dt;if(_pending[i].Remaining<=0){_units.Add(_pending[i].Unit);_pending.RemoveAt(i);Changed?.Invoke();}}
             _packClock+=dt;
             TickVortex(dt);
+            if(IsJourney)TickJourney(dt);
             if(_wave<3&&((_packClock>=_config.PackInterval&&LivingEnemies<9)||(LivingEnemies==0&&_pending.Count==0&&_packClock>2)))QueuePack();
             _echoClock-=dt;if(_echoRemaining>0&&_echoClock<=0){_echoRemaining--;_echoClock=.6f;Burst();}
             _orbitClock-=dt;
@@ -262,7 +273,7 @@ namespace TacticalRPG.Prototypes.Expedition
                     if(Vector2.Distance(u.Position,goal)>stop||(engage&&!CanHit(u,target)))Navigate(u,goal,_config.MoveSpeed*.92f*dt,dt);
                 }
             }
-            if(target!=null&&u.Cooldown<=0&&CanHit(u,target)){Strike(u,target);u.Cooldown=_config.AttackSeconds;}
+            if(target!=null&&u.Cooldown<=0&&CanHit(u,target)){Strike(u,target);u.Cooldown=IsJourney&&u.Role==LabRole.Kam?_config.WeaponAttackSeconds:_config.AttackSeconds;}
         }
         private void EnemyTick(LabUnit u,float dt)
         {
@@ -319,6 +330,7 @@ namespace TacticalRPG.Prototypes.Expedition
         private int NextRandom(int max){_offerState^=_offerState<<13;_offerState^=_offerState>>17;_offerState^=_offerState<<5;return (int)(_offerState%(uint)max);}
         private void MakeOffers()
         {
+            if(IsJourney){MakeJourneyOffers();return;}
             var pool=new List<int>();for(int i=0;i<_levels.Length;i++)if(_levels[i]<2)pool.Add(i);
             // One continuation when available, plus distinct alternatives. No dead max-level offers.
             int continuation=-1;foreach(int p in pool)if(_levels[p]==1){continuation=p;break;}
@@ -326,6 +338,7 @@ namespace TacticalRPG.Prototypes.Expedition
         }
         public bool Choose(int index)
         {
+            if(IsJourney)return ChooseJourney(index);
             if(Phase!=ExpeditionPhase.Choosing||index<0||index>=3)return false;
             _levels[_offers[index]]++;_picks++;Phase=ExpeditionPhase.Fighting;Hint=ExpeditionPowers.Name(_offers[index])+" seçildi; sonraki alanlara taşınır.";CheckProgress();Changed?.Invoke();return true;
         }
@@ -338,11 +351,13 @@ namespace TacticalRPG.Prototypes.Expedition
         public ExpeditionSave Checkpoint()
         {
             if(Phase!=ExpeditionPhase.Camp)return null;
+            if(IsJourney)return JourneyCheckpoint();
             var credited=new int[_credited.Count];_credited.CopyTo(credited);
             return new ExpeditionSave{seed=Seed,nextStage=Stage+1,xp=XP,picks=_picks,levels=(int[])_levels.Clone(),credited=credited,offerState=_offerState,elapsed=Elapsed};
         }
         public bool Load(ExpeditionSave save)
         {
+            if(IsJourney)return LoadJourney(save);
             if(save==null||save.version!=1||save.seed<1||save.nextStage<1||save.nextStage>2||save.levels==null||save.levels.Length!=7||save.picks<0||save.picks>_config.Thresholds.Length||save.offerState==0||save.credited==null)return false;
             int total=0;foreach(int v in save.levels){if(v<0||v>2)return false;total+=v;}if(total!=save.picks||save.xp<0)return false;
             Seed=save.seed;Stage=save.nextStage;XP=save.xp;_picks=save.picks;_offerState=save.offerState;Elapsed=save.elapsed;Chains=Deaths=0;

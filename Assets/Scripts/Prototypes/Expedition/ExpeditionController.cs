@@ -27,7 +27,7 @@ namespace TacticalRPG.Prototypes.Expedition
         public bool Aiming=>_aiming;
         public bool CanLoad=>_saved!=null;
         public string SaveStatus {get;private set;}="Mabet kaydı bekleniyor.";
-        public string SavePath=>Path.Combine(Application.persistentDataPath,"KamExpedition","checkpoint-v1.json");
+        public string SavePath=>Path.Combine(Application.persistentDataPath,"KamExpedition",_config.WeaponJourney?"checkpoint-v3.json":"checkpoint-v1.json");
         private void Start()
         {
             _simulation=new ExpeditionSimulation(_config);_simulation.Changed+=Changed;_hud.Bind(this,_config);
@@ -65,7 +65,7 @@ namespace TacticalRPG.Prototypes.Expedition
         public void Menu(){if(_simulation.MovingAllowed)_simulation.TogglePause();_hud.ShowMenu();}
         public void Resume(){if(_simulation.Phase==ExpeditionPhase.Ready)return;_hud.ShowGame();if(_simulation.Paused)_simulation.TogglePause();}
         public void Quit(){Application.Quit();}
-        public void AimPull(){_aiming=!_aiming;_hud.Refresh();}
+        public void AimPull(){if(_simulation.IsJourney){_simulation.Cast(LabSkill.Pull,_simulation.Kam.Position+_simulation.Facing*4);return;}_aiming=!_aiming;_hud.Refresh();}
         public void Burst(){_aiming=false;_simulation.Cast(LabSkill.Burst,_simulation.Kam.Position);}
         public void Dash(){_simulation.Dash(_move.sqrMagnitude>.01f?_move:_lastDirection);}
         private void Changed()
@@ -91,7 +91,7 @@ namespace TacticalRPG.Prototypes.Expedition
             _move=new Vector2((k.dKey.isPressed||k.rightArrowKey.isPressed?1:0)-(k.aKey.isPressed||k.leftArrowKey.isPressed?1:0),(k.wKey.isPressed||k.upArrowKey.isPressed?1:0)-(k.sKey.isPressed||k.downArrowKey.isPressed?1:0));
             if(_move.sqrMagnitude>.01f)_lastDirection=_move.normalized;
             if(k.escapeKey.wasPressedThisFrame){if(_aiming)_aiming=false;else Pause();}
-            if(_simulation.Phase==ExpeditionPhase.Choosing){if(k.digit1Key.wasPressedThisFrame)Choose(0);else if(k.digit2Key.wasPressedThisFrame)Choose(1);else if(k.digit3Key.wasPressedThisFrame)Choose(2);return;}
+            if(_simulation.Phase==ExpeditionPhase.Choosing||_simulation.Phase==ExpeditionPhase.WeaponChoice){if(k.digit1Key.wasPressedThisFrame)Choose(0);else if(k.digit2Key.wasPressedThisFrame)Choose(1);else if(k.digit3Key.wasPressedThisFrame)Choose(2);return;}
             if(k.enterKey.wasPressedThisFrame&&_simulation.Phase==ExpeditionPhase.Camp)Continue();
             bool ui=EventSystem.current!=null&&EventSystem.current.IsPointerOverGameObject();
             _hasPointer=m!=null&&_view.Pointer(m.position.ReadValue(),out _pointer);
@@ -107,15 +107,38 @@ namespace TacticalRPG.Prototypes.Expedition
         }
         private IEnumerator Capture()
         {
+            if(_simulation.IsJourney)
+            {
+                var args=Environment.GetCommandLineArgs();bool spear=Array.IndexOf(args,"--weapon-spear")>=0;
+                if(Array.IndexOf(args,"--weapon-menu")<0){for(int n=0;n<2;n++)if(_simulation.Offers[n]==(spear?1:0)){_simulation.Choose(n);break;}}
+                if(Array.IndexOf(args,"--weapon-evolved")>=0)
+                {
+                    // Explicit visual fixture only: does not touch the player's checkpoint.
+                    _simulation.Load(new ExpeditionSave{version=3,seed=12345,nextStage=2,xp=39,picks=4,weapon=spear?1:0,powers=new[]{1,1,1,0,1,0,0,0,0},credited=Array.Empty<int>(),offerState=12345});
+                    _view.Bind(_simulation,_config);
+                }
+            }
             // Deterministic unattended visual check. Never writes a player checkpoint.
-            int limit=_captureChoice?5000:60;
+            int limit=_captureChoice?5000:_simulation.IsJourney?500:60;
             for(int i=0;i<limit;i++)
             {
                 if(_simulation.Phase==ExpeditionPhase.Choosing)break;
                 if(_simulation.Phase==ExpeditionPhase.Lost)break;
-                _simulation.Tick(.05f,Vector2.zero);
-                _simulation.Cast(LabSkill.Pull,_simulation.Kam.Position+Vector2.right*2);
-                _simulation.Cast(LabSkill.Burst,_simulation.Kam.Position);
+                if(_simulation.IsJourney)
+                {
+                    LabUnit captureEnemy=null;float best=float.MaxValue;
+                    foreach(var u in _simulation.Units)if(!u.Ally&&u.Alive){float d=Vector2.Distance(u.Position,_simulation.Kam.Position);if(d<best){best=d;captureEnemy=u;}}
+                    var move=Vector2.zero;
+                    if(captureEnemy!=null){if(best>_simulation.WeaponRange*.8f||!_simulation.Map.HasLine(_simulation.Kam.Position,captureEnemy.Position))move=_simulation.Map.NextStep(_simulation.Kam.Position,captureEnemy.Position)-_simulation.Kam.Position;if(_captureChoice)_simulation.Cast(LabSkill.Pull,captureEnemy.Position);}
+                    _simulation.Tick(.05f,move);
+                    if(!_captureChoice&&_simulation.Charge>0)break;
+                }
+                else
+                {
+                    _simulation.Tick(.05f,Vector2.zero);
+                    _simulation.Cast(LabSkill.Pull,_simulation.Kam.Position+Vector2.right*2);
+                    _simulation.Cast(LabSkill.Burst,_simulation.Kam.Position);
+                }
                 if(i%10==0){_view.Refresh();_hud.Refresh();yield return null;}
             }
             _view.Refresh();_hud.Refresh();yield return new WaitForSecondsRealtime(.4f);

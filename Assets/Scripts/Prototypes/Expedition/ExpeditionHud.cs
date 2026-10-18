@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace TacticalRPG.Prototypes.Expedition
 {
-    public sealed class ExpeditionHud : MonoBehaviour
+    public sealed partial class ExpeditionHud : MonoBehaviour
     {
         [SerializeField] private GameObject _menu;
         [SerializeField] private GameObject _game;
@@ -39,10 +39,12 @@ namespace TacticalRPG.Prototypes.Expedition
         private ExpeditionController _controller;
         private ExpeditionConfig _config;
         private readonly StringBuilder _text=new StringBuilder(600);
+        private Text _pullLabel,_burstLabel;
         public bool MenuVisible=>_menu.activeSelf;
         public void Bind(ExpeditionController controller,ExpeditionConfig config)
         {
             _controller=controller;_config=config;
+            _pullLabel=_pull.GetComponentInChildren<Text>();_burstLabel=_burst.GetComponentInChildren<Text>();
             _newRun.onClick.AddListener(controller.NewRun);_load.onClick.AddListener(controller.Load);_quit.onClick.AddListener(controller.Quit);
             _resume.onClick.AddListener(controller.Resume);
             _menuButton.onClick.AddListener(controller.Menu);_pause.onClick.AddListener(controller.Pause);
@@ -60,6 +62,7 @@ namespace TacticalRPG.Prototypes.Expedition
             _resume.interactable=_controller.Simulation!=null&&_controller.Simulation.Phase!=ExpeditionPhase.Ready;
             _saveLabel.text=_controller.CanLoad?"Mabet kaydı bulundu. Son temizlenen alanın ardından devam edebilirsin.":"Henüz mabet kaydı yok. İlk alanı bitirdiğinde otomatik kaydedilir.";
             var s=_controller.Simulation;if(s==null||s.Phase==ExpeditionPhase.Ready||MenuVisible)return;
+            if(s.IsJourney){RefreshJourney(s);return;}
             _status.text="KAM  "+s.Kam.Health+" / "+s.Kam.MaxHealth+"     KALKAN "+Mathf.CeilToInt(s.Shield)+"     MANA "+Mathf.FloorToInt(s.Mana)+" / "+_config.Mana+"\nALAN "+(s.Stage+1)+" / 3  ·  "+s.StageName+"     TOHUM "+s.Seed;
             _text.Clear();_text.Append("KOMBİNASYONUN\nAlanlar arasında korunur\n\n");
             for(int i=0;i<7;i++)if(s.Levels[i]>0)_text.Append(ExpeditionPowers.Name(i)).Append("  ").Append(s.Levels[i]).Append("/2\n");
