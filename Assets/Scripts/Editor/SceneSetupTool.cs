@@ -67,6 +67,7 @@ namespace TacticalRPG.Editor
                 SetupBiomeWorld();   // authored region art + animated, impassable Bayterek quest roots
                 SetupPresentation();
                 CombatLabSetup.EnsureAssets(); // isolated A/B prototype data; no campaign scene changes
+                ExpeditionSetup.EnsureAssets(); // selected B direction; independent scene and save
                 // EN SON: haritayi editorde uret ki Play'e basmadan da yeni harita gorunsun.
                 // (Store'dan SONRA olmali — magaza karosunun modeli o adimda kesinlesiyor.)
                 GenerateChapterMapInEditor();

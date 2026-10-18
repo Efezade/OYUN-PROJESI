@@ -16,6 +16,22 @@
 
 ---
 
+## 2026-10-18 — B sefer prototipinde kombinasyon sürekliliği
+
+**KARAR:** Efe daha büyük engebeli arena, savaş sırasında güç seçimi ve kombinasyonların savaşlar arasında korunmasını açıkça istedi. Ayrı B seferi üç bağlı mücadele alanı, yedi iki seviyeli güç, tohumlu teklifler/karşılaşmalar, mabet molası ve ayrı kayıtla uygulanıyor. Eski A/B ve ana kampanya korunuyor.
+
+**NEDEN:** Her kısa karşılaşmada gelişimi sıfırlamak, kullanıcının sevdiği büyüme hissini keser. Sefer boyunca aynı kombinasyonu taşımak; aralarda güvenli mola ve işlevli arazi kullanmak bu kaygıyı oynanabilir ölçekte sınar. Ölümde aynı düşman kimliği ikinci kez gelişim vermez. Ekonomi, kalıcı meta gelişim ve yeni hikâye bu deneyin dışında; ayrıntılı çalışan kapsam `Docs/Prototypes/B_EXPEDITION.md`.
+
+**COMMIT:** Bu değişikliği taşıyan `feat: B sefer prototipi ve kalici savas kombinasyonlari` yerel kaydı. Windows derlemesi, 86 sefer kontrolü ve 39 eski A/B kontrolü geçti; insan tarafından yeni sürümün tempo/denge kabulü henüz yok.
+
+## 2026-10-18 — Yeni savaş yönü B olarak seçildi
+
+**KARAR:** Efe, oynanabilir A/B karşılaştırmasının ardından gerçek zamanlı Kam + destek ekibi olan B yaklaşımını kesin olarak tercih etti. Sonraki savaş tasarımı B üzerine kurulacak; A referans prototipi ve eski kampanya korunuyor.
+
+**NEDEN:** Kullanıcı B'yi daha iyi buldu; savaş içinde yön veren geliştirmeler ve Vampire Survivors benzeri büyüme hissi istedi. Daha geniş arena, engebeler ve avantaj/dezavantaj yaratan zeminler önerdi. Bu ayrıntıların ölçüleri, kalıcılığı ve uygulanma biçimi henüz onaylı değil.
+
+**COMMIT:** Kararın kaydı bu çalışma değişikliğinde; mevcut A/B uygulaması `eef3bc6`. Yeni arazi/gelişim önerileri henüz kodlanmadı. Tasarım ayrıntısı `Docs/Prototypes/TASARIM_TASLAGI.md` içinde.
+
 ## 2026-10-11 — Model belirmesini kaldıran sis ve okunabilir gece
 
 **KARAR:** Modeller sis eşiğinde açılıp kapatılmıyor. Ortak derinlik geçişi bütün

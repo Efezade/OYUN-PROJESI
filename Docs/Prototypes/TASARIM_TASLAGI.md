@@ -7,14 +7,60 @@ Bu dosya ana GAME_DESIGN veya DECISION_LOG yerine geçmez. İstek, öneri ve ça
 - Haritada öz toplama ve savaş içinde karakter yaratma kaldırılacak; necromancer kimliği kullanılmayacak.
 - Kendi dünyasının bölgelerinden, kendi dünyasının paralel karşılıklarına açılan trajik yolculuk tercih ediliyor. Bağımsız evren parodileri ana omurga olmayacak.
 - Ölümde mabede dönüş ve geri alınabilir kayıp yönü onaylandı. Oranlar ve ikinci ölüm davranışı henüz onaylanmadı.
-- İki küçük savaş yaklaşımı oynanarak karşılaştırılacak; henüz kazanan seçilmedi.
+- **18 Ekim kullanıcı A/B geri bildirimi: B (gerçek zamanlı Kam + destek ekibi) kesin olarak tercih edildi.** A karşılaştırma referansı olarak korunabilir; yeni savaş geliştirmesi B üzerinden tasarlanacak. Bu, ana kampanyanın dönüştürüldüğü anlamına gelmez.
 - Biriktirmeye faiz veren ekonomi isteniyor. Savaş öncesi satın alma ve savaş sonrası augment seçimi tasarlanacak.
 - Hades benzeri farklı silah/büyü aileleri ve kombinasyonlar isteniyor. Augmentin kalıcı silahı geliştirmesi veya yeni seçenek açması önerildi; kalıcılık kuralları açık.
 - Hikâye balonlarla ve sürekli uzun konuşmalarla anlatılmayacak. Yapılabilir yakın plan sahneler, çevresel anlatım ve oyuncuyu sıkmayan sıklık isteniyor.
 - Haritaların yerel mekanikleri ve ekonomileri; ana ekonomiyle takas seçenekleri isteniyor.
 - Eski sürüm ve geliştirme kayıtları ayrı korunacak. Modelciye görselli, küçük ve açık görevler verilecek.
 
+## 18 Ekim son uygulama — B seferi oynanabilir
+
+Efe büyük engebeli arena, savaş içi seçim ve kombinasyonların savaşlar arasında korunmasını onayladı. Bu kapsam **ayrı prototipte kodlandı**: üç bağlı radius-7 alan, gerçek rampalı yükseklik/siper/su/çamur, yedi iki seviyeli güç, tohumlu teklifler/düşman bileşimleri, mabet molası ve ayrı disk kaydı. Başlatma: `Tools/SavasPrototipleri/B_SEFER_BASLAT.cmd`. Tam çalışan kurallar ve sınırlar: `B_EXPEDITION.md`.
+
+Aşağıdaki önceki tasarım ölçüleri tarihsel öneriler olarak korunuyor; “uygulanmadı” ifadesiyle çelişki olduğunda güncel uygulama kaynağı yukarıdaki dosyadır. Yeni silah aileleri, satın alma/faiz, zırh/pot, hikâye ve tam demo hâlâ uygulanmış sayılmaz. Savaşlar arasında korunma artık bu sefer için kesin; yeni seferler, meta gelişim ve tüm sekiz harita arasındaki kalıcılık henüz kesin değil.
+
 ## Öneri: silah kimliği kalıcı, kombinasyonlar değişken
+
+### B yönü: savaş içinde büyüyen kombinasyon + anlamlı arazi
+
+Efe B'de anlık geliştirme seçimleri, daha büyük savaş haritası, engebeler ve avantaj/dezavantaj karoları önerdi. Ardından Vampire Survivors'daki gelişim hissinin bu yaklaşıma daha uygun olduğunu söyledi. Bunlar yönlendirmedir; aşağıdaki ölçüler, ödül ritmi ve örnek yetenekler tasarım önerisidir, uygulanmadı.
+
+**Hedef deneyim:** sade bir silahla başla → savaşta ilerledikçe seçenek kazan → seçtiğin davranışı yeni etkilerle birleştir → baskı artarken kendi kurduğun güçlü kombinasyonla alanı yönet. Hades beğenisindeki farklı başlangıç silahı kimliği ile savaş içinde büyüyen kombinasyon birbirini tamamlayabilir; başka oyunun bütün içerik sistemini kopyalamak hedef değil.
+
+İlk B devam prototipi için tek silah, üç gelişim kolu, 4–6 dakikalık bir savaş ve üç belirgin seçim anı öneriliyor. Savaş süresi henüz bütün oyunun standardı değil; her küçük karşılaşmayı uzun hayatta kalma seansına çevirmek harita/hikâye temposunu bozar. Savaş ilerlemesi ilk testte doğrudan ilerleme sayacına yazılsın; ana haritada öz toplama geri gelmeyecek, savaşta yere dökülen XP toplama da ayrıca karar verilmeden eklenmeyecek.
+
+- Her eşikte savaş tamamen durur; üç anlaşılır seçenekten biri seçilir, sonra devam eder. Seçim beklerken hasar veya düşman hareketi sürmez. Sık menü kesintisi yaratmamak için eşikler çatışmanın ritmine bağlanır.
+- Örnek kol: tek hedef yıldırım → ikinci hedefe sıçrama → işaretlileri bağlayan zincir → ıslak zemindeki düşmanlara yayılma. Alternatifler aynı anda hasar yarışı değil: dar koridorda delme, açık alanda çevresel koruma, uzakta sıçrama.
+- Seçimlerin tamamen rastgele ilgisiz gelmesini önlemek için bir mevcut yönü destekleyen, bir yön değiştiren ve bir savunma/konum seçeneği denenebilir. Seçimlerin yanında gerçekten değişen davranış açıkça gösterilir.
+- Kalıcılık önerisi (son tempo geri bildirimiyle güncellendi): seçilen ana silah dalı ve kombinasyonlar bağlantılı mücadelelerden oluşan sefer boyunca korunur; yalnız kısa süreli alan etkileri/kalkan gibi açıkça geçici bonuslar biter. Her kısa arenada bütün build sıfırlanmaz. Ölüm, mabet, sefer ve haritalar arası korunma ayrıca kararlaştırılacak; sınırsız üst üste güç birikimi kabul edilmiş değil.
+
+**Arena deneyi:** mevcut arenanın yaklaşık iki katı yürünebilir alanıyla başla; çapı ikiye katlamak yaklaşık dört kat alan üretir, ilk adım için gereksiz olabilir. Kamera uzaklaştırılarak karakterler küçültülmesin; Kam'ı takip eden görünüş, yaklaşan düşmanları haber veren işaretler ve okunabilir saldırı hazırlıkları denensin. Harita üç bağlı mücadele alanı içersin, her alanın en az iki kaçış rotası olsun. Büyük boş yürüyüş alanı eklemek amaç değil. Düşman yoğunluğu ve oyuncunun anlamlı bir eylem yapmadan geçirdiği süre ölçülsün.
+
+İlk arazi seti dört okunur işlevle sınırlı:
+
+| Arazi | Oyuncuya fırsat | Bedel / karşı oyun |
+|---|---|---|
+| Kırık sütun/duvar | Mermiden saklanma, görüş kesme | Geri kaçışı daraltır; düşman da aynı görüş kuralından yararlanır. |
+| Dar geçit | Düşmanları delici/alan saldırısına hizalama | Arkadan gelen baskıda sıkışma; ikinci çıkış şart. |
+| Sığ ıslak zemin | Elektrik birleşimini güçlendirme | Tehlikeli elektrik etkisi Kam'ı da tehdit edebilir; etki seçilen kuralla açıkça gösterilmeli. |
+| Rampalı yükselti | Menzilli silah için görüş/konum fırsatı | Ulaşma ve geri çekilme bedeli; görünmez mutlak güvenli nokta olmamalı. |
+
+Her karoya ayrı gizli yüzde bonusu koyma. Zemin şekli, efekt ve kısa açıklama aynı işlevi anlatmalı. İlk aşamada gerçek zıplama/tırmanma yok; yükseltiler rampayla erişilir. Yüksekliğin görüş/mermi/yol bulma kuralları tutarlı değilse önce düz zeminde engel ve geçitleri doğrula. Ekip tehlikede takılmamalı veya Kam'dan kopmamalı; takip/toplanma ve tehlikeden kaçış davranışı arena büyütmenin parçasıdır.
+
+**Kabul:** üç seçim sonrası başlangıç saldırısından gözle görülür farklı davranış; en az iki işe yarar kombinasyon; bir bölgede yararlı seçimin başka bölgede belirgin bedeli; sonsuz çember çizerek kaçmanın ve rampada dokunulmaz kalmanın baskın çözüm olmaması; çevrenin savaş alanını kapatmaması. Bunlar test ölçütleri, başarılı sonuç iddiası değil.
+
+**Modelciye yeni sıra önerisi:** mevcut setten kırık sütun/duvar, iki çıkışlı geçit, sığ zemin varyantı ve modüler rampa/yükselti için kaba hacim örnekleri. Kam ölçeği ve gerçek oyun kamerasında okunurluk görünsün. Final doku, büyük harita ve efekt üretimi bu B arena denemesinden sonra. Eski v001 görsel föyündeki "savaş yönü seçimi bekleniyor" notu artık tarihsel; silah/rig ve arazi kuralları yine henüz kesinleşmiş değil.
+
+### Tempo ve bölüm yapısı — açık tasarım sorusu
+
+Efe, Survivors/Megabonk benzeri büyümenin oyunu fazla hızlandırmasından ve bölüm bölüm tasarımla uyuşmamasından endişeli. Kesintisiz büyüyen bir kombinasyonu kısa savaşlar sonunda sıfırlamak bu kaygıyı artırır. Yukarıdaki 4–6 dakika yalnız dar prototip ölçüsüdür; ana oyunun her karşılaşması veya bölüm uzunluğu olarak onaylanmadı.
+
+Önerilen sonraki akış deneyi: 20–30 dakikalık bir seferde üç bağlantılı mücadele alanı; aralarda kısa keşif/hazırlık ve güvenli mabet. Aynı kombinasyon taşınır, alanlar farklı hedef ve arazi ister, finale doğru güçlü bir kullanım anı oluşur. Süre deneme hedefidir, kesin tasarım değil. Sefer terimi yeni bir zorunlu UI katmanı değil; test akışını tanımlar. Mevcut demo hedefi en az 30 dakika ve kompakt ilk harita olarak kalır. Sekiz harita, sefer sayısı ve 15+ saat hedefi bundan otomatik çıkmaz; gerçek içerik/oynanış ölçümü gerekir.
+
+Hız; daha fazla düşman ve parçacıkla sürekli artırılmak zorunda değil. Baskı → rahatlama → seçim → yeni tehdit ritmi; daha çok hedefe etki ederken düşman hazırlıklarını okunur tutmak; mağaza/hikâyeyi güvenli anlara koymak denenmeli. Kaydedip çıkabilmek ile ölüm cezası ayrı kurallar olarak ele alınmalı. Mabede dönüş kararı korunuyor; geri alınabilir kayıp ve build'in ölümde korunması henüz ayrıntılanmadı.
+
+Kaynak karşılaştırması: geliştiricinin [Vampire Survivors Adventures açıklaması](https://poncle.games/adventures-faq), belirli kazanma koşulları olan bölümlü mini hikâye kampanyaları tarif ediyor. Bu, bölümlemenin türle bağdaşabildiğine örnektir; bizim oyun için aynı sıfırlama kurallarının doğru olduğunu kanıtlamaz. [Megabonk resmi Steam açıklaması](https://store.steampowered.com/app/3405340/Megabonk/) rastgele geliştirme seçimleriyle run içinde büyümeyi tarif ediyor. Her iki oyunun bütün modlarının süresiz olduğu varsayılmadı.
 
 Kalıcı açılan şey silah ailesi ve alternatif kullanım biçimi olsun; bütün güçlü augmentleri sürekli biriktirmek sınırsız güç ve denge sorunu yaratır. Aktif yolculuğun augmentleri mabede dönüşte korunabilir, yeni yolculuk başladığında yeniden seçilebilir. Bu, her ölümün bütün build'i silmemesini sağlar. **Henüz karar değil.**
 
@@ -22,7 +68,7 @@ Demo için önce iki aday: kısa menzilde yay çizen **Mühür Kılıcı** ve uz
 
 Örnek geliştirme üçlüsü: işaretin ikinci hedefe sıçraması / isabet sonrası konum değiştiren saldırı / riskli yakın patlama. Yalnız +%5 hasar kartlarıyla çeşitlilik iddia etmeyelim. İlk seçimin sonraki kartlarla en az iki anlamlı birleşimi olmalı; rastgele üç alakasız kart yerine bir uyumlu, bir yön değiştiren, bir savunma seçeneği denenebilir.
 
-**Maliyet sınırı:** savaş tipi seçilmeden altı silah ve her silaha ayrı animasyon paketi üretme. İlk seçilen savaş tipinde iki silah ailesi ve altı davranış değiştirici seçenek hedefi ayrıca değerlendirilecek.
+**Maliyet sınırı:** B seçildi; yine de altı silah ve her silaha ayrı animasyon paketi üretme. Önce B'de bir silahın dallanmasını kanıtla; demo için iki silah ailesi ve altı davranış değiştirici seçenek hedefi ayrıca değerlendirilecek.
 
 ## Eşya, zırh ve anlık pot — son kullanıcı isteği
 
@@ -85,7 +131,7 @@ Efe sisin varlığını mantıklı buluyor ama mevcut animasyonunu beğenmiyor. 
 
 Savaş arenasında genel sis önerilmiyor; düşman hazırlığı ve kaçış alanı görünür kalsın. İleride bir haritaya özgü kısa ve açıkça haber verilen görüş etkisi ayrı değerlendirilebilir. Bu bir öneri; mevcut ana oyun sis kodu değiştirilmedi. A/B laboratuvarında sis yok.
 
-1. Savaş A/B karşılaştırmasını oynayıp temel kontrol yaklaşımını seçmek.
+1. **B seferi hazır.** Sonraki ortak adım: yeni prototipte güçlenme hissi, arazi kararı, ekip katkısı ve tempo için Efe'nin oynanış geri bildirimi. Savaşlar arası güç koruma uygulanıyor.
 2. İlk harita finalinde ağacın sığınağı/belleği fikrinin kabulü ve eski varlıkların kökeni.
 3. Silah/augment kalıcılığı; ölümde kayıp miktarı ve geri alma sınırı.
 4. Modelcinin rig/animasyon kapasitesi; ilk küçük setin sanat onayı.
