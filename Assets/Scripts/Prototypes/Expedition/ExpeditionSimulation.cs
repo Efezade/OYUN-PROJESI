@@ -127,8 +127,10 @@ namespace TacticalRPG.Prototypes.Expedition
                 bool boss=Stage==2&&_wave==3&&i==0;
                 var role=boss?LabRole.Boss:((i+_wave)% (Modifier==1?2:4)==0?LabRole.Gunner:LabRole.Raider);
                 var tactic=boss?EnemyTactic.Boss:i==0?EnemyTactic.Charger:Stage>0&&i==2?EnemyTactic.Protector:EnemyTactic.Normal;
+                if(IsJourney&&!boss){if(i==1)tactic=EnemyTactic.Flanker;else if(Stage>0&&i==3)tactic=EnemyTactic.Bomber;else if(i>=3&&tactic==EnemyTactic.Normal)tactic=EnemyTactic.Sniper;}
                 if(tactic==EnemyTactic.Charger)role=LabRole.Raider;
                 if(tactic==EnemyTactic.Protector)role=LabRole.Gunner;
+                if(tactic==EnemyTactic.Sniper||tactic==EnemyTactic.Bomber)role=LabRole.Gunner;
                 Vector2 p=Map.Center(Stage)+new Vector2(5,0);float best=-1;
                 for(int attempt=0;attempt<50;attempt++)
                 {
@@ -236,6 +238,7 @@ namespace TacticalRPG.Prototypes.Expedition
             _packClock+=dt;
             TickVortex(dt);
             if(IsJourney)TickJourney(dt);
+            if(IsJourney)TickHazards(dt);
             if(_wave<3&&((_packClock>=_config.PackInterval&&LivingEnemies<9)||(LivingEnemies==0&&_pending.Count==0&&_packClock>2)))QueuePack();
             _echoClock-=dt;if(_echoRemaining>0&&_echoClock<=0){_echoRemaining--;_echoClock=.6f;Burst();}
             _orbitClock-=dt;
@@ -277,6 +280,7 @@ namespace TacticalRPG.Prototypes.Expedition
         }
         private void EnemyTick(LabUnit u,float dt)
         {
+            if(IsJourney&&TickEncounter(u,dt))return;
             if(TickTactic(u,dt))return;
             if(u.Windup>0)
             {
@@ -293,7 +297,8 @@ namespace TacticalRPG.Prototypes.Expedition
             if(u.Role==LabRole.Gunner&&u.Cooldown>0&&Vector2.Distance(u.Position,target.Position)<3.2f)
             {Move(u,u.Position-target.Position,_config.EnemySpeed*dt);return;}
             if(!CanHit(u,target))Navigate(u,target.Position,_config.EnemySpeed*(Modifier==2?.8f:1)*dt,dt);
-            else if(u.Cooldown<=0){u.Aim=target.Position;u.Windup=_config.Windup;}
+            else if(u.Cooldown<=0&&(!IsJourney||AttackSlotAvailable(u))){u.Aim=target.Position;u.Windup=_config.Windup;}
+            if(IsJourney&&u.Windup<=0)SeparateEnemy(u,dt);
         }
         private void Navigate(LabUnit u,Vector2 goal,float distance,float dt)
         {

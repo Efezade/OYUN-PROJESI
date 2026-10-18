@@ -50,8 +50,8 @@ namespace TacticalRPG.Editor
         public static void BuildWindows()
         {
             EnsureScene();CombatLabValidation.RunChecks();ExpeditionValidation.RunChecks();ExpeditionTacticsValidation.RunChecks();WeaponJourneyValidation.RunChecks();
-            Directory.CreateDirectory("Builds/WeaponJourney");
-            var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions{scenes=new[]{ScenePath},locationPathName="Builds/WeaponJourney/KamWeaponJourney.exe",target=BuildTarget.StandaloneWindows64,options=BuildOptions.Development});
+            EncounterValidation.RunChecks();Directory.CreateDirectory("Builds/WeaponJourneyV4");
+            var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions{scenes=new[]{ScenePath},locationPathName="Builds/WeaponJourneyV4/KamWeaponJourney.exe",target=BuildTarget.StandaloneWindows64,options=BuildOptions.Development});
             if(report.summary.result!=BuildResult.Succeeded)throw new Exception("Weapon journey build failed: "+report.summary.result);
             Debug.Log("WEAPON_JOURNEY_BUILD_OK "+report.summary.totalSize);
         }

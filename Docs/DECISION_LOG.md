@@ -1456,3 +1456,9 @@ Tarihsel gerekçeleri arşivde; burada sadece **hâlâ geçerli olan** hüküm v
 **KARAR:** Efe'nin onayıyla ayrı WeaponJourney prototipi: yakın ön yay ve delici/geri çağrılabilir mızrak; göreve girince sıfırlanmayan silah, XP ve yeni yetenek seçimleri. Eski yedi güç/seviye mantığı v2'de korunur, v3 dokuz tek alımlık davranıştan altı seçim sunar. E bekleme süresi spamı yerine isabetlerle hazırlanır. Yeni görevde geçici efekt/yükler sıfırlanır, kombinasyon korunur.
 
 **NEDEN:** Kullanıcı aynı Q/E döngüsünün güçlenme hissettirmediğini söyledi; farklı mesafe ve hareket kararını, üç görevde biriken kombinasyonla sınamak istiyor. v3 JSON dosyası/versiyonu ayrıldı: eski seviyeler yeni yeteneklere yanlış yorumlanmaz, v2 kayıtları ezilmez. Yeni SO/sahne idempotent kuruluma bağlandı. **COMMIT:** Bu kaydı ekleyen commit. İşlev testi keyif/denge onayı değildir.
+
+## 2026-10-18 — Düşman hareketi ve hedef önceliği (v4)
+
+**KARAR:** Kullanıcının "herkes zombi gibi ilerliyor, çok kolay" geri bildirimine karşı WeaponJourney'de yandan yaklaşan Yancı, mesafe tutup kilitli atış yapan Avcı, ikinci görevden itibaren geçici alan kapatan Kuşatmacı ve öndeki birimi izleyen Kalkancı uygulandı. Yığılmayı azaltan ayrışma ve aynı anda iki hazırlık/atılış sınırı var. Genel can, hasar veya dalga sayısı şişirilmedi; Avcı özel hattının kendi hasarı var.
+
+**NEDEN:** Hareket yönü, siper ve hedef önceliği farklı sorunlara yanıt versin. Oyuncu işaretli saldırıdan çıkabilsin; düşman nişanı hazırlıktan sonra oyuncuyu takip etmesin. 16 yeni davranış kontrolü ve 271 eski kontrol geçti; bu sonuç insan zorluk kabulü değildir. Eski v3 build korunur; yeni v4 aynı kayıt biçimini kullanır. Final düşman sanatı henüz yok. **COMMIT:** Bu kaydı ekleyen commit.

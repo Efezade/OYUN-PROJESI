@@ -107,6 +107,7 @@ namespace TacticalRPG.Prototypes.Expedition
         }
         private IEnumerator Capture()
         {
+            bool encounterCapture=Array.IndexOf(Environment.GetCommandLineArgs(),"--encounter-capture")>=0;
             if(_simulation.IsJourney)
             {
                 var args=Environment.GetCommandLineArgs();bool spear=Array.IndexOf(args,"--weapon-spear")>=0;
@@ -122,7 +123,7 @@ namespace TacticalRPG.Prototypes.Expedition
             int limit=_captureChoice?5000:_simulation.IsJourney?500:60;
             for(int i=0;i<limit;i++)
             {
-                if(_simulation.Phase==ExpeditionPhase.Choosing)break;
+                if(_simulation.Phase==ExpeditionPhase.Choosing){if(encounterCapture){_simulation.Choose(0);continue;}break;}
                 if(_simulation.Phase==ExpeditionPhase.Lost)break;
                 if(_simulation.IsJourney)
                 {
@@ -131,7 +132,8 @@ namespace TacticalRPG.Prototypes.Expedition
                     var move=Vector2.zero;
                     if(captureEnemy!=null){if(best>_simulation.WeaponRange*.8f||!_simulation.Map.HasLine(_simulation.Kam.Position,captureEnemy.Position))move=_simulation.Map.NextStep(_simulation.Kam.Position,captureEnemy.Position)-_simulation.Kam.Position;if(_captureChoice)_simulation.Cast(LabSkill.Pull,captureEnemy.Position);}
                     _simulation.Tick(.05f,move);
-                    if(!_captureChoice&&_simulation.Charge>0)break;
+                    if(encounterCapture){if(_simulation.Hazards.Count>0&&_simulation.Phase==ExpeditionPhase.Fighting)break;}
+                    else if(!_captureChoice&&_simulation.Charge>0)break;
                 }
                 else
                 {

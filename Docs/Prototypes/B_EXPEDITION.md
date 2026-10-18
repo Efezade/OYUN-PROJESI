@@ -4,6 +4,20 @@
 
 ## Güncel deney: İki Silah / Üç Görev (v3)
 
+**Son düşman güncellemesi (v4):** Efe çeşitliliğin arttığını ama düşmanların düz yürüyüp kolay öldüğünü bildirdi. Aynı `IKI_SILAH_BASLAT.cmd` artık `Builds/WeaponJourneyV4/KamWeaponJourney.exe` açıyor; önceki v3 derlemesi korunuyor. Silah, seçimler ve checkpoint-v3 biçimi değişmedi.
+
+| Düşman | Yeni karar / karşılık |
+|---|---|
+| Yancı | Kam'a yandan yaklaşır; yakında saldırı hazırlar, beklerken yan hareket yapar. Pembe işaret. Ön yayı yönlendir, çevrilmeden yer değiştir. |
+| Avcı | Mesafe korur, yan yürür; atıştan sonra kısa toparlanma verir. Turuncu hattı önceden gösterir ve kilitler. Yana çık veya sipere gir; yaklaşırken atış sonrası açıklığı kullan. |
+| Kuşatmacı | İkinci görevden başlar. 1,6 sn uyarıdan sonra kilitli zeminde 2,6 sn tehlike alanı bırakır. Aynı anda en fazla iki alan; içinde kalmak aralıklı hasar verir. Tam yarıçap çizilir. |
+| Kalkancı | Önündeki düşmanı takip ederek koruma alanını taşır; yalnız kalınca mesafeli konum alır. |
+| Yarıcı | Kam'ı hedef alır; beklerken yan hareket yapar. Atılış yönü hâlâ önceden kilitlidir. |
+
+En fazla iki düşman aynı anda saldırı hazırlayabilir/atılabilir. Normal düşmanlar da ayrışma hareketiyle aynı noktada yığılmayı azaltır. Uyarı başladıktan sonra nişan oyuncuyu takip etmez. Düşman canı, temel hasarı ve toplam dalga adedi topluca artırılmadı. Bunlar davranış değişiklikleridir; zorluk/keyif için insan testi hâlâ gerekir. Yeni roller eski geçici modelleri kullanır, isim/işaret/uyarı şekliyle ayrılır; final düşman modelleri üretilmedi.
+
+`EncounterValidation` hareket, kilitli atış, yan kaçış, koruyucu takibi, eşzamanlı saldırı sınırı, bomba uyarısı/hasarı/kaçışı/süresi ve yığılma ayrışmasını doğrular. Yeni 16 kontrol, eski 271 kontrolle birlikte çalışır. Görsel deneme `--encounter-capture --weapon-evolved --weapon-spear` bayraklarıyla, kayıt yazmadan yapılır. Önceki v3 ayrıntıları aşağıdadır.
+
 Efe, önceki güçlerin yeterince farklı hissettirmediğini ve Q/E spamını bildirdi. İki ayrı başlangıç saldırısı ve görevler arasında korunan gelişim isteği üzerine **ayrı** sahne/derleme oluşturuldu. `Tools/SavasPrototipleri/IKI_SILAH_BASLAT.cmd`; Windows `Builds/WeaponJourney/KamWeaponJourney.exe`; Unity menüsü `TacticalRPG > Prototipler > B - Iki Silah Uc Gorev`; sahne `Assets/Scenes/Prototypes/WeaponJourney.unity`. Önceki B v2 kendi başlatıcısında korunuyor.
 
 Başta iki gerçek seçenek vardır; ikisi de sunulur, yalnız sıraları tohuma göre değişir. Dört silahlık rastgele havuz henüz uygulanmadı. Hilal 2,7 metre ön yayı otomatik biçer; Q imleç yönüne atılıp biçer, E üç isabetli temel saldırıyla dolan çevre bitirişidir. Mızrak 7,5 metre hattı otomatik deler ve en fazla dört mızrak bırakır; Q bunları oyuncunun **yeni konumuna** geri çağırır. Dönüş hattı görüş engeline uyar. Mızrağın E'si yakınları iter ve kısa kalkan verir. Q/E mana kullanmaz; E isabetlerle dolar. Boş mızrak geri çağırması reddedilir. Temel saldırının hedefi en yakın düşmandır; sol tık odağı değiştirebilir. Q ekran düğmesi hilalde son saldırı yönünü, klavyedeki Q imleci kullanır. SPACE kaçışı ayrı kalır.

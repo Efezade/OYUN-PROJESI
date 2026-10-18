@@ -52,7 +52,7 @@ namespace TacticalRPG.Prototypes.Expedition
             if(e.Kind==0){f.Line.gameObject.SetActive(false);return;}
             if(e.Kind<10)return;
             f.Pulse.SetActive(e.Kind==13);f.Line.gameObject.SetActive(e.Kind!=13);
-            var color=e.Kind==10?_crescentColor:e.Kind==14?_discColor:_spearColor;
+            var color=e.Kind==10?_crescentColor:e.Kind==14?_discColor:e.Kind==15?_chargeColor:_spearColor;
             f.Line.startColor=f.Line.endColor=color;
             TintWeapon(f.Line,color);
             if(e.Kind==10)

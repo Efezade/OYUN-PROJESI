@@ -45,6 +45,23 @@ namespace TacticalRPG.Prototypes.Expedition
         [SerializeField] private float _lungeDistance=3.5f;
         [SerializeField] private float _lungeCooldown=4;
         [SerializeField] private float _anchorLife=9;
+        [Header("Enemy encounter tactics")]
+        [SerializeField] private float _flankSpeed=2.8f;
+        [SerializeField] private float _sniperRange=8;
+        [SerializeField] private float _sniperWarning=1.35f;
+        [SerializeField] private float _sniperCooldown=3.2f;
+        [SerializeField] private float _bombWarning=1.6f;
+        [SerializeField] private float _bombRadius=1.6f;
+        [SerializeField] private float _bombDuration=2.6f;
+        [SerializeField] private float _separationRadius=1.1f;
+        public float FlankSpeed=>_flankSpeed;
+        public float SniperRange=>_sniperRange;
+        public float SniperWarning=>_sniperWarning;
+        public float SniperCooldown=>_sniperCooldown;
+        public float BombWarning=>_bombWarning;
+        public float BombRadius=>_bombRadius;
+        public float BombDuration=>_bombDuration;
+        public float SeparationRadius=>_separationRadius;
         public bool WeaponJourney=>_weaponJourney;
         public float CrescentRange=>_crescentRange;
         public float SpearRange=>_spearRange;

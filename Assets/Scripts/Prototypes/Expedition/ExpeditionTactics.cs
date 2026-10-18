@@ -4,7 +4,7 @@ using TacticalRPG.Prototypes.CombatLab;
 
 namespace TacticalRPG.Prototypes.Expedition
 {
-    public enum EnemyTactic { Normal, Charger, Protector, Boss }
+    public enum EnemyTactic { Normal, Charger, Protector, Boss, Flanker, Sniper, Bomber }
     public sealed partial class ExpeditionSimulation
     {
         private sealed class TacticState
@@ -22,8 +22,8 @@ namespace TacticalRPG.Prototypes.Expedition
         public float ProtectorRadius=>_config.ProtectorRadius;
         public EnemyTactic TacticOf(LabUnit u)=>_tactics.TryGetValue(u.Id,out var t)?t.Kind:EnemyTactic.Normal;
         public bool ChargeActive(LabUnit u)=>u.Alive&&_tactics.TryGetValue(u.Id,out var t)&&(t.Kind==EnemyTactic.Charger||t.Kind==EnemyTactic.Boss)&&!t.SmashNext&&(u.Windup>0||t.Rushing);
-        public string DisplayName(LabUnit u)=>TacticOf(u) switch {EnemyTactic.Charger=>"YARICI",EnemyTactic.Protector=>"KALKANCI",EnemyTactic.Boss=>"MABET BEKÇİSİ",_=>u.Name};
-        private void ResetTactics(){_tactics.Clear();_vortexClock=0;}
+        public string DisplayName(LabUnit u)=>TacticOf(u) switch {EnemyTactic.Charger=>"YARICI",EnemyTactic.Protector=>"KALKANCI",EnemyTactic.Boss=>"MABET BEKÇİSİ",EnemyTactic.Flanker=>"YANCI",EnemyTactic.Sniper=>"AVCI",EnemyTactic.Bomber=>"KUŞATMACI",_=>u.Name};
+        private void ResetTactics(){_tactics.Clear();_vortexClock=0;ResetEncounters();}
         private void RegisterTactic(LabUnit u,EnemyTactic kind){_tactics[u.Id]=new TacticState{Kind=kind};}
         public bool IsProtected(LabUnit u)
         {
@@ -60,12 +60,13 @@ namespace TacticalRPG.Prototypes.Expedition
                 }
                 return true;
             }
-            var target=Target(u);if(target==null)return true;
-            if(u.Cooldown>0)return true;
+            var target=IsJourney?Kam:Target(u);if(target==null)return true;
+            if(u.Cooldown>0){if(IsJourney)Strafe(u,Kam.Position,dt,.6f);return true;}
             if(Vector2.Distance(u.Position,target.Position)>_config.ChargeRange||!Map.HasLine(u.Position,target.Position))
                 Navigate(u,target.Position,_config.EnemySpeed*dt,dt);
             else
             {
+                if(IsJourney&&!AttackSlotAvailable(u))return true;
                 var direction=target.Position-u.Position;if(direction.sqrMagnitude<.001f)direction=Vector2.right;
                 u.Aim=u.Position+direction.normalized*_config.ChargeRange;
                 u.Windup=_config.ChargeWarning;t.Hit.Clear();
