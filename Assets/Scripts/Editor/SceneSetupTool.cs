@@ -68,7 +68,7 @@ namespace TacticalRPG.Editor
                 SetupPresentation();
                 CombatLabSetup.EnsureAssets(); // isolated A/B prototype data; no campaign scene changes
                 ExpeditionSetup.EnsureAssets(); // selected B direction; independent scene and save
-                MasteryJourneySetup.EnsureAssets();WardenSetup.EnsureAssets();HybridBattleSetup.EnsureAssets();
+                MasteryJourneySetup.EnsureAssets();WardenSetup.EnsureAssets();HybridBattleSetup.EnsureAssets();PressureBattleSetup.EnsureAssets();
                 WeaponJourneySetup.EnsureAssets(); // two weapons and persistent three-mission progression
                 // EN SON: haritayi editorde uret ki Play'e basmadan da yeni harita gorunsun.
                 // (Store'dan SONRA olmali — magaza karosunun modeli o adimda kesinlesiyor.)

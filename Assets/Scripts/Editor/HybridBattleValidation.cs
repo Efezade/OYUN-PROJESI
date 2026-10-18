@@ -37,9 +37,9 @@ namespace TacticalRPG.Editor
             string before=File.ReadAllText(HybridBattleSetup.ScenePath);HybridBattleSetup.EnsureScene();Check(before==File.ReadAllText(HybridBattleSetup.ScenePath),"setup preserves authored scene");
             File.WriteAllText("Logs/hybrid-scene-validation.json","{\"passed\":true,\"checks\":"+_checks+",\"floorSamples\":"+samples+",\"renderers\":"+renderers+"}");Debug.Log("HYBRID_SCENE_VALIDATION_OK "+_checks);
         }
-        public static void RunChecks()
+        public static void RunChecks(string configPath=null)
         {
-            _checks=0;var c=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<ExpeditionConfig>(HybridBattleSetup.DataPath));
+            _checks=0;var c=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<ExpeditionConfig>(configPath??HybridBattleSetup.DataPath));
             try
             {
                 var m=new ExpeditionMap(c);var l=c.HybridLayout;
@@ -89,7 +89,7 @@ namespace TacticalRPG.Editor
                     }
                     Check(s.Phase==ExpeditionPhase.Won&&camps==2&&s.Picks==6,"three missions and boss completed weapon "+weapon+" phase="+s.Phase+" stage="+s.Stage+" enemies="+s.LivingEnemies);
                 }
-                File.WriteAllText("Logs/hybrid-validation.json","{\"passed\":true,\"checks\":"+_checks+"}");Debug.Log("HYBRID_VALIDATION_OK "+_checks);
+                File.WriteAllText(configPath==null?"Logs/hybrid-validation.json":"Logs/pressure-journey-validation.json","{\"passed\":true,\"checks\":"+_checks+"}");Debug.Log("HYBRID_VALIDATION_OK "+_checks);
             }
             finally{UnityEngine.Object.DestroyImmediate(c);}
         }

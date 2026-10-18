@@ -16,6 +16,18 @@
 
 ---
 
+## 2026-10-18 — Baskı v9 ve araştırmalı kestirme planı
+
+**KARAR:** Kullanıcının daha zor ikinci/üçüncü görev ve ani hareketli boss isteği ayrı PressureBattle profilinde uygulandı. Canlar korunup tehdit bütçesi, roller, süreler ve işaretli meteor/hücum dizileri değişti. Eski v8 oynanabilir build ve konfigürasyonu korunur.
+
+**NEDEN:** Güçlenmiş oyuncunun eski düşmanı ezmesi korunmalı; zorlaşma konum, öncelik ve zamanlama üzerinden gelmeli. Sabit otomatik saldırının eski bossu hasarsız yenebildiği normal canlı sürücüde görüldü. Yeni sürücü karşılaştırması hareket/beceri farkı gösterir; insan denge kabulü henüz yok.
+
+**KARAR:** Kullanıcı Souls benzeri koridor/kestirme konsepti istedi ve önce kaynak araştırmasını şart koştu. Araştırma ardından iki yerel döngülü, aydınlık taş avlu konsepti ve modelci föyü hazırlandı. Yeni harita geometriye uygulanmadı; kaynak/varsayım ayrımı modelci araştırma notunda.
+
+**NEDEN:** Tek koridor zinciri keşif döngüsü oluşturmaz; kalabalık savaş dar koridorlara sıkışmamalı. Mevcut tek yükseklik navigasyonunu aşan üst üste yürünebilir katlar ilk kaba teslimden çıkarıldı. Hibrit zemin/yapı üretimi devam eder.
+
+**COMMIT:** Bu kaydı içeren v9 özellik commit'i; sayısal kurallar ve doğrulama sınırı Docs/Prototypes/B_EXPEDITION.md.
+
 ## 2026-10-18 — B sefer prototipinde kombinasyon sürekliliği
 
 **KARAR:** Efe daha büyük engebeli arena, savaş sırasında güç seçimi ve kombinasyonların savaşlar arasında korunmasını açıkça istedi. Ayrı B seferi üç bağlı mücadele alanı, yedi iki seviyeli güç, tohumlu teklifler/karşılaşmalar, mabet molası ve ayrı kayıtla uygulanıyor. Eski A/B ve ana kampanya korunuyor.

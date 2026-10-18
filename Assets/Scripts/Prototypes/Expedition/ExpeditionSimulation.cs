@@ -144,6 +144,8 @@ namespace TacticalRPG.Prototypes.Expedition
                     if(i==1)tactic=EnemyTactic.Leaper;
                     if(Stage>0&&_wave>1&&i==5)tactic=EnemyTactic.Frenzied;
                     if(Stage==2&&_wave>1&&i==6)tactic=EnemyTactic.Cloner;
+                    if(_config.Pressure!=null&&Stage>0&&i==3)tactic=EnemyTactic.Bomber;
+                    if(_config.Pressure!=null&&Stage==2&&i==2)tactic=EnemyTactic.Protector;
                     role=tactic==EnemyTactic.Sniper||tactic==EnemyTactic.Cloner?LabRole.Gunner:LabRole.Raider;
                 }
                 if(tactic==EnemyTactic.Charger)role=LabRole.Raider;
@@ -162,6 +164,7 @@ namespace TacticalRPG.Prototypes.Expedition
                 if(IsMastery&&!boss)hp=elite?Mathf.CeilToInt(_config.EnemyHealth*_config.EliteHealthMultiplier):_config.EnemyHealth;
                 var u=Unit(100+Stage*100+(_wave-1)*20+i,role,p,hp,boss?8:IsMastery?(elite?5+Stage:3):3+Stage,role==LabRole.Gunner?5.5f:boss?2.2f:1.6f);
                 RegisterTactic(u,tactic);if(elite)_elites.Add(u.Id);
+                if(_config.Pressure!=null)u.Damage+=_config.Pressure.DamageBonus(Stage);
                 _pending.Add(new ExpeditionSpawn(u,_config.SpawnWarning+i*.08f));
             }
             Changed?.Invoke();
@@ -265,7 +268,7 @@ namespace TacticalRPG.Prototypes.Expedition
             TickVortex(dt);
             if(IsJourney)TickJourney(dt);
             if(IsJourney)TickHazards(dt);
-            if(_wave<3&&((_packClock>=_config.PackInterval&&LivingEnemies<9)||(LivingEnemies==0&&_pending.Count==0&&_packClock>2)))QueuePack();
+            if(_wave<3&&((_packClock>=(_config.Pressure!=null?_config.Pressure.PackInterval(Stage):_config.PackInterval)&&LivingEnemies<9)||(LivingEnemies==0&&_pending.Count==0&&_packClock>2)))QueuePack();
             _echoClock-=dt;if(_echoRemaining>0&&_echoClock<=0){_echoRemaining--;_echoClock=.6f;Burst();}
             _orbitClock-=dt;
             if(_levels[5]>0&&_orbitClock<=0)
@@ -274,7 +277,7 @@ namespace TacticalRPG.Prototypes.Expedition
             }
             foreach(var u in _units)
             {
-                if(!u.Alive)continue;u.Cooldown=Mathf.Max(0,u.Cooldown-dt);u.Mark=Mathf.Max(0,u.Mark-dt);
+                if(!u.Alive)continue;u.Cooldown=Mathf.Max(0,u.Cooldown-dt*(!u.Ally&&_config.Pressure!=null?_config.Pressure.Cooldown(Stage):1));u.Mark=Mathf.Max(0,u.Mark-dt);
                 if(u.Ally)AllyTick(u,dt);else EnemyTick(u,dt);if(!Kam.Alive)break;
             }
             CheckProgress();
@@ -330,6 +333,7 @@ namespace TacticalRPG.Prototypes.Expedition
         }
         private void Navigate(LabUnit u,Vector2 goal,float distance,float dt)
         {
+            if(!u.Ally&&u!=_warden&&_config.Pressure!=null)distance*=_config.Pressure.Pursuit(Stage);
             _routeTimers.TryGetValue(u.Id,out float time);time-=dt;
             if(time<=0||!_waypoints.ContainsKey(u.Id)){_waypoints[u.Id]=Map.NextStep(u.Position,goal);time=.35f;}
             _routeTimers[u.Id]=time;Move(u,_waypoints[u.Id]-u.Position,distance);

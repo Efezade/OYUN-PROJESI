@@ -27,7 +27,7 @@ namespace TacticalRPG.Prototypes.Expedition
         public bool Aiming=>_aiming;
         public bool CanLoad=>_saved!=null;
         public string SaveStatus {get;private set;}="Mabet kaydı bekleniyor.";
-        public string SavePath=>Path.Combine(Application.persistentDataPath,"KamExpedition",_config.HybridLayout!=null?"checkpoint-hybrid-v8.json":_config.MasteryJourney?"checkpoint-v5.json":_config.WeaponJourney?"checkpoint-v3.json":"checkpoint-v1.json");
+        public string SavePath=>Path.Combine(Application.persistentDataPath,"KamExpedition",_config.Pressure!=null?"checkpoint-pressure-v9.json":_config.HybridLayout!=null?"checkpoint-hybrid-v8.json":_config.MasteryJourney?"checkpoint-v5.json":_config.WeaponJourney?"checkpoint-v3.json":"checkpoint-v1.json");
         private void Start()
         {
             _simulation=new ExpeditionSimulation(_config);_simulation.Changed+=Changed;_hud.Bind(this,_config);
@@ -117,6 +117,8 @@ namespace TacticalRPG.Prototypes.Expedition
             bool leapCapture=Array.IndexOf(Environment.GetCommandLineArgs(),"--leap-capture")>=0;
             bool cloneCapture=Array.IndexOf(Environment.GetCommandLineArgs(),"--clone-capture")>=0;
             bool wardenCapture=Array.IndexOf(Environment.GetCommandLineArgs(),"--warden-capture")>=0;
+            bool meteorCapture=Array.IndexOf(Environment.GetCommandLineArgs(),"--meteor-capture")>=0;
+            wardenCapture|=meteorCapture;
             int wardenStage=Array.IndexOf(Environment.GetCommandLineArgs(),"--warden-stage2")>=0?2:3;
             bool dynamicCapture=leapCapture||cloneCapture||wardenCapture;bool dynamicReady=false;
             if(_simulation.IsJourney)
@@ -149,7 +151,8 @@ namespace TacticalRPG.Prototypes.Expedition
                     // Clear opening wave in this no-attack fixture so the cloner wave can spawn.
                     if(cloneCapture&&_simulation.Wave==1&&_simulation.Elapsed>10)foreach(var u in _simulation.Units)if(!u.Ally)u.Health=0;
                     _simulation.Tick(.05f,Vector2.zero);bool ready=false;
-                    if(wardenCapture)ready=wardenStage==2?_simulation.WardenVisible&&_simulation.WardenAddCountForView>0&&_simulation.Pending.Count==0:_simulation.WardenAction==WardenMove.Ring&&_simulation.WardenExecuting&&_simulation.WardenRingRadius>2;
+                    if(meteorCapture)ready=_simulation.Meteors.Count>0&&_simulation.Meteors[0].Remaining<.22f&&_simulation.Meteors[0].Remaining>0;
+                    else if(wardenCapture)ready=wardenStage==2?_simulation.WardenVisible&&_simulation.WardenAddCountForView>0&&_simulation.Pending.Count==0:_simulation.WardenAction==WardenMove.Ring&&_simulation.WardenExecuting&&_simulation.WardenRingRadius>2;
                     else foreach(var u in _simulation.Units)if(u.Alive&&(leapCapture?_simulation.EnemyAirHeight(u)>2.5f:_simulation.IsClone(u)))ready=true;
                     if(ready){dynamicReady=true;break;}
                     if(i%10==0){_view.Refresh();_hud.Refresh();yield return null;}continue;

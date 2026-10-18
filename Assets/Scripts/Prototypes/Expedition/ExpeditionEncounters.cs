@@ -21,8 +21,8 @@ namespace TacticalRPG.Prototypes.Expedition
         private bool AttackSlotAvailable(LabUnit source)
         {
             int attacks=0;foreach(var u in _units)if(!u.Ally&&u.Alive&&u.Id!=source.Id&&(u.Windup>0||ChargeActive(u)||Leaping(u)||u==_warden&&WardenBusy))attacks++;
-            // At most two enemy preparations/rushes at once, including the boss.
-            return attacks<2;
+            // Later missions share a bounded pressure budget; telegraph durations stay readable.
+            return attacks<(_config.Pressure!=null?_config.Pressure.AttackSlots(Stage):2);
         }
         private void SeparateEnemy(LabUnit u,float dt)
         {

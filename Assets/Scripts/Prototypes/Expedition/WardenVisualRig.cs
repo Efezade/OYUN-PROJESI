@@ -19,7 +19,7 @@ namespace TacticalRPG.Prototypes.Expedition
             if(facing.sqrMagnitude<.001f)facing=Vector2.up;
             transform.localRotation=Quaternion.LookRotation(new Vector3(facing.x,0,facing.y));
             bool tired=move==WardenMove.Exposed||move==WardenMove.Recovery;
-            _torso.localRotation=Quaternion.Euler(tired?14:stage==3?-8:0,0,0);
+            _torso.localRotation=Quaternion.Euler(tired?14:move==WardenMove.Meteor?-20:stage==3?-8:0,0,0);
             float stride=(move==WardenMove.Approach||move==WardenMove.Rush)?Mathf.Sin(clock*(stage+3))*20:0;
             if(_leftLeg!=null)_leftLeg.localRotation=Quaternion.Euler(stride,0,0);
             if(_rightLeg!=null)_rightLeg.localRotation=Quaternion.Euler(-stride,0,0);

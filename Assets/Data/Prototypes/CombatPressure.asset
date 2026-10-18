@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f0b96a96bc668841bf86920bedd401a, type: 3}
+  m_Name: CombatPressure
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Prototypes.Expedition.CombatPressureProfile
+  _pursuit: {x: 1, y: 1.2, z: 1.4}
+  _cooldown: {x: 1, y: 1.2, z: 1.45}
+  _packInterval: {x: 16, y: 12, z: 10}
+  _attackSlots: {x: 2, y: 3, z: 3}
+  _damageBonus: {x: 0, y: 1, z: 2}
+  _meteorWarning: 1.35
+  _meteorStagger: 0.32
+  _meteorRadius: 1.25
+  _meteorFall: 0.55
+  _meteorHeight: 8
+  _meteorDamage: 16

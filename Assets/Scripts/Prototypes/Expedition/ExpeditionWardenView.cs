@@ -14,10 +14,12 @@ namespace TacticalRPG.Prototypes.Expedition
         {
             if(u!=_simulation.Warden||_wardenPrefab==null||_wardenRig!=null)return;
             _wardenRig=Instantiate(_wardenPrefab,actor.transform);actor.ReplaceBody(_wardenRig.transform);
+            BindMeteorVisuals();
             if(_wardenWarnings==null){_wardenWarnings=new LineRenderer[8];for(int i=0;i<8;i++)_wardenWarnings[i]=WeaponLine(transform);}
         }
         private void RefreshWardenVisual()
         {
+            RefreshMeteorVisuals();
             if(_wardenWarnings==null)return;
             foreach(var line in _wardenWarnings)line.gameObject.SetActive(false);
             var s=_simulation;if(!s.WardenVisible||_wardenRig==null)return;

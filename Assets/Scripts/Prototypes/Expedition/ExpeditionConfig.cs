@@ -7,6 +7,8 @@ namespace TacticalRPG.Prototypes.Expedition
     {
         [SerializeField] private HybridBattleLayout _hybridLayout;
         public HybridBattleLayout HybridLayout=>_hybridLayout;
+        [SerializeField] private CombatPressureProfile _pressure;
+        public CombatPressureProfile Pressure=>_pressure;
         [SerializeField] private float _tileRadius = .8f;
         [SerializeField] private float _moveSpeed = 4.2f;
         [SerializeField] private float _enemySpeed = 1.8f;

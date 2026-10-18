@@ -1,5 +1,20 @@
 # B · Büyüyen Sefer — oynanabilir prototip
 
+## Güncel — Baskı ve boss v9 / bağlantılı harita konsepti
+
+Efe ilk görevi öğretici, ikinci/üçüncüyü kombinasyon gerektiren baskıya taşımayı; bossun ani hızlı hareketlerini ve gökten saldırılarını istedi. PressureBattle.unity ayrı sahne, CombatPressure.asset ayrı profil. Ana xd.unity ve v8 config/sahnesi korunur. HIBRIT_BASLAT.cmd v9 açar; HIBRIT_V008_BASLAT.cmd eski exe'yi açar. Yeni kayıt checkpoint-pressure-v9.json.
+
+Canlar değişmedi: normal 18, seçkin 45, boss 360. Görev 1/2/3 takip katsayısı 1/1,2/1,4; yeniden saldırı sayaç hızı 1/1,2/1,45; dalga bekleme 16/12/10 sn; aynı anda tehdit bütçesi 2/3/3; ek normal düşman hasarı 0/1/2. İkinci görev ilk dalgadan Kuşatmacı, üçüncüde Kalkancı da var. Eski ustalık/dönüşüm ve güç kalıcılığı sürer.
+
+Boss yürüyüşü aynı; hücum 16 m/sn, ilk hazırlık 0,95 ve ikinci 0,76 sn. Toparlanma 1,0, açık çekirdek 2,1 sn; taban hasar 14 (biçiş 16), meteor 16. Meteor önce Kam'ın konumunu, ardından tohumlu dağılmış noktaları kilitler. 1,35 sn ilk hazırlık, 0,32 sn sıra aralığı, 1,25 m yarıçap, en fazla 5 işaret; erişilebilir üç metrelik çıkış çizgisi diğer meteor hedeflerinden korunur. Son 0,55 sn düşen taş görünür; tek isabet. Aşama 2/3 meteor sonrası çift hücum; diğer ağır diziler yer darbesine bağlanabilir. Son muhafızın ölmesi hazırlanmış boss dizisini iptal etmez, dizi sonunda açıklık ödülü korunur. Muhafızlar nişancı/sıçrayan/yancı, sayı sınırı ve XP yasağı aynı. Duraklama/ölüm/aşama değişimi/yeniden başlama etkileri temizler.
+
+Doğrulama: 441 eski + 47 yeni kontrol + v9 konfigürasyonuyla 36 gezi/üç görev kontrolü = 524; Windows build başarılı. İki silahla üç görev ve boss yüksek canlı işlev sürücüsü geçti. Normal canla iki silah/iki tohum ve iki davranış için 16 boss karşılaştırması: v8 sabit otomatik saldırı 4/4 kazandı, v9 0/4; hareket+beceri 4/4 kazandı. Bu küçük deterministik örnek normal insan zorluk/keyif veya beş kat zorluk kanıtı değildir. Logs/pressure-policy-probes.csv sayıları içerir. Gerçek player meteor/karışık düşman görüntüleri incelendi; iki günlükte CAPTURE_OK, Exception/LogError/LogWarning yok. Yüksek canlı meteor QA görseli oyuncu kaydı yazmaz. Kaynak 85 asset SHA-256 eşleşti.
+
+Harita araştırması: Dark Souls Design Works/Miyazaki, Bloodborne ve Sekiro söyleşileri; Blasphemous tasarımcısının üretim anlatısı ve özgün analizler. Yeni öneri iki yerel kestirme döngüsü; önce kaba bağlantı planı, sonra sanat. Zemin/yapı ayrı, mevcut aydınlık dil korunur. Tools/SavasPrototipleri/ModelciPaketi/KORIDOR_IS_FOYU_V009.html, KORIDOR_MODELCI_V009.md ve SOULS_HARITA_ARASTIRMASI_V009.md; paylaşım ModelciPaketi-Koridor-v009.zip. Görsel built-in image_gen ile üretildi, geçiş netliği için düzeltildi. Görsel incelendi; HTML yerel açılışı tarayıcı URL güvenlik politikasınca engellendi, render kabulü yapılmadı. HTML yerel bağlantıları ve ZIP CRC doğrulandı.
+
+Yeni koridor/kestirme haritası henüz uygulanmadı; v9 hâlâ üç avlu/iki köprü düzeninde. İnsan zorluk kabulü, final modeller/VFX, yeni harita yerleşiminin oynanması ve kayıtlı kestirme davranışı açık. Yerel çalışma; push/senkron yok. Kullanım: ZORLUK_V009_OKU.txt.
+
+
 ## Güncel — Hibrit savaş atölyesi v8 (18 Ekim 2026)
 
 Efe hibrit üretimi onayladı: tekil zemin + bağımsız çok hücreli yapılar. Zeynep'in MODELLER/Savas-Karo-Atolyesi_Paylasim_2026-10-18.zip paketi incelendi; 85 BattleMapPack/BattleTilePack dosyası GUID çakışması olmadan, kaynak baytları korunarak alındı. ProjectSettings/Packages, atölye Editor otomatik açılışları ve başka kişinin companion notları aktarılmadı. Kaynak 41 karolu sahne ve Blender dosyaları korunur. Aktarım SHA-256 listesi Tools/SavasPrototipleri/HIBRIT_AKTARIM_KAYDI.json.
