@@ -66,6 +66,15 @@ namespace TacticalRPG.Editor
                                      // uretiminden ONCE — onizleme haritasi da bolgeli ciksin)
                 SetupBiomeWorld();   // authored region art + animated, impassable Bayterek quest roots
                 SetupPresentation();
+                // Tasarimci karolari: yeni FBX varsa paletin yalniz prefab bagini tazele.
+                // Boylece TAM KURULUM yeni modelleri haritada hemen kullanir.
+                var tilePalette = AssetDatabase.LoadAssetAtPath<TilePaletteSO>("Assets/Data/Map/TilePalette.asset");
+                if (tilePalette != null)
+                {
+                    int imported = TileFolderImporter.ImportFolder(KokAhdiTileBatch.Folder, tilePalette, out string tileReport);
+                    EditorUtility.SetDirty(tilePalette);
+                    Debug.Log($"[TacticalRPG] Karo sanati: {imported} model isleniyor.\n{tileReport}");
+                }
                 // EN SON: haritayi editorde uret ki Play'e basmadan da yeni harita gorunsun.
                 // (Store'dan SONRA olmali — magaza karosunun modeli o adimda kesinlesiyor.)
                 GenerateChapterMapInEditor();

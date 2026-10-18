@@ -1,7 +1,9 @@
 using System.Linq;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using TacticalRPG.Data;
+using TacticalRPG.Grid;
 
 namespace TacticalRPG.Editor
 {
@@ -20,6 +22,7 @@ namespace TacticalRPG.Editor
         public const string Folder = "Assets/Art/Models/Tiles/KokAhdi";
         private const string PalettePath = "Assets/Data/Map/TilePalette.asset";
 
+        [MenuItem("TacticalRPG/Karo/Yeni Modelleri Haritaya Uygula")]
         public static void Run()
         {
             AssetDatabase.Refresh();
@@ -29,6 +32,28 @@ namespace TacticalRPG.Editor
             AssetDatabase.SaveAssets();
             Debug.Log($"[KokAhdi] {n} karo islendi:\n{report}");
             Report();
+        }
+
+        /// <summary>
+        /// Kayitli ana haritanin mevcut karo kimliklerini koruyarak sahnedeki gorunusleri
+        /// paletin son prefab referanslariyla yeniden kurar. Batch modunda calistirilir.
+        /// </summary>
+        public static void RefreshSavedMapVisuals()
+        {
+            var scene = EditorSceneManager.OpenScene("Assets/Scenes/xd.unity", OpenSceneMode.Single);
+            var grid = Object.FindFirstObjectByType<HexGridManager>(FindObjectsInactive.Include);
+            if (grid == null || grid.TileMap == null || grid.TilePalette == null)
+            {
+                Debug.LogError("[KokAhdi] Kayitli sahnede harita veya palet bulunamadi.");
+                EditorApplication.Exit(1);
+                return;
+            }
+
+            grid.GenerateGrid();
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log($"[KokAhdi] Kayitli harita gorselleri yenilendi: {grid.Cells.Count} hucre, " +
+                      $"harita={AssetDatabase.GetAssetPath(grid.TileMap)}.");
         }
 
         /// <summary>

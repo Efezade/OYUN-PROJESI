@@ -6,7 +6,7 @@ Efe referans 2D gorselleri kendisi uretir. Codex dogrudan Blender'da gercek 3D m
 
 ## Yerel baglanti
 
-- Blender: `C:/Program Files/Blender Foundation/Blender 5.2/blender.exe`.
+- Blender 5.2.2 (bu PC): `C:/Users/zeynep/AppData/Local/Programs/Blender-5.2.2/blender-5.2.2-windows-x64/blender.exe` (resmi tasinabilir surum). `Tools/launch_blender.py` once eski Program Files yolunu, yoksa bu yolu kullanir.
 - Workspace: `C:/3D OYUN`.
 - Baslatma: `Blender-Baslat.cmd` dosyasina cift tikla veya workspace'te `python Tools/launch_blender.py` calistir. PowerShell betikleri makinede varsayilan olarak kapali.
 - ONEMLI: Codex exec aracinin Windows masaustu `CodexSandboxDesktop-*` olarak ayridir. Aractan acilan GUI kullanicinin ekraninda gorunmez. Kullanici `Blender-Baslat.cmd` dosyasini kendi Explorer penceresinden bir kez baslatmalidir; bundan sonra localhost baglantisiyla gorunur Blender'da calisilir. Gorunurlugu yalniz surec listesinden varsayma. Mevcut insan modeli baslaticiyla otomatik yuklenir.
