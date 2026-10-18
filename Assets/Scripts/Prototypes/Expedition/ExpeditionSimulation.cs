@@ -114,20 +114,27 @@ namespace TacticalRPG.Prototypes.Expedition
             if(IsJourney){Kam.Range=WeaponRange;Kam.Damage=WeaponDamage;_units[1].Damage=3;_units[2].Damage=2;}
             Phase=ExpeditionPhase.Fighting;QueuePack();
             Hint="Q ile topla ve işaretle, E ile zincirle. SPACE: kısa kaçış. Güçler alanlar arasında korunur.";Changed?.Invoke();
-            if(IsJourney)Hint="Görev "+(Stage+1)+" · "+WeaponName+". Otomatik saldır; Q silah becerisi, E vuruşlarla dolar.";
+            if(IsJourney)Hint=(IsMastery?MasterySummary+" · ":"")+"Görev "+(Stage+1)+" · "+WeaponName+". Otomatik saldır; Q silah becerisi, E vuruşlarla dolar.";
         }
         private static LabUnit Unit(int id,LabRole role,Vector2 p,int hp,int damage,float range)=>new LabUnit {Id=id,Role=role,Position=p,Health=hp,MaxHealth=hp,Damage=damage,Range=range,Cooldown=.7f};
         private void QueuePack()
         {
             _wave++;_packClock=0;
             var rng=new System.Random(Seed+Stage*1009+_wave*137);
-            int count=4+_wave+(Modifier==0?1:0);if(Stage==2&&_wave==3)count=6;
+            int count=4+_wave+(Modifier==0?1:0);if(Stage==2&&_wave==3)count=6;if(IsMastery)count+=Stage*2;
             for(int i=0;i<count;i++)
             {
                 bool boss=Stage==2&&_wave==3&&i==0;
                 var role=boss?LabRole.Boss:((i+_wave)% (Modifier==1?2:4)==0?LabRole.Gunner:LabRole.Raider);
                 var tactic=boss?EnemyTactic.Boss:i==0?EnemyTactic.Charger:Stage>0&&i==2?EnemyTactic.Protector:EnemyTactic.Normal;
                 if(IsJourney&&!boss){if(i==1)tactic=EnemyTactic.Flanker;else if(Stage>0&&i==3)tactic=EnemyTactic.Bomber;else if(i>=3&&tactic==EnemyTactic.Normal)tactic=EnemyTactic.Sniper;}
+                if(IsMastery&&!boss)
+                {
+                    // Opening wave showcases power; elites join later waves.
+                    tactic=i==0?EnemyTactic.Charger:i==1?EnemyTactic.Flanker:i==4?EnemyTactic.Sniper:EnemyTactic.Normal;
+                    if(Stage>0&&_wave>1){if(i==2)tactic=EnemyTactic.Protector;if(i==3)tactic=EnemyTactic.Bomber;}
+                    role=tactic==EnemyTactic.Sniper?LabRole.Gunner:LabRole.Raider;
+                }
                 if(tactic==EnemyTactic.Charger)role=LabRole.Raider;
                 if(tactic==EnemyTactic.Protector)role=LabRole.Gunner;
                 if(tactic==EnemyTactic.Sniper||tactic==EnemyTactic.Bomber)role=LabRole.Gunner;
@@ -140,8 +147,10 @@ namespace TacticalRPG.Prototypes.Expedition
                     float d=Vector2.Distance(candidate,Kam.Position);if(d>best){best=d;p=candidate;}if(d>6)break;
                 }
                 int hp=boss?_config.BossHealth:_config.EnemyHealth+Stage*4+(Modifier==2?7:0);
-                var u=Unit(100+Stage*100+(_wave-1)*20+i,role,p,hp,boss?8:3+Stage,role==LabRole.Gunner?5.5f:boss?2.2f:1.6f);
-                RegisterTactic(u,tactic);
+                bool elite=IsMastery&&!boss&&Stage>0&&_wave>1&&(i==0||Stage==2&&i==3);
+                if(IsMastery&&!boss)hp=elite?Mathf.CeilToInt(_config.EnemyHealth*_config.EliteHealthMultiplier):_config.EnemyHealth;
+                var u=Unit(100+Stage*100+(_wave-1)*20+i,role,p,hp,boss?8:IsMastery?(elite?5+Stage:3):3+Stage,role==LabRole.Gunner?5.5f:boss?2.2f:1.6f);
+                RegisterTactic(u,tactic);if(elite)_elites.Add(u.Id);
                 _pending.Add(new ExpeditionSpawn(u,_config.SpawnWarning+i*.08f));
             }
             Changed?.Invoke();
@@ -276,7 +285,7 @@ namespace TacticalRPG.Prototypes.Expedition
                     if(Vector2.Distance(u.Position,goal)>stop||(engage&&!CanHit(u,target)))Navigate(u,goal,_config.MoveSpeed*.92f*dt,dt);
                 }
             }
-            if(target!=null&&u.Cooldown<=0&&CanHit(u,target)){Strike(u,target);u.Cooldown=IsJourney&&u.Role==LabRole.Kam?_config.WeaponAttackSeconds:_config.AttackSeconds;}
+            if(target!=null&&u.Cooldown<=0&&CanHit(u,target)){Strike(u,target);u.Cooldown=IsJourney&&u.Role==LabRole.Kam?WeaponAttackSeconds:_config.AttackSeconds;}
         }
         private void EnemyTick(LabUnit u,float dt)
         {

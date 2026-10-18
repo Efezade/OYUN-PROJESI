@@ -54,6 +54,17 @@ namespace TacticalRPG.Prototypes.Expedition
         [SerializeField] private float _bombRadius=1.6f;
         [SerializeField] private float _bombDuration=2.6f;
         [SerializeField] private float _separationRadius=1.1f;
+        [Header("Mastery journey")]
+        [SerializeField] private bool _masteryJourney;
+        [SerializeField] private float _masteryDamagePerStage=.5f;
+        [SerializeField] private float _masterySpeedPerStage=.12f;
+        [SerializeField] private float _eliteHealthMultiplier=2.5f;
+        [SerializeField] private float _masteryFanAngle=22f;
+        public bool MasteryJourney=>_masteryJourney;
+        public float MasteryDamagePerStage=>_masteryDamagePerStage;
+        public float MasterySpeedPerStage=>_masterySpeedPerStage;
+        public float EliteHealthMultiplier=>_eliteHealthMultiplier;
+        public float MasteryFanAngle=>_masteryFanAngle;
         public float FlankSpeed=>_flankSpeed;
         public float SniperRange=>_sniperRange;
         public float SniperWarning=>_sniperWarning;

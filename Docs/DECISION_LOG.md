@@ -1462,3 +1462,9 @@ Tarihsel gerekçeleri arşivde; burada sadece **hâlâ geçerli olan** hüküm v
 **KARAR:** Kullanıcının "herkes zombi gibi ilerliyor, çok kolay" geri bildirimine karşı WeaponJourney'de yandan yaklaşan Yancı, mesafe tutup kilitli atış yapan Avcı, ikinci görevden itibaren geçici alan kapatan Kuşatmacı ve öndeki birimi izleyen Kalkancı uygulandı. Yığılmayı azaltan ayrışma ve aynı anda iki hazırlık/atılış sınırı var. Genel can, hasar veya dalga sayısı şişirilmedi; Avcı özel hattının kendi hasarı var.
 
 **NEDEN:** Hareket yönü, siper ve hedef önceliği farklı sorunlara yanıt versin. Oyuncu işaretli saldırıdan çıkabilsin; düşman nişanı hazırlıktan sonra oyuncuyu takip etmesin. 16 yeni davranış kontrolü ve 271 eski kontrol geçti; bu sonuç insan zorluk kabulü değildir. Eski v3 build korunur; yeni v4 aynı kayıt biçimini kullanır. Final düşman sanatı henüz yok. **COMMIT:** Bu kaydı ekleyen commit.
+
+## 2026-10-18 — Garantili ustalık, dönüşüm ve seçkin baskısı
+
+**KARAR:** Efe'nin onayıyla ayrı MasteryJourney v5. Görev indeksinden türeyen garantili hasar/saldırı sıklığı, üçüncü göreve girişte büyük silah dönüşümü; kartlar bunu güçlendirir. Eski düşman canı sabit, sonraki dalgalarda seçkin baskısı ve daha kalabalık gruplar. Güç tekliflerinde imza/birleşim desteği. Ayrı v5 kayıt; eski kayıtlar bilinçli olarak taşınmaz.
+
+**NEDEN:** Her düşmanın canını yükseltmek gelişim hissini siliyordu. Savunma kartı seçen de temel hasarda ilerlemeli; büyük dönüşüm son düşmandan sonra gelmemeli. Ustalık kayıt alanı olarak yığılmak yerine görevden hesaplanır; ölüm/yeniden yükleme güç kazandırmaz. Mevcut başlatıcıda tur başında görülen yerel değişiklik korunarak yeni USTALIK_BASLAT.cmd oluşturuldu. 76 yeni + 287 mevcut kontrol geçti; bu insan keyif/zorluk kabulü değildir. **COMMIT:** Bu kaydı ekleyen commit.

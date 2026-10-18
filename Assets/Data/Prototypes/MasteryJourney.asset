@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 033e2d7c6505f27438869ee88ff2d32c, type: 3}
+  m_Name: MasteryJourney
+  m_EditorClassIdentifier: Assembly-CSharp::TacticalRPG.Prototypes.Expedition.ExpeditionConfig
+  _tileRadius: 0.8
+  _moveSpeed: 4.2
+  _enemySpeed: 1.8
+  _kamHealth: 65
+  _allyHealth: 48
+  _enemyHealth: 18
+  _bossHealth: 150
+  _mana: 16
+  _manaRegen: 1.3
+  _attackSeconds: 1.05
+  _enemyWindup: 1.1
+  _enemyAttackSeconds: 2.7
+  _spawnWarningSeconds: 1.8
+  _packInterval: 16
+  _height: 1.7
+  _mudSpeed: 0.65
+  _highGroundRange: 1.4
+  _chargeRange: 6
+  _chargeSpeed: 9
+  _chargeWarning: 1.4
+  _chargeRadius: 0.65
+  _protectorRadius: 3
+  _protectorDamageMultiplier: 0.55
+  _vortexDuration: 2.4
+  _powerThresholds: 03000000090000001900000022000000370000003e000000
+  _cameraOffset: {x: 0, y: 16, z: -12}
+  _cameraSize: 8.8
+  _weaponJourney: 1
+  _crescentRange: 2.7
+  _spearRange: 7.5
+  _crescentDamage: 9
+  _spearDamage: 6
+  _weaponAttackSeconds: 0.85
+  _spearWidth: 0.5
+  _finisherCharge: 3
+  _lungeDistance: 3.5
+  _lungeCooldown: 4
+  _anchorLife: 9
+  _flankSpeed: 2.8
+  _sniperRange: 8
+  _sniperWarning: 1.35
+  _sniperCooldown: 3.2
+  _bombWarning: 1.6
+  _bombRadius: 1.6
+  _bombDuration: 2.6
+  _separationRadius: 1.1
+  _masteryJourney: 1
+  _masteryDamagePerStage: 0.5
+  _masterySpeedPerStage: 0.12
+  _eliteHealthMultiplier: 2.5
+  _masteryFanAngle: 22
+  _grass: {r: 0.45, g: 0.53, b: 0.37, a: 1}
+  _stone: {r: 0.57, g: 0.57, b: 0.47, a: 1}
+  _water: {r: 0.27, g: 0.54, b: 0.57, a: 1}
+  _mud: {r: 0.45, g: 0.39, b: 0.29, a: 1}
+  _panel: {r: 0.055, g: 0.1, b: 0.12, a: 0.94}

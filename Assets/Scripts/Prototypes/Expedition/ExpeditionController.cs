@@ -27,7 +27,7 @@ namespace TacticalRPG.Prototypes.Expedition
         public bool Aiming=>_aiming;
         public bool CanLoad=>_saved!=null;
         public string SaveStatus {get;private set;}="Mabet kaydı bekleniyor.";
-        public string SavePath=>Path.Combine(Application.persistentDataPath,"KamExpedition",_config.WeaponJourney?"checkpoint-v3.json":"checkpoint-v1.json");
+        public string SavePath=>Path.Combine(Application.persistentDataPath,"KamExpedition",_config.MasteryJourney?"checkpoint-v5.json":_config.WeaponJourney?"checkpoint-v3.json":"checkpoint-v1.json");
         private void Start()
         {
             _simulation=new ExpeditionSimulation(_config);_simulation.Changed+=Changed;_hud.Bind(this,_config);
@@ -115,7 +115,7 @@ namespace TacticalRPG.Prototypes.Expedition
                 if(Array.IndexOf(args,"--weapon-evolved")>=0)
                 {
                     // Explicit visual fixture only: does not touch the player's checkpoint.
-                    _simulation.Load(new ExpeditionSave{version=3,seed=12345,nextStage=2,xp=39,picks=4,weapon=spear?1:0,powers=new[]{1,1,1,0,1,0,0,0,0},credited=Array.Empty<int>(),offerState=12345});
+                    _simulation.Load(new ExpeditionSave{version=_simulation.JourneySaveVersion,seed=12345,nextStage=2,xp=39,picks=4,weapon=spear?1:0,powers=new[]{1,1,1,0,1,0,0,0,0},credited=Array.Empty<int>(),offerState=12345});
                     _view.Bind(_simulation,_config);
                 }
             }

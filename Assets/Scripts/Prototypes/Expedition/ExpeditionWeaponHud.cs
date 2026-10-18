@@ -14,7 +14,7 @@ namespace TacticalRPG.Prototypes.Expedition
             _text.Clear();_text.Append("YOLCULUĞUN\nGörevler arasında korunur\n\n").Append(s.WeaponName).Append("\n\n");
             for(int i=0;i<9;i++)if(s.HasPower(i))_text.Append("+ ").Append(s.PowerName(i)).Append("\n");
             _text.Append("\nGelişim ").Append(s.XP);if(s.NextThreshold>0)_text.Append(" / ").Append(s.NextThreshold);else _text.Append(" · TAMAM");
-            _text.Append("\n").Append(s.Picks).Append(" yeni davranış\n\n").Append(s.Weapon==JourneyWeapon.Crescent?"Yaklaş · ön yayda biç\nÜç isabetle E hazır":"Hizala · del · yer değiştir\nQ: mızrakları geri çağır");_build.text=_text.ToString();
+            _text.Append("\n").Append(s.Picks).Append(" yeni davranış\n\n").Append(s.Weapon==JourneyWeapon.Crescent?"Yaklaş · ön yayda biç\nÜç isabetle E hazır":"Hizala · del · yer değiştir\nQ: mızrakları geri çağır");_build.text=_text.ToString()+(s.IsMastery?"\n\n"+s.MasterySummary:"");
             _objective.text=s.Phase==ExpeditionPhase.Travel?"DOĞUYA İLERLE →\nSonraki görev\nSilah ve güçler korunuyor":"GÖREV "+(s.Stage+1)+" · "+s.StageName+"\nDALGA "+s.Wave+" / 3\n"+s.LivingEnemies+" düşman · "+s.Pending.Count+" yaklaşan";
             if(s.Phase==ExpeditionPhase.Fighting)_objective.text+=s.Stage==0?"\nAvcı: atış çizgisinden çık":"\nKuşatmacı: halkayı terk et";
             _ground.text=s.Map.Description(s.Kam.Position);
@@ -40,6 +40,7 @@ namespace TacticalRPG.Prototypes.Expedition
             }
             _camp.SetActive(s.Phase==ExpeditionPhase.Camp);
             if(s.Phase==ExpeditionPhase.Camp)_campLabel.text="GÖREV "+(s.Stage+1)+" TAMAMLANDI\n\n"+s.WeaponName+" ve "+s.Picks+" yetenek seçimin korundu.\nCanın yenilendi; gelişim çubuğun devam ediyor.\n\n"+_controller.SaveStatus+"\nENTER, ardından doğu geçidine yürü.";
+            if(s.IsMastery&&s.Phase==ExpeditionPhase.Camp)_campLabel.text="GÖREV "+(s.Stage+1)+" TAMAMLANDI\n\nUSTALIK "+(s.Stage+1)+" / 2 KAZANILDI\nSonraki görevde daha güçlü ve hızlı saldıracaksın.\n"+(s.Stage==1?(s.Weapon==JourneyWeapon.Crescent?"ÜÇLÜ YARIK: her üçüncü isabette üç dalga.\nÜçüncü Darbe kartın varsa iki isabette bir.":"MIZRAK YAYLIMI: üç hat, sekiz saplı mızrak.\nÇifte Mızrak kartın varsa dört hat."):"Silahın ve tüm kartların korunur.")+"\n\n"+_controller.SaveStatus+"\nENTER, ardından doğu geçidine yürü.";
             bool ended=s.Phase==ExpeditionPhase.Won||s.Phase==ExpeditionPhase.Lost;_result.SetActive(ended);_retry.gameObject.SetActive(s.Phase==ExpeditionPhase.Lost);
             if(ended)_resultLabel.text=(s.Phase==ExpeditionPhase.Won?"ÜÇ GÖREV TAMAMLANDI":"KAM DÜŞTÜ")+"\n\n"+s.WeaponName+" · "+s.Picks+" yeni davranış\n"+Mathf.FloorToInt(s.Elapsed)+" sn · "+s.Deaths+" dönüş\n\n"+(s.Phase==ExpeditionPhase.Lost?"Mabede dön: aynı görev, aynı silah ve güçler.\nAynı düşmandan tekrar gelişim kazanılmaz.":"Aynı tohumu diğer silahla dene.\nMesafen ve hareket rotan değişti mi?");
         }

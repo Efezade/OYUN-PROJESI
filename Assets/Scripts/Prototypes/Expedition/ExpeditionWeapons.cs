@@ -28,7 +28,7 @@ namespace TacticalRPG.Prototypes.Expedition
         public bool HasPower(int id)=>id>=0&&id<_powers.Length&&_powers[id];
         public string WeaponName=>Weapon==JourneyWeapon.Crescent?"HİLAL DARBESİ":"DELİCİ MIZRAK";
         public float WeaponRange=>Weapon==JourneyWeapon.Crescent?_config.CrescentRange:_config.SpearRange;
-        public int WeaponDamage=>Weapon==JourneyWeapon.Crescent?_config.CrescentDamage:_config.SpearDamage;
+        public int WeaponDamage=>MasteryDamage(Weapon==JourneyWeapon.Crescent?_config.CrescentDamage:_config.SpearDamage);
         public bool CanWeaponQ=>MovingAllowed&&Phase==ExpeditionPhase.Fighting&&PullCooldown<=0&&(Weapon==JourneyWeapon.Crescent||_anchors.Count>0);
         public bool CanWeaponE=>MovingAllowed&&Phase==ExpeditionPhase.Fighting&&Charge>=ChargeRequired&&BurstCooldown<=0;
         public string QName=>Weapon==JourneyWeapon.Crescent?"ATIL VE BİÇ":"GERİ ÇAĞIR";
@@ -60,7 +60,13 @@ namespace TacticalRPG.Prototypes.Expedition
             for(int i=0;i<3;i++)_offers[i]=-1;
             // The first reward always contains a new automatic skill and the weapon transformation.
             if(_picks==0){_offers[0]=NextRandom(2)==0?1:4;_offers[1]=0;pool.Remove(_offers[0]);pool.Remove(0);_offers[2]=pool[NextRandom(pool.Count)];return;}
-            for(int i=0;i<3&&pool.Count>0;i++){int at=NextRandom(pool.Count);_offers[i]=pool[at];pool.RemoveAt(at);}
+            int first=0;
+            if(IsMastery&&_picks>=2)
+            {
+                int preferred=HasPower(0)?7:0;
+                if(pool.Remove(preferred)){_offers[0]=preferred;first=1;}
+            }
+            for(int i=first;i<3&&pool.Count>0;i++){int at=NextRandom(pool.Count);_offers[i]=pool[at];pool.RemoveAt(at);}
         }
         private static float SegmentDistance(Vector2 p,Vector2 a,Vector2 b)
         {var d=b-a;float t=d.sqrMagnitude<.0001f?0:Mathf.Clamp01(Vector2.Dot(p-a,d)/d.sqrMagnitude);return Vector2.Distance(p,a+d*t);}
@@ -93,7 +99,7 @@ namespace TacticalRPG.Prototypes.Expedition
             Facing=direction.normalized;Vector2 end=Kam.Position;
             for(float d=.15f;d<=Range(Kam);d+=.15f){var p=Kam.Position+Facing*d;if(!Map.Contains(p)||!Map.HasLine(Kam.Position,p))break;end=p;}
             WeaponLine(Kam.Position,end,WeaponDamage,_config.SpearWidth,11);
-            if(_anchors.Count==4)_anchors.RemoveAt(0);
+            if(_anchors.Count==AnchorCapacity)_anchors.RemoveAt(0);
             _anchors.Add(new SpearAnchor{Position=end,Life=_config.AnchorLife});
         }
         private void WeaponStrike(LabUnit target)
@@ -103,12 +109,17 @@ namespace TacticalRPG.Prototypes.Expedition
             {
                 if(!CrescentSweep(direction,WeaponRange,WeaponDamage))return;
                 _weaponHits++;
-                if(HasPower(0)&&_weaponHits%3==0)WeaponLine(Kam.Position,Kam.Position+Facing*6,WeaponDamage,.7f,12,HasPower(7));
+                if((HasPower(0)||Ascended)&&_weaponHits%(Ascended&&HasPower(0)?2:3)==0)
+                {
+                    var forward=Facing;WeaponLine(Kam.Position,Kam.Position+forward*6,WeaponDamage,.7f,12,HasPower(7));
+                    if(Ascended){WeaponLine(Kam.Position,Kam.Position+Rotate(forward,-_config.MasteryFanAngle)*6,WeaponDamage,.7f,12,HasPower(7));WeaponLine(Kam.Position,Kam.Position+Rotate(forward,_config.MasteryFanAngle)*6,WeaponDamage,.7f,12,HasPower(7));}
+                }
             }
             else
             {
                 FireSpear(direction);
-                if(HasPower(0)){var d=direction.normalized;FireSpear(new Vector2(d.x*.96f-d.y*.28f,d.x*.28f+d.y*.96f));}
+                if(Ascended){FireSpear(Rotate(direction,-_config.MasteryFanAngle));FireSpear(Rotate(direction,_config.MasteryFanAngle));if(HasPower(0))FireSpear(Rotate(direction,_config.MasteryFanAngle*2));}
+                else if(HasPower(0)){var d=direction.normalized;FireSpear(new Vector2(d.x*.96f-d.y*.28f,d.x*.28f+d.y*.96f));}
                 _weaponHits++;
             }
             Charge=Mathf.Min(ChargeRequired,Charge+1);
@@ -128,7 +139,7 @@ namespace TacticalRPG.Prototypes.Expedition
                 else
                 {
                     var well=_anchors[_anchors.Count-1].Position;
-                    foreach(var anchor in _anchors){WeaponLine(anchor.Position,Kam.Position,WeaponDamage+2,_config.SpearWidth,12);if(HasPower(7))WeaponBlast(anchor.Position,2,4);}
+                    foreach(var anchor in _anchors){WeaponLine(anchor.Position,Kam.Position,WeaponDamage+2,_config.SpearWidth,12);if(HasPower(7))WeaponBlast(anchor.Position,2,MasteryDamage(4));}
                     _anchors.Clear();PullCooldown=.8f;if(HasPower(2))CreateVortex(well);
                 }
             }
@@ -142,12 +153,12 @@ namespace TacticalRPG.Prototypes.Expedition
         private void WeaponFinisher()
         {
             if(Weapon==JourneyWeapon.Crescent)WeaponBlast(Kam.Position,3.8f,WeaponDamage*2);
-            else {WeaponBlast(Kam.Position,3.2f,5);ShieldBreak();Shield=Mathf.Max(Shield,4);_shieldClock=4;}
+            else {WeaponBlast(Kam.Position,3.2f,MasteryDamage(5));ShieldBreak();Shield=Mathf.Max(Shield,4);_shieldClock=4;}
             if(HasPower(6)){Shield=Mathf.Max(Shield,8);_shieldClock=6;}
             if(HasPower(8)){_dashClock=0;ShieldBreak();}
         }
         private void JourneyDash(Vector2 direction)
-        {if(HasPower(5))WeaponLine(Kam.Position-direction.normalized*2.3f,Kam.Position,10,.8f,12);}
+        {if(HasPower(5))WeaponLine(Kam.Position-direction.normalized*2.3f,Kam.Position,MasteryDamage(10),.8f,12);}
         private void TickJourney(float dt)
         {
             for(int i=_anchors.Count-1;i>=0;i--){_anchors[i].Life-=dt;if(_anchors[i].Life<=0)_anchors.RemoveAt(i);}
@@ -156,23 +167,23 @@ namespace TacticalRPG.Prototypes.Expedition
             if(HasPower(1)&&_bladeClock<=0)
             {
                 _bladeClock=.35f;var axis=new Vector2(Mathf.Cos(BladeAngle),Mathf.Sin(BladeAngle))*2;
-                foreach(var u in _units)if(!u.Ally&&u.Alive&&Map.HasLine(Kam.Position,u.Position)&&(Vector2.Distance(u.Position,Kam.Position+axis)<.85f||Vector2.Distance(u.Position,Kam.Position-axis)<.85f))Hit(u,5,Kam.Position,false);
+                foreach(var u in _units)if(!u.Ally&&u.Alive&&Map.HasLine(Kam.Position,u.Position)&&(Vector2.Distance(u.Position,Kam.Position+axis)<.85f||Vector2.Distance(u.Position,Kam.Position-axis)<.85f))Hit(u,MasteryDamage(5),Kam.Position,false);
             }
             if(HasPower(4)&&_discClock<=0)
             {
                 _discClock=2.8f;var target=Target(Kam);if(target==null||Vector2.Distance(target.Position,Kam.Position)>7||!Map.HasLine(Kam.Position,target.Position))return;
-                Hit(target,6,Kam.Position,false);Effect?.Invoke(new LabFx(Kam.Position,target.Position,0,14));
-                foreach(var u in _units)if(!u.Ally&&u.Alive&&u.Id!=target.Id&&Vector2.Distance(u.Position,target.Position)<4&&Map.HasLine(target.Position,u.Position)){Hit(u,6,target.Position,false);Effect?.Invoke(new LabFx(target.Position,u.Position,0,14));break;}
+                Hit(target,MasteryDamage(6),Kam.Position,false);Effect?.Invoke(new LabFx(Kam.Position,target.Position,0,14));
+                foreach(var u in _units)if(!u.Ally&&u.Alive&&u.Id!=target.Id&&Vector2.Distance(u.Position,target.Position)<4&&Map.HasLine(target.Position,u.Position)){Hit(u,MasteryDamage(6),target.Position,false);Effect?.Invoke(new LabFx(target.Position,u.Position,0,14));break;}
             }
         }
         private ExpeditionSave JourneyCheckpoint()
         {
             var credited=new int[_credited.Count];_credited.CopyTo(credited);var powers=new int[9];for(int i=0;i<9;i++)powers[i]=_powers[i]?1:0;
-            return new ExpeditionSave{version=3,seed=Seed,nextStage=Stage+1,xp=XP,picks=_picks,levels=new int[7],powers=powers,weapon=(int)Weapon,credited=credited,offerState=_offerState,elapsed=Elapsed};
+            return new ExpeditionSave{version=JourneySaveVersion,seed=Seed,nextStage=Stage+1,xp=XP,picks=_picks,levels=new int[7],powers=powers,weapon=(int)Weapon,credited=credited,offerState=_offerState,elapsed=Elapsed};
         }
         private bool LoadJourney(ExpeditionSave save)
         {
-            if(save==null||save.version!=3||save.seed<1||save.nextStage<1||save.nextStage>2||save.weapon<0||save.weapon>1||save.powers==null||save.powers.Length!=9||save.credited==null||save.offerState==0||save.xp<0||save.picks<0||save.picks>_config.Thresholds.Length||float.IsNaN(save.elapsed)||float.IsInfinity(save.elapsed)||save.elapsed<0)return false;
+            if(save==null||save.version!=JourneySaveVersion||save.seed<1||save.nextStage<1||save.nextStage>2||save.weapon<0||save.weapon>1||save.powers==null||save.powers.Length!=9||save.credited==null||save.offerState==0||save.xp<0||save.picks<0||save.picks>_config.Thresholds.Length||float.IsNaN(save.elapsed)||float.IsInfinity(save.elapsed)||save.elapsed<0)return false;
             int total=0;foreach(int n in save.powers){if(n<0||n>1)return false;total+=n;}if(total!=save.picks||(save.powers[7]>0&&save.powers[0]==0))return false;
             ResetJourney();Array.Clear(_levels,0,_levels.Length);Weapon=(JourneyWeapon)save.weapon;Seed=save.seed;Stage=save.nextStage;XP=save.xp;_picks=save.picks;_offerState=save.offerState;Elapsed=save.elapsed;Chains=Deaths=0;
             for(int i=0;i<9;i++)_powers[i]=save.powers[i]>0;_credited.Clear();foreach(int id in save.credited)_credited.Add(id);BeginStage();return true;

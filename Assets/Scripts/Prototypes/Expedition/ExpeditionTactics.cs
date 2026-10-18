@@ -22,8 +22,9 @@ namespace TacticalRPG.Prototypes.Expedition
         public float ProtectorRadius=>_config.ProtectorRadius;
         public EnemyTactic TacticOf(LabUnit u)=>_tactics.TryGetValue(u.Id,out var t)?t.Kind:EnemyTactic.Normal;
         public bool ChargeActive(LabUnit u)=>u.Alive&&_tactics.TryGetValue(u.Id,out var t)&&(t.Kind==EnemyTactic.Charger||t.Kind==EnemyTactic.Boss)&&!t.SmashNext&&(u.Windup>0||t.Rushing);
-        public string DisplayName(LabUnit u)=>TacticOf(u) switch {EnemyTactic.Charger=>"YARICI",EnemyTactic.Protector=>"KALKANCI",EnemyTactic.Boss=>"MABET BEKÇİSİ",EnemyTactic.Flanker=>"YANCI",EnemyTactic.Sniper=>"AVCI",EnemyTactic.Bomber=>"KUŞATMACI",_=>u.Name};
-        private void ResetTactics(){_tactics.Clear();_vortexClock=0;ResetEncounters();}
+        public string DisplayName(LabUnit u)=>(IsElite(u)?"SEÇKİN ":"")+TacticName(u);
+        private string TacticName(LabUnit u)=>TacticOf(u) switch {EnemyTactic.Charger=>"YARICI",EnemyTactic.Protector=>"KALKANCI",EnemyTactic.Boss=>"MABET BEKÇİSİ",EnemyTactic.Flanker=>"YANCI",EnemyTactic.Sniper=>"AVCI",EnemyTactic.Bomber=>"KUŞATMACI",_=>u.Name};
+        private void ResetTactics(){_elites.Clear();_tactics.Clear();_vortexClock=0;ResetEncounters();}
         private void RegisterTactic(LabUnit u,EnemyTactic kind){_tactics[u.Id]=new TacticState{Kind=kind};}
         public bool IsProtected(LabUnit u)
         {

@@ -9,6 +9,8 @@ namespace TacticalRPG.Prototypes.Expedition
         [SerializeField] private Color _flankerColor=new Color(1,.4f,.7f);
         [SerializeField] private Color _bombColor=new Color(1,.35f,.12f);
         [SerializeField] private float _roleMarkerSize=.45f;
+        [SerializeField] private Color _eliteColor=new Color(1,.85f,.2f);
+        [SerializeField] private float _eliteScale=1.2f;
         private readonly Dictionary<int,LineRenderer> _roleMarkers=new Dictionary<int,LineRenderer>();
         private readonly Dictionary<int,LineRenderer> _bombWarnings=new Dictionary<int,LineRenderer>();
         private LineRenderer[] _hazardViews;
@@ -21,8 +23,9 @@ namespace TacticalRPG.Prototypes.Expedition
         private void AddEnemyVisual(LabUnit u,Transform actor)
         {
             if(!_simulation.IsJourney||u.Ally||_roleMarkers.ContainsKey(u.Id))return;
-            var tactic=_simulation.TacticOf(u);if(tactic!=EnemyTactic.Flanker&&tactic!=EnemyTactic.Sniper&&tactic!=EnemyTactic.Bomber)return;
-            var marker=WeaponLine(actor);_roleMarkers.Add(u.Id,marker);TintWeapon(marker,tactic==EnemyTactic.Flanker?_flankerColor:tactic==EnemyTactic.Bomber?_bombColor:_spearColor);
+            var tactic=_simulation.TacticOf(u);if(!_simulation.IsElite(u)&&tactic!=EnemyTactic.Flanker&&tactic!=EnemyTactic.Sniper&&tactic!=EnemyTactic.Bomber)return;
+            if(_simulation.IsElite(u))actor.localScale*=_eliteScale;
+            var marker=WeaponLine(actor);_roleMarkers.Add(u.Id,marker);TintWeapon(marker,_simulation.IsElite(u)?_eliteColor:tactic==EnemyTactic.Flanker?_flankerColor:tactic==EnemyTactic.Bomber?_bombColor:_spearColor);
             if(tactic==EnemyTactic.Bomber){var warning=WeaponLine(transform);TintWeapon(warning,_bombColor);_bombWarnings.Add(u.Id,warning);}
         }
         private void Circle(LineRenderer line,Vector2 p,float radius)
@@ -37,9 +40,9 @@ namespace TacticalRPG.Prototypes.Expedition
             {
                 var u=_simulation.Find(pair.Key);bool show=u!=null&&u.Alive;var line=pair.Value;line.gameObject.SetActive(show);if(!show)continue;
                 var c=Point(u.Position,2.9f);var right=_camera.transform.right*_roleMarkerSize;var up=_camera.transform.up*_roleMarkerSize;
-                var tactic=_simulation.TacticOf(u);line.positionCount=tactic==EnemyTactic.Bomber?5:3;
+                var tactic=_simulation.TacticOf(u);bool diamond=tactic==EnemyTactic.Bomber||_simulation.IsElite(u);line.positionCount=diamond?5:3;
                 line.SetPosition(0,c-right);line.SetPosition(1,c+up);line.SetPosition(2,c+right);
-                if(tactic==EnemyTactic.Bomber){line.SetPosition(3,c-up);line.SetPosition(4,c-right);}
+                if(diamond){line.SetPosition(3,c-up);line.SetPosition(4,c-right);}
             }
             foreach(var pair in _bombWarnings)
             {

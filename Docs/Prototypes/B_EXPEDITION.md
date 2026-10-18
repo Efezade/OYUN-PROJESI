@@ -1,5 +1,16 @@
 # B · Büyüyen Sefer — oynanabilir prototip
 
+## v5 — Ustalık ve dönüşüm v5
+
+Efe garantili silah ustalığı, üçüncü görevde eski düşmanları ezme ve seçkin baskısını onayladı. Aç: `Tools/SavasPrototipleri/USTALIK_BASLAT.cmd` → Yeni Sefer. Build `OYUN/Builds/MasteryJourney/KamMastery.exe`; sahne `MasteryJourney.unity`; ayrı `checkpoint-v5.json`. Mevcut IKI_SILAH_BASLAT.cmd'deki yerel v3'e dönüş değişikliği korunarak ayrı başlatıcı oluşturuldu.
+
+Temel Hilal hasarı 9/14/18, Mızrak 6/9/12; saldırı sıklığı 1/1,12/1,24. Ek bıçak/disk/kaçış izi ve kırılma hasarı da ustalıkla artar. Ustalık görev indeksinden türetilir; ölüm veya yükleme tekrar güç vermez. Üçüncü göreve girişte Hilal üç yönlü yarık (Üçüncü Darbe varsa her iki isabette), Mızrak üçlü yaylım (Çifte Mızrak varsa dört) ve sekiz saplı mızrak. Kartların dönüşüme katkısı korunur; sonraki tekliflerde eksik imza/birleşim kartı sunulur, seçmek zorunlu değildir.
+
+Sıradan düşmanlar 18 can/3 hasarda kalır. Görev ilerledikçe daha kalabalık gruplar, ikinci dalgadan itibaren 45 canlı altın işaretli seçkinler: ikinci görevde seçkin Yarıcı, üçüncüde ayrıca seçkin Kuşatmacı. İlk dalga güç denemesi; final boss 150 can. Kalkancı koruması hasarı azaltır; korunan sıradan düşman tek vuruş garantisi taşımaz. İki eşzamanlı saldırı hazırlığı sınırı korunur. Güç eşikleri 3/9/25/34/55/62; toplam altı kart, ilk iki görevde ikişer kart. Büyük dönüşüm kart RNG'sine bağlı değildir.
+
+76 yeni + 287 eski = 363 işlev kontrolü, Windows build ve iki silahın gerçek player görsel kontrolü geçti. Görseller üçüncü göreve yüklenen açık QA fixture kullanır, oyuncu kaydı yazmaz. Üç görev akış testi yüksek canlıdır; insan keyif/zorluk kabulü değildir. Sonraki adım Efe'nin Yeni Sefer ile iki silahın güç farkını ve seçkin baskısını denemesi. Ana harita/final sanat/ekonomi açık; mevcut arşiv ve eski build'ler korunur. Push/senkron yok. Ayrıntı `USTALIK_OKU.txt`, `OYUN/Docs/Prototypes/B_EXPEDITION.md`.
+
+
 18 Ekim 2026. Efe'nin seçtiği gerçek zamanlı B yönünün devamı. Bu küçük deney, büyük arena + savaş içinde büyüme + savaşlar arasında kombinasyon sürekliliğini birlikte sınar. Tam ilk harita veya Steam demosu değildir.
 
 ## Güncel deney: İki Silah / Üç Görev (v3)

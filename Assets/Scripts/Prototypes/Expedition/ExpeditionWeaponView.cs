@@ -19,8 +19,8 @@ namespace TacticalRPG.Prototypes.Expedition
         private void PrepareWeaponVisuals()
         {
             if(!_simulation.IsJourney||_heldWeapon!=null)return;
-            _heldWeapon=WeaponLine(transform);_anchorViews=new LineRenderer[4];_bladeViews=new LineRenderer[2];
-            for(int i=0;i<4;i++)_anchorViews[i]=WeaponLine(transform);
+            _heldWeapon=WeaponLine(transform);_anchorViews=new LineRenderer[8];_bladeViews=new LineRenderer[2];
+            for(int i=0;i<8;i++)_anchorViews[i]=WeaponLine(transform);
             for(int i=0;i<2;i++)_bladeViews[i]=WeaponLine(transform);
         }
         private void RefreshWeaponVisuals()
@@ -32,7 +32,7 @@ namespace TacticalRPG.Prototypes.Expedition
             _heldWeapon.startColor=_heldWeapon.endColor=color;
             TintWeapon(_heldWeapon,color);
             _heldWeapon.SetPosition(0,Point(s.Kam.Position,.65f));_heldWeapon.SetPosition(1,Point(s.Kam.Position+s.Facing*(s.Weapon==JourneyWeapon.Crescent?1.2f:1.9f),.85f));
-            for(int i=0;i<4;i++)
+            for(int i=0;i<8;i++)
             {
                 bool show=active&&i<s.Anchors.Count;var line=_anchorViews[i];line.gameObject.SetActive(show);if(!show)continue;
                 var p=s.Anchors[i].Position;line.startColor=line.endColor=_spearColor;TintWeapon(line,_spearColor);line.SetPosition(0,Point(p,.06f));line.SetPosition(1,Point(p+Vector2.right*.3f,1.2f));
