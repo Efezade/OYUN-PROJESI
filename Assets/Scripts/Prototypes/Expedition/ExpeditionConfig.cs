@@ -22,6 +22,14 @@ namespace TacticalRPG.Prototypes.Expedition
         [SerializeField] private float _height = 1.7f;
         [SerializeField] private float _mudSpeed = .65f;
         [SerializeField] private float _highGroundRange = 1.4f;
+        [Header("Encounter variety")]
+        [SerializeField] private float _chargeRange = 6f;
+        [SerializeField] private float _chargeSpeed = 9f;
+        [SerializeField] private float _chargeWarning = 1.4f;
+        [SerializeField] private float _chargeRadius = .65f;
+        [SerializeField] private float _protectorRadius = 3f;
+        [SerializeField] private float _protectorDamageMultiplier = .55f;
+        [SerializeField] private float _vortexDuration = 2.4f;
         [SerializeField] private int[] _powerThresholds = { 3, 8, 15, 24, 36, 50, 65 };
         [SerializeField] private Vector3 _cameraOffset = new Vector3(0, 16, -12);
         [SerializeField] private float _cameraSize = 8.8f;
@@ -47,6 +55,13 @@ namespace TacticalRPG.Prototypes.Expedition
         public float Height => _height;
         public float MudSpeed => _mudSpeed;
         public float HighRange => _highGroundRange;
+        public float ChargeRange => _chargeRange;
+        public float ChargeSpeed => _chargeSpeed;
+        public float ChargeWarning => _chargeWarning;
+        public float ChargeRadius => _chargeRadius;
+        public float ProtectorRadius => _protectorRadius;
+        public float ProtectorDamageMultiplier => _protectorDamageMultiplier;
+        public float VortexDuration => _vortexDuration;
         public int[] Thresholds => _powerThresholds;
         public Vector3 CameraOffset => _cameraOffset;
         public float CameraSize => _cameraSize;

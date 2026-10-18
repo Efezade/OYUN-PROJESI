@@ -206,8 +206,8 @@ namespace TacticalRPG.Editor
         }
         public static void BuildWindows()
         {
-            EnsureScene();UpgradePulseReference();CombatLabValidation.RunChecks();ExpeditionValidation.RunChecks();Directory.CreateDirectory("Builds/Expedition");
-            var result=BuildPipeline.BuildPlayer(new BuildPlayerOptions{scenes=new[]{ScenePath},locationPathName="Builds/Expedition/KamExpedition.exe",target=BuildTarget.StandaloneWindows64,options=BuildOptions.Development});
+            EnsureScene();UpgradePulseReference();CombatLabValidation.RunChecks();ExpeditionValidation.RunChecks();ExpeditionTacticsValidation.RunChecks();Directory.CreateDirectory("Builds/ExpeditionV2");
+            var result=BuildPipeline.BuildPlayer(new BuildPlayerOptions{scenes=new[]{ScenePath},locationPathName="Builds/ExpeditionV2/KamExpedition.exe",target=BuildTarget.StandaloneWindows64,options=BuildOptions.Development});
             if(result.summary.result!=BuildResult.Succeeded)throw new Exception("Expedition build failed: "+result.summary.result);
             Debug.Log("EXPEDITION_BUILD_OK "+result.summary.totalSize);
         }

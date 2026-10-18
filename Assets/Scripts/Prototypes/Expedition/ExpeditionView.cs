@@ -22,6 +22,12 @@ namespace TacticalRPG.Prototypes.Expedition
         [SerializeField] private Color _chainColor=new Color(.2f,1,.9f);
         [SerializeField] private float _followSpeed=6;
         [SerializeField] private int _poolSize=64;
+        [SerializeField] private Color _chargeColor=new Color(1,.35f,.16f);
+        [SerializeField] private Color _protectionColor=new Color(.25f,.75f,1);
+        [SerializeField] private float _chargeLineWidth=.12f;
+        private readonly Dictionary<int,LineRenderer> _chargeLines=new Dictionary<int,LineRenderer>();
+        private readonly Dictionary<int,GameObject> _auras=new Dictionary<int,GameObject>();
+        private GameObject _vortex;
         private ExpeditionSimulation _simulation;
         private ExpeditionConfig _config;
         private LabUnit _boundKam;
@@ -40,6 +46,7 @@ namespace TacticalRPG.Prototypes.Expedition
             {var f=new Fx{Pulse=Instantiate(_pulsePrefab,transform),Line=Instantiate(_linePrefab,transform),Text=Instantiate(_textPrefab,transform)};f.Pulse.SetActive(false);f.Line.gameObject.SetActive(false);f.Text.gameObject.SetActive(false);_effects.Add(f);}
             if(_warnings.Count==0)for(int i=0;i<24;i++){var go=Instantiate(_spawnPrefab,transform);go.SetActive(false);_warnings.Add(go);}
             Refresh();
+            if(_vortex==null){_vortex=Instantiate(_pulsePrefab,transform);_vortex.SetActive(false);}
         }
         private Vector3 Point(Vector2 p,float lift=0)=>new Vector3(p.x,_simulation.Map.Height(p)+lift,p.y);
         public bool Pointer(Vector2 screen,out Vector2 p)
@@ -61,13 +68,20 @@ namespace TacticalRPG.Prototypes.Expedition
             if(_boundKam!=_simulation.Kam)
             {
                 foreach(var actor in _views.Values)Destroy(actor.gameObject);_views.Clear();_boundKam=_simulation.Kam;
+                foreach(var line in _chargeLines.Values)Destroy(line.gameObject);_chargeLines.Clear();
+                foreach(var aura in _auras.Values)Destroy(aura);_auras.Clear();
                 foreach(var f in _effects){f.Life=0;f.Pulse.SetActive(false);f.Line.gameObject.SetActive(false);f.Text.gameObject.SetActive(false);}
                 var center=Point(_boundKam.Position);_camera.transform.position=center+_config.CameraOffset;_camera.transform.LookAt(center);
             }
             foreach(var u in _simulation.Units)
             {
                 if(!_views.TryGetValue(u.Id,out var actor)){actor=Instantiate(_actors[(int)u.Role],transform);actor.Bind(u,_camera,_simulation.Map.Height);_views.Add(u.Id,actor);}
-                actor.gameObject.SetActive(u.Alive);actor.RefreshCaption(true);
+                actor.gameObject.SetActive(u.Alive);actor.RefreshCaption(true,_simulation.DisplayName(u));
+                var tactic=_simulation.TacticOf(u);
+                if((tactic==EnemyTactic.Charger||tactic==EnemyTactic.Boss)&&!_chargeLines.ContainsKey(u.Id))
+                {var line=Instantiate(_linePrefab,transform);line.positionCount=2;line.startWidth=line.endWidth=_chargeLineWidth;line.startColor=line.endColor=_chargeColor;line.gameObject.SetActive(false);_chargeLines.Add(u.Id,line);}
+                if(tactic==EnemyTactic.Protector&&!_auras.ContainsKey(u.Id))
+                {var aura=Instantiate(_pulsePrefab,transform);var renderer=aura.GetComponent<Renderer>();if(renderer!=null){var block=new MaterialPropertyBlock();block.SetColor("_BaseColor",_protectionColor);renderer.SetPropertyBlock(block);}_auras.Add(u.Id,aura);}
             }
         }
         private void LateUpdate()
@@ -79,6 +93,11 @@ namespace TacticalRPG.Prototypes.Expedition
             _camera.transform.rotation=Quaternion.LookRotation(-_config.CameraOffset);
             _camera.orthographicSize=Mathf.Lerp(_camera.orthographicSize,_zoom,Time.unscaledDeltaTime*6);
             foreach(var pair in _views)pair.Value.Refresh(pair.Key==0,true);
+            foreach(var pair in _chargeLines)
+            {var u=_simulation.Find(pair.Key);bool active=u!=null&&_simulation.ChargeActive(u);pair.Value.gameObject.SetActive(active);if(active){pair.Value.SetPosition(0,Point(u.Position,.08f));pair.Value.SetPosition(1,Point(u.Aim,.08f));}}
+            foreach(var pair in _auras)
+            {var u=_simulation.Find(pair.Key);pair.Value.SetActive(u!=null&&u.Alive);if(u!=null){pair.Value.transform.position=Point(u.Position,.06f);float diameter=2*_simulation.ProtectorRadius;pair.Value.transform.localScale=new Vector3(diameter,.015f,diameter);}}
+            if(_vortex!=null){_vortex.SetActive(_simulation.VortexActive);_vortex.transform.position=Point(_simulation.VortexPosition,.07f);float diameter=2*_simulation.VortexRadius;_vortex.transform.localScale=new Vector3(diameter,.02f,diameter);}
             for(int i=0;i<_warnings.Count;i++)
             {
                 bool active=i<_simulation.Pending.Count;_warnings[i].SetActive(active);

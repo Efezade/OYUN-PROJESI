@@ -49,12 +49,12 @@ namespace TacticalRPG.Prototypes.CombatLab
             }
         }
         private float Ground(Vector2 p) => _groundHeight == null ? _height : _groundHeight(p) + .02f;
-        public void RefreshCaption(bool realtime)
+        public void RefreshCaption(bool realtime, string displayName = null)
         {
             if (_unit == null) return;
             string extra = _unit.Mark > 0 ? " ◆" : "";
             if (!realtime && _unit.Ally) extra += (_unit.Moved ? " ·" : " ↗") + (_unit.Acted ? " ·" : " ⚔");
-            _caption.text = _unit.Name + extra + "\n" + _unit.Health + "/" + _unit.MaxHealth;
+            _caption.text = (displayName ?? _unit.Name) + extra + "\n" + _unit.Health + "/" + _unit.MaxHealth;
         }
     }
 }

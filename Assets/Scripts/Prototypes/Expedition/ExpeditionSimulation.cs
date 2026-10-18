@@ -14,11 +14,11 @@ namespace TacticalRPG.Prototypes.Expedition
         public static string Description(int id) => id switch {
             0=>"Kam'ın normal atışı ek hedefe sıçrar ve işaretler. Üst seviye: iki ek hedef.",
             1=>"Islak hedeflerde zincir daha uzağa yayılır ve +2 hasar verir. Suya çekimle birleşir.",
-            2=>"Çekim alanı büyür, hedefler merkeze daha çok yaklaşır. Çekim beklemesi kısalır.",
+            2=>"Çekim büyür ve hızlanır. Seviye 2: 2,4 sn kalan girdap düşmanları çeker ve yavaşlatır.",
             3=>"E patlaması kısa gecikmeyle tekrar eder. Üst seviye: iki yankı; ek mana harcamaz.",
             4=>"Zincir tetiklemek mana kazandırır. Aynı anda çok zincirde kazanç sınırı vardır.",
-            5=>"Yakınındaki düşmanlara düzenli vuran bir halka kazan. İşaretleri tetikleyebilir.",
-            _=>"Büyü kullanınca geçici kalkan kazan. Biriken kalkanın üst sınırı vardır."};
+            5=>"Yakına vuran halka kazan. Seviye 2: kaçışın sonunda ek halka tetiklenir.",
+            _=>"Büyü kullanınca kalkan kazan. Seviye 2: hasarla kırılınca düşmanları geri iter."};
     }
     public sealed class ExpeditionSpawn
     {
@@ -39,7 +39,7 @@ namespace TacticalRPG.Prototypes.Expedition
         public uint offerState;
         public float elapsed;
     }
-    public sealed class ExpeditionSimulation
+    public sealed partial class ExpeditionSimulation
     {
         private readonly ExpeditionConfig _config;
         private readonly List<LabUnit> _units=new List<LabUnit>();
@@ -99,6 +99,7 @@ namespace TacticalRPG.Prototypes.Expedition
         private void BeginStage()
         {
             _units.Clear();_pending.Clear();_waypoints.Clear();_routeTimers.Clear();_focus=-1;
+            ResetTactics();
             _wave=0;_packClock=0;_orbitClock=1;_echoRemaining=0;_echoClock=_siphonClock=_shieldClock=_dashClock=0;
             Shield=PullCooldown=BurstCooldown=0;Mana=_config.Mana;Paused=false;
             var p=Map.Entrance(Stage);
@@ -118,6 +119,9 @@ namespace TacticalRPG.Prototypes.Expedition
             {
                 bool boss=Stage==2&&_wave==3&&i==0;
                 var role=boss?LabRole.Boss:((i+_wave)% (Modifier==1?2:4)==0?LabRole.Gunner:LabRole.Raider);
+                var tactic=boss?EnemyTactic.Boss:i==0?EnemyTactic.Charger:Stage>0&&i==2?EnemyTactic.Protector:EnemyTactic.Normal;
+                if(tactic==EnemyTactic.Charger)role=LabRole.Raider;
+                if(tactic==EnemyTactic.Protector)role=LabRole.Gunner;
                 Vector2 p=Map.Center(Stage)+new Vector2(5,0);float best=-1;
                 for(int attempt=0;attempt<50;attempt++)
                 {
@@ -128,12 +132,13 @@ namespace TacticalRPG.Prototypes.Expedition
                 }
                 int hp=boss?_config.BossHealth:_config.EnemyHealth+Stage*4+(Modifier==2?7:0);
                 var u=Unit(100+Stage*100+(_wave-1)*20+i,role,p,hp,boss?8:3+Stage,role==LabRole.Gunner?5.5f:boss?2.2f:1.6f);
+                RegisterTactic(u,tactic);
                 _pending.Add(new ExpeditionSpawn(u,_config.SpawnWarning+i*.08f));
             }
             Changed?.Invoke();
         }
         public LabUnit Find(int id){foreach(var u in _units)if(u.Id==id)return u;return null;}
-        public bool SetFocus(int id){var u=Find(id);if(!MovingAllowed||u==null||u.Ally||!u.Alive)return false;_focus=id;Hint="Ekip hedefi: "+u.Name;Changed?.Invoke();return true;}
+        public bool SetFocus(int id){var u=Find(id);if(!MovingAllowed||u==null||u.Ally||!u.Alive)return false;_focus=id;Hint="Ekip hedefi: "+DisplayName(u);Changed?.Invoke();return true;}
         public float Range(LabUnit u)=>u.Range+(Map.Ground(u.Position)==GroundKind.High?_config.HighRange:0);
         public bool CanHit(LabUnit a,LabUnit b)=>a.Alive&&b.Alive&&Vector2.Distance(a.Position,b.Position)<=Range(a)&&Map.HasLine(a.Position,b.Position);
         public void TogglePause(){if(Phase==ExpeditionPhase.Fighting||Phase==ExpeditionPhase.Travel){Paused=!Paused;Changed?.Invoke();}}
@@ -154,6 +159,7 @@ namespace TacticalRPG.Prototypes.Expedition
                     for(float step=0;step<length;step+=.1f)Move(u,target-u.Position,Mathf.Min(.1f,length-step));
                     u.Mark=8;Effect?.Invoke(new LabFx(old,u.Position,0,2));
                 }
+                if(_levels[2]>=2)CreateVortex(target);
                 Hint="ÇEKİM · işaretler hazır. Patlama veya sıçrayan atışla birleştir.";
             }
             else {BurstCooldown=5;Burst();_echoRemaining=_levels[3];_echoClock=.6f;Hint="PATLAMA · seçtiğin yankılar ek mana harcamadan sürer.";}
@@ -169,6 +175,7 @@ namespace TacticalRPG.Prototypes.Expedition
         {
             if(!MovingAllowed||_dashClock>0||direction.sqrMagnitude<.01f)return false;
             for(int i=0;i<18;i++)Move(Kam,direction,.13f);
+            if(_levels[5]>=2)OrbitPulse();
             _dashClock=3.2f;Effect?.Invoke(new LabFx(Kam.Position,Kam.Position,0,4));return true;
         }
         private void Strike(LabUnit source,LabUnit target)
@@ -187,7 +194,8 @@ namespace TacticalRPG.Prototypes.Expedition
         private void Hit(LabUnit target,int damage,Vector2 source,bool trigger)
         {
             if(!target.Alive)return;
-            if(target.Role==LabRole.Kam&&Shield>0){int absorb=Mathf.Min(Mathf.CeilToInt(Shield),damage);Shield=Mathf.Max(0,Shield-absorb);damage-=absorb;}
+            if(target.Role==LabRole.Kam&&Shield>0){int absorb=Mathf.Min(Mathf.CeilToInt(Shield),damage);Shield=Mathf.Max(0,Shield-absorb);damage-=absorb;if(Shield<=0&&_levels[6]>=2)ShieldBreak();}
+            if(!target.Ally&&IsProtected(target))damage=Mathf.Max(1,Mathf.CeilToInt(damage*_config.ProtectorDamageMultiplier));
             bool chain=trigger&&!target.Ally&&target.Mark>0;if(chain)target.Mark=0;
             int amount=Mathf.Min(damage,target.Health);target.Health-=amount;
             Effect?.Invoke(new LabFx(source,target.Position,amount,0));
@@ -216,13 +224,13 @@ namespace TacticalRPG.Prototypes.Expedition
             }
             for(int i=_pending.Count-1;i>=0;i--){_pending[i].Remaining-=dt;if(_pending[i].Remaining<=0){_units.Add(_pending[i].Unit);_pending.RemoveAt(i);Changed?.Invoke();}}
             _packClock+=dt;
+            TickVortex(dt);
             if(_wave<3&&((_packClock>=_config.PackInterval&&LivingEnemies<9)||(LivingEnemies==0&&_pending.Count==0&&_packClock>2)))QueuePack();
             _echoClock-=dt;if(_echoRemaining>0&&_echoClock<=0){_echoRemaining--;_echoClock=.6f;Burst();}
             _orbitClock-=dt;
             if(_levels[5]>0&&_orbitClock<=0)
             {
-                _orbitClock=2.6f;Effect?.Invoke(new LabFx(Kam.Position,Kam.Position,0,1));
-                foreach(var u in _units)if(u.Alive&&!u.Ally&&Vector2.Distance(u.Position,Kam.Position)<2.5f&&Map.HasLine(Kam.Position,u.Position))Hit(u,2+_levels[5]*2,Kam.Position,true);
+                _orbitClock=2.6f;OrbitPulse();
             }
             foreach(var u in _units)
             {
@@ -258,6 +266,7 @@ namespace TacticalRPG.Prototypes.Expedition
         }
         private void EnemyTick(LabUnit u,float dt)
         {
+            if(TickTactic(u,dt))return;
             if(u.Windup>0)
             {
                 u.Windup-=dt;
@@ -270,6 +279,8 @@ namespace TacticalRPG.Prototypes.Expedition
                 }return;
             }
             var target=Target(u);if(target==null)return;
+            if(u.Role==LabRole.Gunner&&u.Cooldown>0&&Vector2.Distance(u.Position,target.Position)<3.2f)
+            {Move(u,u.Position-target.Position,_config.EnemySpeed*dt);return;}
             if(!CanHit(u,target))Navigate(u,target.Position,_config.EnemySpeed*(Modifier==2?.8f:1)*dt,dt);
             else if(u.Cooldown<=0){u.Aim=target.Position;u.Windup=_config.Windup;}
         }
@@ -283,6 +294,7 @@ namespace TacticalRPG.Prototypes.Expedition
         {
             if(direction.sqrMagnitude<.0001f)return;
             if(Map.Ground(u.Position)==GroundKind.Mud)distance*=_config.MudSpeed;
+            if(!u.Ally&&InVortex(u.Position))distance*=.5f;
             var delta=direction.normalized*Mathf.Min(distance,direction.magnitude);
             var candidate=u.Position+delta;
             // Closed encounter perimeter; an unfinished fight cannot be bypassed into the next room.

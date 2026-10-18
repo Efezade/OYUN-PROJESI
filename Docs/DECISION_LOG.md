@@ -1444,3 +1444,9 @@ Tarihsel gerekçeleri arşivde; burada sadece **hâlâ geçerli olan** hüküm v
 | Faz D2 | Üretim savaşa taşındı, el yapımı öz haritası (Essence Painter), yakınlık istemi | `9087edb` |
 | Cila | Savaş nameplate'leri (isim + bölümlü can barı + hasar flaşı) | `9311e52` |
 | Karo hattı v2 | Tile Painter "Klasörü Tara" + 11 karo prefab + importer düzeltmeleri | `de55ab6`, `ce7be02` |
+
+## 2026-10-18 — Bağımsız çevre parçaları ve B çeşitlilik deneyi
+
+**KARAR:** Efe, zeminlerle yapıların ayrı modellenip Unity’de birleştirilmesini seçti; önceki zorunlu tam-karo teslimi güncellendi. B’de çeşitlilik geri bildirimine karşı atılış/koruma davranışları ve ikinci seviye güçlerin işlevsel ayrışması ayrı prototipte uygulandı.
+
+**NEDEN:** Aynı yapı farklı zeminlerde kullanılabilsin; savaşta kaçış yönü, hedef önceliği ve güç kombinasyonu kararları belirginleşsin. Nihai denge/hikâye kararı değildir. **COMMIT:** Bu kaydı ekleyen commit; ayrıntı B_EXPEDITION.md.
