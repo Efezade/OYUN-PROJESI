@@ -10,6 +10,7 @@ namespace TacticalRPG.Prototypes.Expedition
         [SerializeField] private float _powerCardSpacing=345;
         private void RefreshJourney(ExpeditionSimulation s)
         {
+            RefreshWardenHud(s);
             _status.text="KAM  "+s.Kam.Health+" / "+s.Kam.MaxHealth+"    KALKAN "+Mathf.CeilToInt(s.Shield)+"    VURUŞ GÜCÜ "+s.Charge+" / "+s.ChargeRequired+"\nGÖREV "+(s.Stage+1)+" / 3  ·  "+s.WeaponName+"    TOHUM "+s.Seed;
             _text.Clear();_text.Append("YOLCULUĞUN\nGörevler arasında korunur\n\n").Append(s.WeaponName).Append("\n\n");
             for(int i=0;i<9;i++)if(s.HasPower(i))_text.Append("+ ").Append(s.PowerName(i)).Append("\n");
@@ -18,6 +19,7 @@ namespace TacticalRPG.Prototypes.Expedition
             _objective.text=s.Phase==ExpeditionPhase.Travel?"DOĞUYA İLERLE →\nSonraki görev\nSilah ve güçler korunuyor":"GÖREV "+(s.Stage+1)+" · "+s.StageName+"\nDALGA "+s.Wave+" / 3\n"+s.LivingEnemies+" düşman · "+s.Pending.Count+" yaklaşan";
             if(s.Phase==ExpeditionPhase.Fighting&&s.IsMastery)_objective.text+=s.Stage==0?"\nSıçrayan: iniş halkasından çık":s.Stage==1?"\nHiddetli: yorulunca saldır":"\nYansıtıcı: asıl düşmanı avla";
             else if(s.Phase==ExpeditionPhase.Fighting)_objective.text+=s.Stage==0?"\nAvcı: atış çizgisinden çık":"\nKuşatmacı: halkayı terk et";
+            if(s.WardenVisible)_objective.text="SON KARŞILAŞMA\nAŞAMA "+s.WardenStage+" / 3\n"+s.WardenAddCountForView+" bağlı muhafız\nÇekirdek rengini izle";
             _ground.text=s.Map.Description(s.Kam.Position);
             if(s.Map.Ground(s.Kam.Position)==GroundKind.Water)_ground.text="SU · düşman nişancısının elektriği +2 hasar verir";
             if(s.Map.Ground(s.Kam.Position)==GroundKind.High)_ground.text="YÜKSELTİ · uzak saldırılar +1,4 menzil kazanır; yakın hilal değişmez";

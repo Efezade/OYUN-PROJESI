@@ -1,5 +1,21 @@
 # B · Büyüyen Sefer — oynanabilir prototip
 
+## Güncel — Üç aşamalı boss v7
+
+Efe, aşamalı ve özel saldırılı bir boss; epik ama geçici görünüm; muhafız çağırma aşaması istedi. MasteryJourney üçüncü normal dalgası artık boss içermez; normal düşmanlar temizlenip güç seçimleri alındıktan sonra Kül Yeminli Muhafız ayrı giriş yapar. Geçici özgün görünüm: koyu zırh/kırık taç/iri kılıç/kor çekirdek; prefab `Assets/Data/Prototypes/Warden/AshWarden.prefab`. Final model veya final rig animasyonu değildir.
+
+Aşama 1: ön yay biçişi, tek hücum, yer darbesi. %65 eşik: iki 18 canlı muhafız, çift hücum ve daha hızlı yürüyüş. %30 eşik: üç muhafız, genişleyen 6,5 m dalga ve art arda en çok üç kilitli yer darbesi. Hücumlar ayrı ayrı hazırlanır; yer hedefleri hazırlıktan sonra takip etmez. Dalga görüş kesen siperden geçerek vurmaz, aynı hedefe bir kez hasar verir. Boss çekime/geri itmeye bağışık; kamın ilgili yetenekleri muhafızlarda çalışır.
+
+Boss 360 can; muhafız varken gelen hasarın %45'ini, çekirdek açıkken %160'ını alır. Son muhafız ölünce 3,5 sn açılır; hücum, dalga ve yer darbeleri sonrası da açık verir. Muhafızlar XP vermez, aşamaya göre iki/üç sınırı vardır, boss ölünce canlı/bekleyen muhafızlar kaldırılır. Eşiklerde 1,6 sn geçiş koruması; tek patlamayla aşamalar atlanmaz. İkinci/üçüncü aşama oyuncunun kombosunu alan temizliği ve boss hasarı arasında kullanmasını teşvik eder; belirli rastgele kart zorunlu değildir.
+
+Boss HUD'si ve gerçek hasar geometrisini gösteren uyarılar eklendi. Modelci notu `Tools/SavasPrototipleri/BOSS_MODELCI_V007.txt`. Kurulum WardenSetup ile idempotent; FullSetup asset zincirine bağlı, Mastery menüsü sahne bağlantılarını tamamlar. Kullanıcı tweakleri ezilmez; yeni rig alanları boşsa doldurulur.
+
+21 yeni + 384 eski = 405 işlev kontrolü ve Windows build geçti. İki silahla üç görev ve yeni boss yüksek canlı sürücüyle tamamlandı; insan denge/keyif kabulü değildir. Aç: `Tools/SavasPrototipleri/USTALIK_BASLAT.cmd` → `Builds/MasteryJourneyV7/KamMastery.exe`. Önceki v6 build korunur, aynı checkpoint-v5.json. Sonraki adım Efe'nin üçüncü görev kombosuyla aşamaları, muhafız baskısını, kaçış ve açık pencerelerini denemesi. Ana harita/final sanat/ekonomi hâlâ ayrı işler; push/senkron yok.
+
+
+
+Son görsel doğrulama: Logs/warden-phase2-final.png ve warden-phase3-final.png gerçek Windows player görüntüleri incelendi; doğru 234/360 ve 108/360 eşikleri, soldan azalan can çubuğu, aşama/hedef metni, muhafız sayıları ve dalga sınırları görüldü. İki player günlüğünde CAPTURE_OK Fighting; exception/LogError/LogWarning yok. Yakalamalar açık QA fixture ile yüksek can ve kapalı dost saldırıları kullanır; normal denge kanıtı değildir ve oyuncu kaydı yazmaz. Son build: Logs/warden-final-build.log; boss kontrolleri: Logs/warden-validation.json.
+
 ## Güncel — Hareketli düşmanlar v6
 
 Efe sıçrama, hızlanma/özel hareket ve klonlama gibi farklı düşman davranışları istedi. Üç rol MasteryJourney'ye eklendi: ilk görevden Sıçrayan (kilitli iniş halkası, gerçek görsel yükseklik yayı, iniş sonrası açık); ikinci görev ikinci dalgadan Hiddetli (hazırlık, süreli hızlı kovalama, kilitli yakın vuruş, yorgunluk); üçüncü görev ikinci dalgadan Yansıtıcı (iki kırılgan geçici kopya).

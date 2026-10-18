@@ -69,7 +69,7 @@ namespace TacticalRPG.Prototypes.Expedition
             if(_simulation==null||_simulation.Phase==ExpeditionPhase.Ready)return;
             if(_boundKam!=_simulation.Kam)
             {
-                foreach(var actor in _views.Values)Destroy(actor.gameObject);_views.Clear();_boundKam=_simulation.Kam;
+                foreach(var actor in _views.Values)Destroy(actor.gameObject);_views.Clear();_wardenRig=null;_boundKam=_simulation.Kam;
                 ClearEnemyVisuals();
                 foreach(var line in _chargeLines.Values)Destroy(line.gameObject);_chargeLines.Clear();
                 foreach(var aura in _auras.Values)Destroy(aura);_auras.Clear();
@@ -85,7 +85,7 @@ namespace TacticalRPG.Prototypes.Expedition
                 {var line=Instantiate(_linePrefab,transform);line.positionCount=2;line.startWidth=line.endWidth=_chargeLineWidth;line.startColor=line.endColor=_chargeColor;if(_simulation.IsJourney)TintWeapon(line,_chargeColor);line.gameObject.SetActive(false);_chargeLines.Add(u.Id,line);}
                 if(tactic==EnemyTactic.Protector&&!_auras.ContainsKey(u.Id))
                 {var aura=Instantiate(_pulsePrefab,transform);var renderer=aura.GetComponent<Renderer>();if(renderer!=null){var block=new MaterialPropertyBlock();block.SetColor("_BaseColor",_protectionColor);renderer.SetPropertyBlock(block);}_auras.Add(u.Id,aura);}
-                AddEnemyVisual(u,actor.transform);
+                AddEnemyVisual(u,actor.transform);BindWardenVisual(u,actor);
             }
         }
         private void LateUpdate()
@@ -96,11 +96,11 @@ namespace TacticalRPG.Prototypes.Expedition
             // Fixed pitch: follow without continually tilting the horizon.
             _camera.transform.rotation=Quaternion.LookRotation(-_config.CameraOffset);
             _camera.orthographicSize=Mathf.Lerp(_camera.orthographicSize,_zoom,Time.unscaledDeltaTime*6);
-            foreach(var pair in _views){pair.Value.SuppressWarning(_simulation.SelfPreparation(_simulation.Find(pair.Key)));pair.Value.SetElevation(_simulation.EnemyAirHeight(_simulation.Find(pair.Key)));pair.Value.Refresh(pair.Key==0,true);}
+            foreach(var pair in _views){pair.Value.SuppressWarning((_simulation.Find(pair.Key)==_simulation.Warden||_simulation.SelfPreparation(_simulation.Find(pair.Key))));pair.Value.SetElevation(_simulation.EnemyAirHeight(_simulation.Find(pair.Key)));pair.Value.Refresh(pair.Key==0,true);}
             RefreshWeaponVisuals();
-            RefreshEncounterVisuals();
+            RefreshEncounterVisuals();RefreshWardenVisual();
             foreach(var pair in _chargeLines)
-            {var u=_simulation.Find(pair.Key);bool active=u!=null&&(_simulation.ChargeActive(u)||_simulation.SniperAiming(u));pair.Value.gameObject.SetActive(active);if(active){pair.Value.SetPosition(0,Point(u.Position,.08f));pair.Value.SetPosition(1,Point(u.Aim,.08f));}}
+            {var u=_simulation.Find(pair.Key);bool active=u!=null&&u!=_simulation.Warden&&(_simulation.ChargeActive(u)||_simulation.SniperAiming(u));pair.Value.gameObject.SetActive(active);if(active){pair.Value.SetPosition(0,Point(u.Position,.08f));pair.Value.SetPosition(1,Point(u.Aim,.08f));}}
             foreach(var pair in _auras)
             {var u=_simulation.Find(pair.Key);pair.Value.SetActive(u!=null&&u.Alive);if(u!=null){pair.Value.transform.position=Point(u.Position,.06f);float diameter=2*_simulation.ProtectorRadius;pair.Value.transform.localScale=new Vector3(diameter,.015f,diameter);}}
             if(_vortex!=null){_vortex.SetActive(_simulation.VortexActive);_vortex.transform.position=Point(_simulation.VortexPosition,.07f);float diameter=2*_simulation.VortexRadius;_vortex.transform.localScale=new Vector3(diameter,.02f,diameter);}

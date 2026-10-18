@@ -45,12 +45,12 @@ namespace TacticalRPG.Editor
             finally{if(previous.IsValid())SceneManager.SetActiveScene(previous);EditorSceneManager.CloseScene(scene,true);}
         }
         [MenuItem("TacticalRPG/Prototipler/B - Ustalik ve Donusum",false,313)]
-        public static void Open(){if(!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())return;EnsureScene();EditorSceneManager.OpenScene(ScenePath);}
+        public static void Open(){if(!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())return;WardenSetup.EnsureScene();EditorSceneManager.OpenScene(ScenePath);}
         public static void BuildWindows()
         {
-            EnsureScene();CombatLabValidation.RunChecks();ExpeditionValidation.RunChecks();ExpeditionTacticsValidation.RunChecks();WeaponJourneyValidation.RunChecks();EncounterValidation.RunChecks();MasteryValidation.RunChecks();DynamicEnemyValidation.RunChecks();
-            Directory.CreateDirectory("Builds/MasteryJourneyV6");
-            var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions{scenes=new[]{ScenePath},locationPathName="Builds/MasteryJourneyV6/KamMastery.exe",target=BuildTarget.StandaloneWindows64,options=BuildOptions.Development});
+            WardenSetup.EnsureScene();CombatLabValidation.RunChecks();ExpeditionValidation.RunChecks();ExpeditionTacticsValidation.RunChecks();WeaponJourneyValidation.RunChecks();EncounterValidation.RunChecks();MasteryValidation.RunChecks();DynamicEnemyValidation.RunChecks();WardenValidation.RunChecks();
+            Directory.CreateDirectory("Builds/MasteryJourneyV7");
+            var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions{scenes=new[]{ScenePath},locationPathName="Builds/MasteryJourneyV7/KamMastery.exe",target=BuildTarget.StandaloneWindows64,options=BuildOptions.Development});
             if(report.summary.result!=BuildResult.Succeeded)throw new Exception("Mastery build failed: "+report.summary.result);
             Debug.Log("MASTERY_BUILD_OK");
         }

@@ -22,13 +22,13 @@ namespace TacticalRPG.Prototypes.Expedition
         public float ProtectorRadius=>_config.ProtectorRadius;
         public EnemyTactic TacticOf(LabUnit u)=>_tactics.TryGetValue(u.Id,out var t)?t.Kind:EnemyTactic.Normal;
         public bool ChargeActive(LabUnit u)=>u.Alive&&_tactics.TryGetValue(u.Id,out var t)&&(t.Kind==EnemyTactic.Charger||t.Kind==EnemyTactic.Boss)&&!t.SmashNext&&(u.Windup>0||t.Rushing);
-        public string DisplayName(LabUnit u)=>(IsElite(u)?"SEÇKİN ":"")+TacticName(u);
-        private string TacticName(LabUnit u)=>TacticOf(u) switch {EnemyTactic.Leaper=>"SIÇRAYAN",EnemyTactic.Frenzied=>"HİDDETLİ",EnemyTactic.Cloner=>"YANSITICI",EnemyTactic.Clone=>"YANSIMA",EnemyTactic.Charger=>"YARICI",EnemyTactic.Protector=>"KALKANCI",EnemyTactic.Boss=>"MABET BEKÇİSİ",EnemyTactic.Flanker=>"YANCI",EnemyTactic.Sniper=>"AVCI",EnemyTactic.Bomber=>"KUŞATMACI",_=>u.Name};
-        private void ResetTactics(){_elites.Clear();ResetDynamicEnemies();_tactics.Clear();_vortexClock=0;ResetEncounters();}
+        public string DisplayName(LabUnit u)=>IsWardenAdd(u)?"KÜL MUHAFIZI":(IsElite(u)?"SEÇKİN ":"")+TacticName(u);
+        private string TacticName(LabUnit u)=>TacticOf(u) switch {EnemyTactic.Leaper=>"SIÇRAYAN",EnemyTactic.Frenzied=>"HİDDETLİ",EnemyTactic.Cloner=>"YANSITICI",EnemyTactic.Clone=>"YANSIMA",EnemyTactic.Charger=>"YARICI",EnemyTactic.Protector=>"KALKANCI",EnemyTactic.Boss=>IsMastery?"KÜL YEMİNLİ MUHAFIZ":"MABET BEKÇİSİ",EnemyTactic.Flanker=>"YANCI",EnemyTactic.Sniper=>"AVCI",EnemyTactic.Bomber=>"KUŞATMACI",_=>u.Name};
+        private void ResetTactics(){_elites.Clear();ResetDynamicEnemies();ResetWarden();_tactics.Clear();_vortexClock=0;ResetEncounters();}
         private void RegisterTactic(LabUnit u,EnemyTactic kind){_tactics[u.Id]=new TacticState{Kind=kind};}
         public bool IsProtected(LabUnit u)
         {
-            if(u.Ally||!u.Alive||TacticOf(u)==EnemyTactic.Protector)return false;
+            if(u==_warden||u.Ally||!u.Alive||TacticOf(u)==EnemyTactic.Protector)return false;
             foreach(var other in _units)
                 if(other.Alive&&TacticOf(other)==EnemyTactic.Protector&&Vector2.Distance(u.Position,other.Position)<=ProtectorRadius&&Map.HasLine(other.Position,u.Position))return true;
             return false;
@@ -80,7 +80,7 @@ namespace TacticalRPG.Prototypes.Expedition
         private void TickVortex(float dt)
         {
             if(!VortexActive)return;
-            foreach(var u in _units)if(!u.Ally&&u.Alive&&InVortex(u.Position))Move(u,VortexPosition-u.Position,dt*1.2f);
+            foreach(var u in _units)if(u!=_warden&&!u.Ally&&u.Alive&&InVortex(u.Position))Move(u,VortexPosition-u.Position,dt*1.2f);
             _vortexClock=Mathf.Max(0,_vortexClock-dt);
         }
         private void OrbitPulse()
@@ -91,7 +91,7 @@ namespace TacticalRPG.Prototypes.Expedition
         private void ShieldBreak()
         {
             Effect?.Invoke(new LabFx(Kam.Position,Kam.Position,0,4));
-            foreach(var u in _units)if(!u.Ally&&u.Alive&&Vector2.Distance(u.Position,Kam.Position)<3&&Map.HasLine(Kam.Position,u.Position))
+            foreach(var u in _units)if(u!=_warden&&!u.Ally&&u.Alive&&Vector2.Distance(u.Position,Kam.Position)<3&&Map.HasLine(Kam.Position,u.Position))
             {
                 var away=u.Position-Kam.Position;if(away.sqrMagnitude<.001f)away=Vector2.right;
                 for(int i=0;i<12;i++)Move(u,away,.1f);

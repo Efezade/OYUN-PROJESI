@@ -110,7 +110,9 @@ namespace TacticalRPG.Prototypes.Expedition
             bool encounterCapture=Array.IndexOf(Environment.GetCommandLineArgs(),"--encounter-capture")>=0;
             bool leapCapture=Array.IndexOf(Environment.GetCommandLineArgs(),"--leap-capture")>=0;
             bool cloneCapture=Array.IndexOf(Environment.GetCommandLineArgs(),"--clone-capture")>=0;
-            bool dynamicCapture=leapCapture||cloneCapture;bool dynamicReady=false;
+            bool wardenCapture=Array.IndexOf(Environment.GetCommandLineArgs(),"--warden-capture")>=0;
+            int wardenStage=Array.IndexOf(Environment.GetCommandLineArgs(),"--warden-stage2")>=0?2:3;
+            bool dynamicCapture=leapCapture||cloneCapture||wardenCapture;bool dynamicReady=false;
             if(_simulation.IsJourney)
             {
                 var args=Environment.GetCommandLineArgs();bool spear=Array.IndexOf(args,"--weapon-spear")>=0;
@@ -126,6 +128,7 @@ namespace TacticalRPG.Prototypes.Expedition
             {
                 // Explicit visual fixture: no allied attacks, high health, no player save writes.
                 _simulation.Load(new ExpeditionSave{version=_simulation.JourneySaveVersion,seed=12345,nextStage=2,xp=0,picks=0,weapon=1,powers=new int[9],credited=Array.Empty<int>(),offerState=12345});
+                if(wardenCapture)_simulation.PrepareWardenCapture(wardenStage);
                 _view.Bind(_simulation,_config);
             }
             // Deterministic unattended visual check. Never writes a player checkpoint.
@@ -140,7 +143,8 @@ namespace TacticalRPG.Prototypes.Expedition
                     // Clear opening wave in this no-attack fixture so the cloner wave can spawn.
                     if(cloneCapture&&_simulation.Wave==1&&_simulation.Elapsed>10)foreach(var u in _simulation.Units)if(!u.Ally)u.Health=0;
                     _simulation.Tick(.05f,Vector2.zero);bool ready=false;
-                    foreach(var u in _simulation.Units)if(u.Alive&&(leapCapture?_simulation.EnemyAirHeight(u)>2.5f:_simulation.IsClone(u)))ready=true;
+                    if(wardenCapture)ready=wardenStage==2?_simulation.WardenVisible&&_simulation.WardenAddCountForView>0&&_simulation.Pending.Count==0:_simulation.WardenAction==WardenMove.Ring&&_simulation.WardenExecuting&&_simulation.WardenRingRadius>2;
+                    else foreach(var u in _simulation.Units)if(u.Alive&&(leapCapture?_simulation.EnemyAirHeight(u)>2.5f:_simulation.IsClone(u)))ready=true;
                     if(ready){dynamicReady=true;break;}
                     if(i%10==0){_view.Refresh();_hud.Refresh();yield return null;}continue;
                 }

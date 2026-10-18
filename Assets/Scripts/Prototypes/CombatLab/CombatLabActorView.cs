@@ -15,6 +15,7 @@ namespace TacticalRPG.Prototypes.CombatLab
         [SerializeField] private float _followSpeed = 14f;
         [SerializeField] private float _healthWidth = 1f;
         [SerializeField] private Vector3 _labelOffset = new Vector3(0, 2.1f, 0);
+        public void ReplaceBody(Transform body){_body.gameObject.SetActive(false);if(_animator!=null)_animator.enabled=false;_animator=null;_body=body;_labelOffset.y=4.5f;}
         private bool _suppressWarning;
         public void SuppressWarning(bool value){_suppressWarning=value;}
         private float _elevation;

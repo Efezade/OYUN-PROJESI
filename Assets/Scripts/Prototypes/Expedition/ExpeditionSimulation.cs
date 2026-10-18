@@ -124,7 +124,7 @@ namespace TacticalRPG.Prototypes.Expedition
             int count=4+_wave+(Modifier==0?1:0);if(Stage==2&&_wave==3)count=6;if(IsMastery)count+=Stage*2;
             for(int i=0;i<count;i++)
             {
-                bool boss=Stage==2&&_wave==3&&i==0;
+                bool boss=!IsMastery&&Stage==2&&_wave==3&&i==0;
                 var role=boss?LabRole.Boss:((i+_wave)% (Modifier==1?2:4)==0?LabRole.Gunner:LabRole.Raider);
                 var tactic=boss?EnemyTactic.Boss:i==0?EnemyTactic.Charger:Stage>0&&i==2?EnemyTactic.Protector:EnemyTactic.Normal;
                 if(IsJourney&&!boss){if(i==1)tactic=EnemyTactic.Flanker;else if(Stage>0&&i==3)tactic=EnemyTactic.Bomber;else if(i>=3&&tactic==EnemyTactic.Normal)tactic=EnemyTactic.Sniper;}
@@ -218,13 +218,16 @@ namespace TacticalRPG.Prototypes.Expedition
         private void Hit(LabUnit target,int damage,Vector2 source,bool trigger)
         {
             if(!target.Alive)return;
+            if(target==_warden){damage=WardenIncomingDamage(damage);if(damage<=0)return;}
             if(target.Role==LabRole.Kam&&Shield>0){int absorb=Mathf.Min(Mathf.CeilToInt(Shield),damage);Shield=Mathf.Max(0,Shield-absorb);damage-=absorb;if(Shield<=0&&(_levels[6]>=2||(IsJourney&&HasPower(6))))ShieldBreak();}
             if(!target.Ally&&IsProtected(target))damage=Mathf.Max(1,Mathf.CeilToInt(damage*_config.ProtectorDamageMultiplier));
             bool chain=trigger&&!target.Ally&&target.Mark>0;if(chain)target.Mark=0;
+            if(target==_warden)damage=ClampWardenThreshold(damage);
             int amount=Mathf.Min(damage,target.Health);target.Health-=amount;
             Effect?.Invoke(new LabFx(source,target.Position,amount,0));
-            if(!target.Alive&&!target.Ally&&!IsClone(target)&&_credited.Add(target.Id))XP+=target.Role==LabRole.Boss?4:1;
-            if(!target.Alive&&IsMastery)DismissClones(target.Id);
+            if(!target.Alive&&!target.Ally&&!IsClone(target)&&!IsWardenAdd(target)&&_credited.Add(target.Id))XP+=target.Role==LabRole.Boss?4:1;
+            if(target==_warden)WardenDamaged();
+            if(!target.Alive&&IsMastery){DismissClones(target.Id);if(target==_warden)DismissWardenAdds();else if(IsWardenAdd(target))WardenAddDied();}
             if(!chain)return;
             Chains++;
             if(_levels[4]>0&&_siphonClock<=0){Mana=Mathf.Min(_config.Mana,Mana+_levels[4]);_siphonClock=.4f;}
@@ -294,6 +297,7 @@ namespace TacticalRPG.Prototypes.Expedition
         }
         private void EnemyTick(LabUnit u,float dt)
         {
+            if(IsMastery&&u==_warden){TickWarden(dt);return;}
             if(IsMastery&&TickDynamicEnemy(u,dt))return;
             if(IsJourney&&TickEncounter(u,dt))return;
             if(TickTactic(u,dt))return;
@@ -342,6 +346,7 @@ namespace TacticalRPG.Prototypes.Expedition
             if(NextThreshold>0&&XP>=NextThreshold){MakeOffers();Phase=ExpeditionPhase.Choosing;Changed?.Invoke();return;}
             if(_wave==3&&LivingEnemies==0&&_pending.Count==0)
             {
+                if(IsMastery&&Stage==2&&!_wardenSpawned){QueueWarden();return;}
                 Phase=Stage==2?ExpeditionPhase.Won:ExpeditionPhase.Camp;_echoRemaining=0;
                 foreach(var u in _units)if(u.Ally)u.Health=u.MaxHealth;
                 Mana=_config.Mana;Hint=Stage==2?"Üç alan tamamlandı. Yeni tohumda farklı bir kombinasyon dene.":"Mabet güvenli. Ekip iyileşti; güçlerin korundu. Devam ederek doğu geçidine yürü.";Changed?.Invoke();

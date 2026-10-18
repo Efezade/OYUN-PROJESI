@@ -1474,3 +1474,9 @@ Tarihsel gerekçeleri arşivde; burada sadece **hâlâ geçerli olan** hüküm v
 **KARAR:** Kullanıcının hareket çeşitliliği isteği MasteryJourney v6'da Sıçrayan, Hiddetli ve Yansıtıcı olarak uygulandı. Sıçrayan yerden yükselen yay çizer; iniş hedefi sabit ve sonrasında toparlanma açığı var. Hiddet kısa sürer ve yorulmayla biter. Kopyalar ödülsüz, kısa ömürlü, kırılgan ve kaynağa bağlı; bekleyen kopyalar da kaynak ölünce iptal olur.
 
 **NEDEN:** Yeni rol farklı karşı hamle gerektirsin; yalnız can/hasar artışı olmasın. Kopya sayısı ve eşzamanlı saldırı sınırı okunabilirliği korur, ödülsüz kopyalar XP farmı yaratmaz. Görsel hareket mevcut modele uygulanır; final animasyon değil. 21 yeni davranış + 363 eski kontrol; insan kabulü bekliyor. Önceki v5 build korunur, kayıt formatı aynı. **COMMIT:** Bu kaydı ekleyen commit.
+
+## 2026-10-18 — Aşamalı boss ve muhafızlarla açılan çekirdek
+
+**KARAR:** Efe’nin isteğiyle üçüncü görevde ayrı Kül Yeminli Muhafız karşılaşması. %65/%30 eşikleri, geniş biçiş/hücum/zemin darbesi/genişleyen dalga, ikinci ve üçüncü aşamada sınırlı muhafız çağrısı. Normal dalgalar önce tamamlanır; güç kombinasyonu boss başlamadan kurulabilir. Çekirdek açığı alan temizliği ve patlama hasarını bağlar; tek bir kart zorunlu tutulmaz.
+
+**NEDEN:** Boss yalnız fazla can taşıyan normal düşman olmasın; her baskıdan sonra okunabilir karşılık fırsatı versin. Muhafızlar XP üretmez, kaynak ölünce temizlenir. Faz eşiklerinde hasar sınırı ve kısa koruma vardır; büyük patlama fazları atlamaz. Orijinal kaba zırh/taç/kılıç prefabı sonradan değiştirilebilir. 21 yeni + 384 eski kontrol geçti; yüksek canlı sürücü insan zorluk kabulü değildir. **COMMIT:** Bu kaydı ekleyen commit.
