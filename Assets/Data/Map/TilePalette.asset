@@ -416,7 +416,7 @@ MonoBehaviour:
     isWalkable: 1
     canEnterCombat: 0
     isStore: 0
-    surfaceHeightOverride: 0.3158
+    surfaceHeightOverride: 0.3
     variants: []
     mainWeight: 1
     allowMirror: 0
