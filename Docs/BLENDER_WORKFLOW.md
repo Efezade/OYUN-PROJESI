@@ -1,5 +1,11 @@
 # Blender modelleme — kalici devam kaydi
 
+## Güncel Kırık Taç bağlantısı — 21 Ekim 2026
+
+Bu harita işinde kullanıcının açık onayıyla Higgsfield Bridge kullanılıyor; aşağıdaki 8 Ekim localhost ve bulut üretim yasağı tarihsel akıştır. Son açık uygulama: Steam Blender **5.2.2 LTS**, `C:/Program Files (x86)/Steam/steamapps/common/Blender/blender.exe`. Diğer kurulum `C:/Program Files/Blender Foundation/Blender 5.2/blender.exe` **5.2.1**; yeni kaydı eski sürümle yeniden kaydetmeyin. Salt okuma denetimini de mümkünse aktif sürümde yapın.
+
+Güncel harita `C:/3D OYUN/MODELLER/KirikTac-AnaGorsel-20261020/v016_modelci/KirikTac_v016_Modelci.blend`. Devam için yanındaki DEVAM.md. Kullanıcı dosyayı açtıktan sonra N paneli → Higgsfield → MCP → Enable MCP control / Connected. İlk araç `get_host_status`, sonra `bl_execute` ile gerçek dosya/dirty durumu. Canlı durumun üstüne kontrolsüz dosya açmayın; ayrı kopyaya kaydedin. Bridge bağlantısı ücretli üretimin çalıştığı anlamına gelmez; son üretim girişimi 403 verdi. Ayrıntı üretimini modellemeciye devretme kararı bu turda alındı.
+
 ## Kullanici tercihi (2026-10-08)
 
 Efe referans 2D gorselleri kendisi uretir. Codex dogrudan Blender'da gercek 3D mesh, materyal, UV ve dokular uretir. Efe sonucu Blender'da inceler ve sohbetten Turkce duzeltme verir. Gorselden 3D ureten siteler/servisler kullanilmaz.
