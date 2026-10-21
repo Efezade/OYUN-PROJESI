@@ -1,3 +1,5 @@
+@AGENTS.md
+
 # CLAUDE.md — Taktiksel RPG Oyunu Geliştirme Kuralları
 
 Bu dosya, Claude Code'un bu Unity projesinde nasıl davranacağını tanımlar.

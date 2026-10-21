@@ -1,5 +1,9 @@
 # Blender modelleme — kalici devam kaydi
 
+## Zeynep PC — 2026-10-22 Higgsfield bağlantısı
+
+Higgsfield Bridge OAuth ve Blender 1.5.58 kurulumu tamamlandı. Panel etkinleştirme sonrası host connected ve canlı KT_KirikTac sahne okuması doğrulandı. Açık dosya `C:/Users/zeynep/Downloads/KirikTac_v016_Modelci.blend`. Eklenti ve otomatik tercih kaydı açık; yeniden açılışta otomatik bağlantı ayrıca test edilmedi. Callback `http://localhost:56444/callback`, port 56444, sunucuya özel. Ayrıntı: `Tools/Higgsfield-Kurulum/DEVAM.md`. Eski localhost:9876 akışı ayrı bağlantıdır.
+
 ## Kullanici tercihi (2026-10-08)
 
 Efe referans 2D gorselleri kendisi uretir. Codex dogrudan Blender'da gercek 3D mesh, materyal, UV ve dokular uretir. Efe sonucu Blender'da inceler ve sohbetten Turkce duzeltme verir. Gorselden 3D ureten siteler/servisler kullanilmaz.
